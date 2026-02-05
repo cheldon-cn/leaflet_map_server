@@ -1,0 +1,11 @@
+# robots.txt for Dynamic Map Image Service
+User-agent: *
+Allow: /
+
+# Disallow search engines from crawling dynamic content
+Disallow: /api/
+Disallow: /generate/
+Disallow: /tile/
+
+# Sitemap location
+Sitemap: https://example.com/sitemap.xml
