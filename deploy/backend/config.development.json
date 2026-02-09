@@ -1,0 +1,28 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "worker_threads": 2,
+    "max_request_size": 5242880,
+    "timeout_seconds": 60
+  },
+  "database": {
+    "path": "/data/db/spatial_data.db",
+    "connection_pool_size": 3
+  },
+  "cache": {
+    "memory_max_items": 50,
+    "disk_cache_dir": "/data/cache",
+    "ttl_seconds": 15
+  },
+  "limits": {
+    "max_image_width": 2048,
+    "max_image_height": 2048,
+    "max_features_per_request": 5000
+  },
+  "output_dir": "/data/output",
+  "log": {
+    "file": "/data/logs/map_server.log",
+    "level": 3
+  }
+}

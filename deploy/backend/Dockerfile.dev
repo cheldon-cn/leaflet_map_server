@@ -1,0 +1,37 @@
+# 后端开发模式 Dockerfile
+FROM ubuntu:24.04
+
+# 安装运行时依赖和开发工具
+RUN apt-get update && apt-get install -y \
+    libsqlite3-0 \
+    libpng16-16 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN useradd -m -u 1000 appuser
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制可执行文件（在外部构建）
+COPY build/bin/map_server ./map_server
+
+# 复制配置文件
+COPY deploy/backend/config.development.json ./config.json
+
+# 创建数据目录
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
+# 切换用户
+USER appuser
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# 启动命令
+CMD ["./map_server", "--config", "config.json"]

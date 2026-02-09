@@ -1,0 +1,82 @@
+# Leaf 项目生产环境 Docker Compose 配置
+version: '3.8'
+
+services:
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"  # 如需 HTTPS，取消注释并配置 SSL
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ssl-certs:/etc/ssl/certs  # SSL 证书目录
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+    networks:
+      - leaf-network
+
+  # 后端服务
+  backend:
+    build:
+      context: ..  # 项目根目录
+      dockerfile: deploy/backend/Dockerfile
+    expose:
+      - "8080"
+    volumes:
+      - leaf-db-data:/data/db
+      - leaf-output-data:/data/output
+      - leaf-logs:/data/logs
+      - ./backend/config.production.json:/app/config.json:ro
+    environment:
+      - NODE_ENV=production
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - leaf-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # 前端服务（静态文件）
+  frontend:
+    build:
+      context: ..  # 项目根目录
+      dockerfile: deploy/frontend/Dockerfile
+    expose:
+      - "80"
+    restart: always
+    networks:
+      - leaf-network
+
+# 数据卷定义
+volumes:
+  leaf-db-data:
+    driver: local
+  leaf-output-data:
+    driver: local
+  leaf-logs:
+    driver: local
+  ssl-certs:
+    driver: local
+
+# 网络定义
+networks:
+  leaf-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
