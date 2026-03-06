@@ -1,0 +1,226 @@
+# ArcGIS Pro到QGIS迁移工具配置文件示例
+# 复制此文件为config.yaml并修改实际值
+
+# 数据库配置
+database:
+  source:
+    host: "source.db.example.com"
+    port: 5432
+    database: "source_gis"
+    username: "source_user"
+    # 密码建议通过环境变量设置
+    # password: ${PGPASSWORD_SOURCE}
+    ssl_mode: "prefer"
+    connect_timeout: 10
+  
+  target:
+    host: "target.db.example.com"
+    port: 5432
+    database: "target_gis"
+    username: "target_user"
+    # 密码建议通过环境变量设置
+    # password: ${PGPASSWORD_TARGET}
+    ssl_mode: "prefer"
+    connect_timeout: 10
+  
+  # 通用配置（如未设置源/目标特定配置，则使用此配置）
+  default:
+    host: "localhost"
+    port: 5432
+    database: "migration_db"
+    username: "migration_user"
+    # password: ${PGPASSWORD}
+    ssl_mode: "prefer"
+    connect_timeout: 10
+
+# 路径配置
+paths:
+  workspace: "/opt/migration_tool"
+  input: "/data/input"
+  output: "/data/output"
+  temp: "/tmp/migration"
+  logs: "/var/log/migration"
+  
+  # 允许的文件扩展名
+  allowed_extensions:
+    - ".aprx"
+    - ".shp"
+    - ".gdb"
+    - ".gpkg"
+    - ".xml"
+
+# 性能配置
+performance:
+  # 批量处理
+  batch_size: 10000
+  max_workers: 4
+  timeout_seconds: 3600
+  
+  # 内存限制（MB）
+  memory_limit_mb: 4096
+  
+  # 缓存配置
+  cache_enabled: true
+  cache_size_mb: 512
+  cache_ttl_seconds: 3600
+  
+  # 监控配置
+  monitor_enabled: true
+  monitor_interval_seconds: 5
+  alert_threshold_cpu: 80
+  alert_threshold_memory: 85
+  alert_threshold_disk: 90
+
+# 迁移策略
+migration:
+  # 默认迁移策略
+  default_strategy: "full_copy"
+  
+  # 策略映射
+  strategies:
+    small_table: "full_copy"
+    medium_table: "connection_update"
+    large_table: "logical_replication"
+  
+  # 阈值配置（行数）
+  thresholds:
+    small_table: 10000
+    medium_table: 100000
+    large_table: 1000000
+  
+  # 逻辑复制配置
+  logical_replication:
+    enabled: true
+    publication_prefix: "pub_migration_"
+    subscription_prefix: "sub_migration_"
+    slot_name_prefix: "slot_migration_"
+    max_sync_workers: 4
+    min_apply_delay_seconds: 0
+  
+  # 样式转换配置
+  style_conversion:
+    enabled: true
+    mapping_file: "style_mapping.json"
+    default_symbol_size: 2.0
+    color_matching_tolerance: 0.1
+
+# 验证配置
+validation:
+  # 验证级别
+  level: "standard"  # basic, standard, comprehensive
+  
+  # 验证容差
+  tolerance:
+    geometry: 0.001
+    attribute: 0.0
+    coordinate: 0.01
+  
+  # 采样配置
+  sampling:
+    enabled: true
+    sample_size: 10
+    random_seed: 42
+  
+  # 报告配置
+  reporting:
+    format: "html"  # html, json, text
+    include_details: true
+    save_to_file: true
+
+# 日志配置
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file:
+    enabled: true
+    path: "/var/log/migration_tool.log"
+    max_size_mb: 100
+    backup_count: 5
+  console:
+    enabled: true
+
+# 插件配置
+plugins:
+  enabled: true
+  directory: "./plugins"
+  auto_discover: true
+  load_on_startup: true
+  
+  # 插件白名单
+  whitelist:
+    - "data_converter"
+    - "style_converter"
+    - "validator"
+    - "optimizer"
+  
+  # 插件黑名单
+  blacklist: []
+
+# 安全配置
+security:
+  # 文件路径验证
+  validate_paths: true
+  allowed_paths:
+    - "/data/input"
+    - "/data/output"
+    - "/tmp/migration"
+  
+  # SQL注入防护
+  sql_injection_protection: true
+  
+  # 敏感信息屏蔽
+  mask_sensitive_data: true
+  
+  # SSL配置
+  ssl:
+    enabled: true
+    cert_path: "/path/to/cert.pem"
+    key_path: "/path/to/key.pem"
+    ca_path: "/path/to/ca.pem"
+
+# 监控和告警
+monitoring:
+  enabled: true
+  metrics:
+    - "cpu_usage"
+    - "memory_usage"
+    - "disk_usage"
+    - "network_io"
+    - "database_connections"
+  
+  alerts:
+    enabled: true
+    email:
+      enabled: false
+      smtp_server: "smtp.example.com"
+      smtp_port: 587
+      from_address: "monitor@example.com"
+      to_addresses:
+        - "admin@example.com"
+    slack:
+      enabled: false
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+  
+  dashboard:
+    enabled: false
+    port: 9090
+
+# 扩展配置
+extensions:
+  # Web API
+  api:
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+    auth_required: true
+    
+  # 任务队列
+  queue:
+    enabled: false
+    type: "redis"  # redis, rabbitmq, database
+    connection_string: "${QUEUE_CONNECTION_STRING}"
+    
+  # 存储后端
+  storage:
+    type: "local"  # local, s3, azure, gcs
+    connection_string: "${STORAGE_CONNECTION_STRING}"

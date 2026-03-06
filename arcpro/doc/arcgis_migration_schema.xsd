@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <!-- =========================================== -->
+  <!-- 根元素：迁移工程 -->
+  <!-- =========================================== -->
+  <xs:element name="MigrationProject">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="ProjectMetadata" type="ProjectMetadataType"/>
+        <xs:element name="MapList" type="MapListType" minOccurs="0"/>
+        <xs:element name="LayerDefinitions" type="LayerDefinitionsType" minOccurs="0"/>
+        <xs:element name="LayoutDefinitions" type="LayoutDefinitionsType" minOccurs="0"/>
+        <xs:element name="StyleLibrary" type="StyleLibraryType" minOccurs="0"/>
+        <xs:element name="ScriptInventory" type="ScriptInventoryType" minOccurs="0"/>
+        <xs:element name="PostgreSQLTaskStatus" type="PostgreSQLTaskStatusType" minOccurs="0"/>
+        <xs:element name="OriginalFolderStructure" type="FolderStructureType" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" fixed="1.0"/>
+      <xs:attribute name="sourceArcGISVersion" type="xs:string" use="required"/>
+      <xs:attribute name="targetQGISVersion" type="xs:string" use="optional" default="3.34"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- =========================================== -->
+  <!-- 工程元数据类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="ProjectMetadataType">
+    <xs:sequence>
+      <xs:element name="ProjectName" type="xs:string"/>
+      <xs:element name="ProjectVersion" type="xs:string" minOccurs="0"/>
+      <xs:element name="SaveTime" type="xs:dateTime"/>
+      <xs:element name="OriginalProjectPath" type="xs:string"/>
+      <xs:element name="MainFolder" type="xs:string"/>
+      <xs:element name="Author" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="CoordinateSystem" type="CoordinateSystemType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 地图列表类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="MapListType">
+    <xs:sequence>
+      <xs:element name="Map" type="MapType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="MapType">
+    <xs:sequence>
+      <xs:element name="MapName" type="xs:string"/>
+      <xs:element name="MapId" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="CoordinateSystem" type="CoordinateSystemType"/>
+      <xs:element name="MapExtent" type="ExtentType" minOccurs="0"/>
+      <xs:element name="LayerReferences">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="LayerRef" type="xs:string" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="MapProperties" type="MapPropertiesType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 图层定义类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="LayerDefinitionsType">
+    <xs:sequence>
+      <xs:element name="Layer" type="LayerType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayerType">
+    <xs:sequence>
+      <xs:element name="LayerId" type="xs:string"/>
+      <xs:element name="LayerName" type="xs:string"/>
+      <xs:element name="DataSource" type="DataSourceType"/>
+      <xs:element name="CoordinateSystem" type="CoordinateSystemType"/>
+      <xs:element name="FieldDefinitions" type="FieldDefinitionsType"/>
+      <xs:element name="DefinitionQuery" type="xs:string" minOccurs="0"/>
+      <xs:element name="Labeling" type="LabelingType" minOccurs="0"/>
+      <xs:element name="Symbology" type="SymbologyType" minOccurs="0"/>
+      <xs:element name="Transparency" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Visibility" type="xs:boolean" default="true"/>
+      <xs:element name="DataSampling" type="DataSamplingType" minOccurs="0"/>
+      <xs:element name="LayerProperties" type="LayerPropertiesType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="type" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="FeatureLayer"/>
+          <xs:enumeration value="RasterLayer"/>
+          <xs:enumeration value="Table"/>
+          <xs:enumeration value="GroupLayer"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 数据源类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="DataSourceType">
+    <xs:sequence>
+      <xs:element name="DataSourceType" type="DataSourceTypeEnum"/>
+      <xs:element name="ConnectionString" type="xs:string" minOccurs="0"/>
+      <xs:element name="FilePath" type="xs:string" minOccurs="0"/>
+      <xs:element name="DatabaseInfo" type="DatabaseInfoType" minOccurs="0"/>
+      <xs:element name="ServiceUrl" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="DataSourceTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Shapefile"/>
+      <xs:enumeration value="FileGeodatabase"/>
+      <xs:enumeration value="EnterpriseGeodatabase"/>
+      <xs:enumeration value="PostgreSQL"/>
+      <xs:enumeration value="GeoPackage"/>
+      <xs:enumeration value="Raster"/>
+      <xs:enumeration value="WebService"/>
+      <xs:enumeration value="Other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- =========================================== -->
+  <!-- 数据库信息类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="DatabaseInfoType">
+    <xs:sequence>
+      <xs:element name="Server" type="xs:string"/>
+      <xs:element name="Port" type="xs:integer" minOccurs="0"/>
+      <xs:element name="DatabaseName" type="xs:string"/>
+      <xs:element name="Schema" type="xs:string"/>
+      <xs:element name="TableName" type="xs:string"/>
+      <xs:element name="UserName" type="xs:string" minOccurs="0"/>
+      <xs:element name="AuthenticationType" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 坐标系类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="CoordinateSystemType">
+    <xs:sequence>
+      <xs:element name="WKT" type="xs:string" minOccurs="0"/>
+      <xs:element name="ProjString" type="xs:string" minOccurs="0"/>
+      <xs:element name="EPSG" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Name" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 范围类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="ExtentType">
+    <xs:sequence>
+      <xs:element name="XMin" type="xs:double"/>
+      <xs:element name="YMin" type="xs:double"/>
+      <xs:element name="XMax" type="xs:double"/>
+      <xs:element name="YMax" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 字段定义类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="FieldDefinitionsType">
+    <xs:sequence>
+      <xs:element name="Field" type="FieldType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FieldType">
+    <xs:sequence>
+      <xs:element name="FieldName" type="xs:string"/>
+      <xs:element name="FieldType" type="FieldTypeEnum"/>
+      <xs:element name="FieldLength" type="xs:integer" minOccurs="0"/>
+      <xs:element name="FieldPrecision" type="xs:integer" minOccurs="0"/>
+      <xs:element name="FieldScale" type="xs:integer" minOccurs="0"/>
+      <xs:element name="IsNullable" type="xs:boolean" default="true"/>
+      <xs:element name="DefaultValue" type="xs:string" minOccurs="0"/>
+      <xs:element name="Alias" type="xs:string" minOccurs="0"/>
+      <xs:element name="Domain" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="FieldTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="String"/>
+      <xs:enumeration value="Integer"/>
+      <xs:enumeration value="SmallInteger"/>
+      <xs:enumeration value="Double"/>
+      <xs:enumeration value="Single"/>
+      <xs:enumeration value="Date"/>
+      <xs:enumeration value="Geometry"/>
+      <xs:enumeration value="Blob"/>
+      <xs:enumeration value="Raster"/>
+      <xs:enumeration value="Guid"/>
+      <xs:enumeration value="GlobalID"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- =========================================== -->
+  <!-- 标注类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="LabelingType">
+    <xs:sequence>
+      <xs:element name="IsLabelingEnabled" type="xs:boolean"/>
+      <xs:element name="LabelExpression" type="xs:string" minOccurs="0"/>
+      <xs:element name="LabelPlacement" type="xs:string" minOccurs="0"/>
+      <xs:element name="LabelStyle" type="xs:string" minOccurs="0"/>
+      <xs:element name="LabelFont" type="FontType" minOccurs="0"/>
+      <xs:element name="LabelSize" type="xs:double" minOccurs="0"/>
+      <xs:element name="LabelColor" type="ColorType" minOccurs="0"/>
+      <xs:element name="LabelHalo" type="HaloType" minOccurs="0"/>
+      <xs:element name="LabelProperties" type="xs:anyType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 符号系统类型（CIM JSON） -->
+  <!-- =========================================== -->
+  <xs:complexType name="SymbologyType">
+    <xs:sequence>
+      <xs:element name="RendererType" type="xs:string"/>
+      <xs:element name="CIMJson" type="xs:string"/>
+      <xs:element name="SymbologyVersion" type="xs:string" minOccurs="0"/>
+      <xs:element name="LegendInfo" type="LegendInfoType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LegendInfoType">
+    <xs:sequence>
+      <xs:element name="LegendItem" type="LegendItemType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LegendItemType">
+    <xs:sequence>
+      <xs:element name="Label" type="xs:string"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="SymbolPreview" type="xs:base64Binary" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 数据采样类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="DataSamplingType">
+    <xs:sequence>
+      <xs:element name="TotalFeatureCount" type="xs:integer"/>
+      <xs:element name="SampleSize" type="xs:integer"/>
+      <xs:element name="SampledFeatures">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Feature" type="FeatureSampleType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FeatureSampleType">
+    <xs:sequence>
+      <xs:element name="FeatureId" type="xs:string"/>
+      <xs:element name="Attributes">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Attribute" type="AttributeType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="Geometry" type="GeometryType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AttributeType">
+    <xs:sequence>
+      <xs:element name="FieldName" type="xs:string"/>
+      <xs:element name="Value" type="xs:string"/>
+      <xs:element name="IsNull" type="xs:boolean" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="GeometryType">
+    <xs:sequence>
+      <xs:element name="WKT" type="xs:string" minOccurs="0"/>
+      <xs:element name="WKB" type="xs:base64Binary" minOccurs="0"/>
+      <xs:element name="GeometryType" type="xs:string"/>
+      <xs:element name="Extent" type="ExtentType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 布局定义类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="LayoutDefinitionsType">
+    <xs:sequence>
+      <xs:element name="Layout" type="LayoutType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayoutType">
+    <xs:sequence>
+      <xs:element name="LayoutName" type="xs:string"/>
+      <xs:element name="LayoutId" type="xs:string" minOccurs="0"/>
+      <xs:element name="PageSetup" type="PageSetupType"/>
+      <xs:element name="LayoutElements" type="LayoutElementsType"/>
+      <xs:element name="Grids" type="GridsType" minOccurs="0"/>
+      <xs:element name="Reports" type="ReportsType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="PageSetupType">
+    <xs:sequence>
+      <xs:element name="PageWidth" type="xs:double"/>
+      <xs:element name="PageHeight" type="xs:double"/>
+      <xs:element name="Units" type="xs:string"/>
+      <xs:element name="Orientation" type="xs:string"/>
+      <xs:element name="MarginLeft" type="xs:double" minOccurs="0"/>
+      <xs:element name="MarginRight" type="xs:double" minOccurs="0"/>
+      <xs:element name="MarginTop" type="xs:double" minOccurs="0"/>
+      <xs:element name="MarginBottom" type="xs:double" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayoutElementsType">
+    <xs:sequence>
+      <xs:element name="Element" type="LayoutElementType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayoutElementType">
+    <xs:sequence>
+      <xs:element name="ElementType" type="LayoutElementTypeEnum"/>
+      <xs:element name="ElementId" type="xs:string"/>
+      <xs:element name="Position" type="PositionType"/>
+      <xs:element name="Size" type="SizeType"/>
+      <xs:element name="Rotation" type="xs:double" minOccurs="0"/>
+      <xs:element name="ZOrder" type="xs:integer" minOccurs="0"/>
+      <xs:element name="Properties" type="LayoutElementPropertiesType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="LayoutElementTypeEnum">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="MapFrame"/>
+      <xs:enumeration value="Legend"/>
+      <xs:enumeration value="ScaleBar"/>
+      <xs:enumeration value="NorthArrow"/>
+      <xs:enumeration value="Text"/>
+      <xs:enumeration value="Picture"/>
+      <xs:enumeration value="Table"/>
+      <xs:enumeration value="Chart"/>
+      <xs:enumeration value="DynamicText"/>
+      <xs:enumeration value="Shape"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="PositionType">
+    <xs:sequence>
+      <xs:element name="X" type="xs:double"/>
+      <xs:element name="Y" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SizeType">
+    <xs:sequence>
+      <xs:element name="Width" type="xs:double"/>
+      <xs:element name="Height" type="xs:double"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayoutElementPropertiesType">
+    <xs:sequence>
+      <xs:element name="Font" type="FontType" minOccurs="0"/>
+      <xs:element name="Border" type="BorderType" minOccurs="0"/>
+      <xs:element name="Background" type="BackgroundType" minOccurs="0"/>
+      <xs:element name="DynamicTextExpression" type="xs:string" minOccurs="0"/>
+      <xs:element name="MapFrameProperties" type="MapFramePropertiesType" minOccurs="0"/>
+      <xs:element name="LegendProperties" type="LegendPropertiesType" minOccurs="0"/>
+      <xs:element name="ScaleBarProperties" type="ScaleBarPropertiesType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 格网类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="GridsType">
+    <xs:sequence>
+      <xs:element name="Grid" type="GridType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="GridType">
+    <xs:sequence>
+      <xs:element name="GridType" type="xs:string"/>
+      <xs:element name="Interval" type="xs:double"/>
+      <xs:element name="LabelFormat" type="xs:string" minOccurs="0"/>
+      <xs:element name="LineStyle" type="LineStyleType" minOccurs="0"/>
+      <xs:element name="LabelFont" type="FontType" minOccurs="0"/>
+      <xs:element name="LabelPosition" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 样式库类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="StyleLibraryType">
+    <xs:sequence>
+      <xs:element name="StyleItems" type="StyleItemsType"/>
+      <xs:element name="QGISStyleXML" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="sourceStylxFile" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="StyleItemsType">
+    <xs:sequence>
+      <xs:element name="StyleItem" type="StyleItemType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StyleItemType">
+    <xs:sequence>
+      <xs:element name="ItemName" type="xs:string"/>
+      <xs:element name="ItemType" type="xs:string"/>
+      <xs:element name="Category" type="xs:string" minOccurs="0"/>
+      <xs:element name="Tags" type="xs:string" minOccurs="0"/>
+      <xs:element name="ArcGISSymbolJSON" type="xs:string" minOccurs="0"/>
+      <xs:element name="QGISSymbolXML" type="xs:string" minOccurs="0"/>
+      <xs:element name="PreviewImage" type="xs:base64Binary" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 脚本清单类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="ScriptInventoryType">
+    <xs:sequence>
+      <xs:element name="Script" type="ScriptType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ScriptType">
+    <xs:sequence>
+      <xs:element name="ScriptName" type="xs:string"/>
+      <xs:element name="ToolboxName" type="xs:string" minOccurs="0"/>
+      <xs:element name="ScriptType" type="xs:string"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+      <xs:element name="InputParameters">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Parameter" type="ParameterType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="CoreLogic" type="xs:string" minOccurs="0"/>
+      <xs:element name="ScriptPath" type="xs:string" minOccurs="0"/>
+      <xs:element name="MigrationStatus" type="xs:string" minOccurs="0"/>
+      <xs:element name="TodoNotes" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ParameterType">
+    <xs:sequence>
+      <xs:element name="ParamName" type="xs:string"/>
+      <xs:element name="ParamType" type="xs:string"/>
+      <xs:element name="Required" type="xs:boolean"/>
+      <xs:element name="DefaultValue" type="xs:string" minOccurs="0"/>
+      <xs:element name="Description" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- PostgreSQL任务状态类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="PostgreSQLTaskStatusType">
+    <xs:sequence>
+      <xs:element name="TableTask" type="TableTaskType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TableTaskType">
+    <xs:sequence>
+      <xs:element name="SchemaName" type="xs:string"/>
+      <xs:element name="TableName" type="xs:string"/>
+      <xs:element name="MigrationStrategy" type="MigrationStrategyType"/>
+      <xs:element name="TaskStatus" type="TaskStatusType"/>
+      <xs:element name="EstimatedSize" type="xs:double" minOccurs="0"/>
+      <xs:element name="StartTime" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="EndTime" type="xs:dateTime" minOccurs="0"/>
+      <xs:element name="ErrorInfo" type="ErrorInfoType" minOccurs="0"/>
+      <xs:element name="RetryCount" type="xs:integer" minOccurs="0"/>
+      <xs:element name="LogicalReplicationConfig" type="LogicalReplicationConfigType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="MigrationStrategyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="FullCopy"/>
+      <xs:enumeration value="ConnectionStringUpdate"/>
+      <xs:enumeration value="LogicalReplication"/>
+      <xs:enumeration value="GeoPackageExport"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TaskStatusType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="pending"/>
+      <xs:enumeration value="running"/>
+      <xs:enumeration value="completed"/>
+      <xs:enumeration value="failed"/>
+      <xs:enumeration value="cancelled"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="LogicalReplicationConfigType">
+    <xs:sequence>
+      <xs:element name="PublicationName" type="xs:string"/>
+      <xs:element name="SubscriptionName" type="xs:string" minOccurs="0"/>
+      <xs:element name="FilterCondition" type="xs:string" minOccurs="0"/>
+      <xs:element name="ReplicationSlot" type="xs:string" minOccurs="0"/>
+      <xs:element name="InitialSyncMethod" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 文件夹结构类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="FolderStructureType">
+    <xs:sequence>
+      <xs:element name="RootPath" type="xs:string"/>
+      <xs:element name="Folders">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Folder" type="FolderType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FolderType">
+    <xs:sequence>
+      <xs:element name="FolderPath" type="xs:string"/>
+      <xs:element name="RelativePath" type="xs:string"/>
+      <xs:element name="Files" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="File" type="FileType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="Subfolders" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="Folder" type="FolderType" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FileType">
+    <xs:sequence>
+      <xs:element name="FileName" type="xs:string"/>
+      <xs:element name="FileSize" type="xs:integer" minOccurs="0"/>
+      <xs:element name="FileType" type="xs:string" minOccurs="0"/>
+      <xs:element name="LastModified" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- =========================================== -->
+  <!-- 通用类型 -->
+  <!-- =========================================== -->
+  <xs:complexType name="ColorType">
+    <xs:sequence>
+      <xs:element name="Red" type="xs:integer"/>
+      <xs:element name="Green" type="xs:integer"/>
+      <xs:element name="Blue" type="xs:integer"/>
+      <xs:element name="Alpha" type="xs:integer" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FontType">
+    <xs:sequence>
+      <xs:element name="FontFamily" type="xs:string"/>
+      <xs:element name="FontSize" type="xs:double"/>
+      <xs:element name="FontStyle" type="xs:string" minOccurs="0"/>
+      <xs:element name="FontWeight" type="xs:string" minOccurs="0"/>
+      <xs:element name="FontColor" type="ColorType" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="BorderType">
+    <xs:sequence>
+      <xs:element name="BorderWidth" type="xs:double"/>
+      <xs:element name="BorderColor" type="ColorType"/>
+      <xs:element name="BorderStyle" type="xs:string"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="BackgroundType">
+    <xs:sequence>
+      <xs:element name="BackgroundColor" type="ColorType" minOccurs="0"/>
+      <xs:element name="BackgroundImage" type="xs:string" minOccurs="0"/>
+      <xs:element name="Opacity" type="xs:double" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="HaloType">
+    <xs:sequence>
+      <xs:element name="HaloSize" type="xs:double"/>
+      <xs:element name="HaloColor" type="ColorType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LineStyleType">
+    <xs:sequence>
+      <xs:element name="LineType" type="xs:string"/>
+      <xs:element name="DashPattern" type="xs:string" minOccurs="0"/>
+      <xs:element name="LineWidth" type="xs:double"/>
+      <xs:element name="LineColor" type="ColorType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="MapPropertiesType">
+    <xs:sequence>
+      <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayerPropertiesType">
+    <xs:sequence>
+      <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="MapFramePropertiesType">
+    <xs:sequence>
+      <xs:element name="MapName" type="xs:string" minOccurs="0"/>
+      <xs:element name="Extent" type="ExtentType" minOccurs="0"/>
+      <xs:element name="Scale" type="xs:double" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LegendPropertiesType">
+    <xs:sequence>
+      <xs:element name="Title" type="xs:string" minOccurs="0"/>
+      <xs:element name="TitleFont" type="FontType" minOccurs="0"/>
+      <xs:element name="ColumnCount" type="xs:integer" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ScaleBarPropertiesType">
+    <xs:sequence>
+      <xs:element name="Units" type="xs:string"/>
+      <xs:element name="DivisionValue" type="xs:double"/>
+      <xs:element name="NumberOfDivisions" type="xs:integer"/>
+      <xs:element name="Style" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ReportsType">
+    <xs:sequence>
+      <xs:element name="Report" type="ReportType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ReportType">
+    <xs:sequence>
+      <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ErrorInfoType">
+    <xs:sequence>
+      <xs:element name="ErrorCode" type="xs:string" minOccurs="0"/>
+      <xs:element name="ErrorMessage" type="xs:string"/>
+      <xs:element name="ErrorTime" type="xs:dateTime"/>
+      <xs:element name="StackTrace" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

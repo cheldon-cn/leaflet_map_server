@@ -1,0 +1,82 @@
+# Docker Compose配置用于迁移工具和PostgreSQL数据库
+version: '3.8'
+
+services:
+  migration-tool:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: arcpro-migration-tool
+    environment:
+      # 数据库配置
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: migration_db
+      PGUSER: migration_user
+      PGPASSWORD: ${PGPASSWORD:-changeme}
+      
+      # 应用配置
+      WORK_DIR: /app
+      INPUT_DIR: /data/input
+      OUTPUT_DIR: /data/output
+      TEMP_DIR: /data/temp
+      
+      # 性能配置
+      BATCH_SIZE: 10000
+      MAX_WORKERS: 4
+      TIMEOUT_SECONDS: 3600
+    volumes:
+      - ../script:/app/script:ro
+      - ../arcgis_migration_schema.xsd:/app/arcgis_migration_schema.xsd:ro
+      - ../data/input:/data/input:rw
+      - ../data/output:/data/output:rw
+      - ../data/temp:/data/temp:rw
+    depends_on:
+      - postgres
+    networks:
+      - migration-network
+    command: ["python", "script/migration_tool.py", "--help"]
+
+  postgres:
+    image: postgis/postgis:14-3.3
+    container_name: arcpro-postgres
+    environment:
+      POSTGRES_DB: migration_db
+      POSTGRES_USER: migration_user
+      POSTGRES_PASSWORD: ${PGPASSWORD:-changeme}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../init-db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U migration_user -d migration_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 可选：pgAdmin管理界面
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: arcpro-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - migration-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+
+networks:
+  migration-network:
+    driver: bridge

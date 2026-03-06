@@ -1,0 +1,11 @@
+# 基于主后端镜像
+FROM backend AS worker
+
+# 安装额外的依赖（如果需要）
+# RUN pip install --no-cache-dir <additional-packages>
+
+# 切换到工作目录
+WORKDIR /app
+
+# 启动工作器
+CMD ["python", "-m", "app.workers.migration_worker"]

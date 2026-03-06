@@ -1,0 +1,197 @@
+ #version: '3.8'
+
+services:
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 后端API服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # 数据库配置
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/migration_db
+      DATABASE_POOL_SIZE: 20
+      DATABASE_MAX_OVERFLOW: 40
+      
+      # Redis配置
+      REDIS_URL: redis://redis:6379/0
+      REDIS_POOL_SIZE: 20
+      
+      # MinIO配置
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SECURE: "false"
+      MINIO_BUCKET: migration-files
+      
+      # JWT配置
+      SECRET_KEY: your-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      
+      # 应用配置
+      API_V1_STR: /api/v1
+      PROJECT_NAME: ArcGIS Pro迁移工具
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000", "http://localhost:8000"]'
+      DEBUG: "false"
+      ENVIRONMENT: production
+      
+      # 文件上传配置
+      MAX_UPLOAD_SIZE: 104857600
+      ALLOWED_EXTENSIONS: '["aprx", "zip", "qgs", "gpkg"]'
+      UPLOAD_DIR: ./uploads
+      
+      # 迁移工具配置
+      MIGRATION_SCRIPT_PATH: /app/script
+      MIGRATION_TIMEOUT: 3600
+      MIGRATION_WORKERS: 4
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+      - ../../script:/app/script:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 数据库
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    environment:
+      POSTGRES_DB: migration_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d migration_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis缓存和消息队列
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 对象存储
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - migration-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 迁移工作器
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/migration_db
+      REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app
+      # 迁移工具配置
+      MIGRATION_SCRIPT_PATH: /app/script
+      MIGRATION_TIMEOUT: 3600
+      MIGRATION_WORKERS: 4
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ../../script:/app/script:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - migration-network
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.migration_worker"]
+
+  # Nginx反向代理（可选，用于生产部署）
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #     - ./frontend/dist:/usr/share/nginx/html:ro
+  #   depends_on:
+  #     - frontend
+  #     - backend
+  #   networks:
+  #     - migration-network
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+
+networks:
+  migration-network:
+    driver: bridge

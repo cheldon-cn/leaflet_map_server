@@ -1,0 +1,7 @@
+{
+  "sandbox": {
+    "enabled": true,                     // 1. 启用沙箱
+    "autoAllowBashIfSandboxed": true,    // 2. 开启沙箱内命令自动批准
+    "excludedCommands": ["git", "docker"] // 3. （可选）将高风险命令排除在外
+  }
+}
