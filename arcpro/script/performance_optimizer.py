@@ -240,6 +240,9 @@ class PerformanceMonitor:
                 'memory_percent': max(memory_values) if memory_values else 0
             }
         }
+    def get_metrics_history(self):
+        """获取历史记录"""
+        return self.metrics_history
     
     def reset(self):
         """重置监控数据"""

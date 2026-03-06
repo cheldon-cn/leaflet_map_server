@@ -108,7 +108,7 @@ class MigrationProject:
 - 生成HTML格式的迁移报告
 
 ### 4.3 测试验证
-- 创建了完整的测试脚本 (`test_first_phase_fixed.py`)
+- 创建了完整的测试套件（`script/tests/`目录，包含11个测试文件）
 - 修复了Unicode编码问题和类型注解兼容性问题
 - 验证了所有模块的集成功能
 
@@ -136,22 +136,58 @@ class MigrationProject:
 
 ```
 e:/pro/search/arcpro/
-├── 架构设计文档/
-│   ├── migration_system_architecture.md        # 版本2.0
-│   ├── architecture_review_and_improvements.md # 审查报告
-│   └── migration_system_architecture_new.md    # 版本3.0（整合版）
-├── 规范文档/
-│   ├── requirements.md                         # 需求规格
-│   ├── arcgis_pro_migration_specification.md   # 详细规格
+├── doc/                                        # 项目文档
+│   ├── migration_system_architecture.md        # 架构设计文档
+│   ├── migration_system_architecture_new.md    # 架构设计整合版
+│   ├── architecture_review_and_improvements.md # 架构审查报告
+│   ├── requirements.md                         # 需求规格说明书
+│   ├── arcgis_pro_migration_specification.md   # 详细规格说明书
+│   ├── arcgis_pro_migration_design.md         # 详细设计文档
+│   ├── code_review_summary.md                 # 代码审查报告
+│   ├── test_optimization_and_fixes.md         # 测试优化总结
+│   ├── implementation_process_summary.md      # 实现过程总结
+│   ├── conversation_summary.md                # 对话摘要
 │   └── arcgis_migration_schema.xsd            # XML Schema定义
-└── script/                                     # 第一阶段实现
-    ├── data_models.py                         # 核心数据模型
-    ├── enhanced_aprx_parser.py                # 增强解析器
-    ├── migration_xml_generator.py             # XML生成器
-    ├── local_data_converter.py                # 数据转换器
-    ├── migration_tool.py                      # 主程序
-    ├── README_FIRST_PHASE.md                  # 第一阶段说明
-    └── test_first_phase_fixed.py              # 测试脚本
+├── script/                                     # 核心迁移工具代码
+│   ├── data_models.py                         # 核心数据模型
+│   ├── enhanced_aprx_parser.py                # 增强解析器
+│   ├── migration_xml_generator.py             # XML生成器
+│   ├── migration_tool.py                      # 主程序入口
+│   ├── postgresql_migrator.py                 # PostgreSQL迁移引擎
+│   ├── style_converter.py                     # 样式转换器
+│   ├── local_data_converter.py                # 本地数据转换器
+│   ├── performance_optimizer.py               # 性能优化器
+│   ├── validation_system.py                   # 验证系统
+│   ├── compatibility_checker.py               # 兼容性检查器
+│   ├── plugin_system.py                       # 插件系统
+│   ├── benchmark.py                           # 性能基准测试
+│   ├── tests/                                 # 测试文件
+│   └── utils/                                 # 工具模块
+├── deploy/                                     # 部署与集成文件
+│   ├── requirements.txt                       # Python依赖列表
+│   ├── Dockerfile                             # Docker容器构建
+│   ├── docker-compose.yml                     # Docker Compose配置
+│   ├── .env.example                           # 环境变量示例
+│   ├── config.yaml.example                    # 配置文件示例
+│   ├── run_migration.bat                      # Windows启动脚本
+│   ├── run_migration.sh                       # Linux/Mac启动脚本
+│   ├── deploy_test.py                         # 部署测试脚本
+│   ├── deploy_intergrate_steps_summary.md     # 部署集成步骤总结
+│   ├── docker_compose_deployment_issues.md    # Docker部署问题记录
+│   ├── integration_example.py                 # 集成示例代码
+│   └── user_manual.md                         # 用户操作手册
+├── web/                                       # Web管理界面
+│   ├── backend/                               # FastAPI后端
+│   ├── frontend/                              # React前端
+│   ├── docker-compose.yml                     # Web服务编排
+│   └── README.md                              # Web界面说明
+├── data/                                      # 数据目录
+│   ├── input/                                 # 输入数据
+│   ├── output/                                # 输出数据
+│   └── temp/                                  # 临时数据
+├── migration_output/                          # 迁移输出结果
+└── .codebuddy/                                # Codebuddy工具配置
+    └── agents/                                # AI代理配置
 ```
 
 ## 7. 关键设计决策

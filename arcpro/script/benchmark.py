@@ -475,7 +475,7 @@ def main():
         meets_target = full_migration_test.metrics.get("within_target", False)
         
         print(f"\n完整迁移时间: {actual_time:.2f}秒")
-        print(f"30秒目标: {'✅ 达成' if meets_target else '❌ 未达成'}")
+        print(f"30秒目标: {'[OK] 达成' if meets_target else '[FAIL] 未达成'}")
     
     print("\n详细报告请查看JSON文件。")
 
