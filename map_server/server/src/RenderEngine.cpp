@@ -34,6 +34,15 @@ std::string MapRequest::GenerateCacheKey() const {
 // RenderEngine实现
 RenderEngine::RenderEngine(const ServerConfig& config)
     : m_config(config) {
+
+    // 初始化缓存管理器
+    if (config.m_nMemoryCacheMaxItems > 0) {
+        m_pCacheManager = std::make_unique<CacheManager>(
+            config.m_nMemoryCacheMaxItems,
+            config.m_nCacheTTLSeconds
+        );
+    }
+
     if (!Initialize()) {
         SetError("Failed to initialize RenderEngine");
     }
@@ -50,22 +59,31 @@ RenderEngine::RenderEngine(RenderEngine&& other) noexcept
     , m_strError(std::move(other.m_strError))
     , m_strOutputDir(std::move(other.m_strOutputDir))
     , m_bInitialized(other.m_bInitialized)
-    , m_colorCache(std::move(other.m_colorCache)) {
+    , m_pCacheManager(std::move(other.m_pCacheManager)) {
+    // 互斥锁不可移动，需要复制颜色缓存数据
+    std::lock_guard<std::shared_mutex> lock(other.m_colorCacheMutex);
+    m_colorCache = std::move(other.m_colorCache);
     other.m_bInitialized = false;
 }
 
 RenderEngine& RenderEngine::operator=(RenderEngine&& other) noexcept {
     if (this != &other) {
         Cleanup();
-        
+
         m_config = other.m_config;
    //     m_pDrawFacade = std::move(other.m_pDrawFacade);
         m_pRasterDevice = std::move(other.m_pRasterDevice);
         m_strError = std::move(other.m_strError);
         m_strOutputDir = std::move(other.m_strOutputDir);
         m_bInitialized = other.m_bInitialized;
+        m_pCacheManager = std::move(other.m_pCacheManager);
+
+        // 互斥锁不可移动，需要复制颜色缓存数据
+        std::lock(m_colorCacheMutex, other.m_colorCacheMutex);
+        std::lock_guard<std::shared_mutex> lock1(m_colorCacheMutex, std::adopt_lock);
+        std::lock_guard<std::shared_mutex> lock2(other.m_colorCacheMutex, std::adopt_lock);
         m_colorCache = std::move(other.m_colorCache);
-        
+
         other.m_bInitialized = false;
     }
     return *this;
@@ -110,9 +128,20 @@ void RenderEngine::SetError(const std::string& strError) {
 
 void RenderEngine::SetOutputDir(const std::string& strDir) {
     m_strOutputDir = strDir;
-    // 确保目录存在
-    std::string cmd = "mkdir -p \"" + m_strOutputDir + "\"";
-    system(cmd.c_str());
+    // 确保目录存在 - 使用跨平台方式，避免命令注入
+    #ifdef _WIN32
+        #include <direct.h>
+        #include <errno.h>
+        if (_mkdir(m_strOutputDir.c_str()) != 0 && errno != EEXIST) {
+            std::cerr << "Failed to create output directory: " << m_strOutputDir << std::endl;
+        }
+    #else
+        #include <sys/stat.h>
+        #include <sys/types.h>
+        if (mkdir(m_strOutputDir.c_str(), 0755) != 0 && errno != EEXIST) {
+            std::cerr << "Failed to create output directory: " << m_strOutputDir << std::endl;
+        }
+    #endif
 }
 
 bool RenderEngine::CreateBlankImage(int nWidth, int nHeight, const std::string& strBgColor,
@@ -313,26 +342,32 @@ bool RenderEngine::RenderMap(const MapRequest& request, std::vector<uint8_t>& ve
         SetError("RenderEngine not initialized");
         return false;
     }
-    
+
     if (!request.m_bbox.IsValid()) {
         SetError("Invalid bounding box");
         return false;
     }
-    
+
     if (request.m_nWidth <= 0 || request.m_nHeight <= 0 ||
-        request.m_nWidth > m_config.m_nMaxImageWidth || 
+        request.m_nWidth > m_config.m_nMaxImageWidth ||
         request.m_nHeight > m_config.m_nMaxImageHeight) {
         SetError("Invalid image dimensions");
         return false;
     }
-    
+
+    // 尝试从缓存获取
+    std::string strCacheKey = request.GenerateCacheKey();
+    if (m_pCacheManager && m_pCacheManager->Get(strCacheKey, vecPngData)) {
+        return true;
+    }
+
     // 创建空白图像
     std::vector<uint8_t> vecImageData;
-    if (!CreateBlankImage(request.m_nWidth, request.m_nHeight, 
+    if (!CreateBlankImage(request.m_nWidth, request.m_nHeight,
                          request.m_strBackgroundColor, vecImageData)) {
         return false;
     }
-    
+
     // 如果没有指定图层，使用默认图层
     if (request.m_vecLayers.empty()) {
         // 绘制示例要素
@@ -367,13 +402,18 @@ bool RenderEngine::RenderMap(const MapRequest& request, std::vector<uint8_t>& ve
     }
     
     // 编码为PNG
-    if (!PngEncoder::EncodeToMemory(vecImageData.data(), 
+    if (!PngEncoder::EncodeToMemory(vecImageData.data(),
                                     request.m_nWidth, request.m_nHeight,
                                     vecPngData)) {
         SetError("Failed to encode PNG: " + PngEncoder().GetError());
         return false;
     }
-    
+
+    // 存入缓存
+    if (m_pCacheManager) {
+        m_pCacheManager->Put(strCacheKey, vecPngData);
+    }
+
     return true;
 }
 

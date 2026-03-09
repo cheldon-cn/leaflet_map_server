@@ -178,16 +178,15 @@ bool PngEncoder::EncodeRGBA(const uint8_t* pData, int nWidth, int nHeight,
     // 写入头信息
     png_write_info(static_cast<png_structp>(m_pPngStruct), static_cast<png_infop>(m_pPngInfo));
     
-    // 写入行数据
-    png_bytep* pRowPointers = new png_bytep[nHeight];
+    // 写入行数据 - 使用智能指针防止内存泄漏
+    std::vector<png_bytep> rowPointers(nHeight);
     for (int y = 0; y < nHeight; ++y) {
-        pRowPointers[y] = const_cast<png_bytep>(pData + y * nWidth * 4);
+        rowPointers[y] = const_cast<png_bytep>(pData + y * nWidth * 4);
     }
-    
-    png_write_image(static_cast<png_structp>(m_pPngStruct), pRowPointers);
+
+    png_write_image(static_cast<png_structp>(m_pPngStruct), rowPointers.data());
     png_write_end(static_cast<png_structp>(m_pPngStruct), nullptr);
-    
-    delete[] pRowPointers;
+
     return true;
 #else
     (void)pData;
@@ -243,16 +242,15 @@ bool PngEncoder::SaveRGBA(const uint8_t* pData, int nWidth, int nHeight,
     // 写入头信息
     png_write_info(static_cast<png_structp>(m_pPngStruct), static_cast<png_infop>(m_pPngInfo));
     
-    // 写入行数据
-    png_bytep* pRowPointers = new png_bytep[nHeight];
+    // 写入行数据 - 使用智能指针防止内存泄漏
+    std::vector<png_bytep> rowPointers(nHeight);
     for (int y = 0; y < nHeight; ++y) {
-        pRowPointers[y] = const_cast<png_bytep>(pData + y * nWidth * 4);
+        rowPointers[y] = const_cast<png_bytep>(pData + y * nWidth * 4);
     }
-    
-    png_write_image(static_cast<png_structp>(m_pPngStruct), pRowPointers);
+
+    png_write_image(static_cast<png_structp>(m_pPngStruct), rowPointers.data());
     png_write_end(static_cast<png_structp>(m_pPngStruct), nullptr);
-    
-    delete[] pRowPointers;
+
     fclose(pFile);
     return true;
 #else

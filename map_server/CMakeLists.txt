@@ -66,6 +66,8 @@ set(SERVER_SOURCES
     server/src/PngEncoder.cpp
     server/src/RenderEngine.cpp
     server/src/HttpServer.cpp
+    server/src/Logger.cpp
+    server/src/CacheManager.cpp
     server/src/main.cpp
 )
 

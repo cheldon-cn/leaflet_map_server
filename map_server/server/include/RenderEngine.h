@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Config.h"
+#include "CacheManager.h"
 #include <vector>
 #include <cstdint>
 #include <string>
 #include <memory>
 #include <map>
+#include <shared_mutex>
 
 // 前向声明现有绘图类
 namespace cycle {
@@ -93,7 +95,10 @@ public:
     
     // 获取当前输出目录
     const std::string& GetOutputDir() const { return m_strOutputDir; }
-    
+
+    // 获取缓存管理器
+    CacheManager* GetCacheManager() const { return m_pCacheManager.get(); }
+
 private:
     // 初始化绘图设施
     bool Initialize();
@@ -127,8 +132,12 @@ private:
     std::string m_strError;
     std::string m_strOutputDir = "./leaf/output";
     bool m_bInitialized = false;
-    
-    // 简单颜色解析缓存
+
+    // 缓存管理器
+    std::unique_ptr<CacheManager> m_pCacheManager;
+
+    // 简单颜色解析缓存 - 添加线程安全
+    mutable std::shared_mutex m_colorCacheMutex;
     mutable std::map<std::string, std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>> m_colorCache;
 };
 

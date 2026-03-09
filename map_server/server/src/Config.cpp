@@ -70,30 +70,80 @@ bool LoadConfigFromFile(const std::string& strFilePath, ServerConfig& config) {
     }
     
     std::string line;
-    while (std::getline(file, line)) {
-        size_t pos = line.find('=');
-        if (pos != std::string::npos) {
-            std::string key = line.substr(0, pos);
-            std::string value = line.substr(pos + 1);
-            
-            if (key == "host") config.m_strHost = value;
-            else if (key == "port") config.m_nPort = std::stoi(value);
-            else if (key == "worker_threads") config.m_nWorkerThreads = std::stoul(value);
-            else if (key == "max_request_size") config.m_nMaxRequestSize = std::stoul(value);
-            else if (key == "timeout_seconds") config.m_nTimeoutSeconds = std::stoi(value);
-            else if (key == "database_path") config.m_strDatabasePath = value;
-            else if (key == "connection_pool_size") config.m_nConnectionPoolSize = std::stoul(value);
-            else if (key == "memory_cache_max_items") config.m_nMemoryCacheMaxItems = std::stoul(value);
-            else if (key == "disk_cache_dir") config.m_strDiskCacheDir = value;
-            else if (key == "cache_ttl_seconds") config.m_nCacheTTLSeconds = std::stoi(value);
-            else if (key == "max_image_width") config.m_nMaxImageWidth = std::stoi(value);
-            else if (key == "max_image_height") config.m_nMaxImageHeight = std::stoi(value);
-            else if (key == "max_features_per_request") config.m_nMaxFeaturesPerRequest = std::stoi(value);
-            else if (key == "output_dir") config.m_strOutputDir = value;
-            else if (key == "log_file") config.m_strLogFile = value;
-            else if (key == "log_level") config.m_nLogLevel = std::stoi(value);
+        while (std::getline(file, line)) {
+            size_t pos = line.find('=');
+            if (pos != std::string::npos) {
+                std::string key = line.substr(0, pos);
+                std::string value = line.substr(pos + 1);
+
+                if (key == "host") config.m_strHost = value;
+                else if (key == "port") {
+                    try {
+                        int port = std::stoi(value);
+                        if (port < 1 || port > 65535) return false;
+                        config.m_nPort = static_cast<uint16_t>(port);
+                    } catch (...) { return false; }
+                }
+                else if (key == "worker_threads") {
+                    try {
+                        size_t threads = std::stoul(value);
+                        if (threads == 0 || threads > 64) return false;
+                        config.m_nWorkerThreads = threads;
+                    } catch (...) { return false; }
+                }
+                else if (key == "max_request_size") {
+                    try {
+                        config.m_nMaxRequestSize = std::stoul(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "timeout_seconds") {
+                    try {
+                        int timeout = std::stoi(value);
+                        if (timeout < 1) return false;
+                        config.m_nTimeoutSeconds = timeout;
+                    } catch (...) { return false; }
+                }
+                else if (key == "database_path") config.m_strDatabasePath = value;
+                else if (key == "connection_pool_size") {
+                    try {
+                        config.m_nConnectionPoolSize = std::stoul(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "memory_cache_max_items") {
+                    try {
+                        config.m_nMemoryCacheMaxItems = std::stoul(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "disk_cache_dir") config.m_strDiskCacheDir = value;
+                else if (key == "cache_ttl_seconds") {
+                    try {
+                        config.m_nCacheTTLSeconds = std::stoi(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "max_image_width") {
+                    try {
+                        config.m_nMaxImageWidth = std::stoi(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "max_image_height") {
+                    try {
+                        config.m_nMaxImageHeight = std::stoi(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "max_features_per_request") {
+                    try {
+                        config.m_nMaxFeaturesPerRequest = std::stoi(value);
+                    } catch (...) { return false; }
+                }
+                else if (key == "output_dir") config.m_strOutputDir = value;
+                else if (key == "log_file") config.m_strLogFile = value;
+                else if (key == "log_level") {
+                    try {
+                        config.m_nLogLevel = std::stoi(value);
+                    } catch (...) { return false; }
+                }
+            }
         }
-    }
     
     return true;
 #endif

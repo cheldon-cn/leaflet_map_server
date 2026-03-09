@@ -27,6 +27,9 @@ using json = nlohmann::json;
 #include <iostream>
 #include <chrono>
 #include <iomanip>
+#include <algorithm>
+#include <vector>
+#include <errno.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -76,9 +79,20 @@ HttpServer::HttpServer(const ServerConfig& config)
     : m_config(config) {
     m_strOutputDir = m_config.m_strOutputDir;
     
-    // 确保输出目录存在
-    std::string cmd = "mkdir -p \"" + m_strOutputDir + "\"";
-    system(cmd.c_str());
+    // 确保输出目录存在 - 使用跨平台方式，避免命令注入
+    #ifdef _WIN32
+        #include <direct.h>
+        #include <errno.h>
+        if (_mkdir(m_strOutputDir.c_str()) != 0 && errno != EEXIST) {
+            std::cerr << "Failed to create output directory: " << m_strOutputDir << std::endl;
+        }
+    #else
+        #include <sys/stat.h>
+        #include <sys/types.h>
+        if (mkdir(m_strOutputDir.c_str(), 0755) != 0 && errno != EEXIST) {
+            std::cerr << "Failed to create output directory: " << m_strOutputDir << std::endl;
+        }
+    #endif
     
     // 创建渲染引擎
     m_pRenderEngine = std::make_unique<RenderEngine>(m_config);
@@ -104,16 +118,19 @@ bool HttpServer::Start() {
 #ifdef HAS_CPP_HTTPLIB
     try {
         m_pServer = std::make_unique<httplib::Server>();
-        
+
+        // 设置请求大小限制（防止大请求攻击）
+        m_pServer->set_payload_max_length(m_config.m_nMaxRequestSize);
+
         // 设置路由
         SetupRoutes();
-        
+
         // 启动服务器线程
         m_bRunning = true;
         m_vecWorkerThreads.emplace_back([this]() {
             std::string host = m_config.m_strHost;
             int port = m_config.m_nPort;
-            
+
             std::cout << "Starting Map Server on " << host << ":" << port << std::endl;
             std::cout << "Output directory: " << m_strOutputDir << std::endl;
             
@@ -174,7 +191,18 @@ void HttpServer::SetupRoutes() {
         HandleHealthRequest(response, contentType);
         res.set_content(response, contentType);
     });
-    
+
+    // 缓存统计端点
+    m_pServer->Get("/cache/stats", [this](const httplib::Request& req, httplib::Response& res) {
+        if (m_pRenderEngine && m_pRenderEngine->GetCacheManager()) {
+            std::string stats = m_pRenderEngine->GetCacheManager()->GetStatsJson();
+            res.set_content(stats, "application/json");
+        } else {
+            res.status = 503;
+            res.set_content("{\"error\":{\"code\":\"CACHE_NOT_INITIALIZED\",\"message\":\"Cache not available\"}}", "application/json");
+        }
+    });
+
     // 服务能力端点
     m_pServer->Get("/capabilities", [this](const httplib::Request& req, httplib::Response& res) {
         std::string response, contentType;
@@ -211,34 +239,68 @@ void HttpServer::SetupRoutes() {
         res.set_content(response, contentType.c_str());
     });
     
-    // 瓦片服务端点 (GET)
+    // 瓦片服务端点 (GET) - 添加异常处理
     m_pServer->Get(R"(/tile/(\d+)/(\d+)/(\d+)\.png)", [this](const httplib::Request& req, httplib::Response& res) {
-        int z = std::stoi(req.matches[1]);
-        int x = std::stoi(req.matches[2]);
-        int y = std::stoi(req.matches[3]);
-        
-        std::vector<uint8_t> response;
-        std::string contentType;
-        HandleTileRequest(z, x, y, res, response, contentType);
-        
-        if (!response.empty()) {
-            res.set_content(reinterpret_cast<const char*>(response.data()), 
-                           response.size(), 
-                           contentType.c_str());
-        } else {
-            res.status = 404;
-            res.set_content("Tile not found", "text/plain");
+        try {
+            int z = std::stoi(req.matches[1]);
+            int x = std::stoi(req.matches[2]);
+            int y = std::stoi(req.matches[3]);
+            
+            std::vector<uint8_t> response;
+            std::string contentType;
+            HandleTileRequest(z, x, y, res, response, contentType);
+            
+            if (!response.empty()) {
+                res.set_content(reinterpret_cast<const char*>(response.data()),
+                               response.size(),
+                               contentType.c_str());
+            } else {
+                res.status = 404;
+                res.set_content("Tile not found", "text/plain");
+            }
+        } catch (const std::invalid_argument& e) {
+            res.status = 400;
+            res.set_content("{\"error\":{\"code\":\"INVALID_PARAMETER\",\"message\":\"Invalid tile coordinates\"}}", "application/json");
+        } catch (const std::out_of_range& e) {
+            res.status = 400;
+            res.set_content("{\"error\":{\"code\":\"INVALID_RANGE\",\"message\":\"Tile coordinates out of range\"}}", "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content("{\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"Internal server error\"}}", "application/json");
         }
     });
     
-    // 静态文件服务（用于测试）
-    m_pServer->set_mount_point("/", m_strOutputDir.c_str());
-    
-    // 设置CORS头
-    m_pServer->set_pre_routing_handler([](const httplib::Request& req, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+    // 静态文件服务（用于测试）- 添加路径遍历保护
+    m_pServer->set_mount_point("/static/", m_strOutputDir.c_str());
+
+    // 设置CORS头 - 使用白名单而非通配符
+    m_pServer->set_pre_routing_handler([this](const httplib::Request& req, httplib::Response& res) {
+        // CORS 白名单验证
+        std::vector<std::string> allowedOrigins = {
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:8080"
+        };
+
+        auto origin = req.get_header_value("Origin");
+        if (!origin.empty()) {
+            bool originAllowed = std::find(allowedOrigins.begin(), allowedOrigins.end(), origin) != allowedOrigins.end();
+            if (originAllowed) {
+                res.set_header("Access-Control-Allow-Origin", origin);
+                res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                res.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                res.set_header("Access-Control-Max-Age", "86400");
+            }
+        }
+
+        // 路径遍历防护
+        if (req.path.find("..") != std::string::npos) {
+            res.status = 403;
+            res.set_content("{\"error\":{\"code\":\"ACCESS_DENIED\",\"message\":\"Path traversal not allowed\"}}", "application/json");
+            return httplib::Server::HandlerResponse::Handled;
+        }
+
         return httplib::Server::HandlerResponse::Unhandled;
     });
     
