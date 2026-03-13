@@ -1,0 +1,44 @@
+# Cycle Map Server 版本配置文件
+# 此文件由 CMake 自动生成，用于版本兼容性检查
+
+# 版本信息
+set(PACKAGE_VERSION "@PROJECT_VERSION@")
+
+# 版本组件
+set(PACKAGE_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(PACKAGE_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(PACKAGE_VERSION_PATCH @PROJECT_VERSION_PATCH@)
+
+# 检查版本兼容性
+set(PACKAGE_VERSION_COMPATIBLE FALSE)
+set(PACKAGE_VERSION_EXACT FALSE)
+
+# 版本检查逻辑
+if("${PACKAGE_FIND_VERSION}" VERSION_EQUAL "${PACKAGE_VERSION}")
+    set(PACKAGE_VERSION_COMPATIBLE TRUE)
+    set(PACKAGE_VERSION_EXACT TRUE)
+elseif("${PACKAGE_FIND_VERSION}" VERSION_LESS "${PACKAGE_VERSION}")
+    # 检查主版本兼容性
+    if("${PACKAGE_FIND_VERSION_MAJOR}" EQUAL "${PACKAGE_VERSION_MAJOR}")
+        # 主版本相同，允许向后兼容
+        set(PACKAGE_VERSION_COMPATIBLE TRUE)
+    elseif("${PACKAGE_FIND_VERSION_MAJOR}" LESS "${PACKAGE_VERSION_MAJOR}")
+        # 主版本较旧，可能不兼容
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    else()
+        # 主版本较新，不兼容
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    endif()
+else()
+    # 请求的版本比当前版本新，不兼容
+    set(PACKAGE_VERSION_COMPATIBLE FALSE)
+endif()
+
+# 输出版本信息（用于调试）
+if(CYCLE_MAP_SERVER_DEBUG)
+    message(STATUS "Cycle Map Server Version Check:")
+    message(STATUS "  Requested Version: ${PACKAGE_FIND_VERSION}")
+    message(STATUS "  Current Version: ${PACKAGE_VERSION}")
+    message(STATUS "  Compatible: ${PACKAGE_VERSION_COMPATIBLE}")
+    message(STATUS "  Exact: ${PACKAGE_VERSION_EXACT}")
+endif()

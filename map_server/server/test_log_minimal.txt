@@ -1,0 +1,38 @@
+[init] Logger initialized successfully
+[2026-03-10 17:49:41.378] INFO: Basic test message
+[shutdown] Logger shutting down
+[init] Logger initialized successfully
+[2026-03-10 17:49:41.395] WARN: Warn message
+[2026-03-10 17:49:41.395] ERROR: Error message
+[shutdown] Logger shutting down
+[init] Logger initialized successfully
+[2026-03-10 17:49:41.409] INFO: Thread 1 msg 0
+[2026-03-10 17:49:41.409] INFO: Thread 1 msg 1
+[2026-03-10 17:49:41.409] INFO: Thread 1 msg 2
+[2026-03-10 17:49:41.409] INFO: Thread 1 msg 3
+[2026-03-10 17:49:41.409] INFO: Thread 1 msg 4
+[2026-03-10 17:49:41.409] INFO: Thread 2 msg 0
+[2026-03-10 17:49:41.409] INFO: Thread 2 msg 1
+[2026-03-10 17:49:41.409] INFO: Thread 2 msg 2
+[2026-03-10 17:49:41.409] INFO: Thread 2 msg 3
+[2026-03-10 17:49:41.409] INFO: Thread 2 msg 4
+[shutdown] Logger shutting down
+[init] Logger initialized successfully
+[2026-03-10 18:34:19.797] INFO: Basic test message
+[shutdown] Logger shutting down
+[init] Logger initialized successfully
+[2026-03-10 18:34:19.840] WARN: Warn message
+[2026-03-10 18:34:19.840] ERROR: Error message
+[shutdown] Logger shutting down
+[init] Logger initialized successfully
+[2026-03-10 18:34:19.860] INFO: Thread 1 msg 0
+[2026-03-10 18:34:19.860] INFO: Thread 1 msg 1
+[2026-03-10 18:34:19.860] INFO: Thread 1 msg 2
+[2026-03-10 18:34:19.860] INFO: Thread 1 msg 3
+[2026-03-10 18:34:19.860] INFO: Thread 1 msg 4
+[2026-03-10 18:34:19.860] INFO: Thread 2 msg 0
+[2026-03-10 18:34:19.860] INFO: Thread 2 msg 1
+[2026-03-10 18:34:19.860] INFO: Thread 2 msg 2
+[2026-03-10 18:34:19.860] INFO: Thread 2 msg 3
+[2026-03-10 18:34:19.860] INFO: Thread 2 msg 4
+[shutdown] Logger shutting down

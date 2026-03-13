@@ -1,0 +1,139 @@
+# Cycle Map Server CMake 配置文件
+# 此文件由 CMake 自动生成，用于其他项目链接 Cycle Map Server
+
+# 设置版本信息
+set(CYCLE_MAP_SERVER_VERSION_MAJOR @PROJECT_VERSION_MAJOR@)
+set(CYCLE_MAP_SERVER_VERSION_MINOR @PROJECT_VERSION_MINOR@)
+set(CYCLE_MAP_SERVER_VERSION_PATCH @PROJECT_VERSION_PATCH@)
+set(CYCLE_MAP_SERVER_VERSION @PROJECT_VERSION@)
+
+# 包含目录
+set(CYCLE_MAP_SERVER_INCLUDE_DIRS
+    @CMAKE_INSTALL_PREFIX@/include
+    @CMAKE_INSTALL_PREFIX@/include/cycle-map-server
+)
+
+# 库目录
+set(CYCLE_MAP_SERVER_LIBRARY_DIRS @CMAKE_INSTALL_PREFIX@/lib)
+
+# 库文件
+set(CYCLE_MAP_SERVER_LIBRARIES cycle-map-server-lib)
+
+# 依赖库
+set(CYCLE_MAP_SERVER_DEPENDENCIES)
+
+# SQLite3 支持
+@[email protected]@
+if(SQLITE3_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_DEPENDENCIES SQLite3)
+    set(CYCLE_MAP_SERVER_SQLITE3_INCLUDE_DIRS @SQLITE3_INCLUDE_DIRS@)
+    set(CYCLE_MAP_SERVER_SQLITE3_LIBRARIES @SQLITE3_LIBRARIES@)
+endif()
+
+# PNG 支持
+@[email protected]@
+if(PNG_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_DEPENDENCIES PNG)
+    set(CYCLE_MAP_SERVER_PNG_INCLUDE_DIRS @PNG_INCLUDE_DIRS@)
+    set(CYCLE_MAP_SERVER_PNG_LIBRARIES @PNG_LIBRARIES@)
+endif()
+
+# PostgreSQL 支持
+@[email protected]@
+if(POSTGRESQL_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_DEPENDENCIES PostgreSQL)
+    set(CYCLE_MAP_SERVER_POSTGRESQL_INCLUDE_DIRS @POSTGRESQL_INCLUDE_DIRS@)
+    set(CYCLE_MAP_SERVER_POSTGRESQL_LIBRARIES @POSTGRESQL_LIBRARIES@)
+endif()
+
+# WebP 支持
+@[email protected]@
+if(WEBP_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_DEPENDENCIES WebP)
+    set(CYCLE_MAP_SERVER_WEBP_INCLUDE_DIRS @WEBP_INCLUDE_DIRS@)
+    set(CYCLE_MAP_SERVER_WEBP_LIBRARIES @WEBP_LIBRARIES@)
+endif()
+
+# SSL 支持
+@[email protected]@
+if(WITH_SSL)
+    list(APPEND CYCLE_MAP_SERVER_DEPENDENCIES SSL)
+    set(CYCLE_MAP_SERVER_SSL_LIBRARIES @SSL_LIBRARY@ @CRYPTO_LIBRARY@)
+endif()
+
+# 编译选项
+set(CYCLE_MAP_SERVER_CXX_STANDARD @CMAKE_CXX_STANDARD@)
+set(CYCLE_MAP_SERVER_CXX_FLAGS "@CMAKE_CXX_FLAGS@")
+
+# 功能特性
+set(CYCLE_MAP_SERVER_FEATURES)
+
+if(SQLITE3_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_FEATURES "SQLite3 Database")
+endif()
+
+if(PNG_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_FEATURES "PNG Encoding")
+endif()
+
+if(POSTGRESQL_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_FEATURES "PostgreSQL Database")
+endif()
+
+if(WEBP_FOUND)
+    list(APPEND CYCLE_MAP_SERVER_FEATURES "WebP Encoding")
+endif()
+
+if(WITH_SSL)
+    list(APPEND CYCLE_MAP_SERVER_FEATURES "SSL Support")
+endif()
+
+# 创建导入目标
+if(NOT TARGET cycle-map-server::cycle-map-server-lib)
+    add_library(cycle-map-server::cycle-map-server-lib STATIC IMPORTED)
+    
+    set_target_properties(cycle-map-server::cycle-map-server-lib PROPERTIES
+        IMPORTED_LOCATION "${CYCLE_MAP_SERVER_LIBRARY_DIRS}/cycle-map-server-lib.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${CYCLE_MAP_SERVER_INCLUDE_DIRS}"
+        INTERFACE_COMPILE_FEATURES "cxx_std_${CYCLE_MAP_SERVER_CXX_STANDARD}"
+    )
+    
+    # 添加依赖库
+    if(SQLITE3_FOUND)
+        target_link_libraries(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_SQLITE3_LIBRARIES})
+        target_include_directories(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_SQLITE3_INCLUDE_DIRS})
+    endif()
+    
+    if(PNG_FOUND)
+        target_link_libraries(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_PNG_LIBRARIES})
+        target_include_directories(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_PNG_INCLUDE_DIRS})
+    endif()
+    
+    if(POSTGRESQL_FOUND)
+        target_link_libraries(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_POSTGRESQL_LIBRARIES})
+        target_include_directories(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_POSTGRESQL_INCLUDE_DIRS})
+    endif()
+    
+    if(WEBP_FOUND)
+        target_link_libraries(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_WEBP_LIBRARIES})
+        target_include_directories(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_WEBP_INCLUDE_DIRS})
+    endif()
+    
+    if(WITH_SSL)
+        target_link_libraries(cycle-map-server::cycle-map-server-lib INTERFACE ${CYCLE_MAP_SERVER_SSL_LIBRARIES})
+    endif()
+endif()
+
+# 检查所有必需组件
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CycleMapServer
+    REQUIRED_VARS
+        CYCLE_MAP_SERVER_INCLUDE_DIRS
+        CYCLE_MAP_SERVER_LIBRARY_DIRS
+        CYCLE_MAP_SERVER_LIBRARIES
+    VERSION_VAR CYCLE_MAP_SERVER_VERSION
+    HANDLE_COMPONENTS
+)
+
+# 设置包信息
+set(CYCLE_MAP_SERVER_FOUND TRUE)

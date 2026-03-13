@@ -1,154 +1,262 @@
-#include "HttpServer.h"
-#include "Config.h"
 #include <iostream>
-#include <string>
+#include <memory>
 #include <csignal>
 #include <atomic>
-#include <chrono>
-#include <thread>
+#include "config/config.h"
+#include "utils/logger.h"
+#include "utils/file_system.h"
+#include "database/database_factory.h"
+#include "encoder/encoder_factory.h"
+#include "cache/memory_cache.h"
+#include "renderer/renderer.h"
+#include "service/map_service.h"
+#include "server/http_server.h"
 
-using namespace cycle;
+namespace cycle {
 
-std::atomic<bool> g_bRunning{true};
-
-void SignalHandler(int signal) {
-    std::cout << "\nReceived signal " << signal << ", shutting down..." << std::endl;
-    g_bRunning = false;
-}
-
-void PrintHelp(const char* programName) {
-    std::cout << "Map Server - C++11 Implementation" << std::endl;
-    std::cout << "Renders spatial data as PNG images via HTTP API" << std::endl << std::endl;
+class MapServerApp {
+public:
+    MapServerApp() {}
     
-    std::cout << "Usage: " << programName << " [options]" << std::endl << std::endl;
-    
-    std::cout << "Options:" << std::endl;
-    std::cout << "  -h, --help                 Show this help message and exit" << std::endl;
-    std::cout << "  -c, --config FILE          Load configuration from JSON file" << std::endl;
-    std::cout << "  -p, --port PORT            HTTP server port (default: 8080)" << std::endl;
-    std::cout << "  -o, --output DIR           Output directory for generated files (default: ./leaf/output)" << std::endl;
-    std::cout << "  -d, --database PATH        Path to spatial database (default: ./spatial_data.db)" << std::endl;
-    std::cout << "  -v, --verbose              Enable verbose logging" << std::endl;
-    std::cout << std::endl;
-    
-    std::cout << "Examples:" << std::endl;
-    std::cout << "  " << programName << " --port 8080" << std::endl;
-    std::cout << "  " << programName << " --config config.json" << std::endl;
-    std::cout << "  " << programName << " --port 9090 --output ./maps" << std::endl;
-}
-
-bool ParseCommandLine(int argc, char* argv[], ServerConfig& config) {
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
+    bool Initialize(const std::string& configPath) {
+        LOG_INFO("Initializing Map Server Application");
         
-        if (arg == "-h" || arg == "--help") {
-            PrintHelp(argv[0]);
+        if (!LoadConfig(configPath)) {
+            LOG_ERROR("Failed to load configuration");
             return false;
-        } else if (arg == "-c" || arg == "--config") {
-            if (i + 1 < argc) {
-                std::string configFile = argv[++i];
-                if (!LoadConfigFromFile(configFile, config)) {
-                    std::cerr << "Error: Failed to load configuration from " << configFile << std::endl;
-                    return false;
-                }
-            } else {
-                std::cerr << "Error: --config requires a file path" << std::endl;
-                return false;
+        }
+        
+        if (!CreateDirectories()) {
+            LOG_ERROR("Failed to create required directories");
+            return false;
+        }
+        
+        if (!InitializeLogger()) {
+            LOG_ERROR("Failed to initialize logger");
+            return false;
+        }
+        
+        if (!InitializeComponents()) {
+            LOG_ERROR("Failed to initialize components");
+            return false;
+        }
+        
+        if (!SetupSignalHandlers()) {
+            LOG_ERROR("Failed to setup signal handlers");
+            return false;
+        }
+        
+        LOG_INFO("Map Server Application initialized successfully");
+        return true;
+    }
+    
+    bool Start() {
+        if (!httpServer_) {
+            LOG_ERROR("HTTP server not initialized");
+            return false;
+        }
+        
+        LOG_INFO("Starting Secure Map Server");
+
+        if (config_.server.enable_https) {
+            if (!httpServer_->EnableSSL(config_.server.ssl_cert_file,
+                config_.server.ssl_key_file,
+                config_.server.ssl_ca_file)) {
+                LOG_WARN("Failed to enable HTTPS, continuing with HTTP only");
             }
-        } else if (arg == "-p" || arg == "--port") {
-            if (i + 1 < argc) {
-                try {
-                    config.m_nPort = static_cast<uint16_t>(std::stoi(argv[++i]));
-                } catch (...) {
-                    std::cerr << "Error: Invalid port number" << std::endl;
-                    return false;
-                }
-            } else {
-                std::cerr << "Error: --port requires a port number" << std::endl;
-                return false;
+            else {
+                LOG_INFO("HTTPS enabled on port: " + std::to_string(config_.server.https_port));
             }
-        } else if (arg == "-o" || arg == "--output") {
-            if (i + 1 < argc) {
-                config.m_strOutputDir = argv[++i];
-            } else {
-                std::cerr << "Error: --output requires a directory path" << std::endl;
-                return false;
-            }
-        } else if (arg == "-d" || arg == "--database") {
-            if (i + 1 < argc) {
-                config.m_strDatabasePath = argv[++i];
-            } else {
-                std::cerr << "Error: --database requires a database path" << std::endl;
-                return false;
-            }
-        } else if (arg == "-v" || arg == "--verbose") {
-            config.m_nLogLevel = 2;
-        } else {
-            std::cerr << "Error: Unknown option " << arg << std::endl;
+        }
+
+        if (!httpServer_->Start()) {
+            LOG_ERROR("Failed to start HTTP server");
+            return false;
+        }
+        
+        LOG_INFO("Map Server started successfully");
+        return true;
+    }
+    
+    void Stop() {
+        if (shuttingDown_) {
+            return;
+        }
+        
+        shuttingDown_ = true;
+        
+        LOG_INFO("Stopping Map Server");
+        
+        if (httpServer_) {
+            httpServer_->Stop();
+        }
+        
+        if (database_) {
+            database_->Close();
+        }
+        
+        Logger::Shutdown();
+        
+        LOG_INFO("Map Server stopped");
+    }
+    
+    void WaitForShutdown() {
+        LOG_INFO("Map Server is running. Press Ctrl+C to stop.");
+        
+        while (!shuttingDown_) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        
+        Stop();
+    }
+    
+private:
+    bool LoadConfig(const std::string& configPath) {
+        if (!config_.LoadFromFile(configPath)) {
+            std::cerr << "Failed to load config from: " << configPath << std::endl;
+            return false;
+        }
+        
+        if (!config_.Validate()) {
+            std::cerr << "Configuration validation failed" << std::endl;
+            return false;
+        }
+        
+        LOG_INFO("Configuration loaded successfully from: " + configPath);
+        return true;
+    }
+    
+    bool CreateDirectories() {
+        try {
+            cycle::utils::create_directories("./logs");
+            cycle::utils::create_directories("./data");
+            cycle::utils::create_directories("./cache");
+            
+            LOG_INFO("Required directories created");
+            return true;
+        } catch (const std::exception& e) {
+            std::cerr << "Failed to create directories: " << e.what() << std::endl;
             return false;
         }
     }
     
-    return true;
+    bool InitializeLogger() {
+        Logger::Init(config_.log);
+        
+        LOG_INFO("Logger initialized");
+        LOG_INFO("Log level: " + std::to_string(config_.log.level));
+        LOG_INFO("Log file: " + config_.log.file);
+        
+        return true;
+    }
+    
+    bool InitializeComponents() {
+        LOG_INFO("Initializing database connection");
+        
+        database_ = database::DatabaseFactory::Create(config_.database.type, config_.database.sqlite_path);
+        
+        if (!database_ || !database_->Open()) {
+            LOG_ERROR("Failed to initialize database");
+            return false;
+        }
+        
+        LOG_INFO("Database initialized: " + config_.database.type);
+        
+        LOG_INFO("Initializing encoder");
+        encoder_ = encoder::EncoderFactory::Create(config_.encoder.format);
+        if (!encoder_) {
+            LOG_ERROR("Failed to initialize encoder");
+            return false;
+        }
+        
+        LOG_INFO("Encoder initialized: " + config_.encoder.format);
+        
+        LOG_INFO("Initializing cache");
+        if (config_.cache.enabled) {
+            cache_ = std::make_shared<cache::MemoryCache>(config_.cache.memory_cache_size);
+            LOG_INFO("Memory cache initialized: " + 
+                     std::to_string(config_.cache.memory_cache_size) + " bytes");
+        } else {
+            LOG_INFO("Cache disabled");
+        }
+        
+        LOG_INFO("Initializing renderer");
+        renderer_ = std::make_shared<renderer::Renderer>(database_, encoder_, cache_);
+        LOG_INFO("Renderer initialized");
+        
+        LOG_INFO("Initializing MapService");
+        mapService_ = std::make_shared<service::MapService>(renderer_, cache_, config_);
+        LOG_INFO("MapService initialized");
+        
+        LOG_INFO("Initializing HTTP server");
+        httpServer_ = std::make_unique<server::HttpServer>(config_);
+        httpServer_->SetRenderer(renderer_);
+        httpServer_->SetMapService(mapService_);
+        LOG_INFO("HTTP server initialized");
+        
+        return true;
+    }
+    
+    bool SetupSignalHandlers() {
+        std::signal(SIGINT, SignalHandler);
+        std::signal(SIGTERM, SignalHandler);
+        
+        LOG_INFO("Signal handlers configured");
+        return true;
+    }
+    
+    static void SignalHandler(int signal) {
+        LOG_INFO("Received signal: " + std::to_string(signal));
+        shuttingDown_ = true;
+    }
+    
+    Config config_;
+    std::shared_ptr<database::IDatabase> database_;
+    std::shared_ptr<encoder::IEncoder> encoder_;
+    std::shared_ptr<cache::MemoryCache> cache_;
+    std::shared_ptr<renderer::Renderer> renderer_;
+    std::shared_ptr<service::MapService> mapService_;
+    std::unique_ptr<server::HttpServer> httpServer_;
+    
+    static std::atomic<bool> shuttingDown_;
+};
+
+std::atomic<bool> MapServerApp::shuttingDown_{false};
+
+} // namespace cycle
+
+void PrintUsage(const char* programName) {
+    std::cout << "Usage: " << programName << " [config_file]" << std::endl;
+    std::cout << "  config_file - Path to configuration file (default: config.json)" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Example: " << programName << " config.json" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-    // 设置信号处理
-    std::signal(SIGINT, SignalHandler);
-    std::signal(SIGTERM, SignalHandler);
+    std::string configPath = "config.json";
     
-#ifdef _WIN32
-    std::signal(SIGBREAK, SignalHandler);
-#endif
-    
-    // 加载配置
-    ServerConfig config = GetDefaultConfig();
-    
-    if (!ParseCommandLine(argc, argv, config)) {
+    if (argc > 2) {
+        PrintUsage(argv[0]);
         return 1;
     }
     
-    // 输出配置信息
-    std::cout << "=== Map Server Configuration ===" << std::endl;
-    std::cout << "Host: " << config.m_strHost << std::endl;
-    std::cout << "Port: " << config.m_nPort << std::endl;
-    std::cout << "Output Directory: " << config.m_strOutputDir << std::endl;
-    std::cout << "Database: " << config.m_strDatabasePath << std::endl;
-    std::cout << "Max Image Size: " << config.m_nMaxImageWidth << "x" << config.m_nMaxImageHeight << std::endl;
-    std::cout << "Worker Threads: " << config.m_nWorkerThreads << std::endl;
-    std::cout << "===============================" << std::endl;
+    if (argc == 2) {
+        configPath = argv[1];
+    }
     
-    // 创建HTTP服务器
-    HttpServer server(config);
+    cycle::MapServerApp app;
     
-    // 启动服务器
-    if (!server.Start()) {
-        std::cerr << "Failed to start server: " << server.GetError() << std::endl;
+    if (!app.Initialize(configPath)) {
+        std::cerr << "Failed to initialize application" << std::endl;
         return 1;
     }
     
-    std::cout << "Server started successfully. Press Ctrl+C to stop." << std::endl;
-    std::cout << "Available endpoints:" << std::endl;
-    std::cout << "  GET  /health          - Health check" << std::endl;
-    std::cout << "  GET  /layers          - List available layers" << std::endl;
-    std::cout << "  POST /generate        - Generate map image (JSON body)" << std::endl;
-    std::cout << "  GET  /tile/{z}/{x}/{y}.png - Get map tile" << std::endl;
-    std::cout << std::endl;
-    
-    // 主循环
-    while (g_bRunning) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        
-        // 检查服务器状态
-        if (!server.IsRunning()) {
-            std::cerr << "Server stopped unexpectedly" << std::endl;
-            break;
-        }
+    if (!app.Start()) {
+        std::cerr << "Failed to start server" << std::endl;
+        return 1;
     }
     
-    // 停止服务器
-    server.Stop();
+    app.WaitForShutdown();
     
-    std::cout << "Server shutdown complete." << std::endl;
     return 0;
 }

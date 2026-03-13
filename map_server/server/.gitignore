@@ -1,0 +1,70 @@
+# 编译输出
+build/
+bin/
+lib/
+*.exe
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# 日志文件
+logs/
+*.log
+
+# 缓存文件
+cache/
+*.cache
+
+# 数据文件
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# 配置文件（排除示例配置）
+config.json
+!config.json.example
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+
+# 依赖库
+thirdparty/
+
+# 测试覆盖率报告
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# 文档生成
+html/
+latex/
+doc/
+
+# CMake 缓存
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+
+# 包管理
+*.deb
+*.rpm
+*.tar.gz
+*.zip
