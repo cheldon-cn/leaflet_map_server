@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
+#ifdef HAVE_WEBP
 namespace cycle {
 namespace encoder {
 
@@ -178,3 +179,4 @@ bool WebPEncoder::ConvertToRGBA(const RawImage& image, std::vector<uint8_t>& rgb
 
 } // namespace encoder
 } // namespace cycle
+#endif

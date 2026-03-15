@@ -47,6 +47,8 @@ private:
     void SetupRoutesForServer(httplib::Server& server);
     void SetupMiddlewareForServer(httplib::Server& server);
     
+    void LogApiUsageExamples() const;
+    
     void HandleLogin(const httplib::Request& req, httplib::Response& res);
     void HandleLogout(const httplib::Request& req, httplib::Response& res);
     void HandleRefreshToken(const httplib::Request& req, httplib::Response& res);

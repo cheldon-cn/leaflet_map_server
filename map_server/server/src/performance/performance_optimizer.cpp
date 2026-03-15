@@ -145,7 +145,9 @@ std::string PerformanceMetrics::GenerateReport() const {
     // 端点级统计
     if (!endpoint_stats_.empty()) {
         report << "\n端点统计:" << std::endl;
-        for (const auto& [endpoint, stats] : endpoint_stats_) {
+        for (const auto& st : endpoint_stats_) {
+			const auto& endpoint = st.first;
+			const auto& stats = st.second;
             double avg_time = stats.count > 0 ? 
                 static_cast<double>(stats.total_time) / stats.count / 1000.0 : 0.0;
             double error_rate = stats.count > 0 ? 
@@ -451,7 +453,9 @@ void RateLimiter::SetLimit(int max_requests, std::chrono::milliseconds time_wind
     global_bucket_.tokens = max_requests;
     global_bucket_.last_refill = std::chrono::steady_clock::now();
     
-    for (auto& [key, bucket] : key_buckets_) {
+    for (auto& t : key_buckets_) {
+		auto& key = t.first;
+		auto& bucket = t.second;
         bucket.tokens = max_requests;
         bucket.last_refill = std::chrono::steady_clock::now();
     }

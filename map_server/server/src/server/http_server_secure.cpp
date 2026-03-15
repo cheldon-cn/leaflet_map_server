@@ -30,11 +30,70 @@ HttpServer::~HttpServer() {
     Stop();
 }
 
+void HttpServer::LogApiUsageExamples() const {
+    LOG_INFO("========================================");
+    LOG_INFO("       API Usage Examples");
+    LOG_INFO("========================================");
+    
+    // Health & Metrics
+    LOG_INFO("GET  /health              - Health check");
+    LOG_INFO("GET  /metrics             - Server metrics");
+    LOG_INFO("GET  /metrics/requests    - Request metrics");
+    
+    // Map Tiles
+    LOG_INFO("GET  /1.0.0/WMTSCapabilities.xml - WMTS capabilities");
+    LOG_INFO("GET  /tile/{z}/{x}/{y}.{format}   - Get tile (e.g., /tile/5/10/20.png)");
+    LOG_INFO("GET  /tile/{z}/{x}/{y}/{format}/bounds - Tile with bounds");
+    
+    // Map Generation
+    LOG_INFO("POST /generate            - Generate map (bbox, width, height, format)");
+    LOG_INFO("POST /tile/generate       - Generate single tile");
+    
+    // Configuration
+    LOG_INFO("GET  /config              - Get current config");
+    LOG_INFO("PUT  /config              - Update config (JSON body)");
+    LOG_INFO("GET  /config/security     - Get security settings");
+    
+    // Cache Management
+    LOG_INFO("GET  /cache/stats         - Get cache statistics");
+    LOG_INFO("DELETE /cache/clear       - Clear cache");
+    LOG_INFO("POST /cache/warmup        - Warmup cache (JSON body)");
+    
+    // Security
+    LOG_INFO("GET  /security/events     - Get security events");
+    LOG_INFO("POST /security/alerts     - Create security alert");
+    LOG_INFO("POST /security/scan       - Run security scan");
+    
+    // Performance
+    LOG_INFO("POST /performance/benchmark - Run benchmark");
+    LOG_INFO("GET  /performance/results/{id} - Get benchmark results");
+    
+    // Batch Processing
+    LOG_INFO("POST /batch/tiles         - Batch tile generation");
+    LOG_INFO("GET  /batch/status/{id}   - Get batch status");
+    
+    // Authentication
+    LOG_INFO("POST /auth/login          - Login (username, password)");
+    LOG_INFO("POST /auth/logout         - Logout");
+    LOG_INFO("POST /auth/refresh        - Refresh token");
+    LOG_INFO("GET  /auth/user           - Get current user info");
+    
+    LOG_INFO("========================================");
+    LOG_INFO("Example curl commands:");
+    LOG_INFO("  curl http://localhost:8080/health");
+    LOG_INFO("  curl http://localhost:8080/tile/5/10/20.png");
+    LOG_INFO("  curl -X POST http://localhost:8080/generate -H 'Content-Type: application/json' -d '{\"bbox\":[0,0,10,10],\"width\":512,\"height\":512}'");
+    LOG_INFO("========================================");
+}
+
 bool HttpServer::Start() {
     if (running_) {
         LOG_WARN("HTTP server is already running");
         return true;
     }
+    
+    // Log API usage examples
+    LogApiUsageExamples();
     
     if (ssl_enabled_ && ssl_server_) {
         LOG_INFO("Starting HTTPS server on " + config_.server.host + ":" + 
@@ -476,8 +535,9 @@ void HttpServer::HandleGetTile(const httplib::Request& req, httplib::Response& r
     
     int z, x, y;
     std::string format;
-    
-    if (!ParseTileRequest(req, z, x, y, format)) {
+
+	LOG_INFO("ParseTileRequest begin");
+	if (!ParseTileRequest(req, z, x, y, format)) {
         res.status = 400;
         res.set_content("{\"error\":\"Invalid tile request\"}", "application/json");
         return;
@@ -491,7 +551,8 @@ void HttpServer::HandleGetTile(const httplib::Request& req, httplib::Response& r
     }
     
     auto result = map_service_->GetTile(z, x, y, imageFormat, dpi);
-    
+
+	LOG_INFO("GetTile ok");
     if (!result.success) {
         res.status = 500;
         res.set_content("{\"error\":\"" + result.error_message + "\"}", "application/json");
@@ -514,21 +575,43 @@ void HttpServer::HandleGetCapabilities(const httplib::Request& req, httplib::Res
     std::string xml = GenerateCapabilitiesXML();
     
     res.status = 200;
+	std::string strK = "Content-Type";
+	std::string strV = "application/xml";
+	res.set_header(strK, strV);
+	strK = "Cache-Control"; strV = "max-age=86400";
+	res.set_header(strK, strV);
     res.set_content(xml, "application/xml");
+    
+    LOG_DEBUG("WMTS Capabilities requested");
 }
 
 void HttpServer::HandleHealth(const httplib::Request& req, httplib::Response& res) {
-    std::string json = GenerateHealthJSON();
+    nlohmann::json j = nlohmann::json::parse(GenerateHealthJSON());
+    
+    j["uptime_seconds"] = std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    j["server_running"] = running_.load();
     
     res.status = 200;
-    res.set_content(json, "application/json");
+    res.set_header("Content-Type", "application/json");
+    res.set_content(j.dump(4), "application/json");
+    
+    LOG_DEBUG("Health check requested");
 }
 
 void HttpServer::HandleMetrics(const httplib::Request& req, httplib::Response& res) {
-    std::string json = GenerateMetricsJSON();
+    nlohmann::json j = nlohmann::json::parse(GenerateMetricsJSON());
+    
+    j["requests"]["total"] = total_requests_.load();
+    j["requests"]["blocked"] = blocked_requests_.load();
+    j["requests"]["active"] = (running_ ? 1 : 0);
+    j["auth"]["failed_attempts"] = failed_auth_attempts_.load();
     
     res.status = 200;
-    res.set_content(json, "application/json");
+    res.set_header("Content-Type", "application/json");
+    res.set_content(j.dump(4), "application/json");
+    
+    LOG_DEBUG("Metrics requested");
 }
 
 void HttpServer::HandleGenerateMap(const httplib::Request& req, httplib::Response& res) {
@@ -1020,8 +1103,8 @@ std::string HttpServer::ExtractToken(const httplib::Request& req) const {
 
 
 httplib::Server::HandlerResponse HttpServer::ValidateRequest(const httplib::Request& req, httplib::Response& res) {
-    // °²È«¼ì²é£ºÇëÇó´óÐ¡ÏÞÖÆ
-    if (req.body.size() > 10 * 1024 * 1024) { // 10MBÏÞÖÆ
+    // ï¿½ï¿½È«ï¿½ï¿½é£ºï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½
+    if (req.body.size() > 10 * 1024 * 1024) { // 10MBï¿½ï¿½ï¿½ï¿½
         res.status = 413;
         res.set_content("{\"error\":\"Request too large\"}", "application/json");
         blocked_requests_++;
@@ -1029,7 +1112,7 @@ httplib::Server::HandlerResponse HttpServer::ValidateRequest(const httplib::Requ
         return httplib::Server::HandlerResponse::Handled;
     }
 
-    // °²È«¼ì²é£ºÂ·¾¶±éÀú·À»¤
+    // ï¿½ï¿½È«ï¿½ï¿½é£ºÂ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿?
     if (req.path.find("..") != std::string::npos || req.path.find("\\") != std::string::npos) {
         res.status = 400;
         res.set_content("{\"error\":\"Invalid path\"}", "application/json");
@@ -1038,7 +1121,7 @@ httplib::Server::HandlerResponse HttpServer::ValidateRequest(const httplib::Requ
         return httplib::Server::HandlerResponse::Handled;
     }
 
-    // ÈÏÖ¤¼ì²é
+    // ï¿½ï¿½Ö¤ï¿½ï¿½ï¿?
     if (auth_middleware_) {
         std::string token = ExtractToken(req);
 
@@ -1051,7 +1134,7 @@ httplib::Server::HandlerResponse HttpServer::ValidateRequest(const httplib::Requ
         }
     }
 
-    // Ìí¼Ó°²È«Í·
+    // ï¿½ï¿½ï¿½Ó°ï¿½È«Í·
     AddSecurityHeaders(res);
 
     return httplib::Server::HandlerResponse::Unhandled;
@@ -1092,12 +1175,145 @@ void HttpServer::LogSecurityEvent(const std::string& event, const httplib::Reque
 
 std::string HttpServer::GenerateCapabilitiesXML() const {
     std::stringstream ss;
-    ss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
-    ss << "<Capabilities version=\"1.0.0\">" << std::endl;
-    ss << "  <Service>" << std::endl;
-    ss << "    <Name>WMTS</Name>" << std::endl;
-    ss << "    <Title>Cycle Map Server</Title>" << std::endl;
-    ss << "  </Service>" << std::endl;
+    
+    std::string base_url = "http://" + config_.server.host + ":" + std::to_string(config_.server.port);
+    
+    // WMTS Capabilities XML
+    ss << R"(<?xml version="1.0" encoding="UTF-8"?>)" << std::endl;
+    ss << R"(<Capabilities version="1.0.0" xmlns="http://www.opengis.net/wmts/1.0")" << std::endl;
+    ss << R"(         xmlns:ows="http://www.opengis.net/ows/1.1")" << std::endl;
+    ss << R"(         xmlns:xlink="http://www.w3.org/1999/xlink")" << std::endl;
+    ss << R"(         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance")" << std::endl;
+    ss << R"(         xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0/wmtsGetCapabilities_response.xsd">)" << std::endl;
+    
+    // Service Identification
+    ss << "  <ows:ServiceIdentification>" << std::endl;
+    ss << "    <ows:Title>Cycle Map Server WMTS</ows:Title>" << std::endl;
+    ss << "    <ows:Abstract>High-performance map tile server with Web Map Tile Service (WMTS) support</ows:Abstract>" << std::endl;
+    ss << "    <ows:ServiceType>OGC WMTS</ows:ServiceType>" << std::endl;
+    ss << "    <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>" << std::endl;
+    ss << "  </ows:ServiceIdentification>" << std::endl;
+    
+    // Service Provider
+    ss << "  <ows:ServiceProvider>" << std::endl;
+    ss << "    <ows:ProviderName>Cycle</ows:ProviderName>" << std::endl;
+    ss << "    <ows:ProviderSite/>" << std::endl;
+    ss << "  </ows:ServiceProvider>" << std::endl;
+    
+    // Operations Metadata
+    ss << "  <ows:OperationsMetadata>" << std::endl;
+    
+    // GetTile operation
+    ss << R"(    <ows:Operation name="GetTile">)" << std::endl;
+    ss << "      <ows:DCP>" << std::endl;
+    ss << "        <ows:HTTP>" << std::endl;
+    ss << "          <ows:Get>" << std::endl;
+    ss << R"(            <ows:Constraint name="GetEncoding">)" << std::endl;
+    ss << "              <ows:AllowedValues>" << std::endl;
+    ss << "                <ows:Value>KVP</ows:Value>" << std::endl;
+    ss << "                <ows:Value>RESTful</ows:Value>" << std::endl;
+    ss << "              </ows:AllowedValues>" << std::endl;
+    ss << "            </ows:Constraint>" << std::endl;
+    ss << R"(            <ows:Constraint name="Encoding">)" << std::endl;
+    ss << "              <ows:AllowedValues>" << std::endl;
+    ss << "                <ows:Value>KVP</ows:Value>" << std::endl;
+    ss << "                <ows:Value>RESTful</ows:Value>" << std::endl;
+    ss << "              </ows:AllowedValues>" << std::endl;
+    ss << "            </ows:Constraint>" << std::endl;
+	ss << "            <xlink:href=\"" << base_url << "/tile/\">" << std::endl;
+	ss << R"(            <xlink:href=")" << base_url << R"(/tile/">)" << std::endl;
+    ss << "          </ows:Get>" << std::endl;
+    ss << "        </ows:HTTP>" << std::endl;
+    ss << "      </ows:DCP>" << std::endl;
+    ss << "    </ows:Operation>" << std::endl;
+    
+    // GetCapabilities operation
+    ss << R"(    <ows:Operation name="GetCapabilities">)" << std::endl;
+    ss << "      <ows:DCP>" << std::endl;
+    ss << "        <ows:HTTP>" << std::endl;
+    ss << "          <ows:Get>" << std::endl;
+    ss << R"(            <xlink:href=")" << base_url << R"(/1.0.0/WMTSCapabilities.xml">)" << std::endl;
+    ss << "          </ows:Get>" << std::endl;
+    ss << "        </ows:HTTP>" << std::endl;
+    ss << "      </ows:DCP>" << std::endl;
+    ss << "    </ows:Operation>" << std::endl;
+    
+    // GetFeatureInfo operation (optional)
+    ss << R"(    <ows:Operation name="GetFeatureInfo">)" << std::endl;
+    ss << "      <ows:DCP>" << std::endl;
+    ss << "        <ows:HTTP>" << std::endl;
+    ss << "          <ows:Get>" << std::endl;
+    ss << R"(            <xlink:href=")" << base_url << R"(/featureinfo/">)" << std::endl;
+    ss << "          </ows:Get>" << std::endl;
+    ss << "        </ows:HTTP>" << std::endl;
+    ss << "      </ows:DCP>" << std::endl;
+    ss << "    </ows:Operation>" << std::endl;
+    
+    ss << "  </ows:OperationsMetadata>" << std::endl;
+    
+    // Contents - Layer
+    ss << "  <Contents>" << std::endl;
+    ss << "    <Layer>" << std::endl;
+    ss << "      <ows:Title>Cycle Map</ows:Title>" << std::endl;
+    ss << "      <ows:Abstract>Base map layer</ows:Abstract>" << std::endl;
+    ss << "      <ows:Identifier>cycle_map</ows:Identifier>" << std::endl;
+    
+    // Style
+    ss << "      <Style>" << std::endl;
+    ss << "        <ows:Identifier>default</ows:Identifier>" << std::endl;
+    ss << "        <ows:Title>Default Style</ows:Title>" << std::endl;
+    ss << "        <isDefault>true</isDefault>" << std::endl;
+    ss << "      </Style>" << std::endl;
+    
+    // Format
+    ss << "      <Format>image/png</Format>" << std::endl;
+    ss << "      <Format>image/webp</Format>" << std::endl;
+    ss << "      <Format>image/jpeg</Format>" << std::endl;
+    
+    // TileMatrixSetLink
+    ss << "      <TileMatrixSetLink>" << std::endl;
+    ss << "        <TileMatrixSet>GoogleMapsCompatible</TileMatrixSet>" << std::endl;
+    ss << "      </TileMatrixSetLink>" << std::endl;
+    
+    // ResourceURL for tile (RESTful)
+    ss << R"(      <ResourceURL format="image/png" resourceType="tile" template=")" << base_url << R"(/tile/{TileMatrix}/{TileCol}/{TileRow}.png">)" << std::endl;
+    ss << R"(      <ResourceURL format="image/webp" resourceType="tile" template=")" << base_url << R"(/tile/{TileMatrix}/{TileCol}/{TileRow}.webp">)" << std::endl;
+    
+    // ResourceURL for feature info
+    ss << R"(      <ResourceURL format="application/json" resourceType="featureinfo" template=")" << base_url << R"(/featureinfo/{TileMatrix}/{TileCol}/{TileRow}/{I}.json">)" << std::endl;
+    
+    ss << "    </Layer>" << std::endl;
+    
+    // TileMatrixSet - GoogleMapsCompatible (EPSG:3857)
+    ss << "    <TileMatrixSet>" << std::endl;
+    ss << "      <ows:Identifier>GoogleMapsCompatible</ows:Identifier>" << std::endl;
+    ss << "      <ows:SupportedCRS>EPSG:3857</ows:SupportedCRS>" << std::endl;
+    
+    // Generate TileMatrix for zoom levels 0-19
+    double scale_denominator = 559082264.0287178;
+    int matrix_width = 1;
+    int matrix_height = 1;
+    
+    for (int z = 0; z <= 19; z++) {
+        ss << "      <TileMatrix>" << std::endl;
+        ss << "        <ows:Identifier>" << z << "</ows:Identifier>" << std::endl;
+        ss << "        <ScaleDenominator>" << scale_denominator << "</ScaleDenominator>" << std::endl;
+        ss << "        <TopLeftCorner>-20037508.34 20037508.34</TopLeftCorner>" << std::endl;
+        ss << "        <TileWidth>256</TileWidth>" << std::endl;
+        ss << "        <TileHeight>256</TileHeight>" << std::endl;
+        ss << "        <MatrixWidth>" << matrix_width << "</MatrixWidth>" << std::endl;
+        ss << "        <MatrixHeight>" << matrix_height << "</MatrixHeight>" << std::endl;
+        ss << "      </TileMatrix>" << std::endl;
+        
+        // Next level
+        scale_denominator /= 2.0;
+        matrix_width *= 2;
+        matrix_height *= 2;
+    }
+    
+    ss << "    </TileMatrixSet>" << std::endl;
+    ss << "  </Contents>" << std::endl;
+    
     ss << "</Capabilities>" << std::endl;
     
     return ss.str();

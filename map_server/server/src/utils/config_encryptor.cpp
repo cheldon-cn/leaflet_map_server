@@ -651,7 +651,9 @@ bool SecureConfigManager::LoadSecureConfig(const std::string& config_path) {
         config_file.close();
         
         // 解析配置并存储
-        for (auto& [key, value] : config_json.items()) {
+        for (auto& item : config_json.items()) {
+			auto& key = item.key();
+			auto& value = item.value();
             if (value.is_string()) {
                 config_cache_[key] = value.get<std::string>();
             }
@@ -670,7 +672,9 @@ bool SecureConfigManager::SaveSecureConfig(const std::string& config_path) {
     try {
         nlohmann::json config_json;
         
-        for (const auto& [key, value] : config_cache_) {
+		for (const auto&item : config_cache_) {
+				auto& key = item.first;
+				auto& value = item.second;
             config_json[key] = value;
         }
         

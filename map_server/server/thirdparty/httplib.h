@@ -8,8 +8,8 @@
 #ifndef CPPHTTPLIB_HTTPLIB_H
 #define CPPHTTPLIB_HTTPLIB_H
 
-#define CPPHTTPLIB_VERSION "0.37.1"
-#define CPPHTTPLIB_VERSION_NUM "0x002501"
+#define CPPHTTPLIB_VERSION "0.37.2"
+#define CPPHTTPLIB_VERSION_NUM "0x002502"
 
 #ifdef _WIN32
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0A00
@@ -687,6 +687,18 @@ inline from_chars_result<double> from_chars(const char *first, const char *last,
     return {first + (endptr - s.c_str()), std::errc::result_out_of_range};
   }
   return {first + (endptr - s.c_str()), std::errc{}};
+}
+
+inline bool parse_port(const char *s, size_t len, int &port) {
+  int val = 0;
+  auto r = from_chars(s, s + len, val);
+  if (r.ec != std::errc{} || val < 1 || val > 65535) { return false; }
+  port = val;
+  return true;
+}
+
+inline bool parse_port(const std::string &s, int &port) {
+  return parse_port(s.data(), s.size(), port);
 }
 
 } // namespace detail
@@ -2635,19 +2647,19 @@ private:
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
 public:
-  [[deprecated("Use SSLServer(PemMemory) or "
-               "SSLServer(ContextSetupCallback) instead")]]
+	/*[[deprecated("Use SSLServer(PemMemory) or "
+				 "SSLServer(ContextSetupCallback) instead")]]*/
   SSLServer(X509 *cert, EVP_PKEY *private_key,
             X509_STORE *client_ca_cert_store = nullptr);
 
-  [[deprecated("Use SSLServer(ContextSetupCallback) instead")]]
+  //[[deprecated("Use SSLServer(ContextSetupCallback) instead")]]
   SSLServer(
       const std::function<bool(SSL_CTX &ssl_ctx)> &setup_ssl_ctx_callback);
 
-  [[deprecated("Use tls_context() instead")]]
+  //[[deprecated("Use tls_context() instead")]]
   SSL_CTX *ssl_context() const;
 
-  [[deprecated("Use update_certs_pem() instead")]]
+  //[[deprecated("Use update_certs_pem() instead")]]
   void update_certs(X509 *cert, EVP_PKEY *private_key,
                     X509_STORE *client_ca_cert_store = nullptr);
 #endif
@@ -2728,7 +2740,7 @@ private:
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
 public:
-  [[deprecated("Use SSLClient(host, port, PemMemory) instead")]]
+ // [[deprecated("Use SSLClient(host, port, PemMemory) instead")]]
   explicit SSLClient(const std::string &host, int port, X509 *client_cert,
                      EVP_PKEY *client_key,
                      const std::string &private_key_password = std::string());
@@ -5792,9 +5804,9 @@ inline int getaddrinfo_with_timeout(const char *node, const char *service,
     memcpy((*current)->ai_addr, sockaddr_ptr, sockaddr_len);
 
     // Set port if service is specified
-    if (service && strlen(service) > 0) {
-      int port = atoi(service);
-      if (port > 0) {
+    if (service && *service) {
+      int port = 0;
+      if (parse_port(service, strlen(service), port)) {
         if (sockaddr_ptr->sa_family == AF_INET) {
           reinterpret_cast<struct sockaddr_in *>((*current)->ai_addr)
               ->sin_port = htons(static_cast<uint16_t>(port));
@@ -6811,6 +6823,16 @@ inline bool read_headers(Stream &strm, Headers &headers) {
     }
 
     header_count++;
+  }
+
+  // RFC 9110 Section 8.6: Reject requests with multiple Content-Length
+  // headers that have different values to prevent request smuggling.
+  auto cl_range = headers.equal_range("Content-Length");
+  if (cl_range.first != cl_range.second) {
+    const auto &first_val = cl_range.first->second;
+    for (auto it = std::next(cl_range.first); it != cl_range.second; ++it) {
+      if (it->second != first_val) { return false; }
+    }
   }
 
   return true;
@@ -11319,6 +11341,10 @@ inline bool Server::listen_internal() {
       detail::set_socket_opt_time(sock, SOL_SOCKET, SO_SNDTIMEO,
                                   write_timeout_sec_, write_timeout_usec_);
 
+      if (tcp_nodelay_) {
+        detail::set_socket_opt(sock, IPPROTO_TCP, TCP_NODELAY, 1);
+      }
+
       if (!task_queue->enqueue(
               [this, sock]() { process_and_close_socket(sock); })) {
         output_error_log(Error::ResourceExhaustion, nullptr);
@@ -12708,7 +12734,7 @@ inline bool ClientImpl::redirect(Request &req, Response &res, Error &error) {
 
   auto next_port = port_;
   if (!port_str.empty()) {
-    next_port = std::stoi(port_str);
+    if (!detail::parse_port(port_str, next_port)) { return false; }
   } else if (!next_scheme.empty()) {
     next_port = next_scheme == "https" ? 443 : 80;
   }
@@ -12759,18 +12785,10 @@ inline bool ClientImpl::create_redirect_client(
     // Setup basic client configuration first
     setup_redirect_client(redirect_client);
 
-    // SSL-specific configuration for proxy environments
-    if (!proxy_host_.empty() && proxy_port_ != -1) {
-      // Critical: Disable SSL verification for proxy environments
-      redirect_client.enable_server_certificate_verification(false);
-      redirect_client.enable_server_hostname_verification(false);
-    } else {
-      // For direct SSL connections, copy SSL verification settings
-      redirect_client.enable_server_certificate_verification(
-          server_certificate_verification_);
-      redirect_client.enable_server_hostname_verification(
-          server_hostname_verification_);
-    }
+    redirect_client.enable_server_certificate_verification(
+        server_certificate_verification_);
+    redirect_client.enable_server_hostname_verification(
+        server_hostname_verification_);
 
     // Transfer CA certificate to redirect client
     if (!ca_cert_pem_.empty()) {
@@ -14487,7 +14505,8 @@ inline Client::Client(const std::string &scheme_host_port,
     if (host.empty()) { host = m[3].str(); }
 
     auto port_str = m[4].str();
-    auto port = !port_str.empty() ? std::stoi(port_str) : (is_ssl ? 443 : 80);
+    auto port = is_ssl ? 443 : 80;
+    if (!port_str.empty() && !detail::parse_port(port_str, port)) { return; }
 
     if (is_ssl) {
 #ifdef CPPHTTPLIB_SSL_ENABLED
@@ -16774,12 +16793,12 @@ inline bool get_cert_sans(cert_t cert, std::vector<SanEntry> &sans) {
         if (len == 4) {
           // IPv4
           char buf[INET_ADDRSTRLEN];
-          inet_ntop(AF_INET, data, buf, sizeof(buf));
+          inet_ntop(AF_INET, (PVOID)data, buf, sizeof(buf));
           entry.value = buf;
         } else if (len == 16) {
           // IPv6
           char buf[INET6_ADDRSTRLEN];
-          inet_ntop(AF_INET6, data, buf, sizeof(buf));
+          inet_ntop(AF_INET6, (PVOID)data, buf, sizeof(buf));
           entry.value = buf;
         }
       }
@@ -19900,7 +19919,8 @@ inline WebSocketClient::WebSocketClient(
     if (host_.empty()) { host_ = m[3].str(); }
 
     auto port_str = m[4].str();
-    port_ = !port_str.empty() ? std::stoi(port_str) : (is_ssl ? 443 : 80);
+    port_ = is_ssl ? 443 : 80;
+    if (!port_str.empty() && !detail::parse_port(port_str, port_)) { return; }
 
     path_ = m[5].str();
 
