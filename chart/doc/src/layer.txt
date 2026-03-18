@@ -1,0 +1,459 @@
+CNLayer 及其派生类设计文档
+1. 概述
+CNLayer 是 OGC 命名空间下的抽象基类，对应 GDAL/OGR 的 OGRLayer，提供了统一的矢量/栅格图层操作接口。其设计目标包括：
+
+功能完整性：覆盖 OGRLayer 的核心接口（要素读写、过滤器、事务、字段管理等）。
+
+扩展性：允许针对不同数据源（文件、内存、数据库、网络服务）实现具体图层。
+
+多线程安全：内置线程安全设计，支持并发访问。
+
+跨平台：纯 C++11 实现，无平台依赖。
+
+与现代 C++ 集成：使用智能指针、移动语义、PIMPL 等 C++11 特性。
+
+基于 CNLayer，我们实现了多个派生类：
+
+CNMemoryLayer：纯内存图层，用于临时数据缓存和处理。
+
+CNVectorLayer：通用矢量图层，支持 Shapefile、GeoJSON、PostGIS 等多种 OGC 矢量格式。
+
+CNRasterLayer：栅格图层，支持 GeoTIFF、JPEG2000、PNG 等 OGC 栅格格式。
+
+此外，还讨论了是否应生成特定几何类型的图层类（如 CNPointLayer、CNLineLayer）以提供类型安全和优化操作。
+
+2. CNLayer 抽象基类
+CNLayer 定义了一组纯虚函数，所有派生类必须实现。接口按功能分类如下：
+
+2.1 图层基本信息
+cpp
+virtual const char* GetName() const = 0;
+virtual CNGeometryType GetGeometryType() const = 0;
+virtual CNSpatialReference* GetSpatialRef() = 0;
+virtual const CNSpatialReference* GetSpatialRef() const = 0;
+2.2 能力测试
+cpp
+virtual bool TestCapability(CNLayerCapability capability) const = 0;
+CNLayerCapability 枚举定义了一系列能力，如随机读写、快速空间过滤、事务支持等。
+
+2.3 要素定义
+cpp
+virtual CNFeatureDefn* GetLayerDefn() = 0;
+virtual const CNFeatureDefn* GetLayerDefn() const = 0;
+virtual int GetFieldCount() const = 0;
+virtual CNFieldDefn* GetFieldDefn(int iField) = 0;
+virtual const CNFieldDefn* GetFieldDefn(int iField) const = 0;
+2.4 几何字段定义（用于支持多几何字段）
+cpp
+virtual int GetGeomFieldCount() const = 0;
+virtual CNGeomFieldDefn* GetGeomFieldDefn(int iGeomField) = 0;
+virtual const char* GetGeomFieldName(int iGeomField) const = 0;
+virtual CNSpatialReference* GetGeomFieldSpatialRef(int iGeomField) = 0;
+2.5 要素读取与遍历
+cpp
+virtual void ResetReading() = 0;
+virtual CNFeature* GetNextFeature() = 0;
+virtual CNStatus GetNextFeatures(int nMaxFeatures, std::vector<CNFeature*>& features) = 0;
+2.6 随机访问
+cpp
+virtual CNFeature* GetFeature(int64_t nFID) = 0;
+virtual void SetNextByIndex(int64_t nIndex) = 0;
+2.7 过滤器
+cpp
+virtual CNStatus SetAttributeFilter(const char* pszFilter) = 0;
+virtual const char* GetAttributeFilter() const = 0;
+virtual void SetSpatialFilter(CNGeometry* poGeom) = 0;
+virtual void SetSpatialFilter(int iGeomField, CNGeometry* poGeom) = 0;
+virtual void SetSpatialFilterRect(double dfMinX, double dfMinY,
+                                  double dfMaxX, double dfMaxY) = 0;
+virtual void SetSpatialFilter(CNLayer* poOtherLayer) = 0;
+virtual CNGeometry* GetSpatialFilter() const = 0;
+virtual CNGeometry* GetSpatialFilter(int iGeomField) const = 0;
+2.8 要素写入与编辑
+cpp
+virtual CNFeature* CreateFeature(CNFeatureDefn* poDefn = nullptr) = 0;
+virtual CNStatus CreateFeature(CNFeature* poFeature) = 0;
+virtual CNStatus ICreateFeature(CNFeature* poFeature) = 0; // 直接插入
+virtual CNStatus SetFeature(CNFeature* poFeature) = 0;     // 更新
+virtual CNStatus DeleteFeature(int64_t nFID) = 0;
+virtual CNStatus UpsertFeature(CNFeature* poFeature) = 0;
+2.9 事务支持
+cpp
+virtual CNStatus StartTransaction() = 0;
+virtual CNStatus CommitTransaction() = 0;
+virtual CNStatus RollbackTransaction() = 0;
+virtual bool IsInTransaction() const = 0;
+2.10 查询与统计
+cpp
+virtual int64_t GetFeatureCount(bool bForce = true) = 0;
+virtual int64_t GetFeatureCount(const char* pszFilter, bool bForce = true) = 0;
+virtual CNStatus GetExtent(CNExtent* psExtent, bool bForce = true) = 0;
+virtual CNStatus GetExtent(int iGeomField, CNExtent* psExtent, bool bForce = true) = 0;
+2.11 同步与缓存
+cpp
+virtual CNStatus SyncToDisk() = 0;
+virtual CNStatus FlushCache() = 0;
+2.12 索引管理
+cpp
+virtual CNStatus CreateSpatialIndex() = 0;
+virtual CNStatus CreateSpatialIndex(int iGeomField) = 0;
+virtual CNStatus DropSpatialIndex() = 0;
+virtual CNStatus CreateFieldIndex(int iField) = 0;
+virtual CNStatus DropFieldIndex(int iField) = 0;
+2.13 字段与几何字段操作（动态修改图层定义）
+cpp
+virtual CNStatus CreateField(CNFieldDefn* poField, bool bApproxOK = true) = 0;
+virtual CNStatus DeleteField(int iField) = 0;
+virtual CNStatus ReorderFields(int* panMap) = 0;
+virtual CNStatus ReorderField(int iOldPos, int iNewPos) = 0;
+virtual CNStatus AlterFieldDefn(int iField, CNFieldDefn* poNewFieldDefn, int nFlags) = 0;
+virtual CNStatus CreateGeomField(CNGeomFieldDefn* poField, bool bApproxOK = true) = 0;
+virtual CNStatus DeleteGeomField(int iGeomField) = 0;
+2.14 图层操作
+cpp
+virtual CNStatus CopyTo(CNLayer* poOutLayer, const char** papszOptions = nullptr) = 0;
+virtual CNStatus CopyTo(CNLayer* poOutLayer, const std::vector<std::string>& options) = 0;
+2.15 属性统计
+cpp
+virtual CNStatus GetFieldStatistics(int iField,
+                                   double* pdfMin, double* pdfMax,
+                                   double* pdfMean, double* pdfStdDev,
+                                   int64_t* pnCount = nullptr,
+                                   int64_t* pnNullCount = nullptr) = 0;
+virtual CNStatus GetFieldDistinctValues(int iField,
+                                       std::vector<CNFieldValue>& values,
+                                       int nMaxValues = 0) = 0;
+2.16 线程安全访问
+cpp
+virtual bool TryGetFeature(int64_t nFID, CNFeature*& pFeature) noexcept = 0;
+virtual bool TrySetFeature(CNFeature* poFeature) noexcept = 0;
+virtual bool TryDeleteFeature(int64_t nFID) noexcept = 0;
+2.17 批量操作
+cpp
+virtual CNStatus BulkCreateFeatures(const std::vector<CNFeature*>& features) = 0;
+virtual CNStatus BulkSetFeatures(const std::vector<CNFeature*>& features) = 0;
+virtual CNStatus BulkDeleteFeatures(const std::vector<int64_t>& fids) = 0;
+2.18 迭代器支持
+cpp
+class FeatureIterator {
+public:
+    virtual ~FeatureIterator() = default;
+    virtual bool HasNext() const = 0;
+    virtual CNFeature* Next() = 0;
+    virtual void Reset() = 0;
+    virtual int64_t GetEstimatedRemaining() const = 0;
+};
+virtual FeatureIterator* CreateIterator() = 0;
+virtual FeatureIterator* CreateIterator(const char* pszFilter) = 0;
+2.19 图层连接（Join）支持
+cpp
+struct CNLayerJoinInfo {
+    std::string targetField;
+    CNLayer* joinLayer;
+    std::string joinField;
+    std::string joinType;
+    std::vector<std::string> prefixFields;
+};
+virtual CNStatus AddJoin(const CNLayerJoinInfo& joinInfo) = 0;
+virtual CNStatus RemoveJoin(const std::string& targetField) = 0;
+virtual bool HasJoin(const std::string& targetField) const = 0;
+2.20 图层配置
+cpp
+virtual CNStatus SetOptions(const CNLayerOptions& options) = 0;
+virtual CNLayerOptions GetOptions() const = 0;
+virtual CNStatus SetOption(const std::string& key, const std::string& value) = 0;
+virtual std::string GetOption(const std::string& key, const std::string& defaultValue = "") const = 0;
+2.21 回调与事件
+cpp
+using FeatureCallback = std::function<bool(CNFeature*)>;
+virtual CNStatus ForEachFeature(const FeatureCallback& callback) = 0;
+using ProgressCallback = std::function<bool(double progress, const char* message)>;
+virtual void SetProgressCallback(ProgressCallback callback) = 0;
+2.22 验证与诊断
+cpp
+virtual bool Validate() const = 0;
+virtual std::vector<std::string> GetValidationErrors() const = 0;
+virtual CNStatus Repair() = 0;
+2.23 性能优化
+cpp
+virtual CNStatus Optimize() = 0;
+virtual CNStatus SetChunkSize(int chunkSize) = 0;
+virtual int GetChunkSize() const = 0;
+3. 派生类实现
+3.1 CNMemoryLayer（内存图层）
+CNMemoryLayer 是一个纯内存实现的图层，所有数据存储在 RAM 中。它实现了 CNLayer 的所有接口，适用于临时数据处理、缓存和测试场景。
+
+主要特点：
+
+数据结构：使用 std::vector 存储要素，std::unordered_map 实现 FID 快速查找。
+
+多线程安全：使用细粒度锁（数据锁、读取锁、过滤器锁、事务锁）保护不同数据区域。
+
+事务支持：通过事务快照实现回滚，支持内存事务。
+
+空间过滤：支持矩形过滤，不支持空间索引。
+
+要素创建：支持自动生成 FID。
+
+特有方法：
+
+cpp
+CNStatus Clear();                           // 清空所有要素
+CNStatus Reserve(int64_t expectedCount);    // 预分配内存
+CNStatus ShrinkToFit();                     // 压缩内存
+CNStatus GetMemoryUsage(int64_t& featureCount, int64_t& memoryBytes) const;
+void SetAutoFIDGeneration(bool autoGenerate);
+int64_t GetNextFID() const;
+bool HasFeature(int64_t fid) const;
+适用场景：
+
+临时数据缓存（如地理处理中间结果）
+
+单元测试和数据验证
+
+不需要持久化的内存数据集
+
+3.2 CNVectorLayer（矢量图层）
+CNVectorLayer 是一个通用的矢量图层实现，支持多种 OGC 矢量数据格式（Shapefile、GeoJSON、PostGIS、GPKG 等）。它提供了文件访问、空间索引、缓存管理和格式特定操作。
+
+主要特点：
+
+格式支持：通过枚举 VectorFormat 标识格式，自动检测文件扩展名。
+
+打开模式：OpenMode（只读、读写、创建）。
+
+空间索引：支持四叉树、R 树等多种索引类型，可动态创建和重建。
+
+缓存机制：LRU 缓存存储最近访问的要素，减少 I/O。
+
+事务支持：对支持事务的数据源（如 PostGIS）提供完整事务。
+
+SQL 执行：对支持 SQL 的数据源提供 ExecuteSQL 接口。
+
+元数据管理：支持读取和设置图层元数据。
+
+特定几何优化：虽未直接提供特定几何类型图层，但可通过包装器实现。
+
+特有接口：
+
+cpp
+VectorFormat GetFormat() const;
+std::string GetFilename() const;
+OpenMode GetOpenMode() const;
+bool IsWritable() const;
+
+// 空间索引
+CNStatus SetSpatialIndexType(SpatialIndexType indexType, bool rebuild = true);
+SpatialIndexType GetSpatialIndexType() const;
+CNStatus RebuildSpatialIndex();
+CNStatus GetSpatialIndexStatus(bool& isBuilt, int64_t& elementCount) const;
+
+// 缓存
+CNStatus SetCacheSize(int64_t maxFeatures);
+int64_t GetCacheSize() const;
+CNStatus ClearCache();
+
+// SQL 执行
+CNLayer* ExecuteSQL(const std::string& sql);
+void ReleaseResult(CNLayer* resultLayer);
+
+// 元数据
+std::unordered_map<std::string, std::string> GetMetadata(const std::string& domain = "") const;
+CNStatus SetMetadata(const std::unordered_map<std::string, std::string>& metadata,
+                    const std::string& domain = "");
+适用场景：
+
+读写主流矢量文件格式
+
+连接空间数据库（PostGIS、SpatiaLite）
+
+需要高性能缓存和索引的矢量数据访问
+
+3.3 CNRasterLayer（栅格图层）
+CNRasterLayer 是一个栅格图层实现，支持 OGC 栅格格式（GeoTIFF、JPEG2000、PNG、JPEG 等），并提供地理参考、波段管理、金字塔、重采样等栅格特定功能。
+
+主要特点：
+
+数据类型：CNRasterDataType 枚举支持多种像素类型（Byte、UInt16、Float32 等）。
+
+色彩解释：CNColorInterpretation 描述波段颜色含义。
+
+地理参考：通过 GeoTransform 和空间参考对象管理坐标系。
+
+波段操作：每个波段通过 CNRasterBand 类单独访问，支持块读写、统计、直方图等。
+
+金字塔：可构建多分辨率金字塔，提高显示性能。
+
+重采样：支持多种重采样方法（最近邻、双线性、三次卷积等）。
+
+缓存管理：块缓存机制优化 I/O。
+
+进度回调：支持长时间操作（如重采样、建金字塔）的进度报告。
+
+特有接口：
+
+cpp
+// 基本信息
+CNRasterFormat GetFormat() const;
+std::string GetFilename() const;
+bool IsReadOnly() const;
+int GetWidth() const;
+int GetHeight() const;
+int GetBandCount() const;
+CNRasterDataType GetRasterDataType() const;
+int GetDataTypeSize() const;
+
+// 地理参考
+CNStatus GetGeoTransform(double transform[6]) const;
+CNStatus SetGeoTransform(const double transform[6]);
+CNStatus PixelToWorld(double pixelX, double pixelY, double& worldX, double& worldY) const;
+CNStatus WorldToPixel(double worldX, double worldY, double& pixelX, double& pixelY) const;
+
+// 波段
+CNRasterBand* GetRasterBand(int bandIndex);
+const CNRasterBand* GetRasterBand(int bandIndex) const;
+CNStatus GetBandStatistics(int bandIndex, CNRasterStatistics& stats, bool force = false);
+
+// 像素读写
+CNStatus ReadRaster(int xOff, int yOff, int xSize, int ySize,
+                   void* buffer, int bufXSize, int bufYSize,
+                   CNRasterDataType bufType,
+                   int bandCount = 0, int* bandMap = nullptr,
+                   int pixelSpace = 0, int lineSpace = 0,
+                   int bandSpace = 0);
+CNStatus WriteRaster(...);
+
+// 重采样和变换
+CNStatus Resample(int newWidth, int newHeight,
+                 CNResampleMethod method = CNResampleMethod::CN_RM_Bilinear,
+                 ProgressCallback progress = nullptr);
+
+// 金字塔
+bool HasPyramids() const;
+CNStatus BuildPyramids(int levels = -1,
+                      CNResampleMethod method = CNResampleMethod::CN_RM_Average,
+                      const std::vector<std::string>& options = {},
+                      ProgressCallback progress = nullptr);
+CNStatus GetPyramidLevels(std::vector<CNPyramidLevel>& levels) const;
+
+// 缓存
+CNStatus SetBlockCacheSize(size_t cacheSizeMB);
+size_t GetBlockCacheSize() const;
+CNStatus FlushBlockCache();
+
+// 进度回调
+void SetRasterProgressCallback(std::function<bool(double)> callback);
+适用场景：
+
+遥感影像处理
+
+数字高程模型（DEM）分析
+
+地图服务中的瓦片生成
+
+地理参考图像显示
+
+4. 关于特定几何类型图层的讨论
+在对话中，我们探讨了是否需要为点、线、面等特定几何类型创建专门的图层类（如 CNPointLayer、CNLineLayer）。结论如下：
+
+两种方案的权衡
+方案	优点	缺点
+统一矢量图层 （CNVectorLayer）	接口简单，一个类处理所有几何类型；易于扩展新格式；维护成本低。	缺少类型安全，几何操作需运行时检查；无法针对特定几何类型优化。
+特定几何图层	类型安全，编译时保证几何类型；可提供几何特有的高效方法（如点聚类、线网络分析、面拓扑检查）；接口更直观。	类数量增加，维护成本上升；需要为每个新几何类型创建新类。
+推荐的混合设计
+我们建议采用模板+继承+包装器的混合设计：
+
+基础模板 CNGeometryLayer<GeomType> 提供类型安全的通用几何操作。
+
+具体实现：CNPointLayer、CNLineLayer、CNPolygonLayer 继承自模板，添加特定方法。
+
+包装器模式：CNVectorLayer 可通过包装器提供几何特定功能而不修改原有类。
+
+工厂模式：根据图层实际几何类型自动创建适当的特定图层包装器。
+
+示例：
+
+cpp
+// 工厂自动识别
+auto layer = CNLayerFactory::OpenLayer("points.shp"); // 返回 CNPointLayerWrapper
+if (auto pointLayer = dynamic_cast<CNPointLayer*>(layer.get())) {
+    pointLayer->FindPointsWithinRadius(100, 200, 50);
+}
+这样既保持了 CNVectorLayer 的核心简单性，又为需要高级功能的用户提供了类型安全和优化选项。
+
+5. 辅助类与工具
+5.1 CNFeatureGuard（RAII 要素包装器）
+自动管理 CNFeature 的生命周期，类似 std::unique_ptr，确保要素被正确销毁。
+
+5.2 CNBatchProcessor（批量处理器）
+用于高效批量创建、更新或删除要素，支持事务、进度回调、错误处理和并行处理。
+
+5.3 CNSpatialQuery（空间查询构建器）
+提供流畅的 API 构建复杂空间查询，支持多种空间关系、属性过滤、排序、分页。
+
+5.4 CNLayerFactory（图层工厂）
+统一创建各种图层的工厂函数：
+
+cpp
+std::unique_ptr<CNVectorLayer> OpenVectorLayer(const std::string& filename,
+                                              const std::string& layerName = "",
+                                              CNVectorLayer::OpenMode mode = ...);
+std::unique_ptr<CNRasterLayer> OpenRasterLayer(const std::string& filename,
+                                              bool readOnly = true);
+// 以及创建内存、特定格式图层的方法
+6. 使用示例
+6.1 打开并读取矢量图层
+cpp
+auto layer = OpenVectorLayer("cities.shp");
+layer->SetSpatialFilterRect(100, 200, 300, 400);  // 空间过滤
+layer->SetAttributeFilter("population > 1000000"); // 属性过滤
+
+layer->ResetReading();
+CNFeature* feature;
+while ((feature = layer->GetNextFeature()) != nullptr) {
+    auto name = feature->GetFieldAsStdString("name");
+    auto pop = feature->GetFieldAsInteger64("population");
+    // 处理...
+    CNFeature::DestroyFeature(feature);
+}
+6.2 创建内存图层并添加要素
+cpp
+auto memLayer = std::make_unique<CNMemoryLayer>("temp", CNGeometryType::CN_GT_POINT);
+memLayer->SetAutoFIDGeneration(true);
+
+for (int i = 0; i < 100; ++i) {
+    auto feature = memLayer->CreateFeature();
+    auto point = std::make_unique<CNPoint>(i * 10.0, i * 10.0);
+    feature->SetGeometryDirectly(point.release());
+    feature->SetField("id", i);
+    memLayer->CreateFeature(feature);
+}
+6.3 使用栅格图层读取像素值
+cpp
+auto raster = OpenRasterLayer("dem.tif");
+int width = raster->GetWidth();
+int height = raster->GetHeight();
+
+std::vector<float> buffer(width * height);
+raster->ReadRaster(0, 0, width, height,
+                   buffer.data(), width, height,
+                   CNRasterDataType::CN_DT_Float32);
+
+// 计算平均值
+double sum = 0.0;
+for (float val : buffer) sum += val;
+double mean = sum / buffer.size();
+7. 总结
+CNLayer 及其派生类构成了一套完整的 OGC 数据访问体系，具有以下特点：
+
+统一接口：所有图层类继承自 CNLayer，确保使用一致性。
+
+功能丰富：覆盖了 OGR 和 GDAL 的主要功能，并增加了现代 C++ 特性。
+
+多线程安全：内置锁机制，支持并发访问。
+
+扩展性强：易于添加新的数据格式或几何类型。
+
+性能优化：缓存、索引、批量操作等机制提升效率。
+
+通过 CNMemoryLayer、CNVectorLayer 和 CNRasterLayer，我们可以处理从内存临时数据到文件、数据库、网络服务的各种地理数据源。配合辅助类和工具，能够构建高效、可维护的地理空间应用
