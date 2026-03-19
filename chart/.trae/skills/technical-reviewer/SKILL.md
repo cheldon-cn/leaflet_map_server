@@ -144,6 +144,37 @@ Legend:
 - multi = multi-role-reviewer
 ```
 
+## Performance Expectations
+
+### Review Time by Document Size
+
+| Document Size | Word Count | Review Time | Iterations | Total Time |
+|---------------|------------|-------------|------------|------------|
+| Small (<5000 words) | 2000-5000 | 1-2 minutes | 1-2 | 2-5 minutes |
+| Medium (5000-15000 words) | 5000-15000 | 2-4 minutes | 2-3 | 5-12 minutes |
+| Large (15000-30000 words) | 15000-30000 | 4-6 minutes | 3-4 | 12-24 minutes |
+| Extra Large (>30000 words) | 30000+ | 6-10 minutes | 4-5 | 24-50 minutes |
+
+### Performance Factors
+
+**Factors that increase review time:**
+- Document complexity: Multiple modules, complex dependencies
+- Issue count: More issues = more iterations
+- Expert role: Specialized roles may require deeper analysis
+- Iteration depth: Each iteration adds 2-5 minutes
+
+**Factors that decrease review time:**
+- High-quality initial document: Fewer iterations needed
+- Clear document structure: Faster parsing
+- Focused scope: Narrower review dimensions
+
+### Optimization Tips
+
+1. **Pre-review check**: Ensure document has clear structure
+2. **Scope focus**: Specify key dimensions to focus on
+3. **Iteration limit**: Default max 5 iterations, adjustable
+4. **Batch processing**: For multiple documents, process sequentially
+
 ## Review Process
 
 ```

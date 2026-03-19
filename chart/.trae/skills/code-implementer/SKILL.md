@@ -20,7 +20,64 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 3. **质量保证**：测试覆盖率 >80%
 4. **文档同步**：API文档与代码同步更新
 
-### 1.2 触发条件
+### 1.2 Quick Start (5分钟)
+
+**基本用法:**
+```
+> 开始实现任务清单中的任务
+```
+
+**指定语言:**
+```
+> 用Python实现用户认证模块，要求覆盖率>80%
+```
+
+**That's it!** 系统会：
+1. 分析任务清单，确定优先级
+2. 搭建测试环境
+3. 编写测试用例（红）
+4. 实现代码（绿）
+5. 重构优化
+6. 验证覆盖率>80%
+
+**快速输出示例:**
+```
+## 实现进度
+
+### ✅ T1: 用户模型 (已完成)
+- 测试用例: 5个 ✅
+- 代码覆盖率: 92%
+- 文档: 已更新
+
+### 🔄 T2: 认证服务 (进行中)
+- 测试用例: 3/8个
+- 当前状态: 编写实现代码
+
+### 📋 T3: API端点 (待开始)
+- 依赖: T2
+```
+
+### 1.3 性能预期
+
+| 项目规模 | 文件数 | 实施时间 | 测试覆盖率 |
+|----------|--------|----------|------------|
+| 小型 (<20文件) | 10-20 | 10-20分钟 | >85% |
+| 中型 (20-50文件) | 20-50 | 20-40分钟 | >80% |
+| 大型 (50-100文件) | 50-100 | 40-90分钟 | >80% |
+| 企业级 (>100文件) | 100+ | 90-180分钟 | >75% |
+
+**性能影响因素:**
+- 语言复杂度: C++ > Java > Python
+- 测试框架: Google Test配置较复杂
+- 依赖数量: 外部依赖多会增加时间
+- 代码复杂度: 算法密集型代码需要更多测试
+
+**优化建议:**
+- 先实现核心框架，再扩展功能
+- 使用Mock隔离外部依赖
+- 并行实现无依赖的任务
+
+### 1.4 触发条件
 
 当出现以下情况时，应调用本Skill：
 
@@ -2533,7 +2590,186 @@ void shouldCreateOrder() {
 
 ---
 
-## 九、版本历史
+## 九、完整项目示例
+
+### 9.1 Python项目示例：用户认证模块
+
+**任务清单输入:**
+```markdown
+# 用户认证模块任务清单
+
+## M1: 核心功能
+- [ ] T1: 用户模型 (4h)
+- [ ] T2: 密码哈希 (2h)
+- [ ] T3: 用户仓储 (4h)
+- [ ] T4: 认证服务 (6h)
+- [ ] T5: API端点 (4h)
+```
+
+**TDD实施过程:**
+
+**Step 1: T1 用户模型 - 编写测试**
+```python
+# tests/unit/test_user.py
+import pytest
+from datetime import datetime
+from src.models.user import User, UserStatus
+
+class TestUser:
+    def test_create_user_with_valid_data(self):
+        user = User(
+            id=1,
+            name="Test User",
+            email="test@example.com",
+            password_hash="hashed",
+            status=UserStatus.ACTIVE
+        )
+        assert user.id == 1
+        assert user.name == "Test User"
+        assert user.status == UserStatus.ACTIVE
+
+    def test_user_created_at_is_set(self):
+        user = User(id=1, name="Test", email="test@example.com")
+        assert user.created_at is not None
+        assert isinstance(user.created_at, datetime)
+
+    def test_user_default_status_is_pending(self):
+        user = User(id=1, name="Test", email="test@example.com")
+        assert user.status == UserStatus.PENDING
+```
+
+**Step 2: T1 用户模型 - 实现代码**
+```python
+# src/models/user.py
+from datetime import datetime
+from enum import Enum
+from dataclasses import dataclass
+
+class UserStatus(Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+@dataclass
+class User:
+    id: int
+    name: str
+    email: str
+    password_hash: str = ""
+    status: UserStatus = UserStatus.PENDING
+    created_at: datetime = None
+    
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
+```
+
+**Step 3: T2 密码哈希 - 编写测试**
+```python
+# tests/unit/test_password_hasher.py
+import pytest
+from src.services.password_hasher import PasswordHasher
+
+class TestPasswordHasher:
+    @pytest.fixture
+    def hasher(self):
+        return PasswordHasher()
+
+    def test_hash_password_returns_hashed_string(self, hasher):
+        password = "myPassword123"
+        hashed = hasher.hash(password)
+        assert hashed != password
+        assert len(hashed) > 0
+
+    def test_verify_correct_password(self, hasher):
+        password = "myPassword123"
+        hashed = hasher.hash(password)
+        assert hasher.verify(password, hashed) is True
+
+    def test_verify_wrong_password(self, hasher):
+        password = "myPassword123"
+        hashed = hasher.hash(password)
+        assert hasher.verify("wrongPassword", hashed) is False
+
+    def test_different_passwords_have_different_hashes(self, hasher):
+        hash1 = hasher.hash("password1")
+        hash2 = hasher.hash("password2")
+        assert hash1 != hash2
+```
+
+**Step 4: T2 密码哈希 - 实现代码**
+```python
+# src/services/password_hasher.py
+import bcrypt
+
+class PasswordHasher:
+    def __init__(self, rounds: int = 12):
+        self.rounds = rounds
+
+    def hash(self, password: str) -> str:
+        salt = bcrypt.gensalt(rounds=self.rounds)
+        return bcrypt.hashpw(password.encode(), salt).decode()
+
+    def verify(self, password: str, hashed: str) -> bool:
+        return bcrypt.checkpw(password.encode(), hashed.encode())
+```
+
+**运行测试验证覆盖率:**
+```bash
+$ pytest --cov=src --cov-report=term-missing
+
+---------- coverage: platform win32 ----------
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+src/__init__.py                       0      0   100%
+src/models/__init__.py                0      0   100%
+src/models/user.py                   15      0   100%
+src/services/__init__.py              0      0   100%
+src/services/password_hasher.py      10      0   100%
+-----------------------------------------------------
+TOTAL                                25      0   100%
+
+8 passed in 0.45s
+```
+
+**输出格式:**
+```markdown
+## 实现进度报告
+
+### ✅ T1: 用户模型 (已完成)
+- 测试用例: 3个 ✅
+- 代码覆盖率: 100%
+- 文件: src/models/user.py
+- 状态: 已通过代码审查
+
+### ✅ T2: 密码哈希 (已完成)
+- 测试用例: 4个 ✅
+- 代码覆盖率: 100%
+- 文件: src/services/password_hasher.py
+- 状态: 已通过代码审查
+
+### 📋 T3: 用户仓储 (待开始)
+- 依赖: T1
+- 预估工时: 4h
+
+### 📋 T4: 认证服务 (待开始)
+- 依赖: T2, T3
+- 预估工时: 6h
+
+### 📋 T5: API端点 (待开始)
+- 依赖: T4
+- 预估工时: 4h
+
+### 总体统计
+- 已完成任务: 2/5
+- 总测试用例: 7个
+- 平均覆盖率: 100%
+- 预计剩余时间: 14h
+```
+
+---
+
+## 十、版本历史
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|

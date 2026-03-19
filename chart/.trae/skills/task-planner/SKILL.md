@@ -9,6 +9,68 @@ description: "Decomposes design documents into independent development tasks wit
 
 This skill decomposes design documents into independent, actionable development tasks following software engineering best practices, with support for resource allocation, critical path analysis, and iterative planning.
 
+## Quick Start (5 Minutes)
+
+**Basic Usage:**
+```
+> 基于xxx设计文档，创建任务计划
+```
+
+**Specify Team Size:**
+```
+> 基于database_design.md，为3人团队创建任务计划
+```
+
+**That's it!** The system will:
+1. Analyze design document structure
+2. Decompose into 4-8 hour tasks
+3. Calculate critical path
+4. Allocate resources
+5. Generate TASKS.md with milestones
+
+**Quick Output Example:**
+```markdown
+# Project Task Plan
+
+## Overview
+- Total Tasks: 15
+- Total Estimated Hours: 120h (PERT expected)
+- Critical Path Duration: 80h
+- Team Size: 3 developers
+
+## Milestones
+
+### M1: Foundation (Week 1-2)
+| Task | Priority | Effort | Status | Assignee |
+|------|----------|--------|--------|----------|
+| T1: Project Setup | P0 | 4h | 📋 Todo | Dev A |
+| T2: Core Interfaces | P0 | 8h | 📋 Todo | Dev A |
+| T3: Database Layer | P1 | 6h | 📋 Todo | Dev B |
+
+### Critical Path
+T1 → T2 → T5 → T8 (80h)
+⚠️ Any delay on these tasks will delay the project
+```
+
+## Performance Expectations
+
+| Project Scale | Tasks Count | Planning Time | Output Size |
+|---------------|-------------|---------------|-------------|
+| Small (<10 modules) | 10-30 | 1-2 minutes | ~2KB TASKS.md |
+| Medium (10-30 modules) | 30-80 | 2-5 minutes | ~5KB TASKS.md |
+| Large (30-50 modules) | 80-150 | 5-10 minutes | ~10KB TASKS.md |
+| Enterprise (>50 modules) | 150+ | 10-20 minutes | ~20KB+ TASKS.md |
+
+**Performance Factors:**
+- Document complexity: More dependencies = longer analysis
+- Module count: Linear scaling with module count
+- Dependency depth: Deep dependencies require more critical path calculation
+
+**Optimization Tips:**
+- Pre-process design documents with design-doc-validator
+- Focus on core modules first for large projects
+- Use milestone-based planning for iterative refinement
+
 ## When to Invoke
 
 - User provides a design document and requests task decomposition
@@ -371,6 +433,8 @@ Before finalizing the task plan:
 
 ## Example Usage
 
+### Basic Usage
+
 ```
 User: "Based on database_model_design.md, create a task plan for the C++ core library"
 
@@ -380,6 +444,109 @@ AI: [Invokes task-planner skill]
     [Calculates critical path]
     [Allocates resources]
     [Generates TASKS.md with milestones, dependencies, and acceptance criteria]
+```
+
+### Complete Project Example
+
+**Input: User Authentication Module Design**
+
+```markdown
+# User Authentication Module Design
+
+## Overview
+Implement user authentication with JWT tokens, supporting registration, login, and password reset.
+
+## Modules
+1. **Auth Controller**: Handle HTTP requests
+2. **Auth Service**: Business logic
+3. **User Repository**: Data access
+4. **Token Service**: JWT generation and validation
+
+## Dependencies
+- Auth Controller → Auth Service
+- Auth Service → User Repository
+- Auth Service → Token Service
+
+## Technical Stack
+- Language: Python 3.11
+- Framework: FastAPI
+- Database: PostgreSQL
+- Cache: Redis
+```
+
+**Output: TASKS.md**
+
+```markdown
+# User Authentication Module - Task Plan
+
+## Overview
+- Total Tasks: 12
+- Total Estimated Hours: 56h (PERT expected)
+- Critical Path Duration: 32h
+- Target Completion: 2 weeks
+- Team Size: 2 developers
+
+## Resource Allocation
+| Developer | Skills | Allocation | Tasks |
+|-----------|--------|------------|-------|
+| Dev A | Python, FastAPI | 100% | T1, T2, T5, T6, T9, T10 |
+| Dev B | PostgreSQL, Redis | 100% | T3, T4, T7, T8, T11, T12 |
+
+## Critical Path
+T1 → T2 → T5 → T9 → T10 (32h)
+⚠️ Any delay on these tasks will delay the project
+
+## Milestones
+
+### M1: Foundation (Week 1)
+| Task | Priority | Effort | Status | Assignee | Float |
+|------|----------|--------|--------|----------|-------|
+| T1: Project Setup | P0 | 2h | 📋 Todo | Dev A | 0h ⚠️ |
+| T2: User Model & Schema | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
+| T3: Database Migration | P0 | 3h | 📋 Todo | Dev B | 1h |
+| T4: Redis Connection | P1 | 2h | 📋 Todo | Dev B | 2h |
+
+### M2: Core Features (Week 1-2)
+| Task | Priority | Effort | Status | Assignee | Float |
+|------|----------|--------|--------|----------|-------|
+| T5: User Repository | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
+| T6: Token Service | P0 | 4h | 📋 Todo | Dev A | 2h |
+| T7: Password Hashing | P1 | 2h | 📋 Todo | Dev B | 3h |
+| T8: Email Service | P2 | 3h | 📋 Todo | Dev B | 4h |
+
+### M3: API Endpoints (Week 2)
+| Task | Priority | Effort | Status | Assignee | Float |
+|------|----------|--------|--------|----------|-------|
+| T9: Auth Service | P0 | 6h | 📋 Todo | Dev A | 0h ⚠️ |
+| T10: Auth Controller | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
+| T11: Integration Tests | P1 | 4h | 📋 Todo | Dev B | 2h |
+| T12: API Documentation | P2 | 2h | 📋 Todo | Dev B | 4h |
+
+## Dependency Graph
+```
+[T1: Setup] ──► [T2: Model] ──► [T5: Repository] ──► [T9: Service] ──► [T10: Controller]
+                      │                                        │
+                      ▼                                        ▼
+               [T3: Migration]                          [T11: Tests]
+                      │                                        │
+                      ▼                                        ▼
+               [T4: Redis] ──► [T6: Token] ──► [T7: Hash] ──► [T12: Docs]
+                                        │
+                                        ▼
+                                  [T8: Email]
+```
+
+## Risk Register
+| Risk | Probability | Impact | Mitigation | Owner |
+|------|-------------|--------|------------|-------|
+| JWT library incompatibility | Low | High | Use proven library | Dev A |
+| Redis connection issues | Medium | Medium | Add retry logic | Dev B |
+| Password hashing performance | Low | Medium | Benchmark early | Dev B |
+
+## Change Log
+| Version | Date | Changes | Impact |
+|---------|------|---------|--------|
+| v1.0 | 2026-03-20 | Initial plan | - |
 ```
 
 ## Notes
