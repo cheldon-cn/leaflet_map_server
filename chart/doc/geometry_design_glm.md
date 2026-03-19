@@ -4952,6 +4952,2854 @@ private:
 
 ---
 
-**文档版本**: v2.1  
-**最后更新**: 2026年3月18日  
+## 18. 精度控制与鲁棒计算
+
+### 18.1 精度上下文
+
+```cpp
+/**
+ * @brief 精度上下文
+ * 
+ * 控制几何运算的精度参数，支持线程局部设置
+ */
+class PrecisionContext {
+public:
+    static PrecisionContext& GetCurrent();
+    
+    struct Settings {
+        double tolerance = 1e-9;           // 默认容差
+        double snapTolerance = 1e-6;       // 捕捉容差
+        bool useRobustGeometry = true;     // 使用鲁棒几何算法
+        size_t maxIterations = 100;        // 最大迭代次数
+    };
+    
+    void SetSettings(const Settings& settings);
+    const Settings& GetSettings() const noexcept;
+    
+    double GetTolerance() const noexcept { return m_settings.tolerance; }
+    double GetSnapTolerance() const noexcept { return m_settings.snapTolerance; }
+    
+    static void SetDefault(const Settings& settings);
+    static Settings GetDefault();
+    
+private:
+    PrecisionContext() = default;
+    
+    static thread_local Settings t_settings;
+    static Settings s_defaultSettings;
+    Settings m_settings;
+};
+
+/**
+ * @brief 精度上下文作用域守卫
+ */
+class PrecisionScope {
+public:
+    explicit PrecisionScope(const PrecisionContext::Settings& settings);
+    ~PrecisionScope();
+    
+    PrecisionScope(const PrecisionScope&) = delete;
+    PrecisionScope& operator=(const PrecisionScope&) = delete;
+    
+private:
+    PrecisionContext::Settings m_previous;
+};
+
+// 使用示例
+void PerformPreciseOperation() {
+    PrecisionContext::Settings settings;
+    settings.tolerance = 1e-12;
+    settings.useRobustGeometry = true;
+    
+    PrecisionScope scope(settings);
+    
+    // 在此作用域内，所有几何运算使用高精度设置
+    auto result = geom1->Intersection(geom2.get());
+}
+```
+
+### 18.2 鲁棒计算工具类
+
+```cpp
+/**
+ * @brief 鲁棒计算工具类
+ * 
+ * 提供数值稳定的几何计算方法
+ */
+class RobustComputations {
+public:
+    static constexpr double DEFAULT_EPSILON = 1e-12;
+    
+    /**
+     * @brief 鲁棒浮点比较
+     */
+    static int Compare(double a, double b, double epsilon = DEFAULT_EPSILON) {
+        double diff = a - b;
+        if (diff > epsilon) return 1;
+        if (diff < -epsilon) return -1;
+        return 0;
+    }
+    
+    static bool Equals(double a, double b, double epsilon = DEFAULT_EPSILON) {
+        return Compare(a, b, epsilon) == 0;
+    }
+    
+    static bool Greater(double a, double b, double epsilon = DEFAULT_EPSILON) {
+        return Compare(a, b, epsilon) > 0;
+    }
+    
+    static bool Less(double a, double b, double epsilon = DEFAULT_EPSILON) {
+        return Compare(a, b, epsilon) < 0;
+    }
+    
+    /**
+     * @brief 鲁棒符号计算
+     */
+    static int Sign(double value, double epsilon = DEFAULT_EPSILON) {
+        if (value > epsilon) return 1;
+        if (value < -epsilon) return -1;
+        return 0;
+    }
+    
+    /**
+     * @brief 鲁棒叉积（2D）
+     * 
+     * 计算向量 OA x OB
+     * 返回值：正数表示逆时针，负数表示顺时针，零表示共线
+     */
+    static double CrossProduct(
+        const Coordinate& o,
+        const Coordinate& a,
+        const Coordinate& b,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        double result = (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+        return std::abs(result) < epsilon ? 0.0 : result;
+    }
+    
+    /**
+     * @brief 鲁棒方向判断
+     * 
+     * 判断点C相对于有向线段AB的位置
+     * 返回值：1=左侧，-1=右侧，0=共线
+     */
+    static int Orientation(
+        const Coordinate& a,
+        const Coordinate& b,
+        const Coordinate& c,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        return Sign(CrossProduct(a, b, c), epsilon);
+    }
+    
+    /**
+     * @brief 鲁棒线段相交检测
+     */
+    static bool SegmentsIntersect(
+        const Coordinate& p1, const Coordinate& p2,
+        const Coordinate& q1, const Coordinate& q2,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        int d1 = Orientation(q1, q2, p1, epsilon);
+        int d2 = Orientation(q1, q2, p2, epsilon);
+        int d3 = Orientation(p1, p2, q1, epsilon);
+        int d4 = Orientation(p1, p2, q2, epsilon);
+        
+        if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+            ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+            return true;
+        }
+        
+        // 检查共线情况
+        if (d1 == 0 && OnSegment(q1, q2, p1, epsilon)) return true;
+        if (d2 == 0 && OnSegment(q1, q2, p2, epsilon)) return true;
+        if (d3 == 0 && OnSegment(p1, p2, q1, epsilon)) return true;
+        if (d4 == 0 && OnSegment(p1, p2, q2, epsilon)) return true;
+        
+        return false;
+    }
+    
+    /**
+     * @brief 点是否在线段上（假设已共线）
+     */
+    static bool OnSegment(
+        const Coordinate& a, const Coordinate& b,
+        const Coordinate& p,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        return p.x >= std::min(a.x, b.x) - epsilon &&
+               p.x <= std::max(a.x, b.x) + epsilon &&
+               p.y >= std::min(a.y, b.y) - epsilon &&
+               p.y <= std::max(a.y, b.y) + epsilon;
+    }
+    
+    /**
+     * @brief 鲁棒点在线上判断
+     */
+    static bool PointOnLine(
+        const Coordinate& p,
+        const Coordinate& a, const Coordinate& b,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        if (Orientation(a, b, p, epsilon) != 0) return false;
+        return OnSegment(a, b, p, epsilon);
+    }
+    
+    /**
+     * @brief 鲁棒面积计算（使用Shoelace公式）
+     */
+    static double SignedArea(const CoordinateList& ring, double epsilon = DEFAULT_EPSILON) {
+        if (ring.size() < 3) return 0.0;
+        
+        double area = 0.0;
+        size_t n = ring.size();
+        
+        for (size_t i = 0; i < n; ++i) {
+            size_t j = (i + 1) % n;
+            area += ring[i].x * ring[j].y;
+            area -= ring[j].x * ring[i].y;
+        }
+        
+        if (std::abs(area) < epsilon) return 0.0;
+        return area / 2.0;
+    }
+    
+    static double Area(const CoordinateList& ring, double epsilon = DEFAULT_EPSILON) {
+        return std::abs(SignedArea(ring, epsilon));
+    }
+    
+    /**
+     * @brief 判断环的方向（顺时针/逆时针）
+     */
+    static bool IsCCW(const CoordinateList& ring, double epsilon = DEFAULT_EPSILON) {
+        return SignedArea(ring, epsilon) > 0;
+    }
+    
+    /**
+     * @brief 鲁棒距离计算
+     */
+    static double Distance(
+        const Coordinate& a, const Coordinate& b,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        double dx = a.x - b.x;
+        double dy = a.y - b.y;
+        double dist = std::sqrt(dx * dx + dy * dy);
+        return dist < epsilon ? 0.0 : dist;
+    }
+    
+    /**
+     * @brief 点到线段的最近点
+     */
+    static Coordinate ClosestPointOnSegment(
+        const Coordinate& p,
+        const Coordinate& a, const Coordinate& b,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        double dx = b.x - a.x;
+        double dy = b.y - a.y;
+        double lenSq = dx * dx + dy * dy;
+        
+        if (lenSq < epsilon * epsilon) {
+            return a;  // 线段退化为点
+        }
+        
+        double t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+        t = std::max(0.0, std::min(1.0, t));
+        
+        return Coordinate(a.x + t * dx, a.y + t * dy);
+    }
+    
+    /**
+     * @brief 点到线段的距离
+     */
+    static double PointToSegmentDistance(
+        const Coordinate& p,
+        const Coordinate& a, const Coordinate& b,
+        double epsilon = DEFAULT_EPSILON
+    ) {
+        Coordinate closest = ClosestPointOnSegment(p, a, b, epsilon);
+        return Distance(p, closest, epsilon);
+    }
+};
+```
+
+---
+
+## 19. 空间关系优化策略
+
+### 19.1 两阶段过滤策略
+
+```cpp
+/**
+ * @brief 空间关系判断优化策略
+ * 
+ * 使用两阶段过滤减少精确计算次数：
+ * 1. 外包矩形快速过滤（O(1)）
+ * 2. 精确几何计算（O(n*m)）
+ */
+namespace SpatialOptimization {
+
+/**
+ * @brief 过滤策略枚举
+ */
+enum class FilterStrategy {
+    None,           // 不使用过滤，直接精确计算
+    EnvelopeOnly,   // 仅使用外包矩形（快速但不精确）
+    TwoPhase,       // 两阶段过滤（推荐）
+    Hierarchical    // 层次过滤（使用空间索引）
+};
+
+/**
+ * @brief 空间关系判断配置
+ */
+struct SpatialConfig {
+    FilterStrategy strategy = FilterStrategy::TwoPhase;
+    double envelopeExpansion = 0.0;     // 外包矩形扩展量
+    bool useSpatialIndex = true;         // 是否使用空间索引
+    size_t indexThreshold = 100;         // 使用索引的阈值
+};
+
+/**
+ * @brief 两阶段空间关系判断器
+ */
+class TwoPhaseSpatialPredicate {
+public:
+    explicit TwoPhaseSpatialPredicate(const SpatialConfig& config = SpatialConfig());
+    
+    /**
+     * @brief 判断相交关系
+     * 
+     * 第一阶段：外包矩形相交检测
+     * 第二阶段：精确几何相交检测
+     */
+    bool Intersects(const CNGeometry* geom1, const CNGeometry* geom2);
+    
+    /**
+     * @brief 判断包含关系
+     */
+    bool Contains(const CNGeometry* geom1, const CNGeometry* geom2);
+    
+    /**
+     * @brief 判断覆盖关系
+     */
+    bool Covers(const CNGeometry* geom1, const CNGeometry* geom2);
+    
+    /**
+     * @brief 判断被包含关系
+     */
+    bool Within(const CNGeometry* geom1, const CNGeometry* geom2) {
+        return Contains(geom2, geom1);
+    }
+    
+    /**
+     * @brief 计算距离
+     */
+    double Distance(const CNGeometry* geom1, const CNGeometry* geom2);
+    
+    /**
+     * @brief 获取统计信息
+     */
+    struct Statistics {
+        size_t totalQueries = 0;
+        size_t envelopeFiltered = 0;
+        size_t preciseComputations = 0;
+        double avgFilterTime = 0.0;
+        double avgPreciseTime = 0.0;
+    };
+    
+    const Statistics& GetStatistics() const noexcept { return m_stats; }
+    void ResetStatistics() { m_stats = Statistics(); }
+    
+private:
+    SpatialConfig m_config;
+    Statistics m_stats;
+    
+    bool EnvelopeIntersects(const CNGeometry* geom1, const CNGeometry* geom2);
+    bool EnvelopeContains(const CNGeometry* geom1, const CNGeometry* geom2);
+    bool PreciseIntersects(const CNGeometry* geom1, const CNGeometry* geom2);
+    bool PreciseContains(const CNGeometry* geom1, const CNGeometry* geom2);
+};
+
+/**
+ * @brief 外包矩形过滤器
+ */
+class EnvelopeFilter {
+public:
+    /**
+     * @brief 快速相交检测
+     */
+    static bool QuickIntersects(const Envelope& env1, const Envelope& env2) {
+        return env1.Intersects(env2);
+    }
+    
+    /**
+     * @brief 快速包含检测
+     */
+    static bool QuickContains(const Envelope& outer, const Envelope& inner) {
+        return outer.Contains(inner);
+    }
+    
+    /**
+     * @brief 快速距离检测
+     * 
+     * 如果外包矩形相交或接触，返回0
+     * 否则返回外包矩形之间的最小距离
+     */
+    static double QuickDistance(const Envelope& env1, const Envelope& env2) {
+        return env1.Distance(env2);
+    }
+    
+    /**
+     * @brief 快速分离检测
+     * 
+     * 如果外包矩形不相交，则几何一定不相交
+     */
+    static bool QuickDisjoint(const Envelope& env1, const Envelope& env2) {
+        return !env1.Intersects(env2);
+    }
+    
+    /**
+     * @brief 批量外包矩形过滤
+     * 
+     * 从候选集合中过滤出可能与查询几何相交的候选
+     */
+    template<typename Iterator>
+    static std::vector<typename Iterator::value_type> FilterCandidates(
+        const Envelope& queryEnv,
+        Iterator begin, Iterator end,
+        std::function<Envelope(const typename Iterator::value_type&)> getEnvelope
+    ) {
+        std::vector<typename Iterator::value_type> candidates;
+        
+        for (auto it = begin; it != end; ++it) {
+            if (queryEnv.Intersects(getEnvelope(*it))) {
+                candidates.push_back(*it);
+            }
+        }
+        
+        return candidates;
+    }
+};
+
+}
+```
+
+### 19.2 空间索引加速
+
+```cpp
+/**
+ * @brief 基于空间索引的关系判断加速器
+ */
+class IndexedSpatialPredicate {
+public:
+    IndexedSpatialPredicate();
+    
+    /**
+     * @brief 添加几何到索引
+     */
+    void AddGeometry(const CNGeometry* geom, size_t id);
+    
+    /**
+     * @brief 批量添加
+     */
+    void AddGeometries(const std::vector<std::pair<const CNGeometry*, size_t>>& geoms);
+    
+    /**
+     * @brief 构建索引
+     */
+    void BuildIndex();
+    
+    /**
+     * @brief 查询与给定几何相交的所有几何
+     */
+    std::vector<size_t> QueryIntersects(const CNGeometry* query);
+    
+    /**
+     * @brief 查询与给定外包矩形相交的所有几何
+     */
+    std::vector<size_t> QueryIntersects(const Envelope& queryEnv);
+    
+    /**
+     * @brief 查询包含给定点的所有几何
+     */
+    std::vector<size_t> QueryContains(const Coordinate& point);
+    
+    /**
+     * @brief 查询最近的k个几何
+     */
+    std::vector<std::pair<size_t, double>> QueryNearest(
+        const Coordinate& point, 
+        size_t k
+    );
+    
+    /**
+     * @brief 清空索引
+     */
+    void Clear();
+    
+    /**
+     * @brief 获取索引统计
+     */
+    struct IndexStats {
+        size_t geometryCount;
+        size_t indexNodeCount;
+        size_t indexHeight;
+        double avgQueryTime;
+    };
+    
+    IndexStats GetStatistics() const;
+    
+private:
+    RTree<size_t> m_index;
+    std::vector<const CNGeometry*> m_geometries;
+    std::vector<Envelope> m_envelopes;
+    bool m_indexBuilt;
+};
+```
+
+---
+
+## 20. 几何有效性验证
+
+### 20.1 有效性验证器
+
+```cpp
+/**
+ * @brief 几何有效性验证器
+ * 
+ * 检查几何是否符合OGC标准定义的有效性规则
+ */
+class GeometryValidator {
+public:
+    /**
+     * @brief 验证规则
+     */
+    enum class ValidationRule {
+        OGC,            // OGC Simple Feature标准
+        Extended,       // 扩展规则（更严格）
+        Relaxed         // 宽松规则（允许某些非标准情况）
+    };
+    
+    /**
+     * @brief 验证结果
+     */
+    struct ValidationResult {
+        bool isValid = true;
+        GeomResult errorCode = GeomResult::Success;
+        std::string message;
+        std::vector<Coordinate> invalidLocations;  // 无效位置
+        std::vector<std::string> warnings;
+    };
+    
+    explicit GeometryValidator(ValidationRule rule = ValidationRule::OGC);
+    
+    /**
+     * @brief 验证几何有效性
+     */
+    ValidationResult Validate(const CNGeometry* geom);
+    
+    /**
+     * @brief 快速有效性检查（仅返回bool）
+     */
+    bool IsValid(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取验证规则
+     */
+    ValidationRule GetRule() const noexcept { return m_rule; }
+    void SetRule(ValidationRule rule) { m_rule = rule; }
+    
+    /**
+     * @brief 设置容差
+     */
+    void SetTolerance(double tolerance) { m_tolerance = tolerance; }
+    double GetTolerance() const noexcept { return m_tolerance; }
+    
+private:
+    ValidationRule m_rule;
+    double m_tolerance = 1e-9;
+    
+    ValidationResult ValidatePoint(const CNPoint* point);
+    ValidationResult ValidateLineString(const CNLineString* line);
+    ValidationResult ValidateLinearRing(const CNLinearRing* ring);
+    ValidationResult ValidatePolygon(const CNPolygon* polygon);
+    ValidationResult ValidateMultiPolygon(const CNMultiPolygon* multiPoly);
+    ValidationResult ValidateGeometryCollection(const CNGeometryCollection* collection);
+};
+```
+
+### 20.2 自相交检测算法
+
+```cpp
+/**
+ * @brief 自相交检测器
+ * 
+ * 使用Bentley-Ottmann算法检测线段自相交
+ * 时间复杂度: O((n+k) log n)，其中n为线段数，k为交点数
+ */
+class SelfIntersectionDetector {
+public:
+    /**
+     * @brief 交点信息
+     */
+    struct Intersection {
+        Coordinate location;            // 交点坐标
+        size_t segmentIndex1;           // 第一条线段索引
+        size_t segmentIndex2;           // 第二条线段索引
+        double parameter1;              // 第一条线段上的参数
+        double parameter2;              // 第二条线段上的参数
+        bool isProper;                  // 是否为真交点（非端点）
+    };
+    
+    /**
+     * @brief 检测线串自相交
+     */
+    std::vector<Intersection> Detect(const CNLineString* line);
+    
+    /**
+     * @brief 检测环自相交
+     */
+    std::vector<Intersection> DetectRing(const CNLinearRing* ring);
+    
+    /**
+     * @brief 检测多边形自相交
+     */
+    std::vector<Intersection> DetectPolygon(const CNPolygon* polygon);
+    
+    /**
+     * @brief 快速检测是否存在自相交
+     */
+    bool HasSelfIntersection(const CNLineString* line);
+    bool HasSelfIntersection(const CNLinearRing* ring);
+    bool HasSelfIntersection(const CNPolygon* polygon);
+    
+    /**
+     * @brief 设置容差
+     */
+    void SetTolerance(double tolerance) { m_tolerance = tolerance; }
+    
+private:
+    double m_tolerance = 1e-9;
+    
+    /**
+     * @brief 扫描线状态
+     */
+    struct SweepLineEvent {
+        double x;
+        enum Type { Start, End, Intersection } type;
+        size_t segmentIndex;
+        Coordinate point;
+        
+        bool operator<(const SweepLineEvent& other) const {
+            if (x != other.x) return x < other.x;
+            return type < other.type;
+        }
+    };
+    
+    std::vector<Intersection> BentleyOttmann(
+        const std::vector<std::pair<Coordinate, Coordinate>>& segments
+    );
+};
+```
+
+### 20.3 多边形有效性规则
+
+```cpp
+/**
+ * @brief 多边形有效性规则
+ * 
+ * OGC标准定义的多边形有效性条件：
+ * 1. 外环必须是逆时针方向
+ * 2. 内环必须是顺时针方向
+ * 3. 环不能自相交
+ * 4. 内环必须完全在外环内部
+ * 5. 内环之间不能相交
+ * 6. 内环不能嵌套
+ */
+namespace PolygonValidation {
+
+/**
+ * @brief 检查环的方向
+ * @return true表示逆时针，false表示顺时针
+ */
+bool CheckRingOrientation(const CNLinearRing* ring, double tolerance = 1e-9);
+
+/**
+ * @brief 检查环是否自相交
+ */
+bool CheckRingSelfIntersection(const CNLinearRing* ring, double tolerance = 1e-9);
+
+/**
+ * @brief 检查内环是否在外环内部
+ */
+bool CheckInnerRingInsideOuter(
+    const CNLinearRing* inner, 
+    const CNLinearRing* outer,
+    double tolerance = 1e-9
+);
+
+/**
+ * @brief 检查两个内环是否相交
+ */
+bool CheckInnerRingsDisjoint(
+    const CNLinearRing* ring1, 
+    const CNLinearRing* ring2,
+    double tolerance = 1e-9
+);
+
+/**
+ * @brief 检查内环是否嵌套
+ */
+bool CheckInnerRingsNotNested(
+    const std::vector<CNLinearRingPtr>& innerRings,
+    double tolerance = 1e-9
+);
+
+/**
+ * @brief 修复多边形方向
+ * 
+ * 自动将外环调整为逆时针，内环调整为顺时针
+ */
+CNPolygonPtr FixRingOrientation(const CNPolygon* polygon);
+
+/**
+ * @brief 尝试修复无效多边形
+ */
+struct RepairResult {
+    CNPolygonPtr repairedPolygon;
+    bool wasRepaired;
+    std::vector<std::string> repairs;
+};
+
+RepairResult RepairPolygon(const CNPolygon* polygon, double tolerance = 1e-9);
+
+}
+```
+
+---
+
+## 21. 缓存机制详解
+
+### 21.1 缓存架构
+
+```cpp
+/**
+ * @brief 几何缓存管理器
+ * 
+ * 管理几何对象的计算结果缓存，支持线程安全访问
+ */
+class GeometryCache {
+public:
+    /**
+     * @brief 缓存项类型
+     */
+    enum class CacheType {
+        Envelope,       // 外包矩形
+        Centroid,       // 质心
+        Area,           // 面积
+        Length,         // 长度
+        IsValid,        // 有效性
+        CoordinateCount // 坐标数量
+    };
+    
+    /**
+     * @brief 缓存策略
+     */
+    enum class CachePolicy {
+        Lazy,           // 延迟计算，首次访问时缓存
+        Eager,          // 立即计算并缓存
+        None            // 不缓存
+    };
+    
+    static GeometryCache& GetInstance();
+    
+    /**
+     * @brief 获取缓存的外包矩形
+     */
+    std::shared_ptr<Envelope> GetEnvelope(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取缓存的质心
+     */
+    std::shared_ptr<Coordinate> GetCentroid(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取缓存的面积
+     */
+    std::shared_ptr<double> GetArea(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取缓存的长度
+     */
+    std::shared_ptr<double> GetLength(const CNGeometry* geom);
+    
+    /**
+     * @brief 使缓存失效
+     */
+    void Invalidate(const CNGeometry* geom);
+    void Invalidate(const CNGeometry* geom, CacheType type);
+    void InvalidateAll();
+    
+    /**
+     * @brief 设置缓存策略
+     */
+    void SetPolicy(CachePolicy policy) { m_policy = policy; }
+    CachePolicy GetPolicy() const noexcept { return m_policy; }
+    
+    /**
+     * @brief 获取缓存统计
+     */
+    struct Statistics {
+        size_t totalHits;
+        size_t totalMisses;
+        size_t totalInvalidations;
+        double hitRate;
+        size_t memoryUsage;
+    };
+    
+    Statistics GetStatistics() const;
+    void ResetStatistics();
+    
+private:
+    GeometryCache() = default;
+    
+    CachePolicy m_policy = CachePolicy::Lazy;
+    
+    mutable std::shared_mutex m_mutex;
+    
+    struct CacheEntry {
+        std::shared_ptr<Envelope> envelope;
+        std::shared_ptr<Coordinate> centroid;
+        std::shared_ptr<double> area;
+        std::shared_ptr<double> length;
+        std::shared_ptr<bool> isValid;
+        std::shared_ptr<size_t> coordinateCount;
+        uint64_t version;           // 几何版本号
+    };
+    
+    std::unordered_map<const CNGeometry*, CacheEntry> m_cache;
+    
+    template<typename T>
+    std::shared_ptr<T> GetOrCreate(
+        const CNGeometry* geom,
+        CacheType type,
+        std::function<T()> compute
+    );
+};
+```
+
+### 21.2 缓存失效机制
+
+```cpp
+/**
+ * @brief 几何版本控制
+ * 
+ * 每个几何对象维护一个版本号，修改时递增
+ * 缓存项存储版本号，访问时检查版本一致性
+ */
+class GeometryVersion {
+public:
+    GeometryVersion() : m_version(0) {}
+    
+    uint64_t GetVersion() const noexcept { 
+        return m_version.load(std::memory_order_acquire); 
+    }
+    
+    void IncrementVersion() noexcept {
+        m_version.fetch_add(1, std::memory_order_release);
+    }
+    
+    bool IsSameVersion(uint64_t cachedVersion) const noexcept {
+        return GetVersion() == cachedVersion;
+    }
+    
+private:
+    std::atomic<uint64_t> m_version;
+};
+
+/**
+ * @brief 可缓存几何基类
+ * 
+ * 提供缓存支持的几何基类
+ */
+class CacheableGeometry : public CNGeometry {
+public:
+    uint64_t GetVersion() const noexcept {
+        return m_version.GetVersion();
+    }
+    
+protected:
+    void MarkModified() noexcept {
+        m_version.IncrementVersion();
+        OnGeometryModified();
+    }
+    
+    virtual void OnGeometryModified() {
+        // 子类可重写以响应修改事件
+    }
+    
+private:
+    GeometryVersion m_version;
+};
+```
+
+### 21.3 线程安全缓存访问
+
+```cpp
+/**
+ * @brief 线程安全缓存访问器
+ */
+template<typename T>
+class ThreadSafeCache {
+public:
+    ThreadSafeCache() = default;
+    
+    /**
+     * @brief 获取缓存值（如果存在）
+     */
+    std::shared_ptr<T> Get(uint64_t version) const {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
+        
+        if (m_cachedVersion == version && m_cachedValue) {
+            return m_cachedValue;
+        }
+        
+        return nullptr;
+    }
+    
+    /**
+     * @brief 设置缓存值
+     */
+    void Set(uint64_t version, std::shared_ptr<T> value) {
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
+        
+        m_cachedVersion = version;
+        m_cachedValue = std::move(value);
+    }
+    
+    /**
+     * @brief 使缓存失效
+     */
+    void Invalidate() {
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
+        m_cachedValue.reset();
+    }
+    
+    /**
+     * @brief 获取或计算缓存值
+     */
+    template<typename ComputeFunc>
+    std::shared_ptr<T> GetOrCompute(uint64_t version, ComputeFunc compute) {
+        // 先尝试读锁获取
+        {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            if (m_cachedVersion == version && m_cachedValue) {
+                return m_cachedValue;
+            }
+        }
+        
+        // 升级为写锁计算
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
+        
+        // 双重检查
+        if (m_cachedVersion == version && m_cachedValue) {
+            return m_cachedValue;
+        }
+        
+        m_cachedValue = compute();
+        m_cachedVersion = version;
+        
+        return m_cachedValue;
+    }
+    
+private:
+    mutable std::shared_mutex m_mutex;
+    std::shared_ptr<T> m_cachedValue;
+    uint64_t m_cachedVersion = 0;
+};
+```
+
+---
+
+## 22. 内存池设计
+
+### 22.1 几何内存池
+
+```cpp
+/**
+ * @brief 几何对象内存池
+ * 
+ * 减少频繁内存分配的开销，提升性能
+ */
+class GeometryMemoryPool {
+public:
+    /**
+     * @brief 内存池配置
+     */
+    struct Config {
+        size_t initialSize = 1024;      // 初始块大小
+        size_t maxSize = 1024 * 1024;   // 最大池大小
+        size_t alignment = 64;          // 内存对齐（缓存行）
+        bool threadSafe = true;         // 是否线程安全
+    };
+    
+    static GeometryMemoryPool& GetInstance();
+    
+    explicit GeometryMemoryPool(const Config& config = Config());
+    ~GeometryMemoryPool();
+    
+    /**
+     * @brief 分配内存
+     */
+    void* Allocate(size_t size);
+    
+    /**
+     * @brief 释放内存
+     */
+    void Deallocate(void* ptr, size_t size);
+    
+    /**
+     * @brief 分配几何对象
+     */
+    template<typename T, typename... Args>
+    T* Create(Args&&... args) {
+        void* memory = Allocate(sizeof(T));
+        return new (memory) T(std::forward<Args>(args)...);
+    }
+    
+    /**
+     * @brief 销毁几何对象
+     */
+    template<typename T>
+    void Destroy(T* obj) {
+        if (obj) {
+            obj->~T();
+            Deallocate(obj, sizeof(T));
+        }
+    }
+    
+    /**
+     * @brief 获取统计信息
+     */
+    struct Statistics {
+        size_t totalAllocations;
+        size_t totalDeallocations;
+        size_t currentUsage;
+        size_t peakUsage;
+        size_t poolSize;
+    };
+    
+    Statistics GetStatistics() const;
+    void ResetStatistics();
+    
+    /**
+     * @brief 清理未使用的内存
+     */
+    void Shrink();
+    
+    /**
+     * @brief 设置内存压力回调
+     */
+    using MemoryPressureCallback = std::function<void(size_t, size_t)>;
+    void SetMemoryPressureCallback(MemoryPressureCallback callback);
+    
+private:
+    Config m_config;
+    
+    struct MemoryBlock {
+        void* memory;
+        size_t size;
+        bool inUse;
+    };
+    
+    std::vector<MemoryBlock> m_blocks;
+    std::unordered_map<void*, size_t> m_allocated;
+    
+    mutable std::mutex m_mutex;
+    size_t m_currentUsage = 0;
+    size_t m_peakUsage = 0;
+    MemoryPressureCallback m_pressureCallback;
+};
+
+/**
+ * @brief 内存池分配器（STL兼容）
+ */
+template<typename T>
+class PoolAllocator {
+public:
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using size_type = size_t;
+    using difference_type = ptrdiff_t;
+    
+    PoolAllocator() noexcept = default;
+    
+    template<typename U>
+    PoolAllocator(const PoolAllocator<U>&) noexcept {}
+    
+    pointer allocate(size_type n) {
+        return static_cast<pointer>(
+            GeometryMemoryPool::GetInstance().Allocate(n * sizeof(T))
+        );
+    }
+    
+    void deallocate(pointer ptr, size_type n) {
+        GeometryMemoryPool::GetInstance().Deallocate(ptr, n * sizeof(T));
+    }
+    
+    template<typename U>
+    struct rebind {
+        using other = PoolAllocator<U>;
+    };
+};
+
+template<typename T, typename U>
+bool operator==(const PoolAllocator<T>&, const PoolAllocator<U>&) noexcept {
+    return true;
+}
+
+template<typename T, typename U>
+bool operator!=(const PoolAllocator<T>&, const PoolAllocator<U>&) noexcept {
+    return false;
+}
+```
+
+### 22.2 坐标序列内存池
+
+```cpp
+/**
+ * @brief 坐标序列内存池
+ * 
+ * 专门优化坐标数组的内存分配
+ */
+class CoordinatePool {
+public:
+    static CoordinatePool& GetInstance();
+    
+    /**
+     * @brief 分配坐标数组
+     */
+    Coordinate* Allocate(size_t count);
+    
+    /**
+     * @brief 释放坐标数组
+     */
+    void Deallocate(Coordinate* coords, size_t count);
+    
+    /**
+     * @brief 获取预分配的坐标数组
+     */
+    std::shared_ptr<Coordinate[]> GetShared(size_t count);
+    
+    /**
+     * @brief 批量分配
+     */
+    std::vector<Coordinate*> AllocateBatch(const std::vector<size_t>& counts);
+    
+    /**
+     * @brief 批量释放
+     */
+    void DeallocateBatch(const std::vector<std::pair<Coordinate*, size_t>>& allocations);
+    
+private:
+    CoordinatePool() = default;
+    
+    // 按大小分桶管理
+    std::array<std::vector<Coordinate*>, 16> m_freeLists;
+    std::mutex m_mutex;
+    
+    size_t GetBucketIndex(size_t count) const;
+};
+```
+
+---
+
+## 23. SIMD优化实现
+
+### 23.1 SIMD坐标运算
+
+```cpp
+/**
+ * @brief SIMD优化的坐标运算
+ * 
+ * 支持SSE2/AVX/NEON指令集
+ */
+namespace SimdCoordinateOps {
+
+/**
+ * @brief SIMD能力检测
+ */
+struct SimdCapabilities {
+    bool hasSSE2 = false;
+    bool hasSSE4_1 = false;
+    bool hasAVX = false;
+    bool hasAVX2 = false;
+    bool hasNEON = false;
+};
+
+SimdCapabilities DetectSimdCapabilities();
+
+/**
+ * @brief SIMD距离计算
+ */
+void DistanceBatch(
+    const Coordinate* points1,
+    const Coordinate* points2,
+    double* results,
+    size_t count
+);
+
+/**
+ * @brief SIMD坐标变换
+ */
+void TransformBatch(
+    const Coordinate* input,
+    Coordinate* output,
+    size_t count,
+    std::function<void(const Coordinate&, Coordinate&)> transform
+);
+
+/**
+ * @brief SIMD外包矩形计算
+ */
+Envelope ComputeEnvelopeSimd(
+    const Coordinate* coords,
+    size_t count
+);
+
+/**
+ * @brief SIMD坐标比较
+ */
+void CompareBatch(
+    const Coordinate* points1,
+    const Coordinate* points2,
+    double tolerance,
+    bool* results,
+    size_t count
+);
+
+/**
+ * @brief SIMD向量运算
+ */
+void AddBatch(
+    const Coordinate* a,
+    const Coordinate* b,
+    Coordinate* result,
+    size_t count
+);
+
+void ScaleBatch(
+    const Coordinate* input,
+    double scale,
+    Coordinate* output,
+    size_t count
+);
+
+/**
+ * @brief SIMD点积计算
+ */
+void DotProductBatch(
+    const Coordinate* a,
+    const Coordinate* b,
+    double* results,
+    size_t count
+);
+
+}
+```
+
+### 23.2 SIMD实现示例
+
+```cpp
+#ifdef __SSE2__
+#include <emmintrin.h>
+
+namespace SimdCoordinateOps {
+
+inline void DistanceBatchSSE2(
+    const Coordinate* points1,
+    const Coordinate* points2,
+    double* results,
+    size_t count
+) {
+    size_t i = 0;
+    
+    // SSE2处理：每次处理2个double（128位）
+    for (; i + 1 < count; i += 2) {
+        // 加载坐标
+        __m128d x1 = _mm_set_pd(points1[i].x, points1[i+1].x);
+        __m128d y1 = _mm_set_pd(points1[i].y, points1[i+1].y);
+        __m128d x2 = _mm_set_pd(points2[i].x, points2[i+1].x);
+        __m128d y2 = _mm_set_pd(points2[i].y, points2[i+1].y);
+        
+        // 计算差值
+        __m128d dx = _mm_sub_pd(x1, x2);
+        __m128d dy = _mm_sub_pd(y1, y2);
+        
+        // 计算平方
+        __m128d dx2 = _mm_mul_pd(dx, dx);
+        __m128d dy2 = _mm_mul_pd(dy, dy);
+        
+        // 计算和
+        __m128d sum = _mm_add_pd(dx2, dy2);
+        
+        // 计算平方根
+        __m128d dist = _mm_sqrt_pd(sum);
+        
+        // 存储结果
+        _mm_storeu_pd(results + i, dist);
+    }
+    
+    // 处理剩余元素
+    for (; i < count; ++i) {
+        double dx = points1[i].x - points2[i].x;
+        double dy = points1[i].y - points2[i].y;
+        results[i] = std::sqrt(dx * dx + dy * dy);
+    }
+}
+
+inline Envelope ComputeEnvelopeSSE2(
+    const Coordinate* coords,
+    size_t count
+) {
+    if (count == 0) return Envelope();
+    
+    __m128d minX = _mm_set1_pd(coords[0].x);
+    __m128d maxX = _mm_set1_pd(coords[0].x);
+    __m128d minY = _mm_set1_pd(coords[0].y);
+    __m128d maxY = _mm_set1_pd(coords[0].y);
+    
+    size_t i = 0;
+    for (; i + 1 < count; i += 2) {
+        __m128d x = _mm_set_pd(coords[i].x, coords[i+1].x);
+        __m128d y = _mm_set_pd(coords[i].y, coords[i+1].y);
+        
+        minX = _mm_min_pd(minX, x);
+        maxX = _mm_max_pd(maxX, x);
+        minY = _mm_min_pd(minY, y);
+        maxY = _mm_max_pd(maxY, y);
+    }
+    
+    // 提取结果
+    double minXArr[2], maxXArr[2], minYArr[2], maxYArr[2];
+    _mm_storeu_pd(minXArr, minX);
+    _mm_storeu_pd(maxXArr, maxX);
+    _mm_storeu_pd(minYArr, minY);
+    _mm_storeu_pd(maxYArr, maxY);
+    
+    double finalMinX = std::min(minXArr[0], minXArr[1]);
+    double finalMaxX = std::max(maxXArr[0], maxXArr[1]);
+    double finalMinY = std::min(minYArr[0], minYArr[1]);
+    double finalMaxY = std::max(maxYArr[0], maxYArr[1]);
+    
+    // 处理剩余元素
+    for (; i < count; ++i) {
+        finalMinX = std::min(finalMinX, coords[i].x);
+        finalMaxX = std::max(finalMaxX, coords[i].x);
+        finalMinY = std::min(finalMinY, coords[i].y);
+        finalMaxY = std::max(finalMaxY, coords[i].y);
+    }
+    
+    return Envelope(finalMinX, finalMinY, finalMaxX, finalMaxY);
+}
+
+}
+#endif
+
+#ifdef __AVX__
+#include <immintrin.h>
+
+namespace SimdCoordinateOps {
+
+inline void DistanceBatchAVX(
+    const Coordinate* points1,
+    const Coordinate* points2,
+    double* results,
+    size_t count
+) {
+    size_t i = 0;
+    
+    // AVX处理：每次处理4个double（256位）
+    for (; i + 3 < count; i += 4) {
+        __m256d x1 = _mm256_set_pd(
+            points1[i].x, points1[i+1].x, 
+            points1[i+2].x, points1[i+3].x
+        );
+        __m256d y1 = _mm256_set_pd(
+            points1[i].y, points1[i+1].y,
+            points1[i+2].y, points1[i+3].y
+        );
+        __m256d x2 = _mm256_set_pd(
+            points2[i].x, points2[i+1].x,
+            points2[i+2].x, points2[i+3].x
+        );
+        __m256d y2 = _mm256_set_pd(
+            points2[i].y, points2[i+1].y,
+            points2[i+2].y, points2[i+3].y
+        );
+        
+        __m256d dx = _mm256_sub_pd(x1, x2);
+        __m256d dy = _mm256_sub_pd(y1, y2);
+        
+        __m256d dx2 = _mm256_mul_pd(dx, dx);
+        __m256d dy2 = _mm256_mul_pd(dy, dy);
+        
+        __m256d sum = _mm256_add_pd(dx2, dy2);
+        __m256d dist = _mm256_sqrt_pd(sum);
+        
+        _mm256_storeu_pd(results + i, dist);
+    }
+    
+    // 处理剩余元素
+    for (; i < count; ++i) {
+        double dx = points1[i].x - points2[i].x;
+        double dy = points1[i].y - points2[i].y;
+        results[i] = std::sqrt(dx * dx + dy * dy);
+    }
+}
+
+}
+#endif
+```
+
+### 23.3 SIMD运行时选择
+
+```cpp
+/**
+ * @brief SIMD函数选择器
+ * 
+ * 运行时检测CPU能力并选择最优实现
+ */
+class SimdDispatcher {
+public:
+    using DistanceFunc = void(*)(
+        const Coordinate*, const Coordinate*, double*, size_t
+    );
+    
+    using EnvelopeFunc = Envelope(*)(const Coordinate*, size_t);
+    
+    static SimdDispatcher& GetInstance() {
+        static SimdDispatcher instance;
+        return instance;
+    }
+    
+    DistanceFunc GetDistanceFunc() const { return m_distanceFunc; }
+    EnvelopeFunc GetEnvelopeFunc() const { return m_envelopeFunc; }
+    
+    const SimdCapabilities& GetCapabilities() const { return m_caps; }
+    
+private:
+    SimdDispatcher() {
+        m_caps = DetectSimdCapabilities();
+        SelectOptimalFunctions();
+    }
+    
+    void SelectOptimalFunctions() {
+#ifdef __AVX__
+        if (m_caps.hasAVX) {
+            m_distanceFunc = DistanceBatchAVX;
+            m_envelopeFunc = ComputeEnvelopeAVX;
+            return;
+        }
+#endif
+        
+#ifdef __SSE2__
+        if (m_caps.hasSSE2) {
+            m_distanceFunc = DistanceBatchSSE2;
+            m_envelopeFunc = ComputeEnvelopeSSE2;
+            return;
+        }
+#endif
+        
+        // 回退到标量实现
+        m_distanceFunc = DistanceBatchScalar;
+        m_envelopeFunc = ComputeEnvelopeScalar;
+    }
+    
+    SimdCapabilities m_caps;
+    DistanceFunc m_distanceFunc;
+    EnvelopeFunc m_envelopeFunc;
+};
+```
+
+---
+
+## 24. DE-9IM实现算法
+
+### 24.1 DE-9IM矩阵计算
+
+```cpp
+/**
+ * @brief DE-9IM（Dimensionally Extended 9-Intersection Model）实现
+ * 
+ * 用于计算两个几何之间的拓扑关系矩阵
+ */
+class DE9IMCalculator {
+public:
+    /**
+     * @brief DE-9IM矩阵
+     * 
+     * 矩阵格式：
+     *         I(A)  B(A)  E(A)
+     * I(B)  [ ii   bi   ei ]
+     * B(B)  [ ib   bb   eb ]
+     * E(B)  [ ie   be   ee ]
+     * 
+     * 其中：
+     * I = Interior（内部）
+     * B = Boundary（边界）
+     * E = Exterior（外部）
+     * 
+     * 值含义：
+     * -1 = 空集
+     *  0 = 点（0维）
+     *  1 = 线（1维）
+     *  2 = 面（2维）
+     */
+    struct Matrix {
+        int8_t ii = -1;  // Interior(A) ∩ Interior(B)
+        int8_t ib = -1;  // Interior(A) ∩ Boundary(B)
+        int8_t ie = -1;  // Interior(A) ∩ Exterior(B)
+        int8_t bi = -1;  // Boundary(A) ∩ Interior(B)
+        int8_t bb = -1;  // Boundary(A) ∩ Boundary(B)
+        int8_t be = -1;  // Boundary(A) ∩ Exterior(B)
+        int8_t ei = -1;  // Exterior(A) ∩ Interior(B)
+        int8_t eb = -1;  // Exterior(A) ∩ Boundary(B)
+        int8_t ee = -1;  // Exterior(A) ∩ Exterior(B)
+        
+        std::string ToString() const {
+            char buf[10];
+            buf[0] = DimChar(ii);
+            buf[1] = DimChar(ib);
+            buf[2] = DimChar(ie);
+            buf[3] = DimChar(bi);
+            buf[4] = DimChar(bb);
+            buf[5] = DimChar(be);
+            buf[6] = DimChar(ei);
+            buf[7] = DimChar(eb);
+            buf[8] = DimChar(ee);
+            buf[9] = '\0';
+            return std::string(buf);
+        }
+        
+        static char DimChar(int dim) {
+            switch (dim) {
+                case -1: return 'F';
+                case 0: return '0';
+                case 1: return '1';
+                case 2: return '2';
+                default: return '?';
+            }
+        }
+    };
+    
+    /**
+     * @brief 计算DE-9IM矩阵
+     */
+    Matrix Calculate(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 基于矩阵判断空间关系
+     */
+    bool EvaluateRelation(const Matrix& matrix, const std::string& pattern);
+    
+    /**
+     * @brief 预定义关系模式
+     */
+    static std::string EqualsPattern();
+    static std::string DisjointPattern();
+    static std::string IntersectsPattern();
+    static std::string TouchesPattern();
+    static std::string CrossesPattern(GeomType typeA, GeomType typeB);
+    static std::string WithinPattern();
+    static std::string ContainsPattern();
+    static std::string OverlapsPattern(GeomType typeA, GeomType typeB);
+    
+private:
+    /**
+     * @brief 获取几何的内部
+     */
+    std::unique_ptr<CNGeometry> GetInterior(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取几何的边界
+     */
+    std::unique_ptr<CNGeometry> GetBoundary(const CNGeometry* geom);
+    
+    /**
+     * @brief 获取几何的外部（外包矩形的补集）
+     */
+    std::unique_ptr<CNGeometry> GetExterior(const CNGeometry* geom);
+    
+    /**
+     * @brief 计算两个几何交集的最大维度
+     */
+    int ComputeIntersectionDimension(
+        const CNGeometry* geomA, 
+        const CNGeometry* geomB
+    );
+    
+    /**
+     * @brief 点-点DE-9IM
+     */
+    Matrix PointPoint(const CNPoint* ptA, const CNPoint* ptB);
+    
+    /**
+     * @brief 点-线DE-9IM
+     */
+    Matrix PointLineString(const CNPoint* pt, const CNLineString* line);
+    
+    /**
+     * @brief 点-面DE-9IM
+     */
+    Matrix PointPolygon(const CNPoint* pt, const CNPolygon* poly);
+    
+    /**
+     * @brief 线-线DE-9IM
+     */
+    Matrix LineStringLineString(
+        const CNLineString* lineA, 
+        const CNLineString* lineB
+    );
+    
+    /**
+     * @brief 线-面DE-9IM
+     */
+    Matrix LineStringPolygon(
+        const CNLineString* line, 
+        const CNPolygon* poly
+    );
+    
+    /**
+     * @brief 面-面DE-9IM
+     */
+    Matrix PolygonPolygon(const CNPolygon* polyA, const CNPolygon* polyB);
+};
+```
+
+### 24.2 空间关系判断实现
+
+```cpp
+/**
+ * @brief 空间关系判断器
+ */
+class SpatialRelationEvaluator {
+public:
+    /**
+     * @brief 判断相等关系
+     */
+    bool Equals(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断分离关系
+     */
+    bool Disjoint(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断相交关系
+     */
+    bool Intersects(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断接触关系
+     */
+    bool Touches(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断交叉关系
+     */
+    bool Crosses(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断被包含关系
+     */
+    bool Within(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断包含关系
+     */
+    bool Contains(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断重叠关系
+     */
+    bool Overlaps(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断覆盖关系
+     */
+    bool Covers(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 判断被覆盖关系
+     */
+    bool CoveredBy(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+    /**
+     * @brief 自定义关系判断
+     * 
+     * @param pattern DE-9IM模式字符串，如 "T*F**FFF*"
+     *                T = true（维度 >= 0）
+     *                F = false（维度 = -1）
+     *                * = 通配符（任意维度）
+     *                0/1/2 = 指定维度
+     */
+    bool Relate(const CNGeometry* geomA, const CNGeometry* geomB, 
+                const std::string& pattern);
+    
+    /**
+     * @brief 获取DE-9IM矩阵字符串
+     */
+    std::string GetRelateString(const CNGeometry* geomA, const CNGeometry* geomB);
+    
+private:
+    DE9IMCalculator m_de9im;
+    SpatialOptimization::TwoPhaseSpatialPredicate m_optimizer;
+};
+```
+
+---
+
+## 25. 死锁预防策略
+
+### 25.1 锁层次设计
+
+```cpp
+/**
+ * @brief 锁层次定义
+ * 
+ * 定义锁的获取顺序，防止死锁
+ * 层次号越低，越先获取
+ */
+enum class LockHierarchy {
+    GlobalConfig = 0,       // 全局配置锁
+    MemoryPool = 1,         // 内存池锁
+    SpatialIndex = 2,       // 空间索引锁
+    GeometryCache = 3,      // 几何缓存锁
+    GeometryData = 4,       // 几何数据锁
+    LocalOperation = 5      // 局部操作锁
+};
+
+/**
+ * @brief 层次化锁
+ * 
+ * 确保锁按层次顺序获取
+ */
+class HierarchicalMutex {
+public:
+    explicit HierarchicalMutex(LockHierarchy hierarchy)
+        : m_hierarchy(hierarchy) {}
+    
+    void lock() {
+        CheckHierarchy();
+        m_mutex.lock();
+        m_previousHierarchy = t_currentHierarchy;
+        t_currentHierarchy = m_hierarchy;
+    }
+    
+    void unlock() {
+        t_currentHierarchy = m_previousHierarchy;
+        m_mutex.unlock();
+    }
+    
+    bool try_lock() {
+        CheckHierarchy();
+        if (m_mutex.try_lock()) {
+            m_previousHierarchy = t_currentHierarchy;
+            t_currentHierarchy = m_hierarchy;
+            return true;
+        }
+        return false;
+    }
+    
+private:
+    void CheckHierarchy() {
+        if (t_currentHierarchy <= m_hierarchy) {
+            throw std::logic_error(
+                "Lock hierarchy violation: attempting to lock level " +
+                std::to_string(static_cast<int>(m_hierarchy)) +
+                " while holding level " +
+                std::to_string(static_cast<int>(t_currentHierarchy))
+            );
+        }
+    }
+    
+    std::mutex m_mutex;
+    LockHierarchy m_hierarchy;
+    LockHierarchy m_previousHierarchy;
+    
+    static thread_local LockHierarchy t_currentHierarchy;
+};
+
+thread_local LockHierarchy HierarchicalMutex::t_currentHierarchy = 
+    LockHierarchy::LocalOperation;
+```
+
+### 25.2 多锁获取策略
+
+```cpp
+/**
+ * @brief 多锁获取器
+ * 
+ * 安全地同时获取多个锁
+ */
+class MultiLockGuard {
+public:
+    /**
+     * @brief 同时获取两个互斥锁（避免死锁）
+     */
+    static std::tuple<std::unique_lock<std::mutex>, std::unique_lock<std::mutex>>
+    LockTwo(std::mutex& m1, std::mutex& m2) {
+        std::lock(m1, m2);
+        return {
+            std::unique_lock<std::mutex>(m1, std::adopt_lock),
+            std::unique_lock<std::mutex>(m2, std::adopt_lock)
+        };
+    }
+    
+    /**
+     * @brief 同时获取两个读写锁
+     */
+    static std::tuple<std::unique_lock<std::shared_mutex>, 
+                      std::unique_lock<std::shared_mutex>>
+    LockTwoWrite(std::shared_mutex& m1, std::shared_mutex& m2) {
+        std::lock(m1, m2);
+        return {
+            std::unique_lock<std::shared_mutex>(m1, std::adopt_lock),
+            std::unique_lock<std::shared_mutex>(m2, std::adopt_lock)
+        };
+    }
+    
+    /**
+     * @brief 获取一个读锁和一个写锁
+     */
+    static std::tuple<std::shared_lock<std::shared_mutex>,
+                      std::unique_lock<std::shared_mutex>>
+    LockReadAndWrite(std::shared_mutex& readMutex, 
+                     std::shared_mutex& writeMutex) {
+        // 先获取写锁，再获取读锁
+        std::lock(writeMutex, readMutex);
+        return {
+            std::shared_lock<std::shared_mutex>(readMutex, std::adopt_lock),
+            std::unique_lock<std::shared_mutex>(writeMutex, std::adopt_lock)
+        };
+    }
+    
+    /**
+     * @brief 同时获取多个互斥锁
+     */
+    template<typename... Mutexes>
+    static std::tuple<std::unique_lock<Mutexes>...>
+    LockMultiple(Mutexes&... mutexes) {
+        std::lock(mutexes...);
+        return {std::unique_lock<Mutexes>(mutexes, std::adopt_lock)...};
+    }
+};
+
+/**
+ * @brief 作用域锁追踪器（调试用）
+ */
+class LockTracker {
+public:
+#ifdef DEBUG_LOCKS
+    static void OnLockAcquired(const char* lockName, const char* file, int line) {
+        auto& held = t_heldLocks;
+        std::string info = std::string(file) + ":" + std::to_string(line);
+        held.emplace_back(lockName, info);
+        
+        std::cout << "Lock acquired: " << lockName << " at " << info << std::endl;
+    }
+    
+    static void OnLockReleased(const char* lockName) {
+        auto& held = t_heldLocks;
+        auto it = std::find_if(held.begin(), held.end(),
+            [&](const auto& p) { return p.first == lockName; });
+        if (it != held.end()) {
+            held.erase(it);
+        }
+        
+        std::cout << "Lock released: " << lockName << std::endl;
+    }
+    
+    static void PrintHeldLocks() {
+        std::cout << "Currently held locks:" << std::endl;
+        for (const auto& [name, loc] : t_heldLocks) {
+            std::cout << "  " << name << " at " << loc << std::endl;
+        }
+    }
+    
+    static thread_local std::vector<std::pair<std::string, std::string>> t_heldLocks;
+#else
+    static void OnLockAcquired(const char*, const char*, int) {}
+    static void OnLockReleased(const char*) {}
+    static void PrintHeldLocks() {}
+#endif
+};
+
+#ifdef DEBUG_LOCKS
+#define TRACK_LOCK(name) \
+    LockTracker::OnLockAcquired(#name, __FILE__, __LINE__); \
+    struct LockReleaser_##name { \
+        ~LockReleaser_##name() { LockTracker::OnLockReleased(#name); } \
+    } releaser_##name
+#else
+#define TRACK_LOCK(name)
+#endif
+```
+
+### 25.3 锁超时机制
+
+```cpp
+/**
+ * @brief 带超时的锁获取
+ */
+class TimedLockGuard {
+public:
+    /**
+     * @brief 尝试在指定时间内获取锁
+     * @return 是否成功获取
+     */
+    static bool TryLockFor(
+        std::timed_mutex& mutex,
+        std::chrono::milliseconds timeout
+    ) {
+        return mutex.try_lock_for(timeout);
+    }
+    
+    /**
+     * @brief 带超时的读写锁获取
+     */
+    static std::unique_ptr<std::unique_lock<std::shared_mutex>>
+    TryWriteLockFor(
+        std::shared_mutex& mutex,
+        std::chrono::milliseconds timeout
+    ) {
+        auto lock = std::make_unique<std::unique_lock<std::shared_mutex>>(
+            mutex, std::defer_lock
+        );
+        if (lock->try_lock_for(timeout)) {
+            return lock;
+        }
+        return nullptr;
+    }
+    
+    static std::unique_ptr<std::shared_lock<std::shared_mutex>>
+    TryReadLockFor(
+        std::shared_mutex& mutex,
+        std::chrono::milliseconds timeout
+    ) {
+        auto lock = std::make_unique<std::shared_lock<std::shared_mutex>>(
+            mutex, std::defer_lock
+        );
+        if (lock->try_lock_for(timeout)) {
+            return lock;
+        }
+        return nullptr;
+    }
+};
+
+/**
+ * @brief 死锁检测器
+ */
+class DeadlockDetector {
+public:
+    struct LockWaitInfo {
+        std::thread::id threadId;
+        std::string lockName;
+        std::chrono::steady_clock::time_point waitStart;
+    };
+    
+    static void OnWaitStart(const std::string& lockName) {
+        LockWaitInfo info;
+        info.threadId = std::this_thread::get_id();
+        info.lockName = lockName;
+        info.waitStart = std::chrono::steady_clock::now();
+        
+        std::lock_guard<std::mutex> lock(s_mutex);
+        s_waitInfos.push_back(info);
+        
+        CheckForDeadlock();
+    }
+    
+    static void OnWaitEnd(const std::string& lockName) {
+        std::lock_guard<std::mutex> lock(s_mutex);
+        
+        auto it = std::remove_if(s_waitInfos.begin(), s_waitInfos.end(),
+            [&](const LockWaitInfo& info) {
+                return info.threadId == std::this_thread::get_id() &&
+                       info.lockName == lockName;
+            });
+        s_waitInfos.erase(it, s_waitInfos.end());
+    }
+    
+    static void CheckForDeadlock() {
+        auto now = std::chrono::steady_clock::now();
+        
+        for (const auto& info : s_waitInfos) {
+            auto waitDuration = std::chrono::duration_cast<std::chrono::seconds>(
+                now - info.waitStart
+            ).count();
+            
+            if (waitDuration > 5) {
+                std::cerr << "Potential deadlock detected: thread " 
+                          << info.threadId << " waiting for " << info.lockName
+                          << " for " << waitDuration << " seconds" << std::endl;
+            }
+        }
+    }
+    
+private:
+    static std::mutex s_mutex;
+    static std::vector<LockWaitInfo> s_waitInfos;
+};
+```
+
+---
+
+## 26. 总结
+
+### 26.1 设计亮点
+
+| 特性 | 说明 |
+|------|------|
+| **完整的OGC标准支持** | 17种几何类型，完整的空间关系和运算 |
+| **高性能缓存** | 线程安全的缓存机制，版本控制失效策略 |
+| **鲁棒计算** | 精度上下文、鲁棒比较、数值稳定算法 |
+| **SIMD优化** | 运行时检测，SSE2/AVX/NEON支持 |
+| **内存池** | 几何对象和坐标序列的专用内存池 |
+| **线程安全** | 层次化锁、死锁预防、读写分离 |
+| **两阶段过滤** | 外包矩形快速过滤，减少精确计算 |
+
+### 26.2 性能指标
+
+| 操作 | 性能目标 | 说明 |
+|------|----------|------|
+| 外包矩形计算 | < 1μs | 1000点几何 |
+| 空间关系判断（过滤后） | < 10μs | 简单几何 |
+| 缓存命中 | < 100ns | 读锁访问 |
+| 内存分配（池化） | < 50ns | 小对象 |
+
+### 26.3 后续工作
+
+1. 实现曲线几何类型的完整支持
+2. 添加更多空间索引类型（KD-Tree、Grid）
+3. 完善GPU加速的批量运算
+4. 添加更多语言的绑定（Java、C#）
+
+---
+
+## 27. 曲线几何类型支持
+
+### 27.1 曲线插值器
+
+```cpp
+/**
+ * @brief 曲线插值器接口
+ * 
+ * 将曲线几何离散化为线串
+ */
+class CurveInterpolator {
+public:
+    struct Config {
+        double maxSegmentLength = 1.0;      // 最大线段长度
+        double maxAngle = 5.0;              // 最大角度（度）
+        size_t maxSegments = 1000;          // 最大线段数
+        bool preserveEndpoints = true;       // 保留端点
+    };
+    
+    virtual ~CurveInterpolator() = default;
+    
+    /**
+     * @brief 将曲线离散化为线串
+     */
+    virtual CNLineStringPtr Interpolate(const CNGeometry* curve, const Config& config) = 0;
+    
+    /**
+     * @brief 获取曲线上的点
+     */
+    virtual Coordinate GetPoint(const CNGeometry* curve, double parameter) = 0;
+    
+    /**
+     * @brief 获取曲线长度
+     */
+    virtual double GetLength(const CNGeometry* curve) = 0;
+};
+
+/**
+ * @brief 圆弧插值器
+ */
+class CircularStringInterpolator : public CurveInterpolator {
+public:
+    CNLineStringPtr Interpolate(const CNGeometry* curve, const Config& config) override;
+    Coordinate GetPoint(const CNGeometry* curve, double parameter) override;
+    double GetLength(const CNGeometry* curve) override;
+    
+private:
+    /**
+     * @brief 三点确定圆弧
+     */
+    struct ArcInfo {
+        Coordinate center;
+        double radius;
+        double startAngle;
+        double endAngle;
+        bool isClockwise;
+    };
+    
+    ArcInfo ComputeArcInfo(const Coordinate& p1, const Coordinate& p2, const Coordinate& p3);
+    Coordinate GetArcPoint(const ArcInfo& arc, double angle);
+    double GetArcLength(const ArcInfo& arc);
+};
+
+/**
+ * @brief 复合曲线插值器
+ */
+class CompoundCurveInterpolator : public CurveInterpolator {
+public:
+    CNLineStringPtr Interpolate(const CNGeometry* curve, const Config& config) override;
+    Coordinate GetPoint(const CNGeometry* curve, double parameter) override;
+    double GetLength(const CNGeometry* curve) override;
+    
+private:
+    std::vector<std::unique_ptr<CurveInterpolator>> m_interpolators;
+};
+```
+
+### 27.2 曲线几何类型实现
+
+```cpp
+/**
+ * @brief 圆弧字符串
+ */
+class CNCircularString : public CNGeometry {
+public:
+    static std::unique_ptr<CNCircularString> Create();
+    static std::unique_ptr<CNCircularString> Create(const CoordinateList& points);
+    
+    // 几何操作
+    size_t GetNumPoints() const noexcept;
+    const Coordinate& GetPointN(size_t n) const;
+    void SetPointN(size_t n, const Coordinate& coord);
+    void AddPoint(const Coordinate& coord);
+    
+    // 曲线特定操作
+    CNLineStringPtr ToLineString(double maxSegmentLength = 1.0) const;
+    double GetLength() const;
+    Coordinate GetPointAtDistance(double distance) const;
+    
+    // CNGeometry接口实现
+    GeomType GetGeometryType() const noexcept override { return GeomType::CircularString; }
+    std::string GetGeometryTypeName() const override { return "CIRCULARSTRING"; }
+    Dimension GetDimension() const noexcept override { return Dimension::Curve; }
+    
+private:
+    CoordinateList m_points;
+    mutable std::shared_ptr<CircularStringInterpolator> m_interpolator;
+};
+
+/**
+ * @brief 复合曲线
+ * 
+ * 由连续的线段和圆弧组成
+ */
+class CNCompoundCurve : public CNGeometry {
+public:
+    struct CurveComponent {
+        enum Type { LineString, CircularString } type;
+        CNGeometryPtr geometry;
+    };
+    
+    static std::unique_ptr<CNCompoundCurve> Create();
+    
+    void AddComponent(std::unique_ptr<CNLineString> line);
+    void AddComponent(std::unique_ptr<CNCircularString> arc);
+    
+    size_t GetNumComponents() const noexcept;
+    const CurveComponent& GetComponent(size_t n) const;
+    
+    CNLineStringPtr ToLineString(double maxSegmentLength = 1.0) const;
+    double GetLength() const;
+    
+    GeomType GetGeometryType() const noexcept override { return GeomType::CompoundCurve; }
+    std::string GetGeometryTypeName() const override { return "COMPOUNDCURVE"; }
+    
+private:
+    std::vector<CurveComponent> m_components;
+};
+
+/**
+ * @brief 曲线多边形
+ * 
+ * 外环和内环可以是复合曲线
+ */
+class CNCurvePolygon : public CNGeometry {
+public:
+    static std::unique_ptr<CNCurvePolygon> Create();
+    
+    void SetExteriorRing(std::unique_ptr<CNGeometry> ring);
+    void AddInteriorRing(std::unique_ptr<CNGeometry> ring);
+    
+    const CNGeometry* GetExteriorRing() const noexcept;
+    size_t GetNumInteriorRings() const noexcept;
+    const CNGeometry* GetInteriorRingN(size_t n) const;
+    
+    CNPolygonPtr ToPolygon(double maxSegmentLength = 1.0) const;
+    double GetArea() const;
+    
+    GeomType GetGeometryType() const noexcept override { return GeomType::CurvePolygon; }
+    std::string GetGeometryTypeName() const override { return "CURVEPOLYGON"; }
+    Dimension GetDimension() const noexcept override { return Dimension::Surface; }
+    
+private:
+    CNGeometryPtr m_exteriorRing;
+    std::vector<CNGeometryPtr> m_interiorRings;
+};
+```
+
+---
+
+## 28. 批量操作接口
+
+### 28.1 批量空间关系判断
+
+```cpp
+/**
+ * @brief 批量空间关系判断器
+ * 
+ * 优化大量几何之间的关系判断性能
+ */
+class BatchSpatialPredicate {
+public:
+    struct Config {
+        bool useParallel = true;            // 是否并行处理
+        size_t batchSize = 1000;            // 批处理大小
+        size_t threadCount = 0;             // 线程数（0=自动）
+        bool useEnvelopeFilter = true;      // 使用外包矩形过滤
+    };
+    
+    explicit BatchSpatialPredicate(const Config& config = Config());
+    
+    /**
+     * @brief 批量相交判断
+     * 
+     * 判断query与candidates中每个几何是否相交
+     */
+    std::vector<bool> Intersects(
+        const CNGeometry* query,
+        const std::vector<const CNGeometry*>& candidates
+    );
+    
+    /**
+     * @brief 批量包含判断
+     */
+    std::vector<bool> Contains(
+        const CNGeometry* query,
+        const std::vector<const CNGeometry*>& candidates
+    );
+    
+    /**
+     * @brief 批量距离计算
+     */
+    std::vector<double> Distance(
+        const CNGeometry* query,
+        const std::vector<const CNGeometry*>& candidates
+    );
+    
+    /**
+     * @brief 批量DE-9IM计算
+     */
+    std::vector<std::string> Relate(
+        const CNGeometry* query,
+        const std::vector<const CNGeometry*>& candidates
+    );
+    
+    /**
+     * @brief 矩阵式关系判断
+     * 
+     * 判断两组几何之间的所有关系
+     */
+    std::vector<std::vector<bool>> IntersectsMatrix(
+        const std::vector<const CNGeometry*>& setA,
+        const std::vector<const CNGeometry*>& setB
+    );
+    
+    /**
+     * @brief 获取统计信息
+     */
+    struct Statistics {
+        size_t totalOperations;
+        size_t envelopeFiltered;
+        size_t preciseComputations;
+        double totalTime;
+        double avgTimePerOp;
+    };
+    
+    const Statistics& GetStatistics() const noexcept;
+    void ResetStatistics();
+    
+private:
+    Config m_config;
+    Statistics m_stats;
+    SpatialOptimization::TwoPhaseSpatialPredicate m_optimizer;
+    
+    void ProcessBatch(
+        const CNGeometry* query,
+        const std::vector<const CNGeometry*>& candidates,
+        std::vector<bool>& results,
+        size_t startIdx,
+        size_t endIdx
+    );
+};
+```
+
+### 28.2 批量几何运算
+
+```cpp
+/**
+ * @brief 批量几何运算器
+ */
+class BatchGeometryOperation {
+public:
+    struct Config {
+        bool useParallel = true;
+        size_t batchSize = 100;
+        size_t threadCount = 0;
+    };
+    
+    explicit BatchGeometryOperation(const Config& config = Config());
+    
+    /**
+     * @brief 批量缓冲区
+     */
+    std::vector<CNGeometryPtr> Buffer(
+        const std::vector<const CNGeometry*>& geometries,
+        double distance
+    );
+    
+    /**
+     * @brief 批量简化
+     */
+    std::vector<CNGeometryPtr> Simplify(
+        const std::vector<const CNGeometry*>& geometries,
+        double tolerance
+    );
+    
+    /**
+     * @brief 批量凸包
+     */
+    std::vector<CNGeometryPtr> ConvexHull(
+        const std::vector<const CNGeometry*>& geometries
+    );
+    
+    /**
+     * @brief 批量外包矩形
+     */
+    std::vector<Envelope> Envelope(
+        const std::vector<const CNGeometry*>& geometries
+    );
+    
+    /**
+     * @brief 批量坐标变换
+     */
+    std::vector<CNGeometryPtr> Transform(
+        const std::vector<const CNGeometry*>& geometries,
+        std::function<Coordinate(const Coordinate&)> transform
+    );
+    
+private:
+    Config m_config;
+};
+```
+
+---
+
+## 29. 几何构建器
+
+### 29.1 流式几何构建API
+
+```cpp
+/**
+ * @brief 几何构建器
+ * 
+ * 提供流式API构建复杂几何
+ */
+class GeometryBuilder {
+public:
+    GeometryBuilder();
+    
+    // ========== 点构建 ==========
+    
+    GeometryBuilder& Point(double x, double y);
+    GeometryBuilder& Point(double x, double y, double z);
+    GeometryBuilder& Point(const Coordinate& coord);
+    
+    // ========== 线串构建 ==========
+    
+    GeometryBuilder& StartLineString();
+    GeometryBuilder& AddPoint(double x, double y);
+    GeometryBuilder& AddPoint(double x, double y, double z);
+    GeometryBuilder& AddPoint(const Coordinate& coord);
+    GeometryBuilder& AddPoints(const CoordinateList& coords);
+    GeometryBuilder& EndLineString();
+    
+    // ========== 多边形构建 ==========
+    
+    GeometryBuilder& StartPolygon();
+    GeometryBuilder& StartRing();
+    GeometryBuilder& EndRing();
+    GeometryBuilder& EndPolygon();
+    
+    // ========== 集合构建 ==========
+    
+    GeometryBuilder& StartCollection();
+    GeometryBuilder& AddGeometry(const CNGeometry* geom);
+    GeometryBuilder& EndCollection();
+    
+    // ========== 预定义形状 ==========
+    
+    GeometryBuilder& Rectangle(double minX, double minY, double maxX, double maxY);
+    GeometryBuilder& Circle(double centerX, double centerY, double radius, int segments = 32);
+    GeometryBuilder& RegularPolygon(double centerX, double centerY, double radius, int sides);
+    
+    // ========== 构建 ==========
+    
+    CNGeometryPtr Build();
+    CNPointPtr BuildPoint();
+    CNLineStringPtr BuildLineString();
+    CNPolygonPtr BuildPolygon();
+    
+    // ========== 重置 ==========
+    
+    GeometryBuilder& Reset();
+    
+private:
+    enum class BuildMode {
+        None,
+        Point,
+        LineString,
+        Polygon,
+        Collection
+    };
+    
+    BuildMode m_mode = BuildMode::None;
+    CoordinateList m_currentCoords;
+    std::vector<CoordinateList> m_rings;
+    std::vector<CNGeometryPtr> m_geometries;
+    
+    Coordinate m_currentPoint;
+    bool m_hasPoint = false;
+};
+
+// 使用示例
+void ExampleUsage() {
+    auto polygon = GeometryBuilder()
+        .StartPolygon()
+        .StartRing()
+        .AddPoint(0, 0)
+        .AddPoint(10, 0)
+        .AddPoint(10, 10)
+        .AddPoint(0, 10)
+        .AddPoint(0, 0)
+        .EndRing()
+        .StartRing()
+        .AddPoint(2, 2)
+        .AddPoint(8, 2)
+        .AddPoint(8, 8)
+        .AddPoint(2, 8)
+        .AddPoint(2, 2)
+        .EndRing()
+        .EndPolygon()
+        .BuildPolygon();
+    
+    auto lineString = GeometryBuilder()
+        .StartLineString()
+        .AddPoint(0, 0)
+        .AddPoint(1, 1)
+        .AddPoint(2, 0)
+        .EndLineString()
+        .BuildLineString();
+}
+```
+
+### 29.2 WKT构建器
+
+```cpp
+/**
+ * @brief WKT字符串构建器
+ */
+class WKTBuilder {
+public:
+    WKTBuilder& StartPoint();
+    WKTBuilder& StartLineString();
+    WKTBuilder& StartPolygon();
+    WKTBuilder& StartMultiPoint();
+    WKTBuilder& StartMultiLineString();
+    WKTBuilder& StartMultiPolygon();
+    WKTBuilder& StartCollection();
+    
+    WKTBuilder& AddCoordinate(double x, double y);
+    WKTBuilder& AddCoordinate(double x, double y, double z);
+    WKTBuilder& AddCoordinate(const Coordinate& coord);
+    
+    WKTBuilder& End();
+    
+    std::string Build();
+    
+private:
+    std::stringstream m_ss;
+    std::vector<std::string> m_stack;
+    bool m_needComma = false;
+};
+```
+
+---
+
+## 30. 性能监控与诊断
+
+### 30.1 性能计数器
+
+```cpp
+/**
+ * @brief 几何操作性能计数器
+ */
+class GeometryPerformanceCounter {
+public:
+    enum class CounterType {
+        EnvelopeComputation,
+        SpatialRelation,
+        GeometryOperation,
+        Serialization,
+        Deserialization,
+        MemoryAllocation
+    };
+    
+    static GeometryPerformanceCounter& GetInstance();
+    
+    /**
+     * @brief 记录操作
+     */
+    void Record(CounterType type, double duration, size_t dataSize = 0);
+    
+    /**
+     * @brief 获取统计
+     */
+    struct Statistics {
+        size_t count;
+        double totalTime;
+        double minTime;
+        double maxTime;
+        double avgTime;
+        size_t totalDataSize;
+    };
+    
+    Statistics GetStatistics(CounterType type) const;
+    
+    /**
+     * @brief 重置计数器
+     */
+    void Reset();
+    void Reset(CounterType type);
+    
+    /**
+     * @brief 导出报告
+     */
+    std::string GenerateReport() const;
+    
+private:
+    GeometryPerformanceCounter() = default;
+    
+    struct CounterData {
+        std::atomic<size_t> count{0};
+        std::atomic<double> totalTime{0};
+        std::atomic<double> minTime{std::numeric_limits<double>::max()};
+        std::atomic<double> maxTime{0};
+        std::atomic<size_t> totalDataSize{0};
+    };
+    
+    std::unordered_map<CounterType, CounterData> m_counters;
+};
+
+/**
+ * @brief 性能计时守卫
+ */
+class PerformanceTimer {
+public:
+    explicit PerformanceTimer(
+        GeometryPerformanceCounter::CounterType type,
+        size_t dataSize = 0
+    );
+    ~PerformanceTimer();
+    
+    PerformanceTimer(const PerformanceTimer&) = delete;
+    PerformanceTimer& operator=(const PerformanceTimer&) = delete;
+    
+private:
+    GeometryPerformanceCounter::CounterType m_type;
+    size_t m_dataSize;
+    std::chrono::high_resolution_clock::time_point m_start;
+};
+
+// 使用宏简化
+#define PERF_TIMER(type) PerformanceTimer _timer(type)
+#define PERF_TIMER_DATA(type, size) PerformanceTimer _timer(type, size)
+```
+
+### 30.2 内存诊断
+
+```cpp
+/**
+ * @brief 内存诊断器
+ */
+class MemoryDiagnostics {
+public:
+    struct MemoryInfo {
+        size_t geometryCount;           // 几何对象数量
+        size_t coordinateCount;         // 坐标数量
+        size_t totalMemory;             // 总内存使用
+        size_t cachedMemory;            // 缓存内存
+        size_t pooledMemory;            // 内存池使用
+        size_t peakMemory;              // 峰值内存
+    };
+    
+    static MemoryDiagnostics& GetInstance();
+    
+    /**
+     * @brief 获取内存信息
+     */
+    MemoryInfo GetMemoryInfo() const;
+    
+    /**
+     * @brief 按类型统计
+     */
+    std::map<GeomType, size_t> GetGeometryCountByType() const;
+    
+    /**
+     * @brief 内存泄漏检测
+     */
+    struct LeakInfo {
+        void* address;
+        size_t size;
+        GeomType type;
+        std::string allocationTrace;
+    };
+    
+    std::vector<LeakInfo> DetectLeaks() const;
+    
+    /**
+     * @brief 设置内存警告阈值
+     */
+    void SetWarningThreshold(size_t bytes);
+    void SetCriticalThreshold(size_t bytes);
+    
+    /**
+     * @brief 内存警告回调
+     */
+    using MemoryWarningCallback = std::function<void(const MemoryInfo&)>;
+    void SetWarningCallback(MemoryWarningCallback callback);
+    
+private:
+    MemoryDiagnostics() = default;
+    
+    size_t m_warningThreshold = 1024 * 1024 * 100;   // 100MB
+    size_t m_criticalThreshold = 1024 * 1024 * 500;  // 500MB
+    MemoryWarningCallback m_warningCallback;
+};
+```
+
+---
+
+## 31. 错误处理增强
+
+### 31.1 错误上下文
+
+```cpp
+/**
+ * @brief 错误上下文
+ * 
+ * 提供详细的错误信息，包括调用链
+ */
+class ErrorContext {
+public:
+    struct Frame {
+        std::string function;
+        std::string file;
+        int line;
+        std::string message;
+    };
+    
+    ErrorContext() = default;
+    
+    /**
+     * @brief 添加调用帧
+     */
+    void PushFrame(const std::string& function, const std::string& file, int line, const std::string& message = "");
+    
+    /**
+     * @brief 弹出调用帧
+     */
+    void PopFrame();
+    
+    /**
+     * @brief 获取调用栈
+     */
+    const std::vector<Frame>& GetCallStack() const noexcept { return m_callStack; }
+    
+    /**
+     * @brief 生成错误报告
+     */
+    std::string GenerateReport() const;
+    
+    /**
+     * @brief 清空调用栈
+     */
+    void Clear() { m_callStack.clear(); }
+    
+    /**
+     * @brief 作用域守卫
+     */
+    class ScopeGuard {
+    public:
+        ScopeGuard(const std::string& function, const std::string& file, int line, const std::string& message = "");
+        ~ScopeGuard();
+        
+        ScopeGuard(const ScopeGuard&) = delete;
+        ScopeGuard& operator=(const ScopeGuard&) = delete;
+    };
+    
+private:
+    std::vector<Frame> m_callStack;
+    
+    static thread_local ErrorContext t_currentContext;
+};
+
+// 使用宏简化
+#define ERROR_SCOPE(msg) ErrorContext::ScopeGuard _scope(__func__, __FILE__, __LINE__, msg)
+#define ERROR_PUSH(msg) ErrorContext::ScopeGuard _scope(__func__, __FILE__, __LINE__, msg)
+```
+
+### 31.2 增强的异常类
+
+```cpp
+/**
+ * @brief 增强的几何异常类
+ */
+class EnhancedGeometryException : public std::runtime_error {
+public:
+    EnhancedGeometryException(
+        GeomResult code,
+        const std::string& message,
+        const ErrorContext& context = ErrorContext()
+    );
+    
+    /**
+     * @brief 获取错误码
+     */
+    GeomResult GetErrorCode() const noexcept { return m_code; }
+    
+    /**
+     * @brief 获取错误上下文
+     */
+    const ErrorContext& GetContext() const noexcept { return m_context; }
+    
+    /**
+     * @brief 获取详细错误信息
+     */
+    std::string GetDetailedMessage() const;
+    
+    /**
+     * @brief 获取调用栈字符串
+     */
+    std::string GetStackTrace() const;
+    
+private:
+    GeomResult m_code;
+    ErrorContext m_context;
+};
+
+/**
+ * @brief 错误处理器
+ */
+class ErrorHandler {
+public:
+    enum class Policy {
+        Throw,          // 抛出异常
+        ReturnCode,     // 返回错误码
+        Log,            // 记录日志
+        Ignore          // 忽略
+    };
+    
+    static ErrorHandler& GetInstance();
+    
+    /**
+     * @brief 设置错误处理策略
+     */
+    void SetPolicy(Policy policy) { m_policy = policy; }
+    Policy GetPolicy() const noexcept { return m_policy; }
+    
+    /**
+     * @brief 处理错误
+     */
+    GeomResult Handle(GeomResult code, const std::string& message, const char* file, int line);
+    
+    /**
+     * @brief 设置日志回调
+     */
+    using LogCallback = std::function<void(GeomResult, const std::string&, const std::string&)>;
+    void SetLogCallback(LogCallback callback);
+    
+private:
+    ErrorHandler() = default;
+    
+    Policy m_policy = Policy::Throw;
+    LogCallback m_logCallback;
+};
+
+// 使用宏
+#define GLM_HANDLE_ERROR(code, msg) \
+    ErrorHandler::GetInstance().Handle(code, msg, __FILE__, __LINE__)
+```
+
+---
+
+## 32. 总结
+
+### 32.1 设计亮点
+
+| 特性 | 说明 |
+|------|------|
+| **完整的OGC标准支持** | 17种几何类型，完整的空间关系和运算 |
+| **高性能缓存** | 线程安全的缓存机制，版本控制失效策略 |
+| **鲁棒计算** | 精度上下文、鲁棒比较、数值稳定算法 |
+| **SIMD优化** | 运行时检测，SSE2/AVX/NEON支持 |
+| **内存池** | 几何对象和坐标序列的专用内存池 |
+| **线程安全** | 层次化锁、死锁预防、读写分离 |
+| **两阶段过滤** | 外包矩形快速过滤，减少精确计算 |
+| **曲线几何支持** | 圆弧、复合曲线、曲线多边形 |
+| **批量操作** | 并行批量空间关系判断和几何运算 |
+| **流式API** | GeometryBuilder提供易用的构建接口 |
+| **性能监控** | 计数器、内存诊断、错误追踪 |
+
+### 32.2 性能指标
+
+| 操作 | 性能目标 | 说明 |
+|------|----------|------|
+| 外包矩形计算 | < 1μs | 1000点几何 |
+| 空间关系判断（过滤后） | < 10μs | 简单几何 |
+| 缓存命中 | < 100ns | 读锁访问 |
+| 内存分配（池化） | < 50ns | 小对象 |
+| 批量关系判断 | > 100K ops/s | 并行处理 |
+
+### 32.3 后续工作
+
+1. 实现GPU加速的批量运算
+2. 添加更多语言的绑定（Java、C#）
+3. 完善空间索引的持久化
+4. 添加拓扑操作支持
+
+---
+
+**文档版本**: v2.5  
+**最后更新**: 2026年3月19日  
 **维护者**: Geometry Library Team
