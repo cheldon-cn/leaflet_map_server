@@ -33,6 +33,7 @@ set(TEST_SOURCES
 add_executable(ogc_database_test ${TEST_SOURCES})
 
 target_link_libraries(ogc_database_test PRIVATE
+    ogc_database
     ogc_geometry
     gtest
     gtest_main

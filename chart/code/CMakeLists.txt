@@ -55,8 +55,15 @@ if(USE_PROJ)
     target_compile_definitions(ogc_geometry PUBLIC USE_PROJ)
 endif()
 
+if(ENABLE_DATABASE)
+    add_subdirectory(database)
+endif()
+
 if(ENABLE_TESTS)
     add_subdirectory(geom/tests)
+    if(ENABLE_DATABASE)
+        add_subdirectory(database/test)
+    endif()
 endif()
 
 install(TARGETS ogc_geometry

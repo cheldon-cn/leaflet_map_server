@@ -196,6 +196,11 @@ For each module, create tasks with the following structure:
 - Technical approach and implementation details
 - Integration points with other modules
 
+### Reference Documents
+- **Design Doc**: [设计文档名称.md](link/to/design/doc.md)
+- 实施时以对应设计文档中的描述为准
+- 如有疑问请查阅设计文档相关内容
+
 ### Priority
 - P0: Critical/Blocking (must complete first)
 - P1: High (core functionality)
@@ -468,19 +473,24 @@ Generate a structured task file with **Task Summary First**:
 - Target Completion: W weeks
 - Team Size: N developers
 
+## Reference Documents
+- **Design Doc**: [设计文档名称.md](path/to/design_doc.md)
+- 实施时以设计文档中的描述为准
+- 如有疑问请查阅对应设计文档
+
 ## Task Summary
 
-| Task ID | Task Name | Priority | Milestone | Effort | Status | Dependencies |
-|---------|-----------|----------|-----------|--------|--------|--------------|
-| T1 | Project Setup | P0 | M1 | 4h | 📋 Todo | - |
-| T2 | Core Interfaces | P0 | M1 | 8h | 📋 Todo | T1 |
-| T3 | Database Layer | P1 | M2 | 6h | 📋 Todo | T2 |
-| T4 | Geometry Types | P1 | M2 | 8h | 📋 Todo | T2 |
-| T5 | PostGIS Adapter | P1 | M2 | 12h | 📋 Todo | T3 |
-| T6 | SpatiaLite Adapter | P2 | M3 | 10h | 📋 Todo | T3 |
-| T7 | WKB Converter | P1 | M2 | 6h | 📋 Todo | T4 |
-| T8 | Connection Pool | P2 | M3 | 8h | 📋 Todo | T1 |
-| T9 | Health Check | P3 | M4 | 4h | 📋 Todo | T8 |
+| Task ID | Task Name | Priority | Milestone | Effort | Status | Design Doc | Dependencies |
+|---------|-----------|----------|-----------|--------|--------|-------------|--------------|
+| T1 | Project Setup | P0 | M1 | 4h | 📋 Todo | - | - |
+| T2 | Core Interfaces | P0 | M1 | 8h | 📋 Todo | design_doc_v1.md | T1 |
+| T3 | Database Layer | P1 | M2 | 6h | 📋 Todo | design_doc_v1.md | T2 |
+| T4 | Geometry Types | P1 | M2 | 8h | 📋 Todo | design_doc_v1.md | T2 |
+| T5 | PostGIS Adapter | P1 | M2 | 12h | 📋 Todo | design_doc_v1.md | T3 |
+| T6 | SpatiaLite Adapter | P2 | M3 | 10h | 📋 Todo | design_doc_v1.md | T3 |
+| T7 | WKB Converter | P1 | M2 | 6h | 📋 Todo | design_doc_v1.md | T4 |
+| T8 | Connection Pool | P2 | M3 | 8h | 📋 Todo | - | T1 |
+| T9 | Health Check | P3 | M4 | 4h | 📋 Todo | - | T8 |
 
 ## Resource Allocation
 | Developer | Skills | Allocation | Tasks |
@@ -710,6 +720,11 @@ Implement user authentication with JWT tokens, supporting registration, login, a
 - Critical Path Duration: 32h
 - Target Completion: 2 weeks
 - Team Size: 2 developers
+
+## Reference Documents
+- **Design Doc**: [user_auth_design.md](../doc/user_auth_design.md)
+- 实施时以设计文档中的描述为准
+- 如有疑问请查阅对应设计文档
 
 ## Resource Allocation
 | Developer | Skills | Allocation | Tasks |

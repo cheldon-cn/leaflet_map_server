@@ -48,8 +48,8 @@ endif()
 # 头文件目录
 # ============================================================
 include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/../geom/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../geom/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${POSTGRESQL_INCLUDE_DIR}
     ${SQLITE3_INCLUDE_DIR}
 )
@@ -96,7 +96,7 @@ if(SQLITE3_LIBRARY)
     list(APPEND LIBS ${SQLITE3_LIBRARY})
 endif()
 
-target_link_libraries(ogc_database PRIVATE ${LIBS})
+target_link_libraries(ogc_database PRIVATE ${LIBS} ogc_geometry)
 
 # ============================================================
 # 安装
