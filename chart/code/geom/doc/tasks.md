@@ -11,8 +11,8 @@
 | 项目 | 数值 |
 |------|------|
 | Total Tasks | 28 |
-| Completed Tasks | 20 (71.4%) |
-| Remaining Tasks | 8 (28.6%) |
+| Completed Tasks | 24 (85.7%) |
+| Remaining Tasks | 4 (14.3%) |
 | Total Estimated Hours | 约680小时 (PERT expected) |
 | Critical Path Duration | 约520小时 |
 | Target Completion | 17周 (4个月) |
@@ -60,12 +60,12 @@ graph (图形绘制) - 依赖 geom, feature, layer
 | T3.2 | CNMultiLineString多线串实现 | P1 | M3 | 12h | ✅ Done | T2.3 |
 | T3.3 | CNMultiPolygon多多边形实现 | P1 | M3 | 16h | ✅ Done | T2.5 |
 | T3.4 | CNGeometryCollection几何集合 | P1 | M3 | 12h | ✅ Done | T2.1 |
-| T4.1 | DE-9IM空间关系判断 | P0 | M3 | 40h | 📋 Todo | T2.5 |
-| T4.2 | 空间运算(缓冲区/凸包) | P1 | M3 | 32h | 📋 Todo | T4.1 |
-| T4.3 | 布尔运算(联合/相交/差集) | P1 | M3 | 40h | 📋 Todo | T4.1 |
-| T5.1 | WKT序列化/反序列化 | P0 | M4 | 20h | 📋 Todo | T2.5 |
-| T5.2 | WKB序列化/反序列化 | P0 | M4 | 24h | 📋 Todo | T2.5 |
-| T5.3 | GeoJSON序列化 | P1 | M4 | 16h | 📋 Todo | T5.1 |
+| T4.1 | DE-9IM空间关系判断 | P0 | M3 | 40h | ✅ Done | T2.5 |
+| T4.2 | 空间运算(缓冲区/凸包) | P1 | M3 | 32h | ✅ Done | T4.1 |
+| T4.3 | 布尔运算(联合/相交/差集) | P1 | M3 | 40h | ✅ Done | T4.1 |
+| T5.1 | WKT序列化/反序列化 | P0 | M4 | 20h | ✅ Done | T2.5 |
+| T5.2 | WKB序列化/反序列化 | P0 | M4 | 24h | ✅ Done | T2.5 |
+| T5.3 | GeoJSON序列化 | P1 | M4 | 16h | ✅ Done | T5.1 |
 | T6.1 | GeometryFactory工厂类 | P0 | M4 | 16h | ✅ Done | T2.5 |
 | T6.2 | Visitor访问者模式 | P1 | M4 | 16h | ✅ Done | T2.1 |
 | T7.1 | R-Tree空间索引 | P1 | M5 | 32h | ✅ Done | T1.4 |

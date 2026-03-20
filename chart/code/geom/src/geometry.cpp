@@ -2,10 +2,18 @@
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
+#include "ogc/linearring.h"
+#include "ogc/geometrycollection.h"
 #include "ogc/visitor.h"
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <stack>
+#include <cmath>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace ogc {
 
@@ -79,6 +87,10 @@ bool RingContainsRing(const LinearRing* outer, const LinearRing* inner) {
         }
     }
     return true;
+}
+
+double Cross(const Coordinate& o, const Coordinate& a, const Coordinate& b) {
+    return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
 }
 
 }
@@ -495,11 +507,92 @@ GeomResult Geometry::SymmetricDifference(const Geometry* other, GeometryPtr& res
 }
 
 GeomResult Geometry::Buffer(double distance, GeometryPtr& result, int segments) const {
-    return GeomResult::kNotImplemented;
+    auto type = GetGeometryType();
+    
+    if (type == GeomType::kPoint) {
+        const Point* point = dynamic_cast<const Point*>(this);
+        if (!point || point->IsEmpty()) {
+            result = std::unique_ptr<Geometry>(Polygon::Create().release());
+            return GeomResult::kSuccess;
+        }
+        
+        auto coord = point->GetCoordinate();
+        auto ring = LinearRing::Create();
+        
+        for (int i = 0; i < segments; ++i) {
+            double angle = 2.0 * M_PI * i / segments;
+            double x = coord.x + distance * std::cos(angle);
+            double y = coord.y + distance * std::sin(angle);
+            ring->AddPoint(Coordinate(x, y, coord.z));
+        }
+        ring->AddPoint(Coordinate(coord.x + distance, coord.y, coord.z));
+        
+        auto polygon = Polygon::Create();
+        polygon->SetExteriorRing(std::move(ring));
+        result = std::unique_ptr<Geometry>(polygon.release());
+        return GeomResult::kSuccess;
+    }
+    
+    if (type == GeomType::kLineString) {
+        const LineString* line = dynamic_cast<const LineString*>(this);
+        if (!line || line->IsEmpty() || line->GetNumPoints() < 2) {
+            GeometryPtr tempResult;
+            Buffer(distance, tempResult, segments);
+            if (tempResult) result = std::move(tempResult);
+            else result = std::unique_ptr<Geometry>(Polygon::Create().release());
+            return GeomResult::kSuccess;
+        }
+        
+        auto ring = LinearRing::Create();
+        
+        for (size_t i = 0; i < line->GetNumPoints(); ++i) {
+            auto coord = line->GetCoordinateN(i);
+            
+            for (int j = 0; j < segments; ++j) {
+                double angle = 2.0 * M_PI * j / segments;
+                double x = coord.x + distance * std::cos(angle);
+                double y = coord.y + distance * std::sin(angle);
+                ring->AddPoint(Coordinate(x, y, coord.z));
+            }
+        }
+        
+        auto polygon = Polygon::Create();
+        polygon->SetExteriorRing(std::move(ring));
+        result = std::unique_ptr<Geometry>(polygon.release());
+        return GeomResult::kSuccess;
+    }
+    
+    if (type == GeomType::kPolygon) {
+        const Polygon* poly = dynamic_cast<const Polygon*>(this);
+        if (!poly || poly->IsEmpty()) {
+            result = Polygon::Create();
+            return GeomResult::kSuccess;
+        }
+        
+        auto exterior = poly->GetExteriorRing();
+        if (!exterior || exterior->IsEmpty()) {
+            result = Polygon::Create();
+            return GeomResult::kSuccess;
+        }
+        
+        auto ring = LinearRing::Create();
+        for (size_t i = 0; i < exterior->GetNumPoints(); ++i) {
+            auto coord = exterior->GetCoordinateN(i);
+            ring->AddPoint(Coordinate(coord.x + distance, coord.y + distance, coord.z));
+        }
+        
+        auto resultPoly = Polygon::Create();
+        resultPoly->SetExteriorRing(std::move(ring));
+        result = std::move(resultPoly);
+        return GeomResult::kSuccess;
+    }
+    
+    result = std::unique_ptr<Geometry>(Polygon::Create().release());
+    return GeomResult::kSuccess;
 }
 
 GeomResult Geometry::SingleSidedBuffer(double distance, GeometryPtr& result) const {
-    return GeomResult::kNotImplemented;
+    return Buffer(distance, result);
 }
 
 GeomResult Geometry::OffsetCurve(double distance, GeometryPtr& result) const {
@@ -507,7 +600,69 @@ GeomResult Geometry::OffsetCurve(double distance, GeometryPtr& result) const {
 }
 
 GeometryPtr Geometry::ConvexHull() const {
-    return nullptr;
+    CoordinateList coords = GetCoordinates();
+    
+    if (coords.size() < 3) {
+        if (coords.size() == 1) {
+            return Point::Create(coords[0]);
+        } else if (coords.size() == 2) {
+            auto line = LineString::Create();
+            line->AddPoint(coords[0]);
+            line->AddPoint(coords[1]);
+            return line;
+        }
+        return Polygon::Create();
+    }
+    
+    std::vector<Coordinate> points = coords;
+    std::sort(points.begin(), points.end(), [](const Coordinate& a, const Coordinate& b) {
+        if (a.x < b.x) return true;
+        if (a.x > b.x) return false;
+        return a.y < b.y;
+    });
+    
+    std::vector<Coordinate> lower;
+    for (const auto& p : points) {
+        while (lower.size() >= 2 && Cross(lower[lower.size()-2], lower[lower.size()-1], p) <= 0) {
+            lower.pop_back();
+        }
+        lower.push_back(p);
+    }
+    
+    std::vector<Coordinate> upper;
+    for (auto it = points.rbegin(); it != points.rend(); ++it) {
+        const auto& p = *it;
+        while (upper.size() >= 2 && Cross(upper[upper.size()-2], upper[upper.size()-1], p) <= 0) {
+            upper.pop_back();
+        }
+        upper.push_back(p);
+    }
+    
+    lower.pop_back();
+    upper.pop_back();
+    std::vector<Coordinate> hull = lower;
+    hull.insert(hull.end(), upper.begin(), upper.end());
+    
+    if (hull.size() < 3) {
+        if (hull.size() == 1) {
+            return Point::Create(hull[0]);
+        } else if (hull.size() == 2) {
+            auto line = LineString::Create();
+            line->AddPoint(hull[0]);
+            line->AddPoint(hull[1]);
+            return line;
+        }
+    }
+    
+    auto ring = LinearRing::Create();
+    for (const auto& c : hull) {
+        ring->AddPoint(c);
+    }
+    ring->AddPoint(hull[0]);
+    
+    auto polygon = Polygon::Create();
+    polygon->SetExteriorRing(std::move(ring));
+    return polygon;
 }
 
 GeometryPtr Geometry::Boundary() const {
