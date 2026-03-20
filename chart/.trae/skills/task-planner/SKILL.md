@@ -78,6 +78,95 @@ T1 → T2 → T5 → T8 (80h)
 - User needs to break down complex modules into manageable tasks
 - User wants to estimate effort and prioritize development work
 - User needs resource allocation and team capacity planning
+- User wants to update task status after completing work
+
+## Input Requirements
+
+### Design Document Format
+
+设计文档应包含以下内容：
+
+| 内容项 | 必需 | 说明 |
+|--------|------|------|
+| **模块列表** | ✅ 必需 | 需要实现的模块/组件名称和描述 |
+| **依赖关系** | ✅ 必需 | 模块之间的依赖关系 |
+| **技术栈** | ⚠️ 推荐 | 使用的技术和框架 |
+| **功能描述** | ✅ 必需 | 每个模块的功能说明 |
+| **接口定义** | ⚠️ 推荐 | 模块间的接口契约 |
+| **性能要求** | ⚠️ 可选 | 性能指标和约束 |
+
+### Supported Formats
+
+| 格式 | 扩展名 | 说明 |
+|------|--------|------|
+| Markdown | `.md` | ✅ 推荐，最佳支持 |
+| 纯文本 | `.txt` | ✅ 支持，需有清晰结构 |
+| JSON | `.json` | ⚠️ 部分支持 |
+
+### Example Input Structure
+
+```markdown
+# Module Design Document
+
+## Overview
+Brief description of the project...
+
+## Modules
+1. **Module A**: Description...
+2. **Module B**: Description...
+
+## Dependencies
+- Module A → Module B
+- Module B → Module C
+
+## Technical Stack
+- Language: C++
+- Framework: ...
+```
+
+## Output File Management
+
+### File Naming Convention
+
+| Scenario | File Name | Location |
+|----------|-----------|----------|
+| Default | `tasks.md` | `[modulename]/doc/tasks.md` |
+| Custom module name | `[modulename]_tasks.md` | `[modulename]/doc/[modulename]_tasks.md` |
+
+### File Backup Strategy
+
+When generating a new task list, follow these steps:
+
+1. **Check for existing file** in target directory
+2. **If file exists**, backup before overwriting:
+   - Get file creation/modification time
+   - Rename to: `{original_name}_{timestamp}.md`
+   - Timestamp format: `YYYYMMDD_HHmmss`
+3. **Never delete** existing task files
+
+### Backup Example
+
+```
+Original: geom/doc/tasks.md
+Backup:   geom/doc/tasks_20260320_143052.md
+
+Original: geom/doc/geom_tasks.md  
+Backup:   geom/doc/geom_tasks_20260320_143052.md
+```
+
+### Backup Implementation
+
+```bash
+# Check if file exists
+if [ -f "geom/doc/tasks.md" ]; then
+    # Get modification timestamp
+    timestamp=$(stat -c %Y "geom/doc/tasks.md" 2>/dev/null || stat -f %m "geom/doc/tasks.md")
+    formatted_time=$(date -d @$timestamp +"%Y%m%d_%H%M%S" 2>/dev/null || date -r $timestamp +"%Y%m%d_%H%M%S")
+    
+    # Create backup
+    mv "geom/doc/tasks.md" "geom/doc/tasks_${formatted_time}.md"
+fi
+```
 
 ## Task Planning Process
 
@@ -88,6 +177,12 @@ T1 → T2 → T5 → T8 (80h)
 3. Map dependencies between components
 4. Identify technical risks and challenges
 5. Identify required skills and expertise
+
+**Error Handling**:
+- If document is empty: Return error "设计文档为空，请提供有效的设计文档"
+- If document format is invalid: Return error "设计文档格式不正确，请使用Markdown格式"
+- If modules not found: Return warning "未找到模块定义，请确保文档包含模块列表"
+- If dependencies unclear: Return warning "依赖关系不明确，请检查设计文档"
 
 ### Step 2: Task Decomposition
 
@@ -361,7 +456,7 @@ For tasks with integration dependencies:
 
 ### Step 11: Output Format
 
-Generate a structured TASKS.md file:
+Generate a structured task file with **Task Summary First**:
 
 ```markdown
 # Project Task Plan
@@ -372,6 +467,20 @@ Generate a structured TASKS.md file:
 - Critical Path Duration: Z hours
 - Target Completion: W weeks
 - Team Size: N developers
+
+## Task Summary
+
+| Task ID | Task Name | Priority | Milestone | Effort | Status | Dependencies |
+|---------|-----------|----------|-----------|--------|--------|--------------|
+| T1 | Project Setup | P0 | M1 | 4h | 📋 Todo | - |
+| T2 | Core Interfaces | P0 | M1 | 8h | 📋 Todo | T1 |
+| T3 | Database Layer | P1 | M2 | 6h | 📋 Todo | T2 |
+| T4 | Geometry Types | P1 | M2 | 8h | 📋 Todo | T2 |
+| T5 | PostGIS Adapter | P1 | M2 | 12h | 📋 Todo | T3 |
+| T6 | SpatiaLite Adapter | P2 | M3 | 10h | 📋 Todo | T3 |
+| T7 | WKB Converter | P1 | M2 | 6h | 📋 Todo | T4 |
+| T8 | Connection Pool | P2 | M3 | 8h | 📋 Todo | T1 |
+| T9 | Health Check | P3 | M4 | 4h | 📋 Todo | T8 |
 
 ## Resource Allocation
 | Developer | Skills | Allocation | Tasks |
@@ -400,11 +509,83 @@ T1 → T2 → T5 (24h)
 ## Risk Register
 [Risk table]
 
+## Detailed Task Descriptions
+
+### T1 - Project Setup
+
+#### Description
+- Initialize project structure with CMake
+- Configure build system for multiple platforms
+- Set up CI/CD pipeline
+
+#### Priority
+P0: Critical/Blocking
+
+#### Dependencies
+None
+
+#### Acceptance Criteria
+- [ ] **Functional**: Project builds on Windows/Linux/macOS
+- [ ] **Quality**: No compiler warnings
+- [ ] **Coverage**: N/A (setup task)
+- [ ] **Documentation**: README with build instructions
+
+#### Estimated Effort
+- Optimistic: 2h
+- Most Likely: 4h
+- Pessimistic: 8h
+- Expected: 4.33h
+
+#### Status
+📋 Todo
+
+---
+
+### T2 - Core Interfaces
+...
+
 ## Change Log
 | Version | Date | Changes | Impact |
 |---------|------|---------|--------|
 | v1.0 | 2026-03-19 | Initial plan | - |
 ```
+
+## Task Status Update
+
+After completing a task, update the task file:
+
+### Update Process
+
+1. **Locate the task file** (tasks.md or [modulename]_tasks.md)
+2. **Update Task Summary table** - change status column
+3. **Update Detailed Task Description** - change status section
+4. **Update Milestone tables** - reflect new status
+5. **Update Change Log** - record the change
+
+### Status Update Example
+
+**Before:**
+```markdown
+| T1 | Project Setup | P0 | M1 | 4h | 📋 Todo | - |
+```
+
+**After:**
+```markdown
+| T1 | Project Setup | P0 | M1 | 4h | ✅ Done | - |
+```
+
+### Update Command
+
+When user says:
+- "Mark T1 as done"
+- "Update T2 status to in progress"
+- "T3 is complete"
+
+The skill should:
+1. Read the task file
+2. Update all occurrences of the task status
+3. Update the change log
+4. Save the updated file
 
 ## Best Practices
 
@@ -414,6 +595,26 @@ T1 → T2 → T5 (24h)
 4. **Independent**: Minimize dependencies between tasks where possible
 5. **Valuable**: Each task should deliver tangible value
 6. **Small**: Tasks should be 4-8 hours ideally, max 16 hours
+
+## Constraints
+
+**❌ 不要做的事**:
+1. 不要创建超过16小时的任务（必须拆分）
+2. 不要忽略任务依赖关系
+3. 不要跳过关键路径分析
+4. 不要在没有备份的情况下覆盖现有任务文件
+5. 不要创建没有验收标准的任务
+6. 不要忽略资源分配冲突
+7. 不要遗漏风险登记项
+
+**✅ 要做的事**:
+1. 使用PERT方法进行估算
+2. 为每个任务定义明确的验收标准
+3. 识别并标记关键路径
+4. 定期更新任务状态
+5. 包含文档和测试任务
+6. 平衡资源分配
+7. 记录变更历史
 
 ## Quality Checklist
 
@@ -430,20 +631,44 @@ Before finalizing the task plan:
 - [ ] Interface contracts defined for integration points
 - [ ] Risk register populated
 - [ ] Change management process defined
+- [ ] Task summary table present at top
+- [ ] Existing task file backed up (if any)
 
 ## Example Usage
 
-### Basic Usage
+### Creating New Task Plan
 
 ```
-User: "Based on database_model_design.md, create a task plan for the C++ core library"
+User: "Based on database_model_design.md, create a task plan for the geom module"
 
 AI: [Invokes task-planner skill]
+    [Checks for existing geom/doc/tasks.md]
+    [Backs up existing file if found]
     [Analyzes design document]
     [Identifies modules and dependencies]
     [Calculates critical path]
     [Allocates resources]
-    [Generates TASKS.md with milestones, dependencies, and acceptance criteria]
+    [Generates tasks.md with:
+      - Task Summary table first
+      - dependencies
+      - acceptance criteria
+      - Milestones
+      - Detailed descriptions
+      - Change log]
+```
+
+### Updating Task Status
+
+```
+User: "Mark T1 as done"
+
+AI: [Invokes task-planner skill]
+    [Reads tasks.md]
+    [Updates Task Summary table]
+    [Updates Detailed Task Description]
+    [Updates Milestone table]
+    [Adds entry to Change Log]
+    [Saves updated tasks.md]
 ```
 
 ### Complete Project Example
@@ -547,14 +772,16 @@ T1 → T2 → T5 → T9 → T10 (32h)
 | Version | Date | Changes | Impact |
 |---------|------|---------|--------|
 | v1.0 | 2026-03-20 | Initial plan | - |
-```
-
 ## Notes
 
 - Always validate task plan against original requirements
 - Update estimates as more information becomes available
 - Track actual vs estimated effort for future planning
 - Re-prioritize based on changing requirements
+- Always backup existing task files before overwriting
+- Task summary table should be at the top for quick reference
+- Update status in all relevant sections when a task changes
+- Track all changes in the Change Log
 - Use historical velocity data for better estimation
 - Review and adjust plan at each milestone
 - Communicate changes to all stakeholders

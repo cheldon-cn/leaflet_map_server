@@ -1,0 +1,486 @@
+CNFeature 及相关类设计文档
+概述
+在 OGC 命名空间中，CNFeature 及其相关类构成了矢量数据处理的核心模型，与 GDAL/OGR 的对应概念（如 OGRFeature、OGRFeatureDefn、OGRFieldDefn、OGRField）相呼应。这些类共同提供了要素的定义、存储、访问和操作能力，并融入了现代 C++11 特性（智能指针、移动语义、线程安全等）。
+
+本文档整理了以下类：
+
+CNFieldType：字段类型枚举
+
+CNDateTime：日期时间辅助结构
+
+CNFieldDefn：字段定义
+
+CNFeatureDefn：要素定义
+
+CNFieldValue：字段值容器
+
+CNFeature：核心要素类
+
+相关辅助类（CNFeatureGuard、CNBatchProcessor、CNSpatialQuery）
+
+1. 字段类型枚举 CNFieldType
+cpp
+enum class CNFieldType {
+    Integer,          // 32-bit integer
+    Integer64,        // 64-bit integer
+    Real,             // double precision floating point
+    String,           // UTF-8 string
+    Date,             // Date only (year, month, day)
+    Time,             // Time only (hour, minute, second)
+    DateTime,         // Date and time
+    Binary,           // Raw binary data
+    IntegerList,      // List of integers
+    RealList,         // List of doubles
+    StringList,       // List of strings
+    Boolean,          // Boolean value
+    WideString,       // Wide character string
+    fldNull,          // null value
+    fldUnset,         // not set
+    fldUnknown        // Unknown type
+};
+说明：
+
+覆盖了 OGR 的所有基本字段类型，并增加了列表类型。
+
+fldNull、fldUnset、fldUnknown 用于字段状态表示。
+
+2. 日期时间结构 CNDateTime
+cpp
+struct CNDateTime {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    int millisecond = 0;
+    int tzFlag = 0;   // 时区标志: 0=未知, 1=本地, 100=GMT, 100+x=GMT+x小时
+
+    CNDateTime() = default;
+    CNDateTime(int y, int m, int d, int h = 0, int min = 0, 
+               int s = 0, int ms = 0, int tz = 0);
+
+    bool isValid() const;          // 检查日期是否有效
+    bool isDateOnly() const;       // 是否只有日期部分
+    bool isTimeOnly() const;       // 是否只有时间部分
+};
+用途：用于 CNFeature 中日期时间字段的设置和获取。
+
+3. 字段定义 CNFieldDefn
+CNFieldDefn 描述单个字段的元信息（名称、类型、宽度、精度等）。它是 CNFeatureDefn 的组成部分。
+
+cpp
+class CNFieldDefn {
+public:
+    virtual ~CNFieldDefn() = default;
+
+    // 基本属性
+    virtual const char* GetName() const = 0;
+    virtual CNFieldType GetType() const = 0;
+    
+    // 宽度与精度（适用于字符串、数值等）
+    virtual int GetWidth() const = 0;
+    virtual int GetPrecision() const = 0;
+
+    // 是否可空
+    virtual bool IsNullable() const = 0;
+    virtual void SetNullable(bool nullable) = 0;
+
+    // 默认值（可选）
+    virtual CNFieldValue GetDefaultValue() const = 0;
+    virtual void SetDefaultValue(const CNFieldValue& value) = 0;
+
+    // 注释/别名
+    virtual const char* GetComment() const = 0;
+    virtual void SetComment(const char* comment) = 0;
+};
+说明：通常由具体实现（如基于 OGR 的包装或内存实现）提供，此处仅定义接口。
+
+4. 要素定义 CNFeatureDefn
+CNFeatureDefn 管理一个图层中所有字段的定义，以及几何字段的信息。每个 CNFeature 都关联一个 CNFeatureDefn。
+
+cpp
+class CNFeatureDefn {
+public:
+    virtual ~CNFeatureDefn() = default;
+
+    // 图层名称
+    virtual const char* GetName() const = 0;
+
+    // 字段数量
+    virtual int GetFieldCount() const = 0;
+
+    // 获取字段定义
+    virtual const CNFieldDefn* GetFieldDefn(int iField) const = 0;
+    virtual CNFieldDefn* GetFieldDefn(int iField) = 0;
+
+    // 按名称查找字段索引
+    virtual int FindFieldIndex(const char* pszName) const = 0;
+
+    // 添加字段（用于构建定义）
+    virtual CNStatus AddFieldDefn(CNFieldDefn* poFieldDefn) = 0;
+
+    // 几何字段数量（OGR 支持多几何字段）
+    virtual int GetGeomFieldCount() const = 0;
+    virtual const CNGeomFieldDefn* GetGeomFieldDefn(int iGeomField) const = 0;
+    virtual CNGeomFieldDefn* GetGeomFieldDefn(int iGeomField) = 0;
+};
+说明：CNGeomFieldDefn 是几何字段定义，包含几何类型和空间参考。
+
+5. 字段值容器 CNFieldValue
+CNFieldValue 是一个可存储任意字段类型的多态容器。它隐藏了具体类型，并提供类型安全的访问接口。
+
+cpp
+class CNFieldValue {
+public:
+    CNFieldValue();                               // 创建 null 值
+    CNFieldValue(const CNFieldValue& other);
+    CNFieldValue(CNFieldValue&& other) noexcept;
+    ~CNFieldValue();
+
+    // 类型判断
+    bool IsNull() const noexcept;
+    bool IsValid() const noexcept;                 // 是否已设置且非空
+    CNFieldType GetType() const noexcept;
+
+    // 各种类型构造函数（隐式转换）
+    CNFieldValue(int value);                        // Integer
+    CNFieldValue(int64_t value);                    // Integer64
+    CNFieldValue(double value);                     // Real
+    CNFieldValue(const char* value);                // String
+    CNFieldValue(const std::string& value);         // String
+    CNFieldValue(const std::wstring& value);        // WideString
+    CNFieldValue(bool value);                       // Boolean
+    CNFieldValue(const CNDateTime& value);          // DateTime
+    CNFieldValue(const std::vector<int>& value);    // IntegerList
+    CNFieldValue(const std::vector<double>& value); // RealList
+    CNFieldValue(const std::vector<std::string>& value); // StringList
+    CNFieldValue(const std::vector<char>& value);   // Binary
+
+    // 类型安全的取值方法（如果类型不匹配，返回默认值或抛出异常）
+    int ToInteger(int defaultValue = 0) const;
+    int64_t ToInteger64(int64_t defaultValue = 0) const;
+    double ToDouble(double defaultValue = 0.0) const;
+    std::string ToString(const std::string& defaultValue = "") const;
+    std::wstring ToWideString(const std::wstring& defaultValue = L"") const;
+    bool ToBoolean(bool defaultValue = false) const;
+    CNDateTime ToDateTime() const;
+    std::vector<int> ToIntegerList() const;
+    std::vector<double> ToDoubleList() const;
+    std::vector<std::string> ToStringList() const;
+    std::vector<char> ToBinary() const;
+
+    // 赋值操作符
+    CNFieldValue& operator=(const CNFieldValue& other);
+    CNFieldValue& operator=(CNFieldValue&& other) noexcept;
+
+    // 比较
+    bool operator==(const CNFieldValue& other) const;
+    bool operator!=(const CNFieldValue& other) const;
+};
+实现思路：内部使用联合体或 boost::variant（C++11 无 std::variant）存储不同类型，通过类型标签实现安全访问。
+
+6. 核心要素类 CNFeature
+CNFeature 是要素的实际载体，包含：
+
+要素 ID（FID）
+
+几何对象（CNGeometry 派生类）
+
+属性值数组（CNFieldValue 列表）
+
+字段状态（已设置、空、未设置）
+
+6.1 构造与析构
+cpp
+explicit CNFeature(CNFeatureDefnShaPtr poDefn);    // 使用共享指针
+static CNFeature* CreateFeature(CNFeatureDefn* poDefn); // 静态工厂（原始指针）
+static void DestroyFeature(CNFeature* poFeature);  // 静态销毁函数
+CNFeature(CNFeature&& other) noexcept;              // 移动构造
+CNFeature& operator=(CNFeature&& other) noexcept;   // 移动赋值
+拷贝构造/赋值被删除，避免深拷贝开销。可使用 Clone() 进行显式复制。
+
+6.2 要素标识
+cpp
+int64_t GetFID() const noexcept;
+void SetFID(int64_t nFID) noexcept;
+6.3 几何管理
+cpp
+CNGeometry* GetGeometryRef() noexcept;
+const CNGeometry* GetGeometryRef() const noexcept;
+void SetGeometry(const CNGeometry* poGeom);           // 复制几何
+void SetGeometryDirectly(CNGeometry* poGeom);         // 接管几何所有权
+CNGeometryUniPtr StealGeometry() noexcept;            // 转移所有权
+bool IsGeometrySet() const noexcept;
+void SetGeometryNull() noexcept;
+
+// 线程安全版本
+CNGeometryConstShaPtr GetGeometryShared() const noexcept;
+bool TrySetGeometry(CNGeometryShaPtr geometry) noexcept;
+6.4 属性字段设置（类型化重载）
+cpp
+void SetField(int iField, int nValue);
+void SetField(int iField, int64_t nValue);
+void SetField(int iField, double dfValue);
+void SetField(int iField, bool bValue);
+void SetField(int iField, const char* pszValue);
+void SetField(int iField, const std::string& strValue);
+void SetField(int iField, const std::wstring& wstrValue);
+void SetField(int iField, const std::vector<int>& values);
+void SetField(int iField, const std::vector<int64_t>& values);
+void SetField(int iField, const std::vector<double>& values);
+void SetField(int iField, const std::vector<std::string>& values);
+void SetField(int iField, const std::vector<unsigned char>& binaryData);
+void SetField(int iField, const CNDateTime& dt);
+void SetField(int iField, int nYear, int nMonth, int nDay,
+              int nHour = 0, int nMinute = 0, int nSecond = 0, int nTZFlag = 0);
+void SetField(const char* pszName, const CNFieldValue& value);
+6.5 属性字段获取
+cpp
+int GetFieldAsInteger(int iField, int defaultValue = 0) const;
+int64_t GetFieldAsInteger64(int iField, int64_t defaultValue = 0) const;
+double GetFieldAsDouble(int iField, double defaultValue = 0.0) const;
+bool GetFieldAsBoolean(int iField, bool defaultValue = false) const;
+const char* GetFieldAsString(int iField, const char* defaultValue = "") const;
+std::string GetFieldAsStdString(int iField, const std::string& defaultValue = "") const;
+std::wstring GetFieldAsWideString(int iField, const std::wstring& defaultValue = L"") const;
+std::vector<int> GetFieldAsIntegerList(int iField) const;
+std::vector<int64_t> GetFieldAsInteger64List(int iField) const;
+std::vector<double> GetFieldAsDoubleList(int iField) const;
+std::vector<std::string> GetFieldAsStringList(int iField) const;
+std::vector<unsigned char> GetFieldAsBinary(int iField) const;
+bool GetFieldAsDateTime(int iField, CNDateTime& dt) const;
+bool GetFieldAsDateTime(int iField, int* pnYear, int* pnMonth, int* pnDay,
+                        int* pnHour = nullptr, int* pnMinute = nullptr,
+                        int* pnSecond = nullptr, int* pnTZFlag = nullptr) const;
+CNFieldValue GetField(int iField) const;
+CNFieldValue GetField(const char* pszName) const;
+6.6 字段状态
+cpp
+bool IsFieldSet(int iField) const noexcept;
+bool IsFieldNull(int iField) const noexcept;
+void SetFieldNull(int iField) noexcept;
+void UnsetField(int iField) noexcept;
+
+CNFieldType GetFieldType(int iField) const;
+bool IsFieldType(int iField, CNFieldType eType) const noexcept;
+6.7 字段索引
+cpp
+int GetFieldIndex(const char* pszName) const noexcept;
+int GetGeomFieldIndex(const char* pszName) const noexcept;
+6.8 要素定义访问
+cpp
+CNFeatureDefn* GetDefnRef() noexcept;
+const CNFeatureDefn* GetDefnRef() const noexcept;
+CNFeatureDefnShaPtr GetDefn() noexcept;
+CNFeatureDefnConstShaPtr GetDefn() const noexcept;
+int GetFieldCount() const noexcept;
+int GetGeomFieldCount() const noexcept;
+const CNFieldDefn* GetFieldDefnRef(int iField) const;
+6.9 克隆与复制
+cpp
+CNFeature* Clone() const;                       // 返回新分配的要素，需手动销毁
+CNFeatureUniPtr CloneUnique() const;             // 返回 unique_ptr 版本
+void SetFrom(const CNFeature* poSrcFeature, bool bForgiving = true);
+void SetFrom(const CNFeature* poSrcFeature, const int* panMap, bool bForgiving = true);
+6.10 比较
+cpp
+bool Equal(const CNFeature* poOtherFeature) const;
+6.11 线程安全接口
+cpp
+bool TryGetField(int iField, CNFieldValue& value) const noexcept;
+bool TrySetField(int iField, const CNFieldValue& value) noexcept;
+6.12 内部实现
+使用 PIMPL 模式，隐藏实现细节。
+
+属性存储为 std::vector<CNFieldValue>，字段状态存储在另一个向量中。
+
+几何使用 CNGeometryShaPtr 支持共享。
+
+使用 std::mutex 实现线程安全。
+
+7. 相关辅助类
+7.1 CNFeatureGuard（RAII 要素包装器）
+cpp
+class CNFeatureGuard {
+public:
+    CNFeatureGuard() noexcept;
+    explicit CNFeatureGuard(CNFeature* feature) noexcept;
+    CNFeatureGuard(CNFeatureGuard&& other) noexcept;
+    ~CNFeatureGuard();
+
+    CNFeature* operator->() noexcept;
+    const CNFeature* operator->() const noexcept;
+    CNFeature& operator*() noexcept;
+    const CNFeature& operator*() const noexcept;
+
+    explicit operator bool() const noexcept;
+    bool isNull() const noexcept;
+    bool isValid() const noexcept;
+
+    CNFeature* get() noexcept;
+    const CNFeature* get() const noexcept;
+
+    CNFeatureShaPtr getShared();
+    CNFeatureUniPtr getUnique();
+
+    CNFeature* release() noexcept;
+    void reset(CNFeature* feature = nullptr) noexcept;
+    void swap(CNFeatureGuard& other) noexcept;
+
+    static CNFeatureGuard Create(CNFeatureDefn* defn);
+    static CNFeatureGuard CloneFromLayer(CNLayer* layer, int64_t fid);
+};
+用途：自动管理 CNFeature 生命周期，避免内存泄漏。
+
+7.2 CNBatchProcessor（批量要素处理器）
+cpp
+class CNBatchProcessor {
+public:
+    struct Config {
+        int batchSize = 1000;
+        bool useTransaction = true;
+        int maxRetries = 3;
+        bool stopOnError = false;
+        bool skipInvalidFeatures = true;
+        double commitInterval = 0.0;
+        int maxCacheSize = 10000;
+        bool parallelProcessing = false;
+        int threadCount = 4;
+    };
+
+    struct Statistics {
+        int64_t totalProcessed = 0;
+        int64_t successful = 0;
+        int64_t failed = 0;
+        int64_t skipped = 0;
+        int64_t batchesCompleted = 0;
+        double totalTimeSeconds = 0.0;
+        double avgBatchTimeSeconds = 0.0;
+    };
+
+    using ProgressCallback = std::function<bool(double progress, const Statistics& stats, const char* message)>;
+    using ErrorCallback = std::function<bool(CNStatus errorCode, CNFeature* feature, const char* errorMessage, int retryCount)>;
+
+    explicit CNBatchProcessor(CNLayer* layer, const Config& config = Config());
+
+    // 添加要素
+    CNStatus AddFeature(CNFeature* feature);
+    CNStatus AddFeature(const CNFeatureShaPtr& feature);
+    CNStatus AddFeature(CNFeatureUniPtr feature);
+    CNStatus AddFeatures(CNFeature** features, size_t count);
+    CNStatus AddFeatures(const std::vector<CNFeature*>& features);
+
+    // 执行
+    CNStatus ProcessBatch();
+    CNStatus Flush();
+    CNStatus Process(size_t maxFeatures = 0);
+
+    // 配置与状态
+    const Config& GetConfig() const;
+    bool SetConfig(const Config& config);
+    Statistics GetStatistics() const;
+    CNStatus GetLastError() const;
+    std::string GetLastErrorMessage() const;
+    size_t GetPendingCount() const;
+    int64_t GetProcessedCount() const;
+    bool IsProcessing() const;
+
+    // 回调设置
+    void SetProgressCallback(ProgressCallback callback);
+    void SetErrorCallback(ErrorCallback callback);
+    void SetValidationCallback(std::function<bool(CNFeature*)> callback);
+    void SetTransformCallback(std::function<void(CNFeature*)> callback);
+
+    // 控制
+    void Reset(bool clearQueue = true);
+    void Pause();
+    void Resume();
+    bool IsPaused() const;
+};
+用途：高效批量创建/更新要素，支持事务、进度报告、错误处理和并行执行。
+
+7.3 CNSpatialQuery（空间查询构建器）
+cpp
+class CNSpatialQuery {
+public:
+    enum class SpatialRelation {
+        INTERSECTS, CONTAINS, WITHIN, TOUCHES,
+        CROSSES, OVERLAPS, DISJOINT, EQUALS,
+        NEAREST, WITHIN_DISTANCE, BEYOND_DISTANCE
+    };
+
+    enum class SortDirection { ASCENDING, DESCENDING };
+
+    struct SortCondition {
+        std::string fieldName;
+        SortDirection direction;
+        bool nullsFirst;
+    };
+
+    struct QueryOptions {
+        int maxResults = 0;
+        int offset = 0;
+        std::vector<SortCondition> sortConditions;
+        bool distinct = false;
+        bool countOnly = false;
+        bool estimateCount = false;
+        int geometrySimplify = 0;
+        bool includeGeometry = true;
+        bool includeAttributes = true;
+        int timeoutSeconds = 0;
+    };
+
+    explicit CNSpatialQuery(CNLayer* layer);
+
+    // 空间条件
+    CNSpatialQuery& SetExtent(const CNExtent& extent);
+    CNSpatialQuery& SetGeometry(CNGeometry* geometry, SpatialRelation relation = SpatialRelation::INTERSECTS);
+    CNSpatialQuery& SetBuffer(CNGeometry* geometry, double distance, SpatialRelation relation = SpatialRelation::WITHIN_DISTANCE);
+    CNSpatialQuery& SetPointBuffer(double x, double y, double distance);
+    CNSpatialQuery& SetSpatialFilter(CNLayer* otherLayer, SpatialRelation relation = SpatialRelation::INTERSECTS);
+    CNSpatialQuery& SetNearest(CNGeometry* geometry, int maxCount = 1, double maxDistance = 0.0);
+
+    // 属性条件
+    CNSpatialQuery& SetAttributeFilter(const std::string& filter);
+    CNSpatialQuery& WhereEqual(const std::string& fieldName, const CNFieldValue& value);
+    CNSpatialQuery& WhereBetween(const std::string& fieldName, const CNFieldValue& minValue, const CNFieldValue& maxValue);
+    CNSpatialQuery& WhereLike(const std::string& fieldName, const std::string& pattern, bool caseSensitive = false);
+    CNSpatialQuery& WhereIn(const std::string& fieldName, const std::vector<CNFieldValue>& values);
+    CNSpatialQuery& WhereNull(const std::string& fieldName, bool isNull = true);
+
+    // 排序与分页
+    CNSpatialQuery& OrderBy(const std::string& fieldName, SortDirection direction = SortDirection::ASCENDING, bool nullsFirst = false);
+    CNSpatialQuery& Paginate(int limit, int offset = 0);
+    CNSpatialQuery& Limit(int maxResults);
+    CNSpatialQuery& Offset(int offset);
+
+    // 执行查询
+    CNStatus Execute(std::vector<CNFeatureUniPtr>& results);
+    CNStatus Execute(const std::function<bool(CNFeature*)>& callback);
+    CNStatus ExecuteCount(int64_t& count);
+    CNStatus ExecuteExists(bool& exists);
+
+    // 信息
+    std::string GetQuerySQL() const;
+    int64_t GetEstimatedCount() const;
+    CNExtent GetQueryExtent() const;
+    std::string Validate() const;
+
+    CNSpatialQuery& Reset();
+    std::unique_ptr<CNSpatialQuery> Clone() const;
+};
+用途：以流畅接口构建复杂的空间+属性查询，支持多种空间关系、排序分页和聚合。
+
+8. 总结
+CNFeature 及其相关类构成了一个现代、类型安全、线程友好的要素模型。它们紧密配合：
+
+CNFeatureDefn 定义结构，CNFieldDefn 定义字段元数据。
+
+CNFieldValue 统一存储字段值，消除类型擦除问题。
+
+CNFeature 作为数据容器，提供丰富的操作接口。
+
+辅助类（CNFeatureGuard、CNBatchProcessor、CNSpatialQuery）简化了要素的生命周期管理、批量处理和空间查询。
+
+该设计既保留了与 OGR 类似的功能完整性，又融入了 C++11 的现代特性，适合构建高性能、可扩展的地理空间应用。
