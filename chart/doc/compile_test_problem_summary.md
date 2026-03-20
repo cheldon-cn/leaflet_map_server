@@ -896,6 +896,222 @@ TEST_F(PolygonTest, CreateCircle_ReturnsValidPolygon) {
 
 ---
 
+### 27. database模块CMake配置缺失
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | 主CMakeLists.txt中未包含database模块的子目录 |
+| **问题分类** | 构建配置 |
+| **错误位置** | `code/CMakeLists.txt` |
+| **错误信息** | database模块未被构建 |
+| **原因分析** | 主CMakeLists.txt缺少database模块的add_subdirectory配置 |
+| **解决方法** | 在CMakeLists.txt中添加ENABLE_DATABASE选项和对应的add_subdirectory |
+| **解决状态** | ⏳ 待解决 |
+
+**代码变化:**
+
+修改前:
+```cmake
+# code/CMakeLists.txt
+if(ENABLE_TESTS)
+    add_subdirectory(geom/tests)
+endif()
+```
+
+修改后:
+```cmake
+# code/CMakeLists.txt
+if(ENABLE_DATABASE)
+    add_subdirectory(database)
+endif()
+
+if(ENABLE_TESTS)
+    add_subdirectory(geom/tests)
+    if(ENABLE_DATABASE)
+        add_subdirectory(database/test)
+    endif()
+endif()
+```
+
+---
+
+### 28. database测试链接错误 - ogc_database库未链接
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | database测试编译时链接错误，缺少GeoJsonConverter和WkbConverter的实现 |
+| **问题分类** | 链接配置 |
+| **错误位置** | `database/test/CMakeLists.txt` |
+| **错误信息** | `error LNK2019: 无法解析的外部符号 "public: static class ogc::db::Result __cdecl ogc::db::GeoJsonConverter::GeometryToJson...` |
+| **原因分析** | 测试目标未链接ogc_database库 |
+| **解决方法** | 在database/test/CMakeLists.txt的target_link_libraries中添加ogc_database |
+| **解决状态** | ⏳ 待解决 |
+
+**代码变化:**
+
+修改前:
+```cmake
+target_link_libraries(ogc_database_test PRIVATE
+    ogc_geometry
+    gtest
+    gtest_main
+)
+```
+
+修改后:
+```cmake
+target_link_libraries(ogc_database_test PRIVATE
+    ogc_database
+    ogc_geometry
+    gtest
+    gtest_main
+)
+```
+
+同时需要在database/CMakeLists.txt中添加ogc_geometry的链接：
+```cmake
+target_link_libraries(ogc_database PRIVATE ${LIBS} ogc_geometry)
+```
+
+---
+
+### 29. database头文件路径配置错误
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | database模块编译时找不到ogc/db/*.h头文件 |
+| **问题分类** | 头文件管理 |
+| **错误位置** | `database/CMakeLists.txt` |
+| **错误信息** | `error C1083: 无法打开包含文件: "ogc/db/xxx.h": No such file or directory` |
+| **原因分析** | CMakeLists.txt中include_directories路径配置错误 |
+| **解决方法** | 修正include_directories路径，使用${CMAKE_CURRENT_SOURCE_DIR} |
+| **解决状态** | ⏳ 待解决 |
+
+**代码变化:**
+
+修改前:
+```cmake
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/../geom/include
+    ${CMAKE_SOURCE_DIR}/../database/include
+    ${POSTGRESQL_INCLUDE_DIR}
+    ${SQLITE3_INCLUDE_DIR}
+)
+```
+
+修改后:
+```cmake
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../geom/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${POSTGRESQL_INCLUDE_DIR}
+    ${SQLITE3_INCLUDE_DIR}
+)
+```
+
+---
+
+### 30. srid_manager.cpp中ExecutionError未定义
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | srid_manager.cpp使用了未定义的ExecutionError类型 |
+| **问题分类** | 类型定义 |
+| **错误位置** | `database/src/srid_manager.cpp:341` |
+| **错误信息** | `error C2838: "ExecutionError": 缺少完全限定名` |
+| **原因分析** | common.h中未定义ExecutionError枚举值 |
+| **解决方法** | 在common.h中添加ExecutionError的定义，或使用已有的错误类型 |
+| **解决状态** | ⏳ 待解决 |
+
+---
+
+### 31. srid_manager.cpp中GeometryPtr类型转换错误
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | unique_ptr reset方法参数类型不匹配 |
+| **问题分类** | 智能指针转换 |
+| **错误位置** | `database/src/srid_manager.cpp:301` |
+| **错误信息** | `error C2664: 无法将参数1从"ogc::Geometry *"转换为"ogc::GeometryPtr &"` |
+| **原因分析** | reset()方法不接受Geometry*类型，需要使用std::move或正确的类型 |
+| **解决方法** | 使用std::move或正确的类型转换方式 |
+| **解决状态** | ⏳ 待解决 |
+
+---
+
+### 32. geojson_converter.cpp中GetEnvelope返回类型不匹配
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | GetEnvelope()方法调用返回类型与预期不符 |
+| **问题分类** | 返回类型不匹配 |
+| **错误位置** | `database/src/geojson_converter.cpp:54` |
+| **错误信息** | `error C2660: "ogc::Geometry::GetEnvelope": 函数不接受1个参数` |
+| **原因分析** | Geometry::GetEnvelope()为const方法且不接受参数 |
+| **解决方法** | 修改调用方式为 `geometry->GetEnvelope()` (不带参数) |
+| **解决状态** | ⏳ 待解决 |
+
+---
+
+### 33. Envelope类缺少3D相关方法
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | geojson_converter.cpp中调用了Envelope类的3D方法但该类中未定义 |
+| **问题分类** | 接口实现缺失 |
+| **错误位置** | `database/src/geojson_converter.cpp:682-684` |
+| **错误信息** | `error C2039: "Is3D": 不是"ogc::Envelope"的成员` |
+| **原因分析** | Envelope类只实现了2D版本，缺少3D相关方法 |
+| **解决方法** | 在Envelope类中添加Is3D()、GetMinZ()、GetMaxZ()方法，或在geojson_converter中使用条件编译 |
+| **解决状态** | ⏳ 待解决 |
+
+---
+
+### 34. async_connection.cpp中unique_ptr复制构造错误
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | unique_ptr不能被复制，只能移动 |
+| **问题分类** | 智能指针使用 |
+| **错误位置** | `database/src/async_connection.cpp:171` |
+| **错误信息** | `error C2280: "std::unique_ptr<ogc::db::DbResultSet...>::unique_ptr(...)": 尝试引用已删除的函数` |
+| **原因分析** | 试图通过值传递unique_ptr参数导致复制构造调用 |
+| **解决方法** | 使用std::move传递unique_ptr或使用引用/指针 |
+| **解决状态** | ⏳ 待解决 |
+
+---
+
+### 35. database测试CMake路径错误 - chart01路径缺失
+
+| 项目 | 内容 |
+|------|------|
+| **问题描述** | database/test/CMakeLists.txt中路径使用了错误的目录名称 |
+| **问题分类** | 构建配置 |
+| **错误位置** | `database/test/CMakeLists.txt` |
+| **错误信息** | GTest和源文件路径不正确 |
+| **原因分析** | 路径中使用了"trae/chart"而非"trae/chart01" |
+| **解决方法** | 修正路径中的目录名称为正确的chart01 |
+| **解决状态** | ✅ 已解决 |
+
+**代码变化:**
+
+修改前:
+```cmake
+set(GTEST_SOURCE_DIR "E:/program/trae/chart/code/build/_deps/googletest-src")
+set(DATABASE_SOURCE_DIR "E:/program/trae/chart/code/database")
+set(GEOM_SOURCE_DIR "E:/program/trae/chart/code/geom")
+```
+
+修改后:
+```cmake
+set(GTEST_SOURCE_DIR "E:/program/trae/chart01/code/build/_deps/googletest-src")
+set(DATABASE_SOURCE_DIR "E:/program/trae/chart01/code/database")
+set(GEOM_SOURCE_DIR "E:/program/trae/chart01/code/geom")
+```
+
+---
+
 ## 统计信息
 
 ### 按状态统计
