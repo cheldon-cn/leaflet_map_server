@@ -1,0 +1,52 @@
+#pragma once
+
+#include "ogc/layer/export.h"
+#include "ogc/layer/layer.h"
+#include "ogc/layer/read_write_lock.h"
+
+#include <memory>
+#include <string>
+
+namespace ogc {
+
+class OGC_LAYER_API CNThreadSafeLayer : public CNLayer {
+public:
+    explicit CNThreadSafeLayer(std::unique_ptr<CNLayer> layer);
+
+    const std::string& GetName() const override;
+    CNLayerType GetLayerType() const override;
+    CNFeatureDefn* GetFeatureDefn() override;
+    const CNFeatureDefn* GetFeatureDefn() const override;
+    GeomType GetGeomType() const override;
+    void* GetSpatialRef() override;
+    const void* GetSpatialRef() const override;
+    CNStatus GetExtent(Envelope& extent, bool force = true) const override;
+    int64_t GetFeatureCount(bool force = true) const override;
+    void ResetReading() override;
+    std::unique_ptr<CNFeature> GetNextFeature() override;
+    CNFeature* GetNextFeatureRef() override;
+    std::unique_ptr<CNFeature> GetFeature(int64_t fid) override;
+    CNStatus SetFeature(const CNFeature* feature) override;
+    CNStatus CreateFeature(CNFeature* feature) override;
+    CNStatus DeleteFeature(int64_t fid) override;
+    int64_t CreateFeatureBatch(const std::vector<CNFeature*>& features) override;
+    CNStatus CreateField(const CNFieldDefn* field_defn, bool approx_ok = false) override;
+    CNStatus DeleteField(int field_index) override;
+    CNStatus ReorderFields(const std::vector<int>& new_order) override;
+    CNStatus AlterFieldDefn(int field_index, const CNFieldDefn* new_defn, int flags) override;
+    void SetSpatialFilterRect(double min_x, double min_y, double max_x, double max_y) override;
+    void SetSpatialFilter(const CNGeometry* geometry) override;
+    const CNGeometry* GetSpatialFilter() const override;
+    CNStatus SetAttributeFilter(const std::string& query) override;
+    CNStatus StartTransaction() override;
+    CNStatus CommitTransaction() override;
+    CNStatus RollbackTransaction() override;
+    bool TestCapability(CNLayerCapability capability) const override;
+    std::unique_ptr<CNLayer> Clone() const override;
+
+private:
+    std::unique_ptr<CNLayer> layer_;
+    mutable CNReadWriteLock lock_;
+};
+
+} // namespace ogc
