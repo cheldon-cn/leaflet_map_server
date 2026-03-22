@@ -135,13 +135,13 @@
 
 ### P0-关键：核心渲染集成
 
-| 优先级 | 测试场景 | 涉及模块 | 验证目标 | 预计工作量 |
-|--------|----------|----------|----------|------------|
-| P0-IT1 | 基础图形渲染 | DrawEngine + RasterImageDevice | 点、线、面基本图形正确渲染 | 2h |
-| P0-IT2 | 坐标变换渲染 | TransformMatrix + DrawEngine + RasterImageDevice | 平移、缩放、旋转变换正确 | 1.5h |
-| P0-IT3 | 瓦片索引定位 | TileKey + TileDevice | 瓦片坐标计算与定位正确 | 1h |
-| P0-IT4 | 绘图上下文管理 | DrawContext + DrawDevice | 状态保存/恢复、裁剪正确 | 1.5h |
-| P0-IT5 | 图像输出验证 | RasterImageDevice | 输出PNG/JPEG图像正确 | 1h |
+| 优先级 | 测试场景 | 涉及模块 | 验证目标 | 状态 | 测试文件 |
+|--------|----------|----------|----------|------|----------|
+| P0-IT1 | 基础图形渲染 | DrawEngine + RasterImageDevice | 点、线、面基本图形正确渲染 | ✅ 已完成 | test_it_basic_render.cpp |
+| P0-IT2 | 坐标变换渲染 | TransformMatrix + DrawEngine + RasterImageDevice | 平移、缩放、旋转变换正确 | ✅ 已完成 | test_it_transform_render.cpp |
+| P0-IT3 | 瓦片索引定位 | TileKey + TileDevice | 瓦片坐标计算与定位正确 | ✅ 已完成 | test_it_tile_index.cpp |
+| P0-IT4 | 绘图上下文管理 | DrawContext + DrawDevice | 状态保存/恢复、裁剪正确 | ✅ 已完成 | test_it_draw_context.cpp |
+| P0-IT5 | 图像输出验证 | RasterImageDevice | 输出PNG/JPEG图像正确 | ✅ 已完成 | test_it_image_output.cpp |
 
 ### P1-重要：渲染质量集成
 

@@ -36,6 +36,11 @@ set(TEST_SOURCES
     test_it_tile_index.cpp
     test_it_draw_context.cpp
     test_it_image_output.cpp
+    test_it_tile_render.cpp
+    test_it_memory_cache.cpp
+    test_it_disk_cache.cpp
+    test_it_multi_level_cache.cpp
+    test_it_line_symbolizer.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
