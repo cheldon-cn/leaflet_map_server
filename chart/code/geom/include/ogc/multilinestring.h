@@ -6,7 +6,7 @@
 
 namespace ogc {
 
-class OGC_API MultiLineString : public Geometry {
+class OGC_GEOM_API MultiLineString : public Geometry {
 public:
     static MultiLineStringPtr Create();
     static MultiLineStringPtr Create(std::vector<LineStringPtr> lines);

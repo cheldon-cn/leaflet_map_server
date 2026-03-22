@@ -1,6 +1,6 @@
 ---
 name: "code-implementer"
-description: "Guides TDD implementation with >80% coverage for Python/C++/Java. Invoke for coding phase or task execution from plan."
+description: "Guides TDD implementation with >80% coverage for Python/C++/Java. Invoke when user asks to implement tasks from a task list, follow tasks.md plan, or start coding phase. 触发关键词：编码实施、任务清单、tasks.md、按照清单、继续实施、里程碑、实现任务。"
 ---
 
 # Code Implementer
@@ -25,6 +25,7 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 **基本用法:**
 ```
 > 开始实现任务清单中的任务
+按照doc\tasks.md此清单进行编码实施，实施前请认真阅读doc\compile_test_problem_summary.md,从中吸取经验教训，不要再犯同样的问题；
 ```
 
 **指定语言:**
@@ -77,16 +78,64 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 - 使用Mock隔离外部依赖
 - 并行实现无依赖的任务
 
-### 1.4 触发条件
+### 1.4 触发条件（重要）
 
-当出现以下情况时，应调用本Skill：
+**⚠️ 当用户请求符合以下任一模式时，必须立即调用本Skill：**
 
-- 用户需要开始编码实施
-- 用户提到"编码"、"实现"、"开发"等关键词
-- 任务规划已完成，需要进入实施阶段
-- 用户询问如何按照任务清单开发
+#### 1.4.1 中文触发模式
 
-### 1.3 核心约束（必读）
+| 触发关键词 | 示例请求 |
+|------------|----------|
+| 编码实施 | "按照tasks.md清单进行编码实施" |
+| 任务清单 | "继续按照任务清单实施" |
+| tasks.md | "按照tasks.md清单实施" |
+| 按照清单 | "按照清单继续实施" |
+| 继续实施 | "继续实施下一个任务" |
+| 里程碑 | "完成下一个里程碑" |
+| 实现任务 | "实现任务清单中的任务" |
+| 编码 | "开始编码" |
+| 实现 | "实现xxx功能" |
+| 开发 | "开始开发" |
+
+#### 1.4.2 英文触发模式
+
+| Trigger Keywords | Example Request |
+|------------------|-----------------|
+| implement tasks | "implement tasks from the list" |
+| follow tasks.md | "follow tasks.md plan" |
+| start coding | "start coding phase" |
+| task list | "implement according to task list" |
+
+#### 1.4.3 触发判断流程
+
+```
+用户输入
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ 包含"编码实施"、"任务清单"、        │
+│ "tasks.md"、"按照清单"等关键词？    │
+├─────────────────────────────────────┤
+│    YES → 立即调用code-implementer   │
+│    NO  → 继续检查其他模式           │
+└─────────────────────────────────────┘
+```
+
+#### 1.4.4 触发示例
+
+**应该触发的请求：**
+- "按照code\graph\doc\tasks.md清单进行编码实施"
+- "继续按照tasks.md清单实施"
+- "实施下一个任务"
+- "完成里程碑M1的任务"
+- "开始编码实现"
+
+**不应触发的请求：**
+- "查看任务清单"（只是查看，不是实施）
+- "任务清单是什么"（询问性质）
+- "帮我规划任务"（应触发task-planner）
+
+### 1.5 核心约束（必读）
 
 **❌ 不要做的事**：
 - 不要跳过测试直接编写实现代码
@@ -94,8 +143,20 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 - 不要忽略代码覆盖率要求
 - 不要忘记更新API文档
 - 不要跳过代码审查环节
+- **不要忘记在每个任务完成后更新tasks.md状态**
+- **不要忘记在里程碑完成后更新tasks.md汇总状态**
 
-### 1.4 与其他Skill的关系
+### 1.6 自动行为（重要）
+
+**⚠️ 以下行为必须在编码实施过程中自动执行，无需用户额外请求：**
+
+1. **任务状态自动更新**：每完成一个任务，立即更新tasks.md中的任务状态
+2. **里程碑状态自动更新**：每完成一个里程碑，立即更新tasks.md中的里程碑状态和汇总统计
+3. **进度统计自动更新**：同步更新Overview中的完成数、剩余数、进度百分比
+
+**详细流程见6.3节和6.4节。**
+
+### 1.7 与其他Skill的关系
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -113,7 +174,7 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 1.5 Skill边界说明
+### 1.8 Skill边界说明
 
 **Skill选择决策树**：
 
@@ -141,7 +202,7 @@ description: "Guides TDD implementation with >80% coverage for Python/C++/Java. 
 | 单一专家评审 | technical-reviewer | 评审阶段 |
 | 多角度交叉评审 | multi-role-reviewer | 需要投票机制 |
 
-### 1.6 执行资源估算
+### 1.9 执行资源估算
 
 | 项目类型 | 预估Token | 预估时间 |
 |----------|-----------|----------|
@@ -1783,6 +1844,174 @@ git push origin feature/xxx
 4. **格式一致**：保持tasks.md文件的格式一致性
 5. **及时更新**：任务完成后立即更新，不要批量更新
 
+### 6.4 里程碑完成状态更新（重要）
+
+**⚠️ 关键步骤：每当完成一个里程碑，必须据实更新tasks.md中任务汇总单元对应任务状态！**
+
+#### 6.4.1 里程碑完成判断标准
+
+一个里程碑被认为"已完成"需要满足以下条件：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              里程碑完成判断标准                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ✅ 所有任务状态为"✅ Done"                                  │
+│  ✅ 所有单元测试通过                                         │
+│  ✅ 代码覆盖率达标 (>80%)                                   │
+│  ✅ 无编译警告和错误                                         │
+│  ✅ 代码审查通过                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.4.2 里程碑状态更新流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              里程碑状态更新流程                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Step 1: 验证里程碑内所有任务完成                            │
+│     ├── 检查所有任务状态是否为 ✅ Done                       │
+│     ├── 确认所有测试通过                                    │
+│     └── 确认覆盖率达标                                      │
+│                                                             │
+│  Step 2: 更新tasks.md                                       │
+│     ├── 更新Milestones章节中对应里程碑的任务状态             │
+│     ├── 更新Task Summary表格中所有相关任务状态               │
+│     ├── 更新Overview统计（完成数、剩余数、进度百分比）       │
+│     └── 更新Critical Path进度（如适用）                      │
+│                                                             │
+│  Step 3: 记录里程碑完成信息                                  │
+│     ├── 记录完成日期                                        │
+│     ├── 记录实际工时（与预估对比）                           │
+│     └── 记录遇到的问题和解决方案                             │
+│                                                             │
+│  Step 4: 验证更新                                            │
+│     └── 确认tasks.md格式正确、数据一致                       │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.4.3 里程碑状态更新示例
+
+**场景：完成M1里程碑（包含T1.1、T1.2、T1.3三个任务）**
+
+更新前（tasks.md）：
+```markdown
+## Overview
+
+| 项目 | 数值 |
+|------|------|
+| Total Tasks | 35 |
+| Completed Tasks | 0 (0%) |
+| Remaining Tasks | 35 (100%) |
+| **Current Progress** | **0%** |
+
+## Task Summary
+
+| Task ID | Task Name | Priority | Milestone | Effort | Status | Dependencies |
+|---------|-----------|----------|-----------|--------|--------|--------------|
+| T1.1 | CNLayer公共定义枚举 | P0 | M1 | 8h | 📋 Todo | - |
+| T1.2 | CNLayer抽象基类 | P0 | M1 | 24h | 📋 Todo | T1.1 |
+| T1.3 | CNLayer能力测试实现 | P0 | M1 | 8h | 📋 Todo | T1.2 |
+
+### M1: 基础框架 (Week 1-2)
+
+| Task | Priority | Effort | Status | Assignee |
+|------|----------|--------|--------|----------|
+| T1.1: CNLayer公共定义枚举 | P0 | 8h | 📋 Todo | Dev A |
+| T1.2: CNLayer抽象基类 | P0 | 24h | 📋 Todo | Dev A |
+| T1.3: CNLayer能力测试实现 | P0 | 8h | 📋 Todo | Dev A |
+```
+
+更新后（tasks.md）：
+```markdown
+## Overview
+
+| 项目 | 数值 |
+|------|------|
+| Total Tasks | 35 |
+| Completed Tasks | 3 (8.6%) |
+| Remaining Tasks | 32 (91.4%) |
+| **Current Progress** | **8.6%** |
+
+## Task Summary
+
+| Task ID | Task Name | Priority | Milestone | Effort | Status | Dependencies |
+|---------|-----------|----------|-----------|--------|--------|--------------|
+| T1.1 | CNLayer公共定义枚举 | P0 | M1 | 8h | ✅ Done | - |
+| T1.2 | CNLayer抽象基类 | P0 | M1 | 24h | ✅ Done | T1.1 |
+| T1.3 | CNLayer能力测试实现 | P0 | M1 | 8h | ✅ Done | T1.2 |
+
+### M1: 基础框架 (Week 1-2) ✅
+
+| Task | Priority | Effort | Status | Assignee |
+|------|----------|--------|--------|----------|
+| T1.1: CNLayer公共定义枚举 | P0 | 8h | ✅ Done | Dev A |
+| T1.2: CNLayer抽象基类 | P0 | 24h | ✅ Done | Dev A |
+| T1.3: CNLayer能力测试实现 | P0 | 8h | ✅ Done | Dev A |
+```
+
+#### 6.4.4 里程碑完成检查清单
+
+每个里程碑完成后，必须执行以下检查：
+
+```markdown
+## 里程碑完成检查清单
+
+### M1: 基础框架
+
+- [ ] 1. 确认所有任务状态已更新为 ✅ Done
+- [ ] 2. 确认所有单元测试通过
+- [ ] 3. 确认代码覆盖率达标 (>80%)
+- [ ] 4. 更新Task Summary表格中的Status列
+- [ ] 5. 更新Overview中的Completed Tasks计数
+- [ ] 6. 更新Overview中的Remaining Tasks计数
+- [ ] 7. 计算并更新Current Progress百分比
+- [ ] 8. 在Milestones章节标题添加 ✅ 标记
+- [ ] 9. 验证tasks.md格式正确
+- [ ] 10. 记录里程碑完成日期和实际工时
+```
+
+#### 6.4.5 自动触发条件
+
+**⚠️ 当用户按照任务清单执行时，系统应自动检测里程碑完成状态：**
+
+1. **任务完成时**：检查该任务所属里程碑是否所有任务都已完成
+2. **里程碑完成时**：自动更新tasks.md中的相关状态
+3. **进度更新时**：同步更新Overview统计和进度百分比
+
+**触发逻辑伪代码：**
+
+```python
+def on_task_completed(task_id):
+    # 1. 更新单个任务状态
+    update_task_status(task_id, "✅ Done")
+    
+    # 2. 检查所属里程碑是否完成
+    milestone = get_milestone_for_task(task_id)
+    all_tasks_in_milestone = get_tasks_in_milestone(milestone)
+    
+    if all(task.status == "✅ Done" for task in all_tasks_in_milestone):
+        # 3. 里程碑完成，更新整体状态
+        update_milestone_status(milestone, "✅")
+        update_overview_statistics()
+        log_milestone_completion(milestone)
+```
+
+#### 6.4.6 注意事项
+
+**⚠️ 重要提醒：**
+
+1. **实时更新**：每当完成一个任务，立即检查里程碑状态，不要等到所有任务完成
+2. **数据一致性**：确保Task Summary、Milestones、Overview三处数据一致
+3. **进度可见**：让用户能够清晰看到项目进度
+4. **问题记录**：如果里程碑未能按期完成，记录原因和调整计划
+5. **文档同步**：里程碑完成后，更新相关设计文档和API文档
+
 ---
 
 ## Step 7: 迭代与总结
@@ -2919,3 +3148,5 @@ TOTAL                                25      0   100%
 | v1.0 | 2026-03-19 | 初始版本（Python + C++） |
 | v1.1 | 2026-03-19 | 添加Java支持（JUnit 5 + Mockito + AssertJ + Javadoc） |
 | v1.2 | 2026-03-19 | 添加CI/CD集成、错误恢复、Skill边界、代码审查、测试数据管理 |
+| v1.3 | 2026-03-21 | 添加里程碑完成状态自动更新逻辑（6.4节） |
+| v1.4 | 2026-03-22 | 增强触发条件：添加中文触发关键词、触发判断流程、自动行为说明、readme.md |

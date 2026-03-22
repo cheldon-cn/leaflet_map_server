@@ -977,4 +977,522 @@ System Integration:   91 → 97 ████████████████
 **文档版本**: v1.2  
 **创建日期**: 2026年3月18日  
 **最后更新**: 2026年3月19日  
+
+---
+
+## 十四、Feature模块编码实施 (tasks.md清单执行)
+
+### 14.1 用户提问（原话）
+
+> 按照code\feature\doc\tasks.md此清单进行编码实施，实施前请认真阅读doc\compile_test_problem_summary.md,从中吸取经验教训，不要再犯同样的问题
+
+### 14.2 任务清单来源
+
+**文件**: `code/feature/doc/tasks.md` (要素模型任务规划 v3.0)
+
+**技术约束**:
+- 编程语言: C++11
+- 核心框架: 无外部框架依赖，纯C++11标准库
+- 代码规范: Google C++ Style
+- 现代C++11特性: 智能指针、移动语义、RAII、原子操作、强类型枚举
+- 外部依赖: geom模块 (ogc_geometry)
+
+### 14.3 实施的主要任务
+
+| 任务ID | 任务名称 | 优先级 | 里程碑 | 状态 |
+|--------|----------|--------|--------|------|
+| T1.1 | CNFieldType枚举定义 | P0 | M1 | ✅ |
+| T1.2 | CNDateTime日期时间结构 | P0 | M1 | ✅ |
+| T1.3 | CNFieldDefn字段定义接口 | P0 | M1 | ✅ |
+| T1.4 | CNGeomFieldDefn几何字段定义 | P0 | M1 | ✅ |
+| T2.1 | CNFieldValue字段值容器 | P0 | M2 | ✅ |
+| T2.2 | CNFieldValue类型转换 | P1 | M2 | ✅ |
+| T3.1 | CNFeatureDefn要素定义 | P0 | M3 | ✅ |
+| T3.2 | CNFeatureDefn序列化 | P1 | M3 | ✅ |
+| T4.1 | CNFeature核心要素类 | P0 | M4 | ✅ |
+| T4.2 | CNFeature字段访问方法 | P0 | M4 | ✅ |
+| T4.3 | CNFeature几何操作 | P0 | M4 | ✅ |
+| T4.4 | CNFeature克隆与比较 | P1 | M4 | ✅ |
+| T5.1 | CNFeatureGuard RAII包装器 | P1 | M5 | ✅ |
+| T5.2 | CNBatchProcessor批量处理器 | P1 | M5 | ✅ |
+| T5.3 | CNSpatialQuery空间查询构建器 | P1 | M5 | ✅ |
+| T6.1 | CNFeatureCollection要素集合 | P0 | M6 | ✅ |
+| T6.2 | CNFeatureIterator迭代器 | P1 | M6 | ✅ |
+| T7.1 | GeoJSON序列化 | P0 | M7 | ✅ |
+| T7.2 | WKB/WKT序列化 | P1 | M7 | ✅ |
+| T8.1 | 单元测试基础设施 | P0 | M8 | ✅ |
+| T8.2 | CNFieldValue单元测试 | P0 | M8 | ✅ |
+| T8.3 | CNFeature单元测试 | P0 | M8 | ✅ |
+| T8.4 | CNFeatureDefn单元测试 | P1 | M8 | ✅ |
+
+### 14.4 实施过程的关键问题
+
+#### 14.4.1 接口类设计问题
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| CNFieldDefn缺少Create/Release | 纯虚接口类没有工厂方法和引用计数 | 添加静态Create方法和ReleaseReference |
+| CNFeatureDefn缺少AddField | 无法添加字段定义 | 添加AddField、GetFieldDefn方法 |
+| CNGeomFieldDefn缺少Create | 几何字段接口缺少工厂方法 | 添加Create静态方法和引用计数 |
+
+#### 14.4.2 设计缺陷修复
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| SetGeometry不支持动态扩展 | index超出范围时直接返回 | 改为resize扩展数组，使用std::move |
+
+#### 14.4.3 移动语义Bug（多次循环）
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| CNFieldValue移动构造未复制SBO | 指针成员处理正确但忽略缓冲区 | 添加std::memcpy复制storage_.buffer |
+
+#### 14.4.4 DLL/静态库混用问题（多次循环）
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| OGC_API在静态库中导致错误 | 静态库头文件使用OGC_API导出 | 移除OGC_API宏 |
+
+#### 14.4.5 测试用例问题
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| CreatePoint调用错误 | 应使用Point::Create | 修正为正确的API |
+| 枚举值假设错误 | 测试假设与实际定义不匹配 | 修正枚举值 |
+| 默认类型假设错误 | 假设kNull实际是kUnset | 修正为正确的类型 |
+
+### 14.5 实现的主要文件
+
+| 文件路径 | 功能描述 |
+|----------|----------|
+| include/ogc/feature/field_type.h | CNFieldType枚举定义 |
+| include/ogc/feature/datetime.h | CNDateTime时间结构 |
+| include/ogc/feature/field_defn.h | CNFieldDefn字段定义接口 |
+| include/ogc/feature/geom_field_defn.h | CNGeomFieldDefn几何字段接口 |
+| include/ogc/feature/field_value.h | CNFieldValue类型安全值容器 |
+| include/ogc/feature/feature_defn.h | CNFeatureDefn要素定义 |
+| include/ogc/feature/feature.h | CNFeature核心要素类 |
+| include/ogc/feature/feature_guard.h | CNFeatureGuard RAII包装器 |
+| include/ogc/feature/batch_processor.h | CNBatchProcessor批量处理器 |
+| include/ogc/feature/spatial_query.h | CNSpatialQuery空间查询 |
+| include/ogc/feature/feature_collection.h | CNFeatureCollection要素集合 |
+| include/ogc/feature/feature_iterator.h | CNFeatureIterator迭代器 |
+| include/ogc/feature/geojson_converter.h | GeoJSON序列化器 |
+| include/ogc/feature/wkb_wkt_converter.h | WKB/WKT序列化器 |
+
+### 14.6 测试结果
+
+| 测试模块 | 通过数 | 失败数 | 总数 |
+|----------|--------|--------|------|
+| CNFieldType | 2 | 0 | 2 |
+| CNDateTime | 4 | 0 | 4 |
+| CNFieldValue | 19 | 0 | 19 |
+| CNFeatureDefn | 3 | 0 | 3 |
+| CNFeature | 4 | 0 | 4 |
+| CNFeatureCollection | 7 | 0 | 7 |
+| **总计** | **39** | **0** | **39** |
+
+### 14.7 问题记录更新
+
+将本次编码实施过程中遇到的问题整理更新到 `doc/compile_test_problem_summary.md`，新增10个问题(46-55)，包括：
+- 接口设计问题 (3个)
+- 设计缺陷 (1个)
+- 移动语义bug (1个)
+- DLL导出问题 (2个)
+- 测试用例问题 (3个)
+
+---
+
+## 十五、Layer模块编码实施与测试补充（近20轮对话）
+
+### 15.1 概述
+
+本节记录了近20轮对话中关于Layer模块编码实施、单元测试补充、问题修复和测试覆盖度提升的完整过程。
+
+**时间范围**: 2026年3月19日 - 2026年3月21日  
+**主要任务**: Layer模块单元测试补充、编译问题修复、测试覆盖度提升
+
+### 15.2 对话轮次记录
+
+| 轮次 | 用户请求 | 主要工作 | 结果 |
+|------|----------|----------|------|
+| 1 | 按照code\layer\doc\tasks.md清单进行编码实施 | 执行Layer模块任务清单 | 开始实施 |
+| 2 | 分别对code\database、code\feature、code\layer生成索引md | 生成index.md文档 | 完成 |
+| 3 | 执行单元测试，编译成果拷贝到code\build\tests\Release | 配置测试环境 | 完成 |
+| 4 | layer模块有哪些历史代码问题，整理到doc/layer_test_problem.md | 分析历史问题 | 完成 |
+| 5 | 修订doc\layer_test_problem.md中的问题 | 修复历史问题 | 完成 |
+| 6 | 对于问题5.1、5.2评估修改方案 | 分析类转换问题 | 完成 |
+| 7 | 问题5.1使用方案2，问题5.2使用方案1 | 实施修改方案 | 完成 |
+| 8 | 对于CNMemoryLayer特定问题分析解决方案 | 分析内存图层问题 | 完成 |
+| 9 | 按推荐方案修改CNMemoryLayer | 修复内存图层问题 | 完成 |
+| 10 | 重新进行单元测试 | 执行测试 | 完成 |
+| 11 | 分析code\feature\include\中哪些类需要导出OGC_API | 分析导出需求 | 完成 |
+| 12 | 分析code\layer\include\目录，添加OGC_API | 添加导出宏 | 完成 |
+| 13 | 执行单元测试，拷贝编译成果 | 测试执行 | 完成 |
+| 14 | CNLayerNode、CNLayerWrapper、CNLayer详述关系并更新设计文档 | 文档更新 | 完成 |
+| 15 | 单元测试覆盖度有多大，哪些类没有测试 | 分析测试覆盖度 | 完成 |
+| 16 | 根据上轮对话的建议执行 | 补充测试 | 完成 |
+| 17 | OGC_API替换为模块特定宏，设定生成dll动态库 | 模块化导出 | 完成 |
+| 18 | code\database编译并测试 | 数据库模块测试 | 完成 |
+| 19 | code\feature编译并测试，code\layer编译并测试 | 模块测试 | 完成 |
+| 20 | 对code\layer中没有测试的类进行补充测试 | 补充测试 | 进行中 |
+
+### 15.3 主要问题与解决方案
+
+#### 15.3.1 类类型转换问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 5.1 | CNLayerNode到CNLayer的转换 | 方案2：使用CNLayerWrapper包装器 |
+| 5.2 | CNObservableLayer到CNLayer的转换 | 方案1：添加CNLayer* GetLayer()方法 |
+
+#### 15.3.2 CNMemoryLayer特定问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 7.1 | GetFeatureCount计数逻辑错误 | 只计算非空要素 |
+| 7.2 | 空间过滤参数顺序错误 | 修正Envelope构造参数 |
+| 7.3 | 空间过滤逻辑不完整 | 添加filter_extent_检查 |
+
+#### 15.3.3 DLL导出问题
+
+| 问题 | 描述 | 解决方案 |
+|------|------|----------|
+| OGC_API统一使用 | 所有模块使用相同的OGC_API宏 | 替换为模块特定宏(OGC_LAYER_API等) |
+| 纯虚接口类导出 | 接口类缺少导出宏 | 添加OGC_LAYER_API到类声明 |
+| Pimpl模式类导出 | 包含unique_ptr<Impl>的类需要导出 | 添加导出宏 |
+
+#### 15.3.4 测试覆盖度问题
+
+| 初始状态 | 目标状态 | 当前状态 |
+|----------|----------|----------|
+| 64% (18/28类) | 80% | 进行中 |
+
+### 15.4 新增测试文件
+
+| 文件名 | 测试类 | 测试用例数 |
+|--------|--------|------------|
+| test_layer_group.cpp | CNLayerGroup, CNLayerNode, CNLayerWrapper | 14 |
+| test_layer_infra.cpp | CNReadWriteLock, CNFeatureStream, CNConnectionPool, CNDriverManager, CNDriver | 33 |
+| test_layer_utils.cpp | CNThreadSafeLayer, CNLayerObserver, CNLayerSnapshot | 18 |
+| test_layer_types.cpp | CNVectorLayer, CNRasterLayer, CNRasterBand, CNRasterDataset | 35 |
+| test_layer_types_extra.cpp | CNGDALAdapter, CNRasterDataset | 7 |
+
+### 15.5 测试覆盖度统计
+
+| 类别 | 已测试 | 未测试 | 覆盖率 |
+|------|--------|--------|--------|
+| 核心类 | 6 | 0 | 100% |
+| 基础设施类 | 6 | 2 | 75% |
+| 图层类型类 | 6 | 5 | 55% |
+| 数据源类 | 0 | 1 | 0% |
+| **总计** | **18** | **8** | **69%** |
+
+### 15.6 待补充测试的类
+
+| 优先级 | 类名 | 原因 |
+|--------|------|------|
+| 高 | CNDataSource | 核心抽象基类 |
+| 高 | CNDbConnection | 数据库连接核心类 |
+| 中 | CNWFSLayer | 网络服务图层 |
+| 中 | CNShapefileLayer | 常用文件格式 |
+| 中 | CNGeoJSONLayer | 常用文件格式 |
+| 低 | CNGeoPackageLayer | 需要SQLite依赖 |
+| 低 | CNPostGISLayer | 需要PostgreSQL环境 |
+| 低 | CNConnectionGuard | 辅助类 |
+
+### 15.7 编译测试问题汇总
+
+本轮实施过程中遇到的主要问题已整理到 `doc/compile_test_problem_summary.md`，包括：
+
+| 问题类型 | 数量 | 状态 |
+|----------|------|------|
+| 接口设计问题 | 5 | ✅ 已解决 |
+| DLL导出问题 | 8 | ✅ 已解决 |
+| 类型转换问题 | 3 | ✅ 已解决 |
+| 测试用例问题 | 4 | ✅ 已解决 |
+| 构建配置问题 | 2 | ✅ 已解决 |
+
+### 15.8 关键代码变更
+
+#### 15.8.1 CNMemoryLayer修复
+
+```cpp
+// GetFeatureCount修复 - 只计算非空要素
+int64_t CNMemoryLayer::GetFeatureCount(bool force) const {
+    (void)force;
+    int64_t count = 0;
+    for (const auto& feature : features_) {
+        if (feature) count++;
+    }
+    return count;
+}
+
+// 空间过滤修复 - 正确的参数顺序和过滤逻辑
+void CNMemoryLayer::SetSpatialFilter(double min_x, double min_y, 
+                                       double max_x, double max_y) {
+    filter_extent_ = Envelope(min_x, min_y, max_x, max_y);
+}
+
+bool CNMemoryLayer::ApplySpatialFilter(const CNFeature* feature) const {
+    if (filter_extent_.IsNull() || !feature->GetGeometry()) {
+        return true;
+    }
+    const Envelope& feat_env = feature->GetGeometry()->GetEnvelope();
+    return feat_env.Intersects(filter_extent_);
+}
+```
+
+#### 15.8.2 模块化导出宏
+
+```cpp
+// export.h - 每个模块独立的导出宏
+#ifdef OGC_LAYER_EXPORTS
+    #define OGC_LAYER_API __declspec(dllexport)
+#else
+    #define OGC_LAYER_API __declspec(dllimport)
+#endif
+
+// 类声明中使用
+class OGC_LAYER_API CNLayer { ... };
+class OGC_LAYER_API CNMemoryLayer : public CNLayer { ... };
+```
+
+### 15.9 经验教训
+
+1. **DLL导出宏**: 纯虚接口类和Pimpl模式类必须添加导出宏
+2. **模块化导出**: 每个模块应使用独立的导出宏，避免跨模块依赖问题
+3. **测试覆盖度**: 抽象基类需要创建派生类进行测试
+4. **空间过滤**: 注意Envelope参数顺序(min_x, min_y, max_x, max_y)
+5. **要素计数**: 删除要素后需要正确处理nullptr
+
+---
+
+**文档版本**: v1.4  
+**创建日期**: 2026年3月18日  
+**最后更新**: 2026年3月21日  
+**维护者**: Technical Review Team
+
+---
+
+## 十六、Graph模块编码实施（近10轮对话）
+
+### 16.1 概述
+
+本节记录了近10轮对话中关于Graph模块（图形绘制框架）编码实施、问题修复和单元测试的完整过程。
+
+**时间范围**: 2026年3月21日 - 2026年3月22日  
+**主要任务**: Graph模块任务清单执行、编译问题修复、动态库生成、单元测试
+
+### 16.2 对话轮次记录
+
+| 轮次 | 用户请求 | 主要工作 | 结果 |
+|------|----------|----------|------|
+| 1 | 继续按照tasks.md清单执行 | 实现T12.3异步渲染接口 | 完成 |
+| 2 | 继续 | 实现T13.1性能指标、T13.2性能监控器 | 完成 |
+| 3 | 继续 | 实现T10.2 ProjTransformer | 完成 |
+| 4 | 继续 | 实现T4.2坐标变换和裁剪接口 | 完成 |
+| 5 | 继续 | 实现T3.6线程安全设计 | 完成 |
+| 6 | 继续 | 实现T4.3图层管理、图像绘制、SLD解析 | 完成 |
+| 7 | 继续 | 实现T9.4磁盘缓存、T9.5多级缓存 | 完成 |
+| 8 | 对于code\graph，要生成动态库；然后继续 | 修改CMakeLists.txt为SHARED库 | 完成 |
+| 9 | 编译测试 | 修复动态库输出路径问题 | 完成 |
+| 10 | 请将近10轮对话中遇到的问题整理更新到doc\compile_test_problem_summary.md | 更新问题记录文档 | 完成 |
+
+### 16.3 主要实现内容
+
+#### 16.3.1 异步渲染接口 (T12.3)
+
+| 文件 | 功能 |
+|------|------|
+| async_renderer.h | 异步渲染器接口定义 |
+| async_renderer.cpp | 异步渲染器实现 |
+
+**核心功能**:
+- 多线程渲染任务执行
+- 进度报告和取消机制
+- 渲染会话管理
+
+#### 16.3.2 性能监控 (T13.1, T13.2)
+
+| 文件 | 功能 |
+|------|------|
+| performance_metrics.h | 性能指标接口 |
+| performance_metrics.cpp | 性能指标实现 |
+| performance_monitor.h | 性能监控器接口 |
+| performance_monitor.cpp | 性能监控器实现 |
+
+**核心功能**:
+- FPS追踪和历史记录
+- 渲染时间测量
+- 内存使用监控
+- 性能阈值检测
+- 性能等级分类
+
+#### 16.3.3 坐标转换 (T10.2, T4.2)
+
+| 文件 | 功能 |
+|------|------|
+| proj_transformer.h | PROJ坐标转换器接口 |
+| proj_transformer.cpp | PROJ坐标转换器实现 |
+| coordinate_transform.h | 坐标变换工具接口 |
+| coordinate_transform.cpp | 坐标变换工具实现 |
+| clipper.h | 裁剪算法接口 |
+| clipper.cpp | 裁剪算法实现 |
+
+**核心功能**:
+- PROJ库集成
+- WGS84/Web Mercator投影转换
+- 矩阵变换
+- Cohen-Sutherland线裁剪
+- Sutherland-Hodgman多边形裁剪
+
+#### 16.3.4 线程安全 (T3.6)
+
+| 文件 | 功能 |
+|------|------|
+| thread_safe.h | 线程安全原语接口 |
+| thread_safe.cpp | 线程安全原语实现 |
+
+**核心功能**:
+- 线程安全对象包装器
+- 线程安全队列
+- 线程安全单例模板
+- 原子操作工具
+
+#### 16.3.5 图层管理和样式解析 (T4.3)
+
+| 文件 | 功能 |
+|------|------|
+| layer_manager.h | 图层管理器接口 |
+| layer_manager.cpp | 图层管理器实现 |
+| image_draw.h | 图像绘制接口 |
+| image_draw.cpp | 图像绘制实现 |
+| sld_parser.h | SLD解析器接口 |
+| sld_parser.cpp | SLD解析器实现 |
+| mapbox_style_parser.h | Mapbox样式解析器接口 |
+| mapbox_style_parser.cpp | Mapbox样式解析器实现 |
+
+**核心功能**:
+- 图层添加/删除/重排序
+- 图层可见性和透明度控制
+- 多格式图像支持
+- SLD样式解析
+- Mapbox样式兼容
+
+#### 16.3.6 渲染设备扩展
+
+| 文件 | 功能 |
+|------|------|
+| pdf_device.h | PDF渲染设备接口 |
+| pdf_device.cpp | PDF渲染设备实现 |
+| tile_device.h | 瓦片渲染设备接口 |
+| tile_device.cpp | 瓦片渲染设备实现 |
+| display_device.h | 显示渲染设备接口 |
+| display_device.cpp | 显示渲染设备实现 |
+
+#### 16.3.7 瓦片缓存 (T9.4, T9.5)
+
+| 文件 | 功能 |
+|------|------|
+| disk_tile_cache.h | 磁盘瓦片缓存接口 |
+| disk_tile_cache.cpp | 磁盘瓦片缓存实现 |
+| multi_level_tile_cache.h | 多级瓦片缓存接口 |
+| multi_level_tile_cache.cpp | 多级瓦片缓存实现 |
+
+**核心功能**:
+- 基于磁盘的瓦片存储
+- LRU淘汰策略
+- 缓存索引管理
+- 多级缓存层次
+- 提升策略
+
+### 16.4 主要问题与解决方案
+
+#### 16.4.1 头文件管理问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 70 | async_renderer.h缺少<map>头文件 | 添加#include <map> |
+| 74 | performance_metrics.cpp缺少<algorithm> | 添加#include <algorithm> |
+| 75 | performance_monitor.cpp缺少<sstream>和<iomanip> | 添加相应头文件 |
+
+#### 16.4.2 API命名不一致问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 71 | RenderQueue::Size()应为GetSize() | 修正方法名 |
+| 76 | GetCoordinateAt应为GetCoordinateN | 修正方法名 |
+| 77 | GetInteriorRing应为GetInteriorRingN | 修正方法名 |
+| 82 | Envelope::Contains(double,double)不存在 | 使用Contains(Coordinate) |
+| 86 | TileKey::GetX()/GetY()/GetZoom()不存在 | 使用key.x/key.y/key.z |
+| 90 | Color::ToRGB()/ToRGBA()应为GetRGB()/GetRGBA() | 修正测试用例 |
+
+#### 16.4.3 const正确性问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 73 | m_sessionsMutex在const方法中修改 | 声明为mutable |
+| 85 | DiskTileCache::RemoveFromIndex需要const | 添加const限定符 |
+| 87 | MultiLevelTileCache::PromoteTile需要const | 添加const限定符 |
+
+#### 16.4.4 构建配置问题
+
+| 问题ID | 问题描述 | 解决方案 |
+|--------|----------|----------|
+| 88 | 动态库输出路径错误 | 添加CMAKE_*_OUTPUT_DIRECTORY_RELEASE变量 |
+| 89 | 测试链接器找不到ogc_graph.lib | 修复输出路径配置 |
+
+### 16.5 CMake配置变更
+
+**动态库生成配置**:
+
+```cmake
+# 设置为动态库
+add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
+
+# VS2015多配置生成器需要配置特定变量
+if(MSVC)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/build/tests/Release")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/build/tests/Release")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/build/tests/Release")
+endif()
+```
+
+### 16.6 任务完成状态
+
+| 任务ID | 任务名称 | 状态 |
+|--------|----------|------|
+| T12.3 | 异步渲染接口扩展 | ✅ 完成 |
+| T13.1 | PerformanceMetrics性能指标 | ✅ 完成 |
+| T13.2 | PerformanceMonitor性能监控器 | ✅ 完成 |
+| T10.2 | ProjTransformer Proj转换器 | ✅ 完成 |
+| T4.2 | 坐标变换和裁剪接口 | ✅ 完成 |
+| T3.6 | 线程安全设计 | ✅ 完成 |
+| T4.3 | 图层管理接口 | ✅ 完成 |
+| T9.4 | DiskTileCache磁盘缓存 | ✅ 完成 |
+| T9.5 | MultiLevelTileCache多级缓存 | ✅ 完成 |
+| T22.1 | 单元测试框架搭建 | ✅ 完成 |
+
+### 16.7 编译测试结果
+
+| 项目 | 结果 |
+|------|------|
+| 动态库生成 | ✅ ogc_graph.dll |
+| 导入库生成 | ✅ ogc_graph.lib |
+| 单元测试 | ✅ 19个测试全部通过 |
+
+### 16.8 经验教训
+
+1. **CMake多配置生成器**: VS2015使用多配置生成器，需要设置配置特定的输出目录变量（CMAKE_*_OUTPUT_DIRECTORY_RELEASE）
+2. **动态库vs静态库**: 动态库需要正确设置RUNTIME、LIBRARY、ARCHIVE输出目录
+3. **API命名一致性**: 保持方法命名的一致性，如GetSize() vs Size()
+4. **const正确性**: 在const方法中需要修改的成员应声明为mutable
+5. **简单数据结构**: TileKey等简单结构体可以使用公开成员变量而非getter方法
+
+---
+
+**文档版本**: v1.5  
+**创建日期**: 2026年3月18日  
+**最后更新**: 2026年3月22日  
 **维护者**: Technical Review Team

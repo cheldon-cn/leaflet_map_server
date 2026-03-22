@@ -7,14 +7,14 @@
 
 #ifdef _WIN32
     #ifdef OGC_GEOMETRY_EXPORTS
-        #define OGC_API __declspec(dllexport)
+        #define OGC_GEOM_API __declspec(dllexport)
     #else
-        #define OGC_API __declspec(dllimport)
+        #define OGC_GEOM_API __declspec(dllimport)
     #endif
 #else
     #ifdef OGC_GEOMETRY_EXPORTS
-        #define OGC_API __attribute__((visibility("default")))
+        #define OGC_GEOM_API __attribute__((visibility("default")))
     #else
-        #define OGC_API
+        #define OGC_GEOM_API
     #endif
 #endif

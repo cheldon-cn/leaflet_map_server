@@ -6,7 +6,7 @@
 
 namespace ogc {
 
-class OGC_API MultiPoint : public Geometry {
+class OGC_GEOM_API MultiPoint : public Geometry {
 public:
     static MultiPointPtr Create();
     static MultiPointPtr Create(const CoordinateList& coords);

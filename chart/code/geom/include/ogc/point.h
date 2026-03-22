@@ -14,7 +14,7 @@ namespace ogc {
  * 
  * 表示二维或三维空间中的单个点
  */
-class OGC_API Point : public Geometry {
+class OGC_GEOM_API Point : public Geometry {
 public:
     static PointPtr Create(double x, double y);
     static PointPtr Create(double x, double y, double z);

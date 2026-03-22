@@ -6097,6 +6097,22 @@ public:
      * @brief 获取图层
      */
     CNLayer* GetLayer(size_t index);
+
+    /**
+     * @brief 获取图层组数量
+     */
+    int GetGroupCount() const;
+
+    /**
+     * @brief 获取图层组
+     */
+    CNLayerGroup* GetGroup(size_t index);
+    const CNLayerGroup* GetGroup(size_t index) const;
+
+    /**
+     * @brief 添加图层组
+     */
+    void AddGroup(std::unique_ptr<CNLayerGroup> group);
     
     /**
      * @brief 获取所有图层（递归）
@@ -6137,7 +6153,8 @@ private:
     std::string name_;
     bool visible_ = true;
     CNLayerNode* parent_ = nullptr;
-    std::vector<std::unique_ptr<CNLayerNode>> children_;
+    std::vector<std::unique_ptr<CNLayerWrapper>> layers_;
+    std::vector<std::unique_ptr<CNLayerGroup>> groups_;
 };
 
 /**
@@ -6180,19 +6197,119 @@ private:
 
 ### 31.2 树形结构管理
 
+**设计说明**: CNLayerGroup 内部使用两个独立容器管理子节点：
+- `layers_`: 存储图层包装节点 `std::vector<std::unique_ptr<CNLayerWrapper>>`
+- `groups_`: 存储子图层组 `std::vector<std::unique_ptr<CNLayerGroup>>`
+
+这种方式避免了 CNLayerNode 到 CNLayer 的类型转换问题，使代码更类型安全。
+
+### 31.3 CNLayerNode、CNLayerWrapper、CNLayer关系详解
+
+**类关系图**:
+
+```
+                    ┌─────────────────┐
+                    │  CNLayerNode    │  (抽象基类)
+                    │  - GetNodeType()│
+                    │  - GetName()    │
+                    │  - IsVisible()  │
+                    │  - GetParent()  │
+                    │  - SetParent()  │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+            ▼                ▼                ▼
+   ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+   │ CNLayerWrapper │ │ CNLayerGroup   │ │   CNLayer      │
+   │ (叶子节点)      │ │ (分支节点)      │ │ (抽象基类)     │
+   │ - layer_       │ │ - layers_      │ │ - GetName()    │
+   │ - visible_     │ │ - groups_      │ │ - GetExtent()  │
+   │ - parent_      │ │ - parent_      │ │ - GetFeature() │
+   └───────┬────────┘ └────────────────┘ │ - ...          │
+           │                              └───────┬────────┘
+           │ 包含                                  │ 继承
+           ▼                                      ▼
+   ┌────────────────┐                   ┌────────────────┐
+   │   CNLayer      │                   │ CNMemoryLayer  │
+   │   (被包装)     │                   │ CNVectorLayer  │
+   └────────────────┘                   │ CNRasterLayer  │
+                                        └────────────────┘
+```
+
+**设计原则**:
+
+1. **CNLayerNode（抽象节点基类）**:
+   - 定义图层树节点的统一接口
+   - 支持两种节点类型：`kLayer`（叶子）和 `kGroup`（分支）
+   - 提供父节点指针实现树形结构遍历
+   - 提供可见性控制
+
+2. **CNLayerWrapper（图层包装器）**:
+   - **设计目的**: 将 CNLayer 包装为 CNLayerNode，使其能加入图层树
+   - **为什么需要包装**: CNLayer 是独立的抽象基类，不继承 CNLayerNode
+   - **组合模式**: 使用组合而非继承，避免 CNLayer 承担树节点职责
+   - **职责分离**: 
+     - CNLayer 专注于图层核心功能（要素管理、空间查询等）
+     - CNLayerWrapper 专注于树节点功能（父节点、可见性）
+   - **优点**:
+     - 类型安全：避免 dynamic_cast 的运行时开销
+     - 单一职责：每个类职责清晰
+     - 灵活性：同一图层可被多个图层组引用（通过不同包装器）
+
+3. **CNLayer（图层抽象基类）**:
+   - 定义图层的核心功能接口
+   - 不继承 CNLayerNode，保持独立性
+   - 可被 CNMemoryLayer、CNVectorLayer、CNRasterLayer 等继承实现
+
+**使用示例**:
+
+```cpp
+// 创建图层组
+auto root_group = std::make_unique<CNLayerGroup>("Root");
+
+// 创建图层
+auto roads_layer = std::make_unique<CNMemoryLayer>("Roads", GeomType::kLineString);
+
+// 方式1：直接添加图层（自动包装为CNLayerWrapper）
+root_group->AddLayer(std::move(roads_layer));
+
+// 方式2：添加子图层组
+auto background_group = std::make_unique<CNLayerGroup>("Background");
+root_group->AddGroup(std::move(background_group));
+
+// 遍历图层树
+for (size_t i = 0; i < root_group->GetChildCount(); ++i) {
+    CNLayerNode* child = root_group->GetChild(i);
+    if (child->GetNodeType() == CNLayerNodeType::kLayer) {
+        CNLayerWrapper* wrapper = static_cast<CNLayerWrapper*>(child);
+        CNLayer* layer = wrapper->GetLayer();
+        // 使用图层...
+    }
+}
+
+// 直接获取图层
+CNLayer* layer = root_group->GetLayer(0);
+```
+
+**内存管理**:
+- CNLayerGroup 持有 CNLayerWrapper 和 CNLayerGroup 的所有权
+- CNLayerWrapper 持有 CNLayer 的所有权
+- 删除图层组时，所有子节点自动释放
+
 ```
 示例结构:
 CNLayerGroup("Root")
 ├── CNLayerGroup("Background")
-│   ├── CNLayerWrapper(WorldMap)
-│   └── CNLayerWrapper(Ocean)
+│   ├── CNLayerWrapper -> WorldMap (CNLayer*)
+│   └── CNLayerWrapper -> Ocean (CNLayer*)
 ├── CNLayerGroup("Infrastructure")
-│   ├── CNLayerWrapper(Roads)
-│   ├── CNLayerWrapper(Railways)
+│   ├── CNLayerWrapper -> Roads (CNLayer*)
+│   ├── CNLayerWrapper -> Railways (CNLayer*)
 │   └── CNLayerGroup("Airports")
-│       ├── CNLayerWrapper(AirportPoints)
-│       └── CNLayerWrapper(AirportPolygons)
-└── CNLayerWrapper(Labels)
+│       ├── CNLayerWrapper -> AirportPoints (CNLayer*)
+│       └── CNLayerWrapper -> AirportPolygons (CNLayer*)
+└── CNLayerWrapper -> Labels (CNLayer*)
 ```
 
 ---
@@ -6712,6 +6829,9 @@ public:
 private:
     std::shared_ptr<CNLayerGroupTransactionCoordinator> transaction_coordinator_;
     bool in_transaction_ = false;
+
+    std::vector<std::unique_ptr<CNLayer>> layers_;
+    std::vector<std::unique_ptr<CNLayerGroup>> groups_;
 };
 
 } // namespace OGC

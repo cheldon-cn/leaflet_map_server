@@ -6,7 +6,7 @@
 
 namespace ogc {
 
-class OGC_API Envelope3D : public Envelope {
+class OGC_GEOM_API Envelope3D : public Envelope {
 public:
     Envelope3D() noexcept : m_minZ(0.0), m_maxZ(0.0), m_hasZ(false) {}
     

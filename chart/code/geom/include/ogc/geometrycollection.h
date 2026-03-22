@@ -5,7 +5,7 @@
 
 namespace ogc {
 
-class OGC_API GeometryCollection : public Geometry {
+class OGC_GEOM_API GeometryCollection : public Geometry {
 public:
     static GeometryCollectionPtr Create();
     static GeometryCollectionPtr Create(std::vector<GeometryPtr> geometries);

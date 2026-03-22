@@ -14,7 +14,7 @@ enum class PrecisionType {
     Unknown
 };
 
-class OGC_API PrecisionModel {
+class OGC_GEOM_API PrecisionModel {
 public:
     PrecisionModel() : m_type(PrecisionType::Floating), m_scale(0.0) {}
     
@@ -113,7 +113,7 @@ private:
     double m_scale;
 };
 
-class OGC_API PrecisionSettings {
+class OGC_GEOM_API PrecisionSettings {
 public:
     static PrecisionSettings& Instance() {
         static PrecisionSettings instance;

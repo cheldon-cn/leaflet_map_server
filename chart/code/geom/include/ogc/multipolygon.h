@@ -6,7 +6,7 @@
 
 namespace ogc {
 
-class OGC_API MultiPolygon : public Geometry {
+class OGC_GEOM_API MultiPolygon : public Geometry {
 public:
     static MultiPolygonPtr Create();
     static MultiPolygonPtr Create(std::vector<PolygonPtr> polygons);
