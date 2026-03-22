@@ -105,7 +105,7 @@ public:
                                              const std::string& geomColumn,
                                              SpatialOperator op,
                                              const Geometry* queryGeom,
-                                             const Envelope& filter,
+                                             const ::ogc::Envelope& filter,
                                              std::vector<GeometryPtr>& results) = 0;
     
     virtual Result UpdateGeometry(const std::string& table,

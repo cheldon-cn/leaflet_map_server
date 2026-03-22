@@ -100,7 +100,7 @@ private:
     std::vector<PooledConnection> m_connections;
     std::queue<size_t> m_availableIndices;
     
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_condition;
     
     std::atomic<bool> m_running;

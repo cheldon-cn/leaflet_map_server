@@ -9,13 +9,13 @@
 
 namespace ogc {
     class Geometry;
+    class Envelope;
 }
 
 namespace ogc {
 namespace db {
 
 class DbResultSet;
-struct Envelope;
 
 using DbResultSetPtr = std::unique_ptr<DbResultSet>;
 

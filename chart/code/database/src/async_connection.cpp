@@ -1,4 +1,5 @@
 #include "ogc/db/async_connection.h"
+#include "ogc/db/resultset.h"
 #include <algorithm>
 
 namespace ogc {
@@ -166,9 +167,9 @@ void DbAsyncConnection::ExecuteQueryAsync(const std::string& sql, AsyncResultSet
     m_executor->ExecuteAsync([this, sql]() -> std::pair<Result, DbResultSetPtr> {
         DbResultSetPtr result;
         Result dbResult = m_syncConnection->ExecuteQuery(sql, result);
-        return {dbResult, std::move(result)};
+        return std::make_pair(dbResult, std::move(result));
     }, [callback](std::pair<Result, DbResultSetPtr> result) {
-        callback(result.first, result.second);
+        callback(result.first, std::move(result.second));
     });
 }
 

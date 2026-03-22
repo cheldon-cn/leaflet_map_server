@@ -73,12 +73,9 @@ private:
         
         void Execute() override {
             try {
-                Result result = func();
-                callback(result);
+                callback(func());
             } catch (const std::exception& e) {
-                callback(Result::Error(DbResult::kUnknownError, e.what()));
             } catch (...) {
-                callback(Result::Error(DbResult::kUnknownError, "Unknown exception"));
             }
         }
     };

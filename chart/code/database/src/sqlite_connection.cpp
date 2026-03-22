@@ -3,8 +3,10 @@
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
+#include "ogc/envelope.h"
 #include <sstream>
 #include <cstring>
+#include <cstdint>
 
 namespace ogc {
 namespace db {
@@ -454,6 +456,119 @@ Result SpatiaLiteStatement::Reset() {
     return Result::Success();
 }
 
+Result SpatiaLiteStatement::ClearBindings() {
+    if (m_stmt) {
+        sqlite3_clear_bindings(m_stmt);
+    }
+    m_bindStrings.clear();
+    return Result::Success();
+}
+
+int64_t SpatiaLiteStatement::GetLastInsertId() const {
+    if (m_db) {
+        return sqlite3_last_insert_rowid(m_db);
+    }
+    return 0;
+}
+
+int64_t SpatiaLiteStatement::GetRowsAffected() const {
+    if (m_db) {
+        return sqlite3_changes(m_db);
+    }
+    return 0;
+}
+
+int SpatiaLiteStatement::GetParameterCount() const {
+    if (m_stmt) {
+        return sqlite3_bind_parameter_count(m_stmt);
+    }
+    return 0;
+}
+
+int SpatiaLiteStatement::GetParameterIndex(const std::string& paramName) const {
+    if (m_stmt) {
+        return sqlite3_bind_parameter_index(m_stmt, paramName.c_str());
+    }
+    return 0;
+}
+
+Result SpatiaLiteStatement::BindBool(int paramIndex, bool value) {
+    return BindInt(paramIndex, value ? 1 : 0);
+}
+
+Result SpatiaLiteStatement::BindNull(int paramIndex) {
+    if (!m_stmt) {
+        return Result::Error(DbResult::kNotConnected, "Statement not prepared");
+    }
+    
+    int rc = sqlite3_bind_null(m_stmt, paramIndex + 1);
+    if (rc != SQLITE_OK) {
+        return Result::Error(DbResult::kBindError, sqlite3_errmsg(m_db));
+    }
+    
+    return Result::Success();
+}
+
+Result SpatiaLiteStatement::BindBlob(int paramIndex, const std::vector<uint8_t>& data) {
+    return BindBlob(paramIndex, data.data(), data.size());
+}
+
+Result SpatiaLiteStatement::BindBlob(int paramIndex, const uint8_t* data, size_t size) {
+    if (!m_stmt) {
+        return Result::Error(DbResult::kNotConnected, "Statement not prepared");
+    }
+    
+    int rc = sqlite3_bind_blob(m_stmt, paramIndex + 1, data, static_cast<int>(size), SQLITE_TRANSIENT);
+    if (rc != SQLITE_OK) {
+        return Result::Error(DbResult::kBindError, sqlite3_errmsg(m_db));
+    }
+    
+    return Result::Success();
+}
+
+Result SpatiaLiteStatement::BindEnvelope(int paramIndex, const ::ogc::Envelope& envelope) {
+    std::ostringstream oss;
+    oss << "POLYGON(("
+        << envelope.GetMinX() << " " << envelope.GetMinY() << ", "
+        << envelope.GetMaxX() << " " << envelope.GetMinY() << ", "
+        << envelope.GetMaxX() << " " << envelope.GetMaxY() << ", "
+        << envelope.GetMinX() << " " << envelope.GetMaxY() << ", "
+        << envelope.GetMinX() << " " << envelope.GetMinY() << "))";
+    return BindString(paramIndex, oss.str());
+}
+
+Result SpatiaLiteStatement::BindInt(const std::string& paramName, int32_t value) {
+    return BindInt(GetParameterIndex(paramName), value);
+}
+
+Result SpatiaLiteStatement::BindInt64(const std::string& paramName, int64_t value) {
+    return BindInt64(GetParameterIndex(paramName), value);
+}
+
+Result SpatiaLiteStatement::BindDouble(const std::string& paramName, double value) {
+    return BindDouble(GetParameterIndex(paramName), value);
+}
+
+Result SpatiaLiteStatement::BindString(const std::string& paramName, const std::string& value) {
+    return BindString(GetParameterIndex(paramName), value);
+}
+
+Result SpatiaLiteStatement::BindBool(const std::string& paramName, bool value) {
+    return BindBool(GetParameterIndex(paramName), value);
+}
+
+Result SpatiaLiteStatement::BindNull(const std::string& paramName) {
+    return BindNull(GetParameterIndex(paramName));
+}
+
+Result SpatiaLiteStatement::BindBlob(const std::string& paramName, const std::vector<uint8_t>& data) {
+    return BindBlob(GetParameterIndex(paramName), data);
+}
+
+Result SpatiaLiteStatement::BindGeometry(const std::string& paramName, const Geometry* geometry) {
+    return BindGeometry(GetParameterIndex(paramName), geometry);
+}
+
 Result SpatiaLiteStatement::Prepare() {
     if (!m_db || m_sql.empty()) {
         return Result::Error(DbResult::kPrepareError, "Invalid database or SQL");
@@ -482,7 +597,7 @@ Result SpatiaLiteStatement::Finalize() {
 }
 
 SpatiaLiteResultSet::SpatiaLiteResultSet(sqlite3_stmt* stmt)
-    : m_stmt(stmt), m_columnCount(0) {
+    : m_stmt(stmt), m_columnCount(0), m_currentRow(0), m_lastError() {
     if (m_stmt) {
         m_columnCount = sqlite3_column_count(m_stmt);
         InitializeColumns();
@@ -565,7 +680,7 @@ GeometryPtr SpatiaLiteResultSet::GetGeometry(int columnIndex) const {
     Result result = WkbConverter::WkbToGeometry(wkb, geometry);
     
     if (result.IsSuccess() && geometry) {
-        return geometry.release();
+        return std::move(geometry);
     }
     
     return nullptr;
@@ -600,6 +715,93 @@ bool SpatiaLiteResultSet::HasGeometry(int columnIndex) const {
     return sqlite3_column_type(m_stmt, columnIndex) == SQLITE_BLOB;
 }
 
+void SpatiaLiteResultSet::Reset() {
+    if (m_stmt) {
+        sqlite3_reset(m_stmt);
+        m_currentRow = 0;
+    }
+}
+
+int SpatiaLiteResultSet::GetColumnIndex(const std::string& columnName) const {
+    for (int i = 0; i < m_columnCount; ++i) {
+        if (m_columnNames[i] == columnName) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool SpatiaLiteResultSet::IsNull(int columnIndex) const {
+    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+        return true;
+    }
+    return sqlite3_column_type(m_stmt, columnIndex) == SQLITE_NULL;
+}
+
+bool SpatiaLiteResultSet::IsNull(const std::string& columnName) const {
+    return IsNull(GetColumnIndex(columnName));
+}
+
+int32_t SpatiaLiteResultSet::GetInt(const std::string& columnName) const {
+    return GetInt(GetColumnIndex(columnName));
+}
+
+int64_t SpatiaLiteResultSet::GetInt64(const std::string& columnName) const {
+    return GetInt64(GetColumnIndex(columnName));
+}
+
+double SpatiaLiteResultSet::GetDouble(const std::string& columnName) const {
+    return GetDouble(GetColumnIndex(columnName));
+}
+
+std::string SpatiaLiteResultSet::GetString(const std::string& columnName) const {
+    return GetString(GetColumnIndex(columnName));
+}
+
+bool SpatiaLiteResultSet::GetBool(int columnIndex) const {
+    return GetInt(columnIndex) != 0;
+}
+
+bool SpatiaLiteResultSet::GetBool(const std::string& columnName) const {
+    return GetBool(GetColumnIndex(columnName));
+}
+
+std::vector<uint8_t> SpatiaLiteResultSet::GetBlob(int columnIndex) const {
+    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+        return {};
+    }
+    
+    const void* blob = sqlite3_column_blob(m_stmt, columnIndex);
+    int size = sqlite3_column_bytes(m_stmt, columnIndex);
+    
+    if (!blob || size <= 0) {
+        return {};
+    }
+    
+    const uint8_t* data = static_cast<const uint8_t*>(blob);
+    return std::vector<uint8_t>(data, data + size);
+}
+
+std::vector<uint8_t> SpatiaLiteResultSet::GetBlob(const std::string& columnName) const {
+    return GetBlob(GetColumnIndex(columnName));
+}
+
+GeometryPtr SpatiaLiteResultSet::GetGeometry(const std::string& columnName) const {
+    return GetGeometry(GetColumnIndex(columnName));
+}
+
+int64_t SpatiaLiteResultSet::GetRowCount() const {
+    return -1;
+}
+
+int64_t SpatiaLiteResultSet::GetCurrentRow() const {
+    return m_currentRow;
+}
+
+Result SpatiaLiteResultSet::GetLastError() const {
+    return m_lastError;
+}
+
 void SpatiaLiteResultSet::InitializeColumns() {
     m_columnNames.resize(m_columnCount);
     m_columnTypes.resize(m_columnCount);
@@ -613,13 +815,285 @@ void SpatiaLiteResultSet::InitializeColumns() {
 
 ColumnType SpatiaLiteResultSet::ConvertSqliteType(int sqliteType) const {
     switch (sqliteType) {
-        case SQLITE_INTEGER: return ColumnType::kInt64;
-        case SQLITE_FLOAT: return ColumnType::kFloat64;
-        case SQLITE_TEXT: return ColumnType::kString;
-        case SQLITE_BLOB: return ColumnType::kBinary;
+        case SQLITE_INTEGER: return ColumnType::kBigInt;
+        case SQLITE_FLOAT: return ColumnType::kDouble;
+        case SQLITE_TEXT: return ColumnType::kText;
+        case SQLITE_BLOB: return ColumnType::kBlob;
         case SQLITE_NULL: return ColumnType::kUnknown;
         default: return ColumnType::kUnknown;
     }
+}
+
+bool SpatiaLiteConnection::InTransaction() const {
+    return m_isTransaction;
+}
+
+Result SpatiaLiteConnection::InsertGeometries(const std::string& table,
+                                              const std::string& geomColumn,
+                                              const std::vector<const Geometry*>& geometries,
+                                              const std::vector<std::map<std::string, std::string>>& attributes,
+                                              std::vector<int64_t>& outIds) {
+    outIds.clear();
+    for (size_t i = 0; i < geometries.size(); ++i) {
+        int64_t id = 0;
+        const auto& attrs = i < attributes.size() ? attributes[i] : std::map<std::string, std::string>();
+        Result result = InsertGeometry(table, geomColumn, geometries[i], attrs, id);
+        if (!result.IsSuccess()) {
+            return result;
+        }
+        outIds.push_back(id);
+    }
+    return Result::Success();
+}
+
+Result SpatiaLiteConnection::SelectGeometries(const std::string& table,
+                                              const std::string& geomColumn,
+                                              const std::string& whereClause,
+                                              std::vector<GeometryPtr>& geometries) {
+    std::ostringstream sql;
+    sql << "SELECT " << geomColumn << " FROM " << table;
+    if (!whereClause.empty()) {
+        sql << " WHERE " << whereClause;
+    }
+    
+    DbResultSetPtr resultSet;
+    Result result = ExecuteQuery(sql.str(), resultSet);
+    if (!result.IsSuccess()) {
+        return result;
+    }
+    
+    while (resultSet->Next()) {
+        GeometryPtr geom = resultSet->GetGeometry(0);
+        if (geom) {
+            geometries.push_back(std::move(geom));
+        }
+    }
+    
+    return Result::Success();
+}
+
+Result SpatiaLiteConnection::SpatialQuery(const std::string& table,
+                                          const std::string& geomColumn,
+                                          SpatialOperator op,
+                                          const Geometry* queryGeom,
+                                          std::vector<GeometryPtr>& results) {
+    if (!queryGeom) {
+        return Result::Error(DbResult::kInvalidParameter, "Query geometry is null");
+    }
+    
+    std::string opName = GetSpatialOperatorName(op);
+    std::ostringstream sql;
+    sql << "SELECT " << geomColumn << " FROM " << table 
+        << " WHERE " << opName << "(" << geomColumn << ", GeomFromText('" 
+        << queryGeom->AsText() << "')) = 1";
+    
+    DbResultSetPtr resultSet;
+    Result result = ExecuteQuery(sql.str(), resultSet);
+    if (!result.IsSuccess()) {
+        return result;
+    }
+    
+    while (resultSet->Next()) {
+        GeometryPtr geom = resultSet->GetGeometry(0);
+        if (geom) {
+            results.push_back(std::move(geom));
+        }
+    }
+    
+    return Result::Success();
+}
+
+Result SpatiaLiteConnection::SpatialQueryWithEnvelope(const std::string& table,
+                                                      const std::string& geomColumn,
+                                                      SpatialOperator op,
+                                                      const Geometry* queryGeom,
+                                                      const ::ogc::Envelope& filter,
+                                                      std::vector<GeometryPtr>& results) {
+    if (!queryGeom) {
+        return Result::Error(DbResult::kInvalidParameter, "Query geometry is null");
+    }
+    
+    std::string opName = GetSpatialOperatorName(op);
+    std::ostringstream sql;
+    sql << "SELECT " << geomColumn << " FROM " << table 
+        << " WHERE MbrIntersects(" << geomColumn << ", BuildMbr(" 
+        << filter.GetMinX() << ", " << filter.GetMinY() << ", "
+        << filter.GetMaxX() << ", " << filter.GetMaxY() << "))"
+        << " AND " << opName << "(" << geomColumn << ", GeomFromText('" 
+        << queryGeom->AsText() << "')) = 1";
+    
+    DbResultSetPtr resultSet;
+    Result result = ExecuteQuery(sql.str(), resultSet);
+    if (!result.IsSuccess()) {
+        return result;
+    }
+    
+    while (resultSet->Next()) {
+        GeometryPtr geom = resultSet->GetGeometry(0);
+        if (geom) {
+            results.push_back(std::move(geom));
+        }
+    }
+    
+    return Result::Success();
+}
+
+Result SpatiaLiteConnection::UpdateGeometry(const std::string& table,
+                                            const std::string& geomColumn,
+                                            int64_t id,
+                                            const Geometry* geometry) {
+    if (!geometry) {
+        return Result::Error(DbResult::kInvalidParameter, "Geometry is null");
+    }
+    
+    std::ostringstream sql;
+    sql << "UPDATE " << table << " SET " << geomColumn << " = GeomFromText('" 
+        << geometry->AsText() << "') WHERE rowid = " << id;
+    
+    return Execute(sql.str());
+}
+
+Result SpatiaLiteConnection::DeleteGeometry(const std::string& table, int64_t id) {
+    std::ostringstream sql;
+    sql << "DELETE FROM " << table << " WHERE rowid = " << id;
+    return Execute(sql.str());
+}
+
+Result SpatiaLiteConnection::CreateSpatialTable(const std::string& tableName,
+                                                const std::string& geomColumn,
+                                                int geomType,
+                                                int srid,
+                                                int coordDimension) {
+    std::ostringstream sql;
+    sql << "CREATE TABLE " << tableName << " (id INTEGER PRIMARY KEY AUTOINCREMENT)";
+    
+    Result result = Execute(sql.str());
+    if (!result.IsSuccess()) {
+        return result;
+    }
+    
+    std::string geomTypeStr;
+    switch (geomType) {
+        case 1: geomTypeStr = "POINT"; break;
+        case 2: geomTypeStr = "LINESTRING"; break;
+        case 3: geomTypeStr = "POLYGON"; break;
+        case 4: geomTypeStr = "MULTIPOINT"; break;
+        case 5: geomTypeStr = "MULTILINESTRING"; break;
+        case 6: geomTypeStr = "MULTIPOLYGON"; break;
+        default: geomTypeStr = "GEOMETRY"; break;
+    }
+    
+    std::ostringstream addGeomSql;
+    addGeomSql << "SELECT AddGeometryColumn('" << tableName << "', '" << geomColumn 
+               << "', " << srid << ", '" << geomTypeStr << "', " << coordDimension << ")";
+    
+    return Execute(addGeomSql.str());
+}
+
+Result SpatiaLiteConnection::DropSpatialIndex(const std::string& tableName,
+                                              const std::string& geomColumn) {
+    std::ostringstream sql;
+    sql << "SELECT DisableSpatialIndex('" << tableName << "', '" << geomColumn << "')";
+    return Execute(sql.str());
+}
+
+bool SpatiaLiteConnection::SpatialTableExists(const std::string& tableName) const {
+    std::ostringstream sql;
+    sql << "SELECT name FROM sqlite_master WHERE type='table' AND name='" << tableName << "'";
+    
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    bool exists = false;
+    if (rc == SQLITE_OK) {
+        exists = (sqlite3_step(stmt) == SQLITE_ROW);
+        sqlite3_finalize(stmt);
+    }
+    return exists;
+}
+
+Result SpatiaLiteConnection::GetTableInfo(const std::string& tableName, TableInfo& info) const {
+    info.name = tableName;
+    
+    std::ostringstream sql;
+    sql << "SELECT f_geometry_column, srid, type, coord_dimension FROM geometry_columns "
+        << "WHERE f_table_name = '" << tableName << "'";
+    
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    if (rc == SQLITE_OK && sqlite3_step(stmt) == SQLITE_ROW) {
+        info.geomColumn = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        info.srid = sqlite3_column_int(stmt, 1);
+        info.geomType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        info.coordDimension = sqlite3_column_int(stmt, 3);
+        sqlite3_finalize(stmt);
+        return Result::Success();
+    }
+    if (stmt) sqlite3_finalize(stmt);
+    return Result::Error(DbResult::kTableNotFound, "Table not found in geometry_columns");
+}
+
+Result SpatiaLiteConnection::GetColumns(const std::string& tableName, std::vector<ColumnInfo>& columns) const {
+    columns.clear();
+    
+    std::ostringstream sql;
+    sql << "PRAGMA table_info(" << tableName << ")";
+    
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    if (rc == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            ColumnInfo col;
+            col.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            col.type = ColumnType::kUnknown;
+            col.isNullable = (sqlite3_column_int(stmt, 3) == 0);
+            col.isPrimaryKey = (sqlite3_column_int(stmt, 5) > 0);
+            columns.push_back(col);
+        }
+    }
+    if (stmt) sqlite3_finalize(stmt);
+    return Result::Success();
+}
+
+DatabaseType SpatiaLiteConnection::GetType() const {
+    return DatabaseType::kSpatiaLite;
+}
+
+std::string SpatiaLiteConnection::GetVersion() const {
+    return sqlite3_libversion();
+}
+
+int64_t SpatiaLiteConnection::GetLastInsertId() const {
+    return sqlite3_last_insert_rowid(m_db);
+}
+
+int64_t SpatiaLiteConnection::GetRowsAffected() const {
+    return m_rowsAffected;
+}
+
+Result SpatiaLiteConnection::SetIsolationLevel(TransactionIsolation level) {
+    m_isolationLevel = level;
+    return Result::Success();
+}
+
+TransactionIsolation SpatiaLiteConnection::GetIsolationLevel() const {
+    return m_isolationLevel;
+}
+
+const ConnectionInfo& SpatiaLiteConnection::GetConnectionInfo() const {
+    return m_connectionInfo;
+}
+
+std::string SpatiaLiteConnection::EscapeString(const std::string& value) const {
+    std::string result;
+    result.reserve(value.length() * 2);
+    for (char c : value) {
+        if (c == '\'') {
+            result += "''";
+        } else {
+            result += c;
+        }
+    }
+    return result;
 }
 
 }

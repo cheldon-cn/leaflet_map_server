@@ -298,7 +298,7 @@ Result SridManager::Transform(const Geometry* geometry,
     }
     
     if (fromSrid == toSrid) {
-        outGeometry.reset(geometry->Clone());
+        outGeometry = GeometryPtr(geometry->Clone());
         return Result::Success();
     }
     

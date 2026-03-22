@@ -4,25 +4,22 @@ project(ogc_database_test)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /MDd")
 
-set(GTEST_SOURCE_DIR "E:/program/trae/chart/code/build/_deps/googletest-src")
-set(GTEST_LIB_DIR "E:/program/trae/chart/code/build/lib/Debug")
-set(GTEST_BIN_DIR "E:/program/trae/chart/code/build/bin/Debug")
-
-set(DATABASE_SOURCE_DIR "E:/program/trae/chart/code/database")
-set(GEOM_SOURCE_DIR "E:/program/trae/chart/code/geom")
+set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
+set(GTEST_LIB_DIR "${GTEST_ROOT}/lib")
 
 include_directories(
     ${DATABASE_SOURCE_DIR}/include
-    ${GTEST_SOURCE_DIR}/googletest/include
-    ${GTEST_SOURCE_DIR}/googlemock/include
+    ${GTEST_INCLUDE_DIR}
     ${GEOM_SOURCE_DIR}/include
+    ${POSTGRESQL_INCLUDE_DIR}
+    ${SQLITE3_INCLUDE_DIR}
 )
 
 link_directories(
     ${GTEST_LIB_DIR}
-    ${GEOM_SOURCE_DIR}/../build/Debug
+    ${POSTGRESQL_LIB_DIR}
+    ${SQLITE3_LIB_DIR}
 )
 
 set(TEST_SOURCES
@@ -32,6 +29,8 @@ set(TEST_SOURCES
 
 add_executable(ogc_database_test ${TEST_SOURCES})
 
+target_compile_definitions(ogc_database_test PRIVATE OGC_DATABASE_STATIC)
+
 target_link_libraries(ogc_database_test PRIVATE
     ogc_database
     ogc_geometry
@@ -39,9 +38,9 @@ target_link_libraries(ogc_database_test PRIVATE
     gtest_main
 )
 
-target_include_directories(ogc_database_test PRIVATE
-    ${DATABASE_SOURCE_DIR}/include
-)
-
 enable_testing()
 add_test(NAME ogc_database_test COMMAND ogc_database_test)
+
+install(TARGETS ogc_database_test
+    RUNTIME DESTINATION bin
+)

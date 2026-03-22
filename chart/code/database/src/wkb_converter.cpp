@@ -19,10 +19,6 @@ Result WkbConverter::GeometryToWkb(const Geometry* geometry, std::vector<uint8_t
         return Result::Error(DbResult::kInvalidGeometry, "Geometry is null");
     }
     
-    if (geometry->IsEmpty()) {
-        return Result::Error(DbResult::kInvalidGeometry, "Geometry is empty");
-    }
-    
     wkb.clear();
     ByteOrder order = options.bigEndian ? ByteOrder::kBigEndian : ByteOrder::kLittleEndian;
     
@@ -323,24 +319,39 @@ Result WkbConverter::ReadGeometry(const uint8_t* data, size_t size, std::unique_
     
     uint32_t baseType = typeCode & kWkbTypeMask;
     
+    Result result = Result::Error(DbResult::kInvalidWkb, "Unknown geometry type");
+    
     switch (baseType) {
         case kWkbPoint:
-            return ReadPoint(data + offset, size - offset, geometry);
+            result = ReadPoint(data + offset, size - offset, geometry);
+            break;
         case kWkbLineString:
-            return ReadLineString(data + offset, size - offset, geometry);
+            result = ReadLineString(data + offset, size - offset, geometry);
+            break;
         case kWkbPolygon:
-            return ReadPolygon(data + offset, size - offset, geometry);
+            result = ReadPolygon(data + offset, size - offset, geometry);
+            break;
         case kWkbMultiPoint:
-            return ReadMultiPoint(data + offset, size - offset, geometry);
+            result = ReadMultiPoint(data + offset, size - offset, geometry);
+            break;
         case kWkbMultiLineString:
-            return ReadMultiLineString(data + offset, size - offset, geometry);
+            result = ReadMultiLineString(data + offset, size - offset, geometry);
+            break;
         case kWkbMultiPolygon:
-            return ReadMultiPolygon(data + offset, size - offset, geometry);
+            result = ReadMultiPolygon(data + offset, size - offset, geometry);
+            break;
         case kWkbGeometryCollection:
-            return ReadGeometryCollection(data + offset, size - offset, geometry);
+            result = ReadGeometryCollection(data + offset, size - offset, geometry);
+            break;
         default:
             return Result::Error(DbResult::kInvalidWkb, "Unknown geometry type");
     }
+    
+    if (result.IsSuccess() && geometry && srid > 0) {
+        geometry->SetSRID(srid);
+    }
+    
+    return result;
 }
 
 Result WkbConverter::WritePoint(std::vector<uint8_t>& buffer, const Point* point, ByteOrder order, bool includeSRID) {
@@ -583,7 +594,8 @@ Result WkbConverter::ReadMultiPoint(const uint8_t* data, size_t size, std::uniqu
     
     for (uint32_t i = 0; i < numPoints && offset + 5 <= size; ++i) {
         std::unique_ptr<Geometry> pointGeom;
-        Result result = ReadGeometry(data + offset, size - offset, pointGeom, std::ignore);
+        int srid = 0;
+        Result result = ReadGeometry(data + offset, size - offset, pointGeom, srid);
         if (result.IsSuccess() && pointGeom) {
             auto point = dynamic_cast<Point*>(pointGeom.get());
             if (point) {
@@ -637,7 +649,8 @@ Result WkbConverter::ReadGeometryCollection(const uint8_t* data, size_t size, st
     size_t offset = 4;
     for (uint32_t i = 0; i < numGeoms && offset < size; ++i) {
         std::unique_ptr<Geometry> childGeom;
-        Result result = ReadGeometry(data + offset, size - offset, childGeom, std::ignore);
+        int srid = 0;
+        Result result = ReadGeometry(data + offset, size - offset, childGeom, srid);
         if (result.IsSuccess() && childGeom) {
             collection->AddGeometry(std::move(childGeom));
         }

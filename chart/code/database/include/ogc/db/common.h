@@ -30,20 +30,27 @@ enum class SpatialOperator : uint8_t {
 enum class DbResult : int32_t {
     kSuccess = 0,
     
-    kConnectionFailed = 1,
-    kConnectionLost = 2,
-    kConnectionTimeout = 3,
-    kConnectionPoolExhausted = 4,
-    kInvalidConnectionString = 5,
+    kNotConnected = 1,
+    kConnectionFailed = 2,
+    kConnectionLost = 3,
+    kConnectionTimeout = 4,
+    kConnectionPoolExhausted = 5,
+    kInvalidConnectionString = 6,
+    kTimeout = 7,
+    kInvalidConnection = 8,
     
-    kSqlError = 100,
-    kSyntaxError = 101,
-    kTableNotFound = 102,
-    kColumnNotFound = 103,
-    kConstraintViolation = 104,
-    kDuplicateKey = 105,
-    kForeignKeyViolation = 106,
-    kNullConstraintViolation = 107,
+    kExecutionError = 100,
+    kSqlError = 101,
+    kSyntaxError = 102,
+    kTableNotFound = 103,
+    kColumnNotFound = 104,
+    kConstraintViolation = 105,
+    kDuplicateKey = 106,
+    kForeignKeyViolation = 107,
+    kNullConstraintViolation = 108,
+    kQueryError = 109,
+    kPrepareError = 110,
+    kBindError = 111,
     
     kInvalidGeometry = 200,
     kGeometryParseError = 201,
@@ -91,7 +98,10 @@ enum class TransactionIsolation : uint8_t {
     kReadUncommitted = 0,
     kReadCommitted = 1,
     kRepeatableRead = 2,
-    kSerializable = 3
+    kSerializable = 3,
+    kDeferred = 4,
+    kImmediate = 5,
+    kExclusive = 6
 };
 
 constexpr int DEFAULT_CONNECTION_TIMEOUT_MS = 30000;
@@ -128,11 +138,15 @@ inline const char* GetSpatialOperatorName(SpatialOperator op) noexcept {
 inline const char* GetDbResultString(DbResult result) noexcept {
     switch (result) {
         case DbResult::kSuccess: return "Success";
+        case DbResult::kNotConnected: return "Not connected";
         case DbResult::kConnectionFailed: return "Connection failed";
         case DbResult::kConnectionLost: return "Connection lost";
         case DbResult::kConnectionTimeout: return "Connection timeout";
         case DbResult::kConnectionPoolExhausted: return "Connection pool exhausted";
         case DbResult::kInvalidConnectionString: return "Invalid connection string";
+        case DbResult::kTimeout: return "Timeout";
+        case DbResult::kInvalidConnection: return "Invalid connection";
+        case DbResult::kExecutionError: return "Execution error";
         case DbResult::kSqlError: return "SQL error";
         case DbResult::kSyntaxError: return "Syntax error";
         case DbResult::kTableNotFound: return "Table not found";

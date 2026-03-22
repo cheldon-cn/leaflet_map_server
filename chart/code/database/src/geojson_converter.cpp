@@ -9,10 +9,12 @@
 #include "ogc/multipolygon.h"
 #include "ogc/geometrycollection.h"
 #include "ogc/envelope.h"
+#include "ogc/envelope3d.h"
 #include <sstream>
 #include <iomanip>
 #include <cmath>
 #include <algorithm>
+#include <cctype>
 
 namespace ogc {
 namespace db {
@@ -50,8 +52,7 @@ Result GeoJsonConverter::GeometryToJson(const Geometry* geometry, std::string& j
     WriteGeometry(geometry, oss, options);
     
     if (options.includeBoundingBox) {
-        Envelope env;
-        geometry->GetEnvelope(env);
+        const Envelope& env = geometry->GetEnvelope();
         std::vector<double> bbox;
         EnvelopeToBoundingBox(env, bbox);
         
@@ -318,6 +319,7 @@ Result GeoJsonConverter::GeometryFromJson(const std::string& json, std::unique_p
     if (pos >= json.length() || json[pos] != '{') {
         return Result::Error(DbResult::kInvalidGeometry, "Invalid GeoJSON: expected {");
     }
+    ++pos;
     
     return ReadGeometry(json, pos, geometry);
 }
@@ -678,11 +680,6 @@ Result GeoJsonConverter::EnvelopeToBoundingBox(const Envelope& envelope, std::ve
     bbox.push_back(envelope.GetMinY());
     bbox.push_back(envelope.GetMaxX());
     bbox.push_back(envelope.GetMaxY());
-    
-    if (envelope.Is3D()) {
-        bbox.push_back(envelope.GetMinZ());
-        bbox.push_back(envelope.GetMaxZ());
-    }
     
     return Result::Success();
 }

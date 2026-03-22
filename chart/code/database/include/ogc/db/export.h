@@ -1,15 +1,19 @@
 #pragma once
 
-#ifdef _WIN32
-    #ifdef OGC_DATABASE_EXPORTS
-        #define OGC_DB_API __declspec(dllexport)
-    #else
-        #define OGC_DB_API __declspec(dllimport)
-    #endif
+#ifdef OGC_DATABASE_STATIC
+    #define OGC_DB_API
 #else
-    #ifdef OGC_DATABASE_EXPORTS
-        #define OGC_DB_API __attribute__((visibility("default")))
+    #ifdef _WIN32
+        #ifdef OGC_DATABASE_EXPORTS
+            #define OGC_DB_API __declspec(dllexport)
+        #else
+            #define OGC_DB_API __declspec(dllimport)
+        #endif
     #else
-        #define OGC_DB_API
+        #ifdef OGC_DATABASE_EXPORTS
+            #define OGC_DB_API __attribute__((visibility("default")))
+        #else
+            #define OGC_DB_API
+        #endif
     #endif
 #endif

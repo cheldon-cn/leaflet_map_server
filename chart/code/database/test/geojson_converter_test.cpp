@@ -171,8 +171,3 @@ TEST_F(GeoJsonConverterTest, NullGeometryToJson) {
     Result result = GeoJsonConverter::GeometryToJson(nullptr, json);
     EXPECT_FALSE(result.IsSuccess());
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
