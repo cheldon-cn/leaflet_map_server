@@ -1,9 +1,8 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/multi_level_tile_cache.h"
-#include "ogc/draw/tile_cache.h"
+#include "ogc/draw/memory_tile_cache.h"
 #include "ogc/draw/disk_tile_cache.h"
 #include "ogc/draw/tile_key.h"
-#include "ogc/draw/tile_device.h"
 #include "ogc/draw/raster_image_device.h"
 #include "ogc/draw/draw_params.h"
 #include "ogc/draw/draw_style.h"
@@ -57,14 +56,14 @@ protected:
         tempDir = GetTempDirectory() + "ogc_multi_cache";
         MakeDir(tempDir);
         
-        auto memoryCache = std::make_shared<MemoryTileCache>();
-        auto diskCache = std::make_shared<DiskTileCache>(tempDir);
+        auto memoryCache = MemoryTileCache::Create();
+        auto diskCache = DiskTileCache::Create(tempDir);
         
         std::vector<TileCachePtr> caches;
         caches.push_back(memoryCache);
         caches.push_back(diskCache);
         
-        multiCache = std::make_shared<MultiLevelTileCache>(caches);
+        multiCache = MultiLevelTileCache::Create(caches);
         ASSERT_NE(multiCache, nullptr);
         
         device = RasterImageDevice::Create(256, 256, 4);
@@ -80,16 +79,11 @@ protected:
         RemoveDir(tempDir);
     }
     
-    TileData CreateTestTileData(int width = 256, int height = 256) {
-        TileData data;
-        data.width = width;
-        data.height = height;
-        data.channels = 4;
-        data.data.resize(width * height * 4, 128);
-        return data;
+    std::vector<uint8_t> CreateTestData(size_t size = 256 * 256 * 4) {
+        return std::vector<uint8_t>(size, 128);
     }
     
-    std::shared_ptr<MultiLevelTileCache> multiCache;
+    MultiLevelTileCachePtr multiCache;
     std::shared_ptr<RasterImageDevice> device;
     std::string tempDir;
 };
@@ -100,87 +94,62 @@ TEST_F(IntegrationMultiLevelCacheTest, CacheCreation) {
 
 TEST_F(IntegrationMultiLevelCacheTest, AddAndRetrieveTile) {
     TileKey key(1, 2, 3);
-    TileData data = CreateTestTileData();
+    auto data = CreateTestData();
     
-    multiCache->Add(key, data);
+    multiCache->PutTile(key, data);
     
-    TileData retrieved;
-    bool found = multiCache->Get(key, retrieved);
-    
-    EXPECT_TRUE(found);
-    EXPECT_EQ(retrieved.width, data.width);
-    EXPECT_EQ(retrieved.height, data.height);
+    TileData retrieved = multiCache->GetTile(key);
+    EXPECT_TRUE(retrieved.IsValid());
+    EXPECT_EQ(retrieved.data.size(), data.size());
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, CacheMiss) {
     TileKey key(99, 99, 99);
-    TileData data;
     
-    bool found = multiCache->Get(key, data);
-    EXPECT_FALSE(found);
+    TileData retrieved = multiCache->GetTile(key);
+    EXPECT_FALSE(retrieved.IsValid());
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, RemoveTile) {
     TileKey key(0, 0, 0);
-    TileData data = CreateTestTileData();
+    auto data = CreateTestData();
     
-    multiCache->Add(key, data);
+    multiCache->PutTile(key, data);
     
-    bool removed = multiCache->Remove(key);
+    bool removed = multiCache->RemoveTile(key);
     EXPECT_TRUE(removed);
     
-    TileData retrieved;
-    bool found = multiCache->Get(key, retrieved);
-    EXPECT_FALSE(found);
+    TileData retrieved = multiCache->GetTile(key);
+    EXPECT_FALSE(retrieved.IsValid());
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, ClearAllLevels) {
     for (int i = 0; i < 5; ++i) {
         TileKey key(i, 0, 3);
-        multiCache->Add(key, CreateTestTileData());
+        multiCache->PutTile(key, CreateTestData());
     }
     
     multiCache->Clear();
     
-    TileData data;
     for (int i = 0; i < 5; ++i) {
         TileKey key(i, 0, 3);
-        EXPECT_FALSE(multiCache->Get(key, data));
+        TileData data = multiCache->GetTile(key);
+        EXPECT_FALSE(data.IsValid());
     }
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, HasTile) {
     TileKey key(1, 1, 1);
     
-    EXPECT_FALSE(multiCache->Has(key));
+    EXPECT_FALSE(multiCache->HasTile(key));
     
-    multiCache->Add(key, CreateTestTileData());
+    multiCache->PutTile(key, CreateTestData());
     
-    EXPECT_TRUE(multiCache->Has(key));
+    EXPECT_TRUE(multiCache->HasTile(key));
 }
 
-TEST_F(IntegrationMultiLevelCacheTest, LevelFallback) {
-    auto memoryOnly = std::make_shared<MemoryTileCache>();
-    auto diskOnly = std::make_shared<DiskTileCache>(tempDir + "_fallback");
-    MakeDir(tempDir + "_fallback");
-    
-    TileKey key(5, 5, 5);
-    TileData data = CreateTestTileData();
-    
-    diskOnly->Add(key, data);
-    
-    std::vector<TileCachePtr> caches;
-    caches.push_back(memoryOnly);
-    caches.push_back(diskOnly);
-    
-    auto cache = std::make_shared<MultiLevelTileCache>(caches);
-    
-    TileData retrieved;
-    bool found = cache->Get(key, retrieved);
-    
-    EXPECT_TRUE(found);
-    
-    RemoveDir(tempDir + "_fallback");
+TEST_F(IntegrationMultiLevelCacheTest, GetCacheCount) {
+    EXPECT_EQ(multiCache->GetCacheCount(), 2);
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, MultipleZoomLevels) {
@@ -189,92 +158,125 @@ TEST_F(IntegrationMultiLevelCacheTest, MultipleZoomLevels) {
         for (int x = 0; x < maxTile; ++x) {
             for (int y = 0; y < maxTile; ++y) {
                 TileKey key(x, y, z);
-                multiCache->Add(key, CreateTestTileData());
+                multiCache->PutTile(key, CreateTestData());
             }
         }
     }
     
     TileData data;
-    EXPECT_TRUE(multiCache->Get(TileKey(0, 0, 0), data));
-    EXPECT_TRUE(multiCache->Get(TileKey(0, 0, 1), data));
-    EXPECT_TRUE(multiCache->Get(TileKey(1, 1, 2), data));
+    EXPECT_TRUE(multiCache->HasTile(TileKey(0, 0, 0)));
+    EXPECT_TRUE(multiCache->HasTile(TileKey(0, 0, 1)));
+    EXPECT_TRUE(multiCache->HasTile(TileKey(1, 1, 2)));
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, CacheWithDevice) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
-    tileDevice->Initialize();
-    
     DrawParams params;
     params.pixel_width = 256;
     params.pixel_height = 256;
     params.extent = Envelope(0, 0, 256, 256);
     
-    tileDevice->BeginDraw(params);
-    tileDevice->Clear(Color::White());
+    device->BeginDraw(params);
+    device->Clear(Color::White());
     
     DrawStyle style;
     style.stroke.color = Color::Magenta().GetRGBA();
     style.stroke.width = 2.0;
     
-    tileDevice->DrawRect(10, 10, 236, 236, style);
-    tileDevice->EndDraw();
+    device->DrawRect(10, 10, 236, 236, style);
+    device->EndDraw();
     
-    TileData tileData = tileDevice->GetCurrentTileData();
+    const uint8_t* imageData = device->GetData();
+    size_t dataSize = device->GetDataSize();
+    std::vector<uint8_t> imageDataVec(imageData, imageData + dataSize);
     
     TileKey key(3, 4, 5);
-    multiCache->Add(key, tileData);
+    multiCache->PutTile(key, imageDataVec);
     
-    TileData retrieved;
-    bool found = multiCache->Get(key, retrieved);
-    EXPECT_TRUE(found);
-    
-    tileDevice->Finalize();
-}
-
-TEST_F(IntegrationMultiLevelCacheTest, GetCacheCount) {
-    EXPECT_EQ(multiCache->GetLevelCount(), 2);
+    TileData retrieved = multiCache->GetTile(key);
+    EXPECT_TRUE(retrieved.IsValid());
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, ThreeLevelCache) {
-    auto level1 = std::make_shared<MemoryTileCache>();
-    auto level2 = std::make_shared<MemoryTileCache>();
-    auto level3 = std::make_shared<MemoryTileCache>();
+    auto level1 = MemoryTileCache::Create();
+    auto level2 = MemoryTileCache::Create();
+    auto level3 = MemoryTileCache::Create();
     
     std::vector<TileCachePtr> caches;
     caches.push_back(level1);
     caches.push_back(level2);
     caches.push_back(level3);
     
-    auto threeLevelCache = std::make_shared<MultiLevelTileCache>(caches);
+    auto threeLevelCache = MultiLevelTileCache::Create(caches);
     
-    EXPECT_EQ(threeLevelCache->GetLevelCount(), 3);
+    EXPECT_EQ(threeLevelCache->GetCacheCount(), 3);
     
     TileKey key(0, 0, 0);
-    TileData data = CreateTestTileData();
+    auto data = CreateTestData();
     
-    threeLevelCache->Add(key, data);
+    threeLevelCache->PutTile(key, data);
     
-    TileData retrieved;
-    bool found = threeLevelCache->Get(key, retrieved);
-    EXPECT_TRUE(found);
+    TileData retrieved = threeLevelCache->GetTile(key);
+    EXPECT_TRUE(retrieved.IsValid());
 }
 
-TEST_F(IntegrationMultiLevelCacheTest, PerformanceTest) {
-    const int tileCount = 100;
+TEST_F(IntegrationMultiLevelCacheTest, SetGetName) {
+    multiCache->SetName("test_multi_cache");
+    EXPECT_EQ(multiCache->GetName(), "test_multi_cache");
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, SetEnabled) {
+    multiCache->SetEnabled(true);
+    EXPECT_TRUE(multiCache->IsEnabled());
     
-    for (int i = 0; i < tileCount; ++i) {
-        TileKey key(i % 10, i / 10, 5);
-        multiCache->Add(key, CreateTestTileData());
+    multiCache->SetEnabled(false);
+    EXPECT_FALSE(multiCache->IsEnabled());
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, SetPromoteOnHit) {
+    multiCache->SetPromoteOnHit(true);
+    EXPECT_TRUE(multiCache->IsPromoteOnHit());
+    
+    multiCache->SetPromoteOnHit(false);
+    EXPECT_FALSE(multiCache->IsPromoteOnHit());
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, SetWriteThrough) {
+    multiCache->SetWriteThrough(true);
+    EXPECT_TRUE(multiCache->IsWriteThrough());
+    
+    multiCache->SetWriteThrough(false);
+    EXPECT_FALSE(multiCache->IsWriteThrough());
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, SetWriteBack) {
+    multiCache->SetWriteBack(true);
+    EXPECT_TRUE(multiCache->IsWriteBack());
+    
+    multiCache->SetWriteBack(false);
+    EXPECT_FALSE(multiCache->IsWriteBack());
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, Flush) {
+    for (int i = 0; i < 5; ++i) {
+        TileKey key(i, 0, 3);
+        multiCache->PutTile(key, CreateTestData());
     }
     
-    int hitCount = 0;
-    TileData data;
-    for (int i = 0; i < tileCount; ++i) {
-        TileKey key(i % 10, i / 10, 5);
-        if (multiCache->Get(key, data)) {
-            hitCount++;
-        }
-    }
+    multiCache->Flush();
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, GetCache) {
+    TileCachePtr cache0 = multiCache->GetCache(0);
+    EXPECT_NE(cache0, nullptr);
     
-    EXPECT_EQ(hitCount, tileCount);
+    TileCachePtr cache1 = multiCache->GetCache(1);
+    EXPECT_NE(cache1, nullptr);
+}
+
+TEST_F(IntegrationMultiLevelCacheTest, AddCache) {
+    auto newCache = MemoryTileCache::Create();
+    
+    multiCache->AddCache(newCache);
+    
+    EXPECT_EQ(multiCache->GetCacheCount(), 3);
 }

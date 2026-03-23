@@ -31,6 +31,37 @@ set(TEST_SOURCES
     test_text_symbolizer.cpp
     test_device_state.cpp
     test_image_draw.cpp
+    test_clipper.cpp
+    test_label_placement.cpp
+    test_label_conflict.cpp
+    test_label_engine.cpp
+    test_layer_manager.cpp
+    test_transform_manager.cpp
+    test_raster_symbolizer.cpp
+    test_icon_symbolizer.cpp
+    test_filter.cpp
+    test_comparison_filter.cpp
+    test_logical_filter.cpp
+    test_spatial_filter.cpp
+    test_rule_engine.cpp
+    test_symbolizer_rule.cpp
+    test_composite_symbolizer.cpp
+    test_lod.cpp
+    test_lod_manager.cpp
+    test_performance_metrics.cpp
+    test_performance_monitor.cpp
+    test_render_task.cpp
+    test_render_queue.cpp
+    test_async_renderer.cpp
+    test_basic_render_task.cpp
+    test_display_device.cpp
+    test_pdf_device.cpp
+    test_draw_facade.cpp
+    test_driver_manager.cpp
+    test_proj_transformer.cpp
+    test_coordinate_transformer.cpp
+    test_thread_safe.cpp
+    test_log.cpp
     test_it_basic_render.cpp
     test_it_transform_render.cpp
     test_it_tile_index.cpp
@@ -41,6 +72,24 @@ set(TEST_SOURCES
     test_it_disk_cache.cpp
     test_it_multi_level_cache.cpp
     test_it_line_symbolizer.cpp
+    test_it_polygon_symbolizer.cpp
+    test_it_point_symbolizer.cpp
+    test_it_text_symbolizer.cpp
+    test_it_layer_manager.cpp
+    test_it_label_conflict.cpp
+    test_it_clipper.cpp
+    test_it_icon_symbolizer.cpp
+    test_it_raster_symbolizer.cpp
+    test_it_async_render.cpp
+    test_it_rule_engine_render.cpp
+    test_it_lod_render.cpp
+    test_it_performance_monitor.cpp
+    test_it_proj_transform_render.cpp
+    test_it_pdf_output.cpp
+    test_it_draw_facade.cpp
+    test_it_sld_render.cpp
+    test_it_mapbox_style_render.cpp
+    test_it_display_device.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
