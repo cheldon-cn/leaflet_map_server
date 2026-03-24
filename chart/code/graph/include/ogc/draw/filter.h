@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_FILTER_H
 #define OGC_DRAW_FILTER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/geometry.h"
 #include "ogc/feature/feature.h"
 #include <memory>
@@ -21,7 +22,7 @@ enum class FilterType {
     kId
 };
 
-class Filter {
+class OGC_GRAPH_API Filter {
 public:
     virtual ~Filter() = default;
     
@@ -42,7 +43,7 @@ public:
     bool IsNone() const;
 };
 
-class NullFilter : public Filter {
+class OGC_GRAPH_API NullFilter : public Filter {
 public:
     FilterType GetType() const override { return FilterType::kNone; }
     
@@ -63,7 +64,7 @@ public:
     }
 };
 
-class NoneFilter : public Filter {
+class OGC_GRAPH_API NoneFilter : public Filter {
 public:
     FilterType GetType() const override { return FilterType::kNone; }
     

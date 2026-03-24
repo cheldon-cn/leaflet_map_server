@@ -8,7 +8,7 @@
 namespace ogc {
 namespace draw {
 
-class IconSymbolizer : public Symbolizer {
+class OGC_GRAPH_API IconSymbolizer : public Symbolizer {
 public:
     IconSymbolizer();
     explicit IconSymbolizer(const std::string& iconPath);

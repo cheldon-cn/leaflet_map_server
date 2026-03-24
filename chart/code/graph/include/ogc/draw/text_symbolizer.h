@@ -27,7 +27,7 @@ enum class TextPlacement {
     kInterior
 };
 
-class TextSymbolizer : public Symbolizer {
+class OGC_GRAPH_API TextSymbolizer : public Symbolizer {
 public:
     TextSymbolizer();
     explicit TextSymbolizer(const std::string& label, const Font& font, uint32_t color);

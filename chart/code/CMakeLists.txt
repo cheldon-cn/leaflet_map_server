@@ -30,9 +30,8 @@ set(POSTGRESQL_INCLUDE_DIR "${POSTGRESQL_ROOT}/include" CACHE PATH "PostgreSQL i
 set(POSTGRESQL_LIB_DIR "${POSTGRESQL_ROOT}/lib" CACHE PATH "PostgreSQL lib directory")
 set(SQLITE3_INCLUDE_DIR "${SQLITE3_ROOT}" CACHE PATH "SQLite3 include directory")
 set(SQLITE3_LIB_DIR "${SQLITE3_ROOT}/lib(x64)" CACHE PATH "SQLite3 lib directory")
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/build/tests/Release" CACHE PATH "Installation directory" FORCE)
-endif()
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstallConfiguration.cmake)
 
 add_library(ogc_geometry
     geom/src/coordinate.cpp
@@ -79,14 +78,15 @@ if(ENABLE_DATABASE)
     add_subdirectory(database)
 endif()
 
+add_subdirectory(feature)
+add_subdirectory(layer)
+
 if(ENABLE_GRAPH)
     add_subdirectory(graph)
 endif()
 if(ENABLE_TESTS)
-    add_subdirectory(feature)
     add_subdirectory(feature/tests)
     add_subdirectory(geom/tests)
-    add_subdirectory(layer)
     add_subdirectory(layer/tests)
     if(ENABLE_DATABASE)
         add_subdirectory(database/test)
@@ -104,17 +104,25 @@ install(TARGETS ogc_geometry
     INCLUDES DESTINATION include
 )
 
-install(DIRECTORY geom/include/ogc
-    DESTINATION include
+install(DIRECTORY geom/include/ogc/
+    DESTINATION include/ogc/geom
     FILES_MATCHING PATTERN "*.h"
 )
 
-install(DIRECTORY layer/include/ogc
-    DESTINATION include
+install(DIRECTORY feature/include/ogc/feature/
+    DESTINATION include/ogc/feature
     FILES_MATCHING PATTERN "*.h"
 )
+
+install(DIRECTORY layer/include/ogc/layer/
+    DESTINATION include/ogc/layer
+    FILES_MATCHING PATTERN "*.h"
+)
+
 install(EXPORT ogc_geometry-targets
     FILE ogc_geometry-config.cmake
     NAMESPACE OGC::
     DESTINATION lib/cmake/ogc_geometry
 )
+
+ogc_print_install_summary()

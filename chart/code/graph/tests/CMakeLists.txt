@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest root directory")
 set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include" CACHE PATH "GoogleTest include directory")
 set(GTEST_LIB_DIR "${GTEST_ROOT}/lib" CACHE PATH "GoogleTest lib directory")
 
@@ -153,6 +152,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     target_link_libraries(${TEST_NAME}
         PRIVATE
             ogc_graph
+            ogc_geometry
             GTest::gtest
             GTest::gtest_main
     )

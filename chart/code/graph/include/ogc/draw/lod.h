@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LOD_H
 #define OGC_DRAW_LOD_H
 
+#include "ogc/draw/export.h"
 #include "ogc/envelope.h"
 #include <memory>
 #include <string>
@@ -60,7 +61,7 @@ private:
 class LODStrategy;
 typedef std::shared_ptr<LODStrategy> LODStrategyPtr;
 
-class LODStrategy {
+class OGC_GRAPH_API LODStrategy {
 public:
     virtual ~LODStrategy() = default;
     

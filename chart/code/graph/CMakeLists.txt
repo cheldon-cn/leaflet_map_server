@@ -112,7 +112,7 @@ set(OGC_GRAPH_SOURCES
     src/mapbox_style_parser.cpp
 )
 
-add_library(ogc_graph STATIC ${OGC_GRAPH_SOURCES})
+add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
 
 set_target_properties(ogc_graph PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/tests/Release"
@@ -157,11 +157,14 @@ target_compile_definitions(ogc_graph
 )
 
 install(TARGETS ogc_graph
+    EXPORT ogc_geometry-targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY include/
-    DESTINATION include
+install(DIRECTORY include/ogc/draw/
+    DESTINATION include/ogc/draw
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN "*.inl"
 )

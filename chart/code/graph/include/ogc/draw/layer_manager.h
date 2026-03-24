@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LAYER_MANAGER_H
 #define OGC_DRAW_LAYER_MANAGER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/envelope.h"
 #include <string>
@@ -37,7 +38,7 @@ struct LayerInfo {
     bool hasLabels;
 };
 
-class ILayerRenderer {
+class OGC_GRAPH_API ILayerRenderer {
 public:
     virtual ~ILayerRenderer() = default;
     

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_RENDER_TASK_H
 #define OGC_DRAW_RENDER_TASK_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_params.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/envelope.h"
@@ -54,7 +55,7 @@ struct RenderTaskStats {
 
 typedef std::function<void(const RenderTaskPtr&)> RenderTaskCallback;
 
-class RenderTask : public std::enable_shared_from_this<RenderTask> {
+class OGC_GRAPH_API RenderTask : public std::enable_shared_from_this<RenderTask> {
 public:
     RenderTask();
     RenderTask(const std::string& id, const DrawParams& params);

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_DEVICE_H
 #define OGC_DRAW_DRAW_DEVICE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/device_type.h"
 #include "ogc/draw/device_state.h"
@@ -17,7 +18,7 @@
 namespace ogc {
 namespace draw {
 
-class DrawDevice {
+class OGC_GRAPH_API DrawDevice {
 public:
     virtual ~DrawDevice() = default;
     

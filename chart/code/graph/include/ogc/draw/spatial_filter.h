@@ -20,7 +20,7 @@ enum class SpatialOperator {
     kDisjoint
 };
 
-class SpatialFilter : public Filter {
+class OGC_GRAPH_API SpatialFilter : public Filter {
 public:
     SpatialFilter(SpatialOperator op, const Geometry* geometry);
     SpatialFilter(SpatialOperator op, const Envelope& envelope);

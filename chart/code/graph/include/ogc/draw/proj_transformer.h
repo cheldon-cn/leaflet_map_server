@@ -10,7 +10,7 @@ namespace draw {
 class ProjTransformer;
 typedef std::shared_ptr<ProjTransformer> ProjTransformerPtr;
 
-class ProjTransformer : public CoordinateTransformer {
+class OGC_GRAPH_API ProjTransformer : public CoordinateTransformer {
 public:
     ProjTransformer();
     ProjTransformer(const std::string& sourceCRS, const std::string& targetCRS);

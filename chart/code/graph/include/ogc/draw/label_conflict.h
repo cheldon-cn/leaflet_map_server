@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LABEL_CONFLICT_H
 #define OGC_DRAW_LABEL_CONFLICT_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/label_engine.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -21,7 +22,7 @@ struct ConflictInfo {
         , overlapArea(0), resolved(false) {}
 };
 
-class LabelConflictResolver {
+class OGC_GRAPH_API LabelConflictResolver {
 public:
     LabelConflictResolver();
     virtual ~LabelConflictResolver() = default;
@@ -61,7 +62,7 @@ private:
     std::string m_priorityMode;
 };
 
-class SpatialIndexConflictResolver : public LabelConflictResolver {
+class OGC_GRAPH_API SpatialIndexConflictResolver : public LabelConflictResolver {
 public:
     SpatialIndexConflictResolver();
     ~SpatialIndexConflictResolver() override = default;

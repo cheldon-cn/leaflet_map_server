@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_COORDINATE_TRANSFORMER_H
 #define OGC_DRAW_COORDINATE_TRANSFORMER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 #include "ogc/geometry.h"
@@ -14,7 +15,7 @@ namespace draw {
 class CoordinateTransformer;
 typedef std::shared_ptr<CoordinateTransformer> CoordinateTransformerPtr;
 
-class CoordinateTransformer {
+class OGC_GRAPH_API CoordinateTransformer {
 public:
     virtual ~CoordinateTransformer() = default;
     

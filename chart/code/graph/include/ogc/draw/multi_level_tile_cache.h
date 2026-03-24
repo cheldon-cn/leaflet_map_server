@@ -8,7 +8,7 @@
 namespace ogc {
 namespace draw {
 
-class MultiLevelTileCache : public TileCache {
+class OGC_GRAPH_API MultiLevelTileCache : public TileCache {
 public:
     MultiLevelTileCache();
     explicit MultiLevelTileCache(const std::vector<TileCachePtr>& caches);

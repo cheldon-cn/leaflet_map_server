@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_DRIVER_H
 #define OGC_DRAW_DRAW_DRIVER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/draw_device.h"
 #include "ogc/draw/draw_engine.h"
@@ -16,7 +17,7 @@ namespace draw {
 
 using ProgressCallback = std::function<void(double progress, const std::string& message)>;
 
-class DrawDriver {
+class OGC_GRAPH_API DrawDriver {
 public:
     virtual ~DrawDriver() = default;
     

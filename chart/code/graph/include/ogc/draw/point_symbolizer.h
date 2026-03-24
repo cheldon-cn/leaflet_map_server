@@ -17,7 +17,7 @@ enum class PointSymbolType {
     kDiamond
 };
 
-class PointSymbolizer : public Symbolizer {
+class OGC_GRAPH_API PointSymbolizer : public Symbolizer {
 public:
     PointSymbolizer();
     explicit PointSymbolizer(double size, uint32_t color);

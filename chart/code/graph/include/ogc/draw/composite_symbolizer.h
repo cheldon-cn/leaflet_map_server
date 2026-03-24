@@ -7,7 +7,7 @@
 namespace ogc {
 namespace draw {
 
-class CompositeSymbolizer : public Symbolizer {
+class OGC_GRAPH_API CompositeSymbolizer : public Symbolizer {
 public:
     CompositeSymbolizer();
     ~CompositeSymbolizer() override = default;

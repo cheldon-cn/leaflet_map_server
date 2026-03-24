@@ -69,10 +69,11 @@ endif()
 target_link_libraries(ogc_database PRIVATE ${LIBS} ogc_geometry)
 
 install(TARGETS ogc_database
+    EXPORT ogc_geometry-targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 
-install(DIRECTORY include/ogc/db 
-    DESTINATION include/ogc
+install(DIRECTORY include/ogc/db/
+    DESTINATION include/ogc/db
     FILES_MATCHING PATTERN "*.h")

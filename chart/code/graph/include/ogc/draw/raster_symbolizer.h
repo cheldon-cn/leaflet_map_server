@@ -34,7 +34,7 @@ struct ColorMapEntry {
         , label(l) {}
 };
 
-class RasterSymbolizer : public Symbolizer {
+class OGC_GRAPH_API RasterSymbolizer : public Symbolizer {
 public:
     RasterSymbolizer();
     ~RasterSymbolizer() override = default;

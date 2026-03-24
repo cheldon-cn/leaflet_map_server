@@ -10,7 +10,7 @@ namespace draw {
 
 typedef std::function<bool(RenderTaskPtr, DrawContext&)> RenderFunction;
 
-class BasicRenderTask : public RenderTask {
+class OGC_GRAPH_API BasicRenderTask : public RenderTask {
 public:
     BasicRenderTask();
     BasicRenderTask(const std::string& id, const DrawParams& params);

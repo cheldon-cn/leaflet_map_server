@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_TILE_CACHE_H
 #define OGC_DRAW_TILE_CACHE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/tile_key.h"
 #include <memory>
 #include <vector>
@@ -25,7 +26,7 @@ struct TileData {
 class TileCache;
 typedef std::shared_ptr<TileCache> TileCachePtr;
 
-class TileCache {
+class OGC_GRAPH_API TileCache {
 public:
     virtual ~TileCache() = default;
     

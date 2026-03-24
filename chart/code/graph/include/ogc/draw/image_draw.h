@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_IMAGE_DRAW_H
 #define OGC_DRAW_IMAGE_DRAW_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/color.h"
 #include "ogc/envelope.h"
@@ -80,7 +81,7 @@ private:
     std::unique_ptr<unsigned char[]> m_data;
 };
 
-class IImageReader {
+class OGC_GRAPH_API IImageReader {
 public:
     virtual ~IImageReader() = default;
     
@@ -93,7 +94,7 @@ public:
     virtual std::vector<ImageFormat> GetSupportedFormats() const = 0;
 };
 
-class IImageWriter {
+class OGC_GRAPH_API IImageWriter {
 public:
     virtual ~IImageWriter() = default;
     

@@ -20,7 +20,7 @@ enum class ComparisonOperator {
     kBetween
 };
 
-class ComparisonFilter : public Filter {
+class OGC_GRAPH_API ComparisonFilter : public Filter {
 public:
     ComparisonFilter(ComparisonOperator op, 
                      const std::string& propertyName,

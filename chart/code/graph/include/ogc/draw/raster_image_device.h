@@ -16,7 +16,7 @@ enum class ImageFormat {
     kWebP = 5
 };
 
-class RasterImageDevice : public DrawDevice {
+class OGC_GRAPH_API RasterImageDevice : public DrawDevice {
 public:
     RasterImageDevice();
     RasterImageDevice(int width, int height, int channels = 4);

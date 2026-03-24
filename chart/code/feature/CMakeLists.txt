@@ -42,8 +42,10 @@ set_target_properties(ogc_feature PROPERTIES
 )
 
 install(TARGETS ogc_feature
+    EXPORT ogc_geometry-targets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/ogc

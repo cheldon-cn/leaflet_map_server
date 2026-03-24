@@ -33,8 +33,6 @@ target_include_directories(ogc_layer
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        ${GEOM_SOURCE_DIR}/include
-        ${FEATURE_SOURCE_DIR}/include
 )
 
 target_link_libraries(ogc_layer
@@ -49,8 +47,10 @@ set_target_properties(ogc_layer PROPERTIES
 )
 
 install(TARGETS ogc_layer
+    EXPORT ogc_geometry-targets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/ogc

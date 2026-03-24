@@ -9,7 +9,7 @@
 namespace ogc {
 namespace draw {
 
-class MemoryTileCache : public TileCache {
+class OGC_GRAPH_API MemoryTileCache : public TileCache {
 public:
     explicit MemoryTileCache(size_t maxSize = 100 * 1024 * 1024);
     ~MemoryTileCache() override = default;

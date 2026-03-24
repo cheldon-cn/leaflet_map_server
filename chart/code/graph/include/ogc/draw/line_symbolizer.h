@@ -19,7 +19,7 @@ enum class DashStyle {
     kCustom
 };
 
-class LineSymbolizer : public Symbolizer {
+class OGC_GRAPH_API LineSymbolizer : public Symbolizer {
 public:
     LineSymbolizer();
     explicit LineSymbolizer(double width, uint32_t color);

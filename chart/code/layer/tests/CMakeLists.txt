@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GTest root directory")
 
 include_directories(
     ${GTEST_ROOT}/include

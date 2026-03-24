@@ -35,7 +35,7 @@ using ResizeCallback = std::function<void(int width, int height)>;
 using PaintCallback = std::function<void()>;
 using CloseCallback = std::function<void()>;
 
-class DisplayDevice : public DrawDevice {
+class OGC_GRAPH_API DisplayDevice : public DrawDevice {
 public:
     DisplayDevice();
     DisplayDevice(int width, int height, const std::string& title = "");

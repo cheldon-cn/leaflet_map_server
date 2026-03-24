@@ -13,7 +13,7 @@ enum class LogicalOperator {
     kNot
 };
 
-class LogicalFilter : public Filter {
+class OGC_GRAPH_API LogicalFilter : public Filter {
 public:
     explicit LogicalFilter(LogicalOperator op);
     LogicalFilter(LogicalOperator op, const std::vector<FilterPtr>& filters);

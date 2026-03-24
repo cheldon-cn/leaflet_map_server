@@ -19,7 +19,7 @@ enum class FillPattern {
     kCustom
 };
 
-class PolygonSymbolizer : public Symbolizer {
+class OGC_GRAPH_API PolygonSymbolizer : public Symbolizer {
 public:
     PolygonSymbolizer();
     explicit PolygonSymbolizer(uint32_t fillColor);

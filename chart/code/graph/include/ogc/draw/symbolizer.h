@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_SYMBOLIZER_H
 #define OGC_DRAW_SYMBOLIZER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/draw_style.h"
 #include "ogc/draw/draw_context.h"
@@ -23,7 +24,7 @@ enum class SymbolizerType {
     kIcon
 };
 
-class Symbolizer {
+class OGC_GRAPH_API Symbolizer {
 public:
     virtual ~Symbolizer() = default;
     

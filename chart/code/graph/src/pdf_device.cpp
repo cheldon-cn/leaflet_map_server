@@ -134,9 +134,9 @@ void PdfDevice::SetClipRect(double x, double y, double width, double height) {
     
     if (m_currentPage >= 0 && m_currentPage < static_cast<int>(m_pages.size())) {
         double pdfY = PdfY(y + height);
-        m_pages[m_currentPage].content << "q\n";
-        m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-        m_pages[m_currentPage].content << x << " " << pdfY << " " << width << " " << height << " re W n\n";
+        m_pages[m_currentPage]->content << "q\n";
+        m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+        m_pages[m_currentPage]->content << x << " " << pdfY << " " << width << " " << height << " re W n\n";
     }
 }
 
@@ -144,7 +144,7 @@ void PdfDevice::ClearClipRect() {
     m_hasClipRect = false;
     
     if (m_currentPage >= 0 && m_currentPage < static_cast<int>(m_pages.size())) {
-        m_pages[m_currentPage].content << "Q\n";
+        m_pages[m_currentPage]->content << "Q\n";
     }
 }
 
@@ -163,11 +163,11 @@ DrawResult PdfDevice::DrawPoint(double x, double y, const DrawStyle& style) {
     
     double radius = style.stroke.width > 0 ? style.stroke.width : 3.0;
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << ColorToPdf(Color(style.fill.color));
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << tx - radius << " " << pdfY - radius << " " << radius * 2 << " " << radius * 2 << " re f\n";
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << ColorToPdf(Color(style.fill.color));
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << tx - radius << " " << pdfY - radius << " " << radius * 2 << " " << radius * 2 << " re f\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -184,12 +184,12 @@ DrawResult PdfDevice::DrawLine(double x1, double y1, double x2, double y2, const
     double pdfY1 = PdfY(ty1);
     double pdfY2 = PdfY(ty2);
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << style.stroke.width << " w\n";
-    m_pages[m_currentPage].content << tx1 << " " << pdfY1 << " m " << tx2 << " " << pdfY2 << " l S\n";
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << style.stroke.width << " w\n";
+    m_pages[m_currentPage]->content << tx1 << " " << pdfY1 << " m " << tx2 << " " << pdfY2 << " l S\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -203,21 +203,21 @@ DrawResult PdfDevice::DrawRect(double x, double y, double width, double height, 
     TransformPoint(x, y, tx, ty);
     double pdfY = PdfY(ty + height);
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
     
     if (style.fill.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.fill.color));
-        m_pages[m_currentPage].content << tx << " " << pdfY << " " << width << " " << height << " re f\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.fill.color));
+        m_pages[m_currentPage]->content << tx << " " << pdfY << " " << width << " " << height << " re f\n";
     }
     
     if (style.stroke.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-        m_pages[m_currentPage].content << style.stroke.width << " w\n";
-        m_pages[m_currentPage].content << tx << " " << pdfY << " " << width << " " << height << " re S\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+        m_pages[m_currentPage]->content << style.stroke.width << " w\n";
+        m_pages[m_currentPage]->content << tx << " " << pdfY << " " << width << " " << height << " re S\n";
     }
     
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -237,32 +237,32 @@ DrawResult PdfDevice::DrawEllipse(double cx, double cy, double rx, double ry, co
     
     double k = 0.5522847498;
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
     
-    m_pages[m_currentPage].content << tx - rx << " " << pdfY << " m\n";
-    m_pages[m_currentPage].content << tx - rx << " " << pdfY + ry * k << " " 
+    m_pages[m_currentPage]->content << tx - rx << " " << pdfY << " m\n";
+    m_pages[m_currentPage]->content << tx - rx << " " << pdfY + ry * k << " " 
                                     << tx - rx * k << " " << pdfY + ry << " " 
                                     << tx << " " << pdfY + ry << " c\n";
-    m_pages[m_currentPage].content << tx + rx * k << " " << pdfY + ry << " " 
+    m_pages[m_currentPage]->content << tx + rx * k << " " << pdfY + ry << " " 
                                     << tx + rx << " " << pdfY + ry * k << " " 
                                     << tx + rx << " " << pdfY << " c\n";
-    m_pages[m_currentPage].content << tx + rx << " " << pdfY - ry * k << " " 
+    m_pages[m_currentPage]->content << tx + rx << " " << pdfY - ry * k << " " 
                                     << tx + rx * k << " " << pdfY - ry << " " 
                                     << tx << " " << pdfY - ry << " c\n";
-    m_pages[m_currentPage].content << tx - rx * k << " " << pdfY - ry << " " 
+    m_pages[m_currentPage]->content << tx - rx * k << " " << pdfY - ry << " " 
                                     << tx - rx << " " << pdfY - ry * k << " " 
                                     << tx - rx << " " << pdfY << " c\n";
     
     if (style.fill.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.fill.color)) << "f\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.fill.color)) << "f\n";
     }
     if (style.stroke.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-        m_pages[m_currentPage].content << style.stroke.width << " w\nS\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+        m_pages[m_currentPage]->content << style.stroke.width << " w\nS\n";
     }
     
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -280,24 +280,24 @@ DrawResult PdfDevice::DrawArc(double cx, double cy, double rx, double ry,
     const int segments = 36;
     double angleStep = sweepAngle / segments;
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-    m_pages[m_currentPage].content << style.stroke.width << " w\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+    m_pages[m_currentPage]->content << style.stroke.width << " w\n";
     
     double angle = startAngle;
     double x1 = tx + rx * std::cos(angle);
     double y1 = pdfY + ry * std::sin(angle);
-    m_pages[m_currentPage].content << x1 << " " << y1 << " m\n";
+    m_pages[m_currentPage]->content << x1 << " " << y1 << " m\n";
     
     for (int i = 1; i <= segments; ++i) {
         angle = startAngle + angleStep * i;
         double x2 = tx + rx * std::cos(angle);
         double y2 = pdfY + ry * std::sin(angle);
-        m_pages[m_currentPage].content << x2 << " " << y2 << " l\n";
+        m_pages[m_currentPage]->content << x2 << " " << y2 << " l\n";
     }
     
-    m_pages[m_currentPage].content << "S\nQ\n";
+    m_pages[m_currentPage]->content << "S\nQ\n";
     
     return DrawResult::kSuccess;
 }
@@ -307,29 +307,29 @@ DrawResult PdfDevice::DrawPolygon(const double* x, const double* y, int count, c
         return DrawResult::kFailed;
     }
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
     
     double tx, ty;
     TransformPoint(x[0], y[0], tx, ty);
-    m_pages[m_currentPage].content << tx << " " << PdfY(ty) << " m\n";
+    m_pages[m_currentPage]->content << tx << " " << PdfY(ty) << " m\n";
     
     for (int i = 1; i < count; ++i) {
         TransformPoint(x[i], y[i], tx, ty);
-        m_pages[m_currentPage].content << tx << " " << PdfY(ty) << " l\n";
+        m_pages[m_currentPage]->content << tx << " " << PdfY(ty) << " l\n";
     }
     
-    m_pages[m_currentPage].content << "h\n";
+    m_pages[m_currentPage]->content << "h\n";
     
     if (style.fill.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.fill.color)) << "f\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.fill.color)) << "f\n";
     }
     if (style.stroke.visible) {
-        m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-        m_pages[m_currentPage].content << style.stroke.width << " w\nS\n";
+        m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+        m_pages[m_currentPage]->content << style.stroke.width << " w\nS\n";
     }
     
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -339,21 +339,21 @@ DrawResult PdfDevice::DrawPolyline(const double* x, const double* y, int count, 
         return DrawResult::kFailed;
     }
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << ColorToPdf(Color(style.stroke.color));
-    m_pages[m_currentPage].content << style.stroke.width << " w\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << ColorToPdf(Color(style.stroke.color));
+    m_pages[m_currentPage]->content << style.stroke.width << " w\n";
     
     double tx, ty;
     TransformPoint(x[0], y[0], tx, ty);
-    m_pages[m_currentPage].content << tx << " " << PdfY(ty) << " m\n";
+    m_pages[m_currentPage]->content << tx << " " << PdfY(ty) << " m\n";
     
     for (int i = 1; i < count; ++i) {
         TransformPoint(x[i], y[i], tx, ty);
-        m_pages[m_currentPage].content << tx << " " << PdfY(ty) << " l\n";
+        m_pages[m_currentPage]->content << tx << " " << PdfY(ty) << " l\n";
     }
     
-    m_pages[m_currentPage].content << "S\nQ\n";
+    m_pages[m_currentPage]->content << "S\nQ\n";
     
     return DrawResult::kSuccess;
 }
@@ -423,15 +423,15 @@ DrawResult PdfDevice::DrawText(double x, double y, const std::string& text,
     
     int fontId = AddFont(font);
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << "BT\n";
-    m_pages[m_currentPage].content << "/F" << fontId << " " << font.GetSize() << " Tf\n";
-    m_pages[m_currentPage].content << ColorToPdf(color);
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << tx << " " << pdfY << " Td\n";
-    m_pages[m_currentPage].content << "(" << text << ") Tj\n";
-    m_pages[m_currentPage].content << "ET\n";
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << "BT\n";
+    m_pages[m_currentPage]->content << "/F" << fontId << " " << font.GetSize() << " Tf\n";
+    m_pages[m_currentPage]->content << ColorToPdf(color);
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << tx << " " << pdfY << " Td\n";
+    m_pages[m_currentPage]->content << "(" << text << ") Tj\n";
+    m_pages[m_currentPage]->content << "ET\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -467,11 +467,11 @@ DrawResult PdfDevice::DrawImage(double x, double y, double width, double height,
     TransformPoint(x, y, tx, ty);
     double pdfY = PdfY(ty + height);
     
-    m_pages[m_currentPage].content << "q\n";
-    m_pages[m_currentPage].content << std::fixed << std::setprecision(2);
-    m_pages[m_currentPage].content << width << " 0 0 " << height << " " << tx << " " << pdfY << " cm\n";
-    m_pages[m_currentPage].content << "/Im" << imageId << " Do\n";
-    m_pages[m_currentPage].content << "Q\n";
+    m_pages[m_currentPage]->content << "q\n";
+    m_pages[m_currentPage]->content << std::fixed << std::setprecision(2);
+    m_pages[m_currentPage]->content << width << " 0 0 " << height << " " << tx << " " << pdfY << " cm\n";
+    m_pages[m_currentPage]->content << "/Im" << imageId << " Do\n";
+    m_pages[m_currentPage]->content << "Q\n";
     
     return DrawResult::kSuccess;
 }
@@ -501,13 +501,13 @@ DrawResult PdfDevice::DrawImageRegion(double destX, double destY, double destWid
 
 void PdfDevice::Clear(const Color& color) {
     if (m_currentPage >= 0 && m_currentPage < static_cast<int>(m_pages.size())) {
-        m_pages[m_currentPage].content.str("");
-        m_pages[m_currentPage].content.clear();
+        m_pages[m_currentPage]->content.str("");
+        m_pages[m_currentPage]->content.clear();
         
-        m_pages[m_currentPage].content << "q\n";
-        m_pages[m_currentPage].content << ColorToPdf(color);
-        m_pages[m_currentPage].content << "0 0 " << m_width << " " << m_height << " re f\n";
-        m_pages[m_currentPage].content << "Q\n";
+        m_pages[m_currentPage]->content << "q\n";
+        m_pages[m_currentPage]->content << ColorToPdf(color);
+        m_pages[m_currentPage]->content << "0 0 " << m_width << " " << m_height << " re f\n";
+        m_pages[m_currentPage]->content << "Q\n";
     }
 }
 
@@ -568,9 +568,9 @@ void PdfDevice::SetCreator(const std::string& creator) {
 }
 
 void PdfDevice::NewPage(int width, int height) {
-    PdfPage page;
-    page.width = width;
-    page.height = height;
+    auto page = std::make_unique<PdfPage>();
+    page->width = width;
+    page->height = height;
     m_pages.push_back(std::move(page));
     m_currentPage = static_cast<int>(m_pages.size()) - 1;
 }
@@ -620,14 +620,14 @@ bool PdfDevice::SaveToFile(const std::string& filepath) {
         objectOffsets.push_back(static_cast<int>(file.tellp()));
         file << pageObjects[i] << " 0 obj\n";
         file << "<< /Type /Page /Parent " << pagesObj << " 0 R ";
-        file << "/MediaBox [0 0 " << m_pages[i].width << " " << m_pages[i].height << "] ";
-        file << "/Contents << /Length " << m_pages[i].content.str().length() << " >> ";
+        file << "/MediaBox [0 0 " << m_pages[i]->width << " " << m_pages[i]->height << "] ";
+        file << "/Contents << /Length " << m_pages[i]->content.str().length() << " >> ";
         file << ">>\n";
         file << "endobj\n";
         
         objectOffsets.push_back(static_cast<int>(file.tellp()));
         file << "stream\n";
-        file << m_pages[i].content.str();
+        file << m_pages[i]->content.str();
         file << "\nendstream\n";
     }
     
@@ -661,7 +661,7 @@ void PdfDevice::TransformPoint(double x, double y, double& outX, double& outY) c
 
 double PdfDevice::PdfY(double y) const {
     if (m_currentPage >= 0 && m_currentPage < static_cast<int>(m_pages.size())) {
-        return m_pages[m_currentPage].height - y;
+        return m_pages[m_currentPage]->height - y;
     }
     return m_height - y;
 }

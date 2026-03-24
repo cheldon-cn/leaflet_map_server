@@ -10,7 +10,7 @@
 namespace ogc {
 namespace draw {
 
-class DiskTileCache : public TileCache {
+class OGC_GRAPH_API DiskTileCache : public TileCache {
 public:
     explicit DiskTileCache(const std::string& cachePath, size_t maxSize = 1024 * 1024 * 1024);
     ~DiskTileCache() override;

@@ -10,18 +10,43 @@ namespace ogc {
 namespace draw {
 
 struct PdfPage {
-    int width;
-    int height;
+    int width = 0;
+    int height = 0;
     std::stringstream content;
     std::map<int, std::string> fonts;
     std::map<int, std::string> images;
+    
+    PdfPage() = default;
+    PdfPage(int w, int h) : width(w), height(h) {}
+    PdfPage(const PdfPage&) = delete;
+    PdfPage& operator=(const PdfPage&) = delete;
+    PdfPage(PdfPage&& other) noexcept
+        : width(other.width), height(other.height),
+          content(std::move(other.content)),
+          fonts(std::move(other.fonts)),
+          images(std::move(other.images)) {}
+    PdfPage& operator=(PdfPage&& other) noexcept {
+        if (this != &other) {
+            width = other.width;
+            height = other.height;
+            content = std::move(other.content);
+            fonts = std::move(other.fonts);
+            images = std::move(other.images);
+        }
+        return *this;
+    }
 };
 
-class PdfDevice : public DrawDevice {
+class OGC_GRAPH_API PdfDevice : public DrawDevice {
 public:
     PdfDevice();
     PdfDevice(int width, int height, double dpi = 72.0);
     ~PdfDevice() override;
+    
+    PdfDevice(const PdfDevice&) = delete;
+    PdfDevice& operator=(const PdfDevice&) = delete;
+    PdfDevice(PdfDevice&&) = default;
+    PdfDevice& operator=(PdfDevice&&) = default;
     
     DeviceType GetType() const override { return DeviceType::kPdf; }
     std::string GetName() const override { return "PdfDevice"; }
@@ -122,7 +147,7 @@ private:
     std::string m_subject;
     std::string m_creator;
     
-    std::vector<PdfPage> m_pages;
+    std::vector<std::unique_ptr<PdfPage>> m_pages;
     int m_currentPage;
     
     double m_clipX, m_clipY, m_clipWidth, m_clipHeight;

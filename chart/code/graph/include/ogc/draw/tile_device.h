@@ -23,7 +23,7 @@ struct TileData {
         : x(x_), y(y_), z(z_), width(w), height(h), valid(false) {}
 };
 
-class TileDevice : public DrawDevice {
+class OGC_GRAPH_API TileDevice : public DrawDevice {
 public:
     TileDevice();
     TileDevice(int tileSize);
