@@ -9,8 +9,11 @@ global g_Config := {}
 ; 配置文件路径
 global g_ConfigFile := ""
 
+; 配置文件缓存
+global g_ConfigContent := ""
+
 ConfigManager_Init(configFile := "config.ini") {
-    global g_Config, g_ConfigFile
+    global g_Config, g_ConfigFile, g_ConfigContent
     
     g_ConfigFile := A_ScriptDir . "\..\" . configFile
     
@@ -33,8 +36,51 @@ ConfigManager_Init(configFile := "config.ini") {
         return false
     }
     
+    FileRead, g_ConfigContent, *P65001 %g_ConfigFile%
+    
     ConfigManager_LoadFromFile()
     return true
+}
+
+ConfigManager_ReadUTF8(section, key, defaultValue := "") {
+    global g_ConfigContent
+    
+    if (g_ConfigContent = "") {
+        return defaultValue
+    }
+    
+    content := "`n" . g_ConfigContent . "`n"
+    
+    sectionStart := InStr(content, "`n[" . section . "]`n")
+    if (sectionStart = 0) {
+        return defaultValue
+    }
+    
+    sectionEnd := InStr(content, "`n[", false, sectionStart + 1)
+    if (sectionEnd = 0) {
+        sectionEnd := StrLen(content)
+    }
+    
+    sectionContent := SubStr(content, sectionStart, sectionEnd - sectionStart)
+    
+    keyStart := InStr(sectionContent, "`n" . key . "=")
+    if (keyStart = 0) {
+        return defaultValue
+    }
+    
+    valueStart := keyStart + StrLen(key) + 2
+    valueEnd := InStr(sectionContent, "`n", false, valueStart)
+    if (valueEnd = 0) {
+        valueEnd := StrLen(sectionContent)
+    }
+    
+    value := SubStr(sectionContent, valueStart, valueEnd - valueStart)
+    
+    if (StrLen(value) = 0) {
+        return defaultValue
+    }
+    
+    return value
 }
 
 ConfigManager_LoadDefaults() {
@@ -169,19 +215,10 @@ ConfigManager_LoadFromFile() {
     IniRead, value, %g_ConfigFile%, OCR, OCRCacheExpiry, 60000
     g_Config.OCR.OCRCacheExpiry := value + 0
     
-    IniRead, value, %g_ConfigFile%, Keywords, PromptKeywords, 模型思考次数已达上限
-    LogDebug("读取到的关键词配置原始值: [" . value . "]")
+    value := ConfigManager_ReadUTF8("Keywords", "PromptKeywords", "模型思考次数已达上限,思考次数已达上限,已达上限")
     g_Config.Keywords.PromptKeywords := StrSplit(value, ",")
     
-    keywordArray := g_Config.Keywords.PromptKeywords
-    LogDebug("StrSplit 后数组长度: " . (IsObject(keywordArray) ? keywordArray.MaxIndex() : "非对象"))
-    if IsObject(keywordArray) {
-        for i, kw in keywordArray {
-            LogDebug("关键词数组[" . i . "]: [" . kw . "]")
-        }
-    }
-    
-    IniRead, value, %g_ConfigFile%, Keywords, InputText, 继续
+    value := ConfigManager_ReadUTF8("Keywords", "InputText", "继续")
     g_Config.Keywords.InputText := value
     
     IniRead, value, %g_ConfigFile%, Retry, MaxRetryCount, 3

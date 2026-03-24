@@ -15,14 +15,19 @@ KeywordDetector_Init() {
     g_Keywords := g_Config.Keywords.PromptKeywords
     g_InputText := g_Config.Keywords.InputText
     
-    keywordCount := g_Keywords.MaxIndex()
+    keywordCount := 0
+    if IsObject(g_Keywords) {
+        keywordCount := g_Keywords.MaxIndex()
+    }
     LogInfo("关键词检测模块初始化完成, 关键词数量: " . keywordCount)
     
     if IsObject(g_Keywords) {
         for index, kw in g_Keywords {
-            LogDebug("关键词 " . index . ": [" . kw . "]")
+            LogDebug("关键词 " . index . ": [" . kw . "] 长度: " . StrLen(kw))
         }
     }
+    
+    LogDebug("输入文本: [" . g_InputText . "]")
 }
 
 KeywordDetector_DetectKeywords(text) {
