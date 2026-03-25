@@ -46,6 +46,9 @@ public:
     
     std::string AsText(int precision = DEFAULT_WKT_PRECISION) const override;
     std::vector<uint8_t> AsBinary() const override;
+    std::string AsGeoJSON(int precision = DEFAULT_WKT_PRECISION) const override;
+    std::string AsGML() const override;
+    std::string AsKML() const override;
     GeometryPtr Clone() const override;
     GeometryPtr CloneEmpty() const override;
     

@@ -120,6 +120,9 @@ public:
         m_polygonPool.Release(std::move(polygon));
     }
     
+    template<typename T>
+    std::unique_ptr<T> Acquire();
+    
     template<typename T, typename... Args>
     std::unique_ptr<T> Create(Args&&... args) {
         auto obj = Acquire<T>();
@@ -172,9 +175,6 @@ public:
     
 private:
     GeometryPool() : m_poolSize(64) {}
-    
-    template<typename T>
-    std::unique_ptr<T> Acquire();
     
     template<typename T>
     void ReleaseInternal(std::unique_ptr<T> obj);

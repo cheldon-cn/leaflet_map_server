@@ -11,7 +11,19 @@ add_executable(ogc_geometry_tests
     test_envelope.cpp
     test_point.cpp
     test_linestring.cpp
+    test_linearring.cpp
     test_polygon.cpp
+    test_multipoint.cpp
+    test_multilinestring.cpp
+    test_multipolygon.cpp
+    test_geometrycollection.cpp
+    test_factory.cpp
+    test_visitor.cpp
+    test_spatial_index.cpp
+    test_geometry_pool.cpp
+    test_precision_model.cpp
+    test_performance.cpp
+    test_integration.cpp
     test_common.cpp
 )
 

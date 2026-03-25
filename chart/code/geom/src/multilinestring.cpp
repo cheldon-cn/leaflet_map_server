@@ -1,5 +1,6 @@
 #include "ogc/multilinestring.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 
@@ -148,7 +149,23 @@ std::string MultiLineString::AsText(int precision) const {
 }
 
 std::vector<uint8_t> MultiLineString::AsBinary() const {
-    return std::vector<uint8_t>();
+    std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kMultiLineString));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kMultiLineString), Is3D(), IsMeasured());
+    wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(m_lines.size()));
+    
+    for (const auto& line : m_lines) {
+        auto lineWkb = line->AsBinary();
+        wkb.insert(wkb.end(), lineWkb.begin(), lineWkb.end());
+    }
+    
+    return wkb;
 }
 
 GeometryPtr MultiLineString::Clone() const {
@@ -162,6 +179,60 @@ GeometryPtr MultiLineString::Clone() const {
 
 GeometryPtr MultiLineString::CloneEmpty() const {
     return Create();
+}
+
+std::string MultiLineString::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"MultiLineString\",\"coordinates\":[]}";
+    }
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < m_lines.size(); ++i) {
+        if (i > 0) oss << ",";
+        const auto& coords = m_lines[i]->GetCoordinates();
+        oss << "[";
+        for (size_t j = 0; j < coords.size(); ++j) {
+            if (j > 0) oss << ",";
+            if (IsMeasured()) {
+                oss << geojson::Coordinate4D(coords[j].x, coords[j].y, coords[j].z, coords[j].m, precision);
+            } else if (Is3D()) {
+                oss << geojson::Coordinate3D(coords[j].x, coords[j].y, coords[j].z, precision);
+            } else {
+                oss << geojson::Coordinate(coords[j].x, coords[j].y, precision);
+            }
+        }
+        oss << "]";
+    }
+    oss << "]";
+    
+    return geojson::MultiLineString(oss.str(), precision);
+}
+
+std::string MultiLineString::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:MultiCurve/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& line : m_lines) {
+        oss << gml::CurveMember(line->AsGML());
+    }
+    
+    return gml::MultiLineString(oss.str());
+}
+
+std::string MultiLineString::AsKML() const {
+    if (IsEmpty()) {
+        return "<MultiGeometry/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& line : m_lines) {
+        oss << line->AsKML();
+    }
+    
+    return kml::MultiGeometry(oss.str());
 }
 
 void MultiLineString::Apply(GeometryVisitor& visitor) {

@@ -1,5 +1,6 @@
 #include "ogc/multipolygon.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 
@@ -194,7 +195,23 @@ std::string MultiPolygon::AsText(int precision) const {
 }
 
 std::vector<uint8_t> MultiPolygon::AsBinary() const {
-    return std::vector<uint8_t>();
+    std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kMultiPolygon));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kMultiPolygon), Is3D(), IsMeasured());
+    wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(m_polygons.size()));
+    
+    for (const auto& polygon : m_polygons) {
+        auto polygonWkb = polygon->AsBinary();
+        wkb.insert(wkb.end(), polygonWkb.begin(), polygonWkb.end());
+    }
+    
+    return wkb;
 }
 
 GeometryPtr MultiPolygon::Clone() const {
@@ -208,6 +225,75 @@ GeometryPtr MultiPolygon::Clone() const {
 
 GeometryPtr MultiPolygon::CloneEmpty() const {
     return Create();
+}
+
+std::string MultiPolygon::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"MultiPolygon\",\"coordinates\":[]}";
+    }
+    
+    auto writeRing = [this, precision](std::ostringstream& oss, const LinearRing* ring) {
+        if (!ring) return;
+        const auto& coords = ring->GetCoordinates();
+        oss << "[";
+        for (size_t i = 0; i < coords.size(); ++i) {
+            if (i > 0) oss << ",";
+            if (IsMeasured()) {
+                oss << geojson::Coordinate4D(coords[i].x, coords[i].y, coords[i].z, coords[i].m, precision);
+            } else if (Is3D()) {
+                oss << geojson::Coordinate3D(coords[i].x, coords[i].y, coords[i].z, precision);
+            } else {
+                oss << geojson::Coordinate(coords[i].x, coords[i].y, precision);
+            }
+        }
+        oss << "]";
+    };
+    
+    auto writePolygon = [this, &writeRing, precision](std::ostringstream& oss, const Polygon* polygon) {
+        oss << "[";
+        writeRing(oss, polygon->GetExteriorRing());
+        for (size_t i = 0; i < polygon->GetNumInteriorRings(); ++i) {
+            oss << ",";
+            writeRing(oss, polygon->GetInteriorRingN(i));
+        }
+        oss << "]";
+    };
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < m_polygons.size(); ++i) {
+        if (i > 0) oss << ",";
+        writePolygon(oss, m_polygons[i].get());
+    }
+    oss << "]";
+    
+    return geojson::MultiPolygon(oss.str(), precision);
+}
+
+std::string MultiPolygon::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:MultiSurface/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& polygon : m_polygons) {
+        oss << gml::SurfaceMember(polygon->AsGML());
+    }
+    
+    return gml::MultiPolygon(oss.str());
+}
+
+std::string MultiPolygon::AsKML() const {
+    if (IsEmpty()) {
+        return "<MultiGeometry/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& polygon : m_polygons) {
+        oss << polygon->AsKML();
+    }
+    
+    return kml::MultiGeometry(oss.str());
 }
 
 void MultiPolygon::Apply(GeometryVisitor& visitor) {

@@ -135,6 +135,113 @@ TEST_F(ConnectionPoolTest, Shutdown) {
     EXPECT_FALSE(result.IsSuccess());
 }
 
+TEST_F(ConnectionPoolTest, ConnectionFailure_InvalidConnectionString) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 2;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    Result result = pool->Initialize(config, "invalid_connection_string");
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with invalid connection string";
+}
+
+TEST_F(ConnectionPoolTest, ConnectionFailure_EmptyConnectionString) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 2;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    Result result = pool->Initialize(config, "");
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with empty connection string";
+}
+
+TEST_F(ConnectionPoolTest, ReleaseInvalidConnection) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 2;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    Result result = pool->Release(nullptr);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail when releasing null connection";
+}
+
+TEST_F(ConnectionPoolTest, DoubleShutdown) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 2;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    pool->Shutdown();
+    pool->Shutdown();
+    
+    DbConnectionPtr conn;
+    Result result = pool->Acquire(conn);
+    EXPECT_FALSE(result.IsSuccess()) << "Pool should remain shutdown";
+}
+
+TEST_F(ConnectionPoolTest, ConcurrentAcquire_ThreadSafety) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 3;
+    config.acquireTimeoutMs = 5000;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    std::vector<std::thread> threads;
+    std::atomic<int> successCount{0};
+    std::atomic<int> failCount{0};
+    
+    for (int i = 0; i < 10; ++i) {
+        threads.emplace_back([&]() {
+            DbConnectionPtr conn;
+            if (pool->Acquire(conn).IsSuccess()) {
+                successCount++;
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                pool->Release(conn.get());
+            } else {
+                failCount++;
+            }
+        });
+    }
+    
+    for (auto& t : threads) {
+        t.join();
+    }
+    
+    EXPECT_GT(successCount, 0) << "At least some threads should succeed";
+}
+
+TEST_F(ConnectionPoolTest, AcquireAfterRelease) {
+    PoolConfig config;
+    config.minConnections = 1;
+    config.maxConnections = 1;
+    config.acquireTimeoutMs = 1000;
+    
+    auto pool = DbConnectionPool::Create();
+    ASSERT_NE(pool, nullptr);
+    
+    DbConnectionPtr conn1;
+    Result r1 = pool->Acquire(conn1);
+    if (!r1.IsSuccess()) return;
+    
+    pool->Release(conn1.get());
+    
+    DbConnectionPtr conn2;
+    Result r2 = pool->Acquire(conn2);
+    EXPECT_TRUE(r2.IsSuccess()) << "Should acquire after release";
+    
+    pool->Release(conn2.get());
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

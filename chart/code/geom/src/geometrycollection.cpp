@@ -3,6 +3,7 @@
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 #include <functional>
@@ -167,7 +168,23 @@ std::string GeometryCollection::AsText(int precision) const {
 }
 
 std::vector<uint8_t> GeometryCollection::AsBinary() const {
-    return std::vector<uint8_t>();
+    std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kGeometryCollection));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kGeometryCollection), Is3D(), IsMeasured());
+    wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(m_geometries.size()));
+    
+    for (const auto& geom : m_geometries) {
+        auto geomWkb = geom->AsBinary();
+        wkb.insert(wkb.end(), geomWkb.begin(), geomWkb.end());
+    }
+    
+    return wkb;
 }
 
 GeometryPtr GeometryCollection::Clone() const {
@@ -180,6 +197,46 @@ GeometryPtr GeometryCollection::Clone() const {
 
 GeometryPtr GeometryCollection::CloneEmpty() const {
     return Create();
+}
+
+std::string GeometryCollection::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"GeometryCollection\",\"geometries\":[]}";
+    }
+    
+    std::ostringstream oss;
+    for (size_t i = 0; i < m_geometries.size(); ++i) {
+        if (i > 0) oss << ",";
+        oss << m_geometries[i]->AsGeoJSON(precision);
+    }
+    
+    return geojson::GeometryCollection(oss.str());
+}
+
+std::string GeometryCollection::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:MultiGeometry/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& geom : m_geometries) {
+        oss << gml::GeometryMember(geom->AsGML());
+    }
+    
+    return gml::GeometryCollection(oss.str());
+}
+
+std::string GeometryCollection::AsKML() const {
+    if (IsEmpty()) {
+        return "<MultiGeometry/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& geom : m_geometries) {
+        oss << geom->AsKML();
+    }
+    
+    return kml::MultiGeometry(oss.str());
 }
 
 void GeometryCollection::Apply(GeometryVisitor& visitor) {

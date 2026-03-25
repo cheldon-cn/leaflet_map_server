@@ -13,16 +13,16 @@
 namespace ogc {
 
 /**
- * @brief 包络类，表示几何对象的最小边界矩�?MBR)
+ * @brief 包络类，表示几何对象的最小边界矩形（MBR）
  * 
- * 用于空间索引和快速空间关系判�?
+ * 用于空间索引和快速空间关系判断
  */
 class OGC_GEOM_API Envelope {
 public:
     Envelope() noexcept : m_isNull(true) {}
     
     /**
-     * @brief 从边界值构造包�?
+     * @brief 从边界值构造包络
      */
     Envelope(double minX, double minY, double maxX, double maxY) noexcept
         : m_minX(minX), m_minY(minY), m_maxX(maxX), m_maxY(maxY), m_isNull(false) {
@@ -30,14 +30,14 @@ public:
     }
     
     /**
-     * @brief 从两个坐标点构造包�?
+     * @brief 从两个坐标点构造包络
      */
     Envelope(const Coordinate& p1, const Coordinate& p2) noexcept
         : Envelope(std::min(p1.x, p2.x), std::min(p1.y, p2.y),
                    std::max(p1.x, p2.x), std::max(p1.y, p2.y)) {}
     
     /**
-     * @brief 从坐标列表构造包�?
+     * @brief 从坐标列表构造包络
      */
     explicit Envelope(const CoordinateList& coords) noexcept {
         ExpandToInclude(coords);
@@ -77,7 +77,7 @@ public:
     }
     
     /**
-     * @brief 获取中心�?
+     * @brief 获取包络中心坐标
      */
     Coordinate GetCentre() const noexcept {
         if (m_isNull) return Coordinate::Empty();
@@ -94,7 +94,7 @@ public:
     }
     
     /**
-     * @brief 扩展包络以包含指定坐�?
+     * @brief 扩展包络以包含指定坐标
      */
     void ExpandToInclude(const Coordinate& coord) noexcept {
         if (coord.IsEmpty()) return;
@@ -112,7 +112,7 @@ public:
     }
     
     /**
-     * @brief 扩展包络以包含坐标列�?
+     * @brief 扩展包络以包含坐标列表
      */
     void ExpandToInclude(const CoordinateList& coords) noexcept {
         for (const auto& coord : coords) {
@@ -121,7 +121,7 @@ public:
     }
     
     /**
-     * @brief 扩展包络以包含另一个包�?
+     * @brief 扩展包络以包含另一个包络
      */
     void ExpandToInclude(const Envelope& other) noexcept {
         if (other.m_isNull) return;
@@ -159,7 +159,7 @@ public:
     }
     
     /**
-     * @brief 判断是否包含另一个包�?
+     * @brief 判断是否包含另一个包络
      */
     bool Contains(const Envelope& other) const noexcept {
         if (m_isNull || other.m_isNull) return false;
@@ -169,7 +169,7 @@ public:
     }
     
     /**
-     * @brief 判断是否与另一个包络相�?
+     * @brief 判断是否与另一个包络相交
      */
     bool Intersects(const Envelope& other) const noexcept {
         if (m_isNull || other.m_isNull) return false;
@@ -179,7 +179,7 @@ public:
     }
     
     /**
-     * @brief 判断是否与另一个包络重�?
+     * @brief 判断是否与另一个包络重叠
      */
     bool Overlaps(const Envelope& other) const noexcept {
         return Intersects(other) && !Contains(other) && !other.Contains(*this);

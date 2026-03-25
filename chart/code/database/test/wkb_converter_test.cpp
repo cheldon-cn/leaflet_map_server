@@ -3,6 +3,10 @@
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
+#include "ogc/multipoint.h"
+#include "ogc/multilinestring.h"
+#include "ogc/multipolygon.h"
+#include "ogc/geometrycollection.h"
 #include "ogc/envelope.h"
 
 using namespace ogc;
@@ -149,6 +153,169 @@ TEST_F(WkbConverterTest, EmptyGeometry) {
     
     Result result = WkbConverter::GeometryToWkb(line.get(), wkb, options);
     EXPECT_TRUE(result.IsSuccess());
+}
+
+TEST_F(WkbConverterTest, InvalidWkbData) {
+    std::vector<uint8_t> invalidWkb = {0x00, 0x01, 0xFF, 0xFF};
+    std::unique_ptr<Geometry> geometry;
+    WkbOptions options;
+    
+    Result result = WkbConverter::WkbToGeometry(invalidWkb, geometry, options);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with invalid WKB data";
+}
+
+TEST_F(WkbConverterTest, EmptyWkbData) {
+    std::vector<uint8_t> emptyWkb;
+    std::unique_ptr<Geometry> geometry;
+    WkbOptions options;
+    
+    Result result = WkbConverter::WkbToGeometry(emptyWkb, geometry, options);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with empty WKB data";
+}
+
+TEST_F(WkbConverterTest, InvalidHexWkb) {
+    std::string invalidHex = "NOT_VALID_HEX";
+    std::unique_ptr<Geometry> geometry;
+    WkbOptions options;
+    
+    Result result = WkbConverter::HexWkbToGeometry(invalidHex, geometry, options);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with invalid hex string";
+}
+
+TEST_F(WkbConverterTest, EmptyHexWkb) {
+    std::string emptyHex;
+    std::unique_ptr<Geometry> geometry;
+    WkbOptions options;
+    
+    Result result = WkbConverter::HexWkbToGeometry(emptyHex, geometry, options);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with empty hex string";
+}
+
+TEST_F(WkbConverterTest, NullGeometryToHexWkb) {
+    std::string hexWkb;
+    WkbOptions options;
+    
+    Result result = WkbConverter::GeometryToHexWkb(nullptr, hexWkb, options);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with null geometry";
+}
+
+TEST_F(WkbConverterTest, LargeCoordinateBoundary) {
+    auto point = Point::Create(1e10, -1e10);
+    point->SetSRID(4326);
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    
+    Result result = WkbConverter::GeometryToWkb(point.get(), wkb, options);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle large coordinates";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+}
+
+TEST_F(WkbConverterTest, ZeroCoordinateBoundary) {
+    auto point = Point::Create(0.0, 0.0);
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    
+    Result result = WkbConverter::GeometryToWkb(point.get(), wkb, options);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle zero coordinates";
+}
+
+TEST_F(WkbConverterTest, BigEndianOption) {
+    auto point = Point::Create(1.0, 2.0);
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    options.bigEndian = true;
+    
+    Result result = WkbConverter::GeometryToWkb(point.get(), wkb, options);
+    EXPECT_TRUE(result.IsSuccess()) << "Should support big endian";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+}
+
+TEST_F(WkbConverterTest, MultiPointConversion) {
+    auto mp = MultiPoint::Create();
+    mp->AddPoint(Point::Create(1.0, 2.0));
+    mp->AddPoint(Point::Create(3.0, 4.0));
+    mp->SetSRID(4326);
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    options.includeSRID = true;
+    
+    Result toResult = WkbConverter::GeometryToWkb(mp.get(), wkb, options);
+    ASSERT_TRUE(toResult.IsSuccess()) << "Should convert MultiPoint";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kMultiPoint);
+}
+
+TEST_F(WkbConverterTest, MultiLineStringConversion) {
+    auto ml = MultiLineString::Create();
+    
+    CoordinateList coords1 = {{0, 0}, {1, 1}};
+    auto line1 = LineString::Create(coords1);
+    ml->AddLineString(std::move(line1));
+    
+    CoordinateList coords2 = {{2, 2}, {3, 3}};
+    auto line2 = LineString::Create(coords2);
+    ml->AddLineString(std::move(line2));
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    
+    Result toResult = WkbConverter::GeometryToWkb(ml.get(), wkb, options);
+    ASSERT_TRUE(toResult.IsSuccess()) << "Should convert MultiLineString";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kMultiLineString);
+}
+
+TEST_F(WkbConverterTest, MultiPolygonConversion) {
+    auto mp = MultiPolygon::Create();
+    
+    CoordinateList coords1 = {{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 0}};
+    auto ring1 = LinearRing::Create(coords1, true);
+    auto poly1 = Polygon::Create(std::move(ring1));
+    mp->AddPolygon(std::move(poly1));
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    
+    Result toResult = WkbConverter::GeometryToWkb(mp.get(), wkb, options);
+    ASSERT_TRUE(toResult.IsSuccess()) << "Should convert MultiPolygon";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kMultiPolygon);
+}
+
+TEST_F(WkbConverterTest, GeometryCollectionConversion) {
+    auto gc = GeometryCollection::Create();
+    gc->AddGeometry(Point::Create(1.0, 2.0));
+    gc->AddGeometry(LineString::Create({{0, 0}, {1, 1}}));
+    
+    std::vector<uint8_t> wkb;
+    WkbOptions options;
+    
+    Result toResult = WkbConverter::GeometryToWkb(gc.get(), wkb, options);
+    ASSERT_TRUE(toResult.IsSuccess()) << "Should convert GeometryCollection";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result fromResult = WkbConverter::WkbToGeometry(wkb, geometry, options);
+    ASSERT_TRUE(fromResult.IsSuccess());
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kGeometryCollection);
 }
 
 int main(int argc, char** argv) {

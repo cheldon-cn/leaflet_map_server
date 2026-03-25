@@ -4,7 +4,9 @@
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
 #include "ogc/multipoint.h"
+#include "ogc/multilinestring.h"
 #include "ogc/multipolygon.h"
+#include "ogc/geometrycollection.h"
 
 using namespace ogc;
 using namespace ogc::db;
@@ -170,4 +172,164 @@ TEST_F(GeoJsonConverterTest, NullGeometryToJson) {
     std::string json;
     Result result = GeoJsonConverter::GeometryToJson(nullptr, json);
     EXPECT_FALSE(result.IsSuccess());
+}
+
+TEST_F(GeoJsonConverterTest, EmptyJsonString) {
+    std::string json;
+    std::unique_ptr<Geometry> geometry;
+    
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with empty JSON string";
+}
+
+TEST_F(GeoJsonConverterTest, MissingTypeField) {
+    std::string json = "{\"coordinates\":[1.0,2.0]}";
+    std::unique_ptr<Geometry> geometry;
+    
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with missing type field";
+}
+
+TEST_F(GeoJsonConverterTest, InvalidGeometryType) {
+    std::string json = "{\"type\":\"InvalidType\",\"coordinates\":[1.0,2.0]}";
+    std::unique_ptr<Geometry> geometry;
+    
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with invalid geometry type";
+}
+
+TEST_F(GeoJsonConverterTest, MissingCoordinatesField) {
+    std::string json = "{\"type\":\"Point\"}";
+    std::unique_ptr<Geometry> geometry;
+    
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with missing coordinates";
+}
+
+TEST_F(GeoJsonConverterTest, MalformedCoordinates) {
+    std::string json = "{\"type\":\"Point\",\"coordinates\":\"not_an_array\"}";
+    std::unique_ptr<Geometry> geometry;
+    
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_FALSE(result.IsSuccess()) << "Should fail with malformed coordinates";
+}
+
+TEST_F(GeoJsonConverterTest, MultiLineStringToJson) {
+    auto ml = MultiLineString::Create();
+    
+    CoordinateList coords1 = {{0, 0}, {1, 1}};
+    auto line1 = LineString::Create(coords1);
+    ml->AddLineString(std::move(line1));
+    
+    CoordinateList coords2 = {{2, 2}, {3, 3}};
+    auto line2 = LineString::Create(coords2);
+    ml->AddLineString(std::move(line2));
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(ml.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should convert MultiLineString";
+    EXPECT_NE(json.find("MultiLineString"), std::string::npos);
+}
+
+TEST_F(GeoJsonConverterTest, MultiLineStringFromJson) {
+    std::string json = "{\"type\":\"MultiLineString\",\"coordinates\":[[[0,0],[1,1]],[[2,2],[3,3]]]}";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_TRUE(result.IsSuccess()) << "Should parse MultiLineString";
+    ASSERT_NE(geometry, nullptr);
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kMultiLineString);
+}
+
+TEST_F(GeoJsonConverterTest, GeometryCollectionToJson) {
+    auto gc = GeometryCollection::Create();
+    gc->AddGeometry(Point::Create(1.0, 2.0));
+    gc->AddGeometry(LineString::Create({{0, 0}, {1, 1}}));
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(gc.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should convert GeometryCollection";
+    EXPECT_NE(json.find("GeometryCollection"), std::string::npos);
+}
+
+TEST_F(GeoJsonConverterTest, GeometryCollectionFromJson) {
+    std::string json = "{\"type\":\"GeometryCollection\",\"geometries\":[{\"type\":\"Point\",\"coordinates\":[1,2]},{\"type\":\"LineString\",\"coordinates\":[[0,0],[1,1]]}]}";
+    
+    std::unique_ptr<Geometry> geometry;
+    Result result = GeoJsonConverter::GeometryFromJson(json, geometry);
+    EXPECT_TRUE(result.IsSuccess()) << "Should parse GeometryCollection";
+    ASSERT_NE(geometry, nullptr);
+    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kGeometryCollection);
+}
+
+TEST_F(GeoJsonConverterTest, EmptyGeometryToJson) {
+    auto line = LineString::Create();
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(line.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle empty geometry";
+}
+
+TEST_F(GeoJsonConverterTest, LargeCoordinateValues) {
+    auto point = Point::Create(1e10, -1e10);
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(point.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle large coordinate values";
+}
+
+TEST_F(GeoJsonConverterTest, ZeroCoordinateValues) {
+    auto point = Point::Create(0.0, 0.0);
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(point.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle zero coordinate values";
+}
+
+TEST_F(GeoJsonConverterTest, NegativePrecision) {
+    auto point = Point::Create(1.123456, 2.987654);
+    
+    std::string json;
+    GeoJsonOptions options;
+    options.precision = -1;
+    
+    Result result = GeoJsonConverter::GeometryToJson(point.get(), json, options);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle negative precision";
+}
+
+TEST_F(GeoJsonConverterTest, VeryHighPrecision) {
+    auto point = Point::Create(1.123456789012345, 2.987654321098765);
+    
+    std::string json;
+    GeoJsonOptions options;
+    options.precision = 15;
+    
+    Result result = GeoJsonConverter::GeometryToJson(point.get(), json, options);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle high precision";
+}
+
+TEST_F(GeoJsonConverterTest, PolygonWithHoles) {
+    CoordinateList exteriorCoords = {{0, 0}, {10, 0}, {10, 10}, {0, 10}, {0, 0}};
+    auto exterior = LinearRing::Create(exteriorCoords, true);
+    auto polygon = Polygon::Create(std::move(exterior));
+    
+    CoordinateList holeCoords = {{2, 2}, {8, 2}, {8, 8}, {2, 8}, {2, 2}};
+    auto hole = LinearRing::Create(holeCoords, true);
+    polygon->AddInteriorRing(std::move(hole));
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(polygon.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should convert polygon with holes";
+}
+
+TEST_F(GeoJsonConverterTest, NestedGeometryCollection) {
+    auto outer = GeometryCollection::Create();
+    auto inner = GeometryCollection::Create();
+    inner->AddGeometry(Point::Create(1.0, 2.0));
+    outer->AddGeometry(std::move(inner));
+    outer->AddGeometry(Point::Create(3.0, 4.0));
+    
+    std::string json;
+    Result result = GeoJsonConverter::GeometryToJson(outer.get(), json);
+    EXPECT_TRUE(result.IsSuccess()) << "Should handle nested GeometryCollection";
 }

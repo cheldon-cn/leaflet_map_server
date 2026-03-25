@@ -1,7 +1,10 @@
 #include "ogc/spatial_index.h"
+#include "ogc/point.h"
 #include <algorithm>
 #include <queue>
 #include <cmath>
+#include <memory>
+#include <string>
 
 namespace ogc {
 
@@ -387,6 +390,8 @@ void RTree<T>::Reinsert(Node* node, size_t level) {
 
 template class RTree<Geometry*>;
 template class RTree<size_t>;
+template class RTree<int>;
+template class RTree<std::shared_ptr<Point>>;
 
 template<typename T>
 Quadtree<T>::Quadtree(const Config& config) : m_config(config) {
@@ -476,6 +481,8 @@ size_t Quadtree<T>::GetSerializedSize() const noexcept {
 
 template class Quadtree<Geometry*>;
 template class Quadtree<size_t>;
+template class Quadtree<int>;
+template class Quadtree<std::string>;
 
 template<typename T>
 GridIndex<T>::GridIndex(const Config& config) : m_config(config) {
@@ -582,5 +589,6 @@ std::pair<size_t, size_t> GridIndex<T>::GetCellIndices(const Coordinate& coord) 
 
 template class GridIndex<Geometry*>;
 template class GridIndex<size_t>;
+template class GridIndex<int>;
 
 }

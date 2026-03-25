@@ -29,6 +29,14 @@ set(TEST_SOURCES
 
 add_executable(ogc_layer_tests ${TEST_SOURCES})
 
+set_target_properties(ogc_layer_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test"
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED ON
+)
+
 target_link_libraries(ogc_layer_tests
     ogc_layer
     ogc_geometry

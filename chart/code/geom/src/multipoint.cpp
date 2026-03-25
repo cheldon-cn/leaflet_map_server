@@ -1,5 +1,6 @@
 #include "ogc/multipoint.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -167,7 +168,23 @@ std::string MultiPoint::AsText(int precision) const {
 }
 
 std::vector<uint8_t> MultiPoint::AsBinary() const {
-    return std::vector<uint8_t>();
+    std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kMultiPoint));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kMultiPoint), Is3D(), IsMeasured());
+    wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(m_points.size()));
+    
+    for (const auto& point : m_points) {
+        auto pointWkb = point->AsBinary();
+        wkb.insert(wkb.end(), pointWkb.begin(), pointWkb.end());
+    }
+    
+    return wkb;
 }
 
 GeometryPtr MultiPoint::Clone() const {
@@ -180,6 +197,55 @@ GeometryPtr MultiPoint::Clone() const {
 
 GeometryPtr MultiPoint::CloneEmpty() const {
     return Create();
+}
+
+std::string MultiPoint::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"MultiPoint\",\"coordinates\":[]}";
+    }
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < m_points.size(); ++i) {
+        if (i > 0) oss << ",";
+        const auto& coord = m_points[i]->GetCoordinate();
+        if (IsMeasured()) {
+            oss << geojson::Coordinate4D(coord.x, coord.y, coord.z, coord.m, precision);
+        } else if (Is3D()) {
+            oss << geojson::Coordinate3D(coord.x, coord.y, coord.z, precision);
+        } else {
+            oss << geojson::Coordinate(coord.x, coord.y, precision);
+        }
+    }
+    oss << "]";
+    
+    return geojson::MultiPoint(oss.str(), precision);
+}
+
+std::string MultiPoint::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:MultiPoint/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& point : m_points) {
+        oss << gml::PointMember(point->AsGML());
+    }
+    
+    return gml::MultiPoint(oss.str());
+}
+
+std::string MultiPoint::AsKML() const {
+    if (IsEmpty()) {
+        return "<MultiGeometry/>";
+    }
+    
+    std::ostringstream oss;
+    for (const auto& point : m_points) {
+        oss << point->AsKML();
+    }
+    
+    return kml::MultiGeometry(oss.str());
 }
 
 void MultiPoint::Apply(GeometryVisitor& visitor) {

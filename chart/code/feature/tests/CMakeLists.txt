@@ -17,6 +17,12 @@ add_executable(ogc_feature_tests
     test_feature_collection.cpp
 )
 
+set_target_properties(ogc_feature_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test"
+)
+
 target_link_libraries(ogc_feature_tests
     PRIVATE
         ogc_feature

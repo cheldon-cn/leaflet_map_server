@@ -1,5 +1,6 @@
 #include "ogc/linestring.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 #include <cmath>
@@ -345,6 +346,20 @@ std::string LineString::AsText(int precision) const {
 
 std::vector<uint8_t> LineString::AsBinary() const {
     std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kLineString));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kLineString), Is3D(), IsMeasured());
+    wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(m_coords.size()));
+    
+    for (const auto& coord : m_coords) {
+        wkb::WriteCoordinate(wkb, coord.x, coord.y, coord.z, coord.m, Is3D(), IsMeasured());
+    }
+    
     return wkb;
 }
 
@@ -400,6 +415,67 @@ double LineString::PointToLineDistance(const Coordinate& point,
     double t = ProjectPointOnSegment(point, lineStart, lineEnd);
     Coordinate proj = InterpolateOnSegment(t, lineStart, lineEnd);
     return point.Distance(proj);
+}
+
+std::string LineString::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"LineString\",\"coordinates\":[]}";
+    }
+    
+    std::ostringstream oss;
+    oss << "[";
+    for (size_t i = 0; i < m_coords.size(); ++i) {
+        if (i > 0) oss << ",";
+        if (IsMeasured()) {
+            oss << geojson::Coordinate4D(m_coords[i].x, m_coords[i].y, m_coords[i].z, m_coords[i].m, precision);
+        } else if (Is3D()) {
+            oss << geojson::Coordinate3D(m_coords[i].x, m_coords[i].y, m_coords[i].z, precision);
+        } else {
+            oss << geojson::Coordinate(m_coords[i].x, m_coords[i].y, precision);
+        }
+    }
+    oss << "]";
+    
+    return geojson::LineString(oss.str(), precision);
+}
+
+std::string LineString::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:LineString/>";
+    }
+    
+    std::ostringstream oss;
+    for (size_t i = 0; i < m_coords.size(); ++i) {
+        if (i > 0) oss << " ";
+        if (Is3D()) {
+            oss << gml::Number(m_coords[i].x) << " " 
+                << gml::Number(m_coords[i].y) << " " 
+                << gml::Number(m_coords[i].z);
+        } else {
+            oss << gml::Number(m_coords[i].x) << " " 
+                << gml::Number(m_coords[i].y);
+        }
+    }
+    
+    return gml::LineString(oss.str());
+}
+
+std::string LineString::AsKML() const {
+    if (IsEmpty()) {
+        return "<LineString/>";
+    }
+    
+    std::ostringstream oss;
+    for (size_t i = 0; i < m_coords.size(); ++i) {
+        if (i > 0) oss << " ";
+        if (Is3D()) {
+            oss << kml::Coordinate3D(m_coords[i].x, m_coords[i].y, m_coords[i].z);
+        } else {
+            oss << kml::Coordinate(m_coords[i].x, m_coords[i].y);
+        }
+    }
+    
+    return kml::LineString(oss.str());
 }
 
 void LineString::Apply(GeometryVisitor& visitor) {

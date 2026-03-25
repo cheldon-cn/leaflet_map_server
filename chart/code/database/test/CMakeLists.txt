@@ -29,7 +29,13 @@ set(TEST_SOURCES
 
 add_executable(ogc_database_test ${TEST_SOURCES})
 
-target_compile_definitions(ogc_database_test PRIVATE OGC_DATABASE_STATIC)
+set_target_properties(ogc_database_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test"
+)
+
+target_compile_definitions(ogc_database_test PRIVATE OGC_DATABASE_EXPORTS)
 
 target_link_libraries(ogc_database_test PRIVATE
     ogc_database

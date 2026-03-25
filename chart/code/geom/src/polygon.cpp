@@ -1,5 +1,6 @@
 #include "ogc/polygon.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 
@@ -285,6 +286,33 @@ std::string Polygon::AsText(int precision) const {
 
 std::vector<uint8_t> Polygon::AsBinary() const {
     std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kPolygon));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kPolygon), Is3D(), IsMeasured());
+    
+    uint32_t numRings = 1 + static_cast<uint32_t>(m_interiorRings.size());
+    wkb::WriteUInt32LE(wkb, numRings);
+    
+    auto writeRing = [this](std::vector<uint8_t>& wkb, const LinearRing* ring) {
+        if (!ring) return;
+        const auto& coords = ring->GetCoordinates();
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(coords.size()));
+        for (const auto& coord : coords) {
+            wkb::WriteCoordinate(wkb, coord.x, coord.y, coord.z, coord.m, Is3D(), IsMeasured());
+        }
+    };
+    
+    writeRing(wkb, m_exteriorRing.get());
+    
+    for (const auto& ring : m_interiorRings) {
+        writeRing(wkb, ring.get());
+    }
+    
     return wkb;
 }
 
@@ -313,6 +341,115 @@ Envelope Polygon::ComputeEnvelope() const {
 Coordinate Polygon::ComputeCentroid() const {
     if (!m_exteriorRing) return Coordinate::Empty();
     return m_exteriorRing->GetCentroid();
+}
+
+std::string Polygon::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"Polygon\",\"coordinates\":[]}";
+    }
+    
+    auto writeRing = [this, precision](std::ostringstream& oss, const LinearRing* ring) {
+        if (!ring) return;
+        const auto& coords = ring->GetCoordinates();
+        oss << "[";
+        for (size_t i = 0; i < coords.size(); ++i) {
+            if (i > 0) oss << ",";
+            if (IsMeasured()) {
+                oss << geojson::Coordinate4D(coords[i].x, coords[i].y, coords[i].z, coords[i].m, precision);
+            } else if (Is3D()) {
+                oss << geojson::Coordinate3D(coords[i].x, coords[i].y, coords[i].z, precision);
+            } else {
+                oss << geojson::Coordinate(coords[i].x, coords[i].y, precision);
+            }
+        }
+        oss << "]";
+    };
+    
+    std::ostringstream oss;
+    oss << "[";
+    writeRing(oss, m_exteriorRing.get());
+    for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+        oss << ",";
+        writeRing(oss, m_interiorRings[i].get());
+    }
+    oss << "]";
+    
+    return geojson::Polygon(oss.str(), precision);
+}
+
+std::string Polygon::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:Polygon/>";
+    }
+    
+    auto writeRingPosList = [this](std::ostringstream& oss, const LinearRing* ring) {
+        if (!ring) return;
+        const auto& coords = ring->GetCoordinates();
+        for (size_t i = 0; i < coords.size(); ++i) {
+            if (i > 0) oss << " ";
+            if (Is3D()) {
+                oss << gml::Number(coords[i].x) << " " 
+                    << gml::Number(coords[i].y) << " " 
+                    << gml::Number(coords[i].z);
+            } else {
+                oss << gml::Number(coords[i].x) << " " 
+                    << gml::Number(coords[i].y);
+            }
+        }
+    };
+    
+    std::ostringstream exterior;
+    writeRingPosList(exterior, m_exteriorRing.get());
+    
+    std::string interior;
+    if (!m_interiorRings.empty()) {
+        std::ostringstream intOss;
+        for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+            std::ostringstream ringOss;
+            writeRingPosList(ringOss, m_interiorRings[i].get());
+            if (i > 0) intOss << " ";
+            intOss << ringOss.str();
+        }
+        interior = intOss.str();
+    }
+    
+    return gml::Polygon(exterior.str(), interior);
+}
+
+std::string Polygon::AsKML() const {
+    if (IsEmpty()) {
+        return "<Polygon/>";
+    }
+    
+    auto writeRingCoords = [this](std::ostringstream& oss, const LinearRing* ring) {
+        if (!ring) return;
+        const auto& coords = ring->GetCoordinates();
+        for (size_t i = 0; i < coords.size(); ++i) {
+            if (i > 0) oss << " ";
+            if (Is3D()) {
+                oss << kml::Coordinate3D(coords[i].x, coords[i].y, coords[i].z);
+            } else {
+                oss << kml::Coordinate(coords[i].x, coords[i].y);
+            }
+        }
+    };
+    
+    std::ostringstream exterior;
+    writeRingCoords(exterior, m_exteriorRing.get());
+    
+    std::string interior;
+    if (!m_interiorRings.empty()) {
+        std::ostringstream intOss;
+        for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+            std::ostringstream ringOss;
+            writeRingCoords(ringOss, m_interiorRings[i].get());
+            if (i > 0) intOss << " ";
+            intOss << ringOss.str();
+        }
+        interior = intOss.str();
+    }
+    
+    return kml::Polygon(exterior.str(), interior);
 }
 
 void Polygon::Apply(GeometryVisitor& visitor) {

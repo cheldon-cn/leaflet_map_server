@@ -1,5 +1,6 @@
 #include "ogc/point.h"
 #include "ogc/visitor.h"
+#include "ogc/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 
@@ -159,6 +160,16 @@ std::string Point::AsText(int precision) const {
 
 std::vector<uint8_t> Point::AsBinary() const {
     std::vector<uint8_t> wkb;
+    
+    if (IsEmpty()) {
+        wkb::WriteUInt32LE(wkb, static_cast<uint32_t>(GeomType::kPoint));
+        return wkb;
+    }
+    
+    wkb::WriteByteOrder(wkb);
+    wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kPoint), Is3D(), IsMeasured());
+    wkb::WriteCoordinate(wkb, m_coord.x, m_coord.y, m_coord.z, m_coord.m, Is3D(), IsMeasured());
+    
     return wkb;
 }
 
@@ -173,6 +184,53 @@ GeometryPtr Point::CloneEmpty() const {
 Envelope Point::ComputeEnvelope() const {
     if (IsEmpty()) return Envelope();
     return Envelope(m_coord, m_coord);
+}
+
+std::string Point::AsGeoJSON(int precision) const {
+    if (IsEmpty()) {
+        return "{\"type\":\"Point\",\"coordinates\":[]}";
+    }
+    
+    std::string coords;
+    if (IsMeasured()) {
+        coords = geojson::Coordinate4D(m_coord.x, m_coord.y, m_coord.z, m_coord.m, precision);
+    } else if (Is3D()) {
+        coords = geojson::Coordinate3D(m_coord.x, m_coord.y, m_coord.z, precision);
+    } else {
+        coords = geojson::Coordinate(m_coord.x, m_coord.y, precision);
+    }
+    
+    return geojson::Point(coords, precision);
+}
+
+std::string Point::AsGML() const {
+    if (IsEmpty()) {
+        return "<gml:Point/>";
+    }
+    
+    std::string pos;
+    if (Is3D()) {
+        pos = gml::Pos3D(m_coord.x, m_coord.y, m_coord.z);
+    } else {
+        pos = gml::Pos(m_coord.x, m_coord.y);
+    }
+    
+    return gml::Point(pos);
+}
+
+std::string Point::AsKML() const {
+    if (IsEmpty()) {
+        return "<Point/>";
+    }
+    
+    std::string coords;
+    if (Is3D()) {
+        coords = kml::Coordinate3D(m_coord.x, m_coord.y, m_coord.z);
+    } else {
+        coords = kml::Coordinate(m_coord.x, m_coord.y);
+    }
+    
+    return kml::Point(coords);
 }
 
 void Point::Apply(GeometryVisitor& visitor) {
