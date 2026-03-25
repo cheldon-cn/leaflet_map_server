@@ -7,6 +7,7 @@
 
 #include "geometry.h"
 #include "envelope.h"
+#include "export.h"
 #include <vector>
 #include <functional>
 #include <memory>
@@ -65,7 +66,7 @@ public:
  * @tparam T 索引项类
  */
 template<typename T>
-class RTree : public ISpatialIndex<T> {
+class OGC_GEOM_API RTree : public ISpatialIndex<T> {
 public:
     enum class SplitStrategy {
         Linear,
@@ -140,7 +141,7 @@ private:
  * @tparam T 索引项类
  */
 template<typename T>
-class Quadtree : public ISpatialIndex<T> {
+class OGC_GEOM_API Quadtree : public ISpatialIndex<T> {
 public:
     struct Config {
         size_t maxItemsPerNode = 16;
@@ -187,7 +188,7 @@ private:
  * @tparam T 索引项类
  */
 template<typename T>
-class GridIndex : public ISpatialIndex<T> {
+class OGC_GEOM_API GridIndex : public ISpatialIndex<T> {
 public:
     struct Config {
         size_t gridX = 100;

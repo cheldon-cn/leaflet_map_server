@@ -1,13 +1,14 @@
 #ifndef OGC_DRAW_TRANSFORM_MATRIX_H
 #define OGC_DRAW_TRANSFORM_MATRIX_H
 
+#include "export.h"
 #include <array>
 #include <cmath>
 
 namespace ogc {
 namespace draw {
 
-class TransformMatrix {
+class OGC_GRAPH_API TransformMatrix {
 public:
     TransformMatrix();
     TransformMatrix(double m00, double m01, double m02,

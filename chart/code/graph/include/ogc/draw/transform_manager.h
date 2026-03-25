@@ -2,6 +2,7 @@
 #define OGC_DRAW_TRANSFORM_MANAGER_H
 
 #include "ogc/draw/coordinate_transformer.h"
+#include "export.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -13,7 +14,7 @@ namespace draw {
 class TransformManager;
 typedef std::shared_ptr<TransformManager> TransformManagerPtr;
 
-class TransformManager {
+class OGC_GRAPH_API TransformManager {
 public:
     ~TransformManager() = default;
     
