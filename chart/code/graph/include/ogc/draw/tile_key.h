@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_TILE_KEY_H
 #define OGC_DRAW_TILE_KEY_H
 
+#include "ogc/draw/export.h"
 #include "ogc/envelope.h"
 #include <cstdint>
 #include <string>
@@ -95,7 +96,7 @@ struct TileKey {
 class TilePyramid;
 typedef std::shared_ptr<TilePyramid> TilePyramidPtr;
 
-class TilePyramid {
+class OGC_GRAPH_API TilePyramid {
 public:
     TilePyramid();
     explicit TilePyramid(const std::string& name);

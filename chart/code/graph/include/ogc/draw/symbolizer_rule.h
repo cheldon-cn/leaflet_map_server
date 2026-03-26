@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_SYMBOLIZER_RULE_H
 #define OGC_DRAW_SYMBOLIZER_RULE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/filter.h"
 #include "ogc/draw/symbolizer.h"
 #include "ogc/envelope.h"
@@ -14,7 +15,7 @@ namespace draw {
 class SymbolizerRule;
 typedef std::shared_ptr<SymbolizerRule> SymbolizerRulePtr;
 
-class SymbolizerRule {
+class OGC_GRAPH_API SymbolizerRule {
 public:
     SymbolizerRule();
     explicit SymbolizerRule(const std::string& name);

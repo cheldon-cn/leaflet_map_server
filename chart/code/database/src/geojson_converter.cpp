@@ -347,6 +347,67 @@ Result GeoJsonConverter::ReadGeometry(const std::string& json, size_t& pos, std:
     ++pos;
     
     SkipWhitespace(json, pos);
+    
+    if (type == kGeoJsonTypeGeometryCollection) {
+        if (!MatchString(json, pos, "\"geometries\"")) {
+            return Result::Error(DbResult::kInvalidGeometry, "Invalid GeoJSON: missing geometries for GeometryCollection");
+        }
+        
+        SkipWhitespace(json, pos);
+        if (pos >= json.length() || json[pos] != ':') {
+            return Result::Error(DbResult::kInvalidGeometry, "Invalid GeoJSON: expected :");
+        }
+        ++pos;
+        
+        SkipWhitespace(json, pos);
+        if (pos >= json.length() || json[pos] != '[') {
+            return Result::Error(DbResult::kInvalidGeometry, "Expected [ for geometries array");
+        }
+        ++pos;
+        
+        auto collection = GeometryCollection::Create();
+        
+        SkipWhitespace(json, pos);
+        if (pos < json.length() && json[pos] != ']') {
+            while (true) {
+                SkipWhitespace(json, pos);
+                if (pos >= json.length() || json[pos] != '{') {
+                    return Result::Error(DbResult::kInvalidGeometry, "Expected { for geometry in collection");
+                }
+                ++pos;
+                
+                std::unique_ptr<Geometry> geom;
+                Result result = ReadGeometry(json, pos, geom);
+                if (!result.IsSuccess()) return result;
+                
+                SkipWhitespace(json, pos);
+                if (pos >= json.length() || json[pos] != '}') {
+                    return Result::Error(DbResult::kInvalidGeometry, "Expected } after geometry in collection");
+                }
+                ++pos;
+                
+                if (geom) {
+                    collection->AddGeometry(std::move(geom));
+                }
+                
+                SkipWhitespace(json, pos);
+                if (pos < json.length() && json[pos] == ',') {
+                    ++pos;
+                } else if (pos < json.length() && json[pos] == ']') {
+                    ++pos;
+                    break;
+                } else {
+                    return Result::Error(DbResult::kInvalidGeometry, "Invalid geometries array");
+                }
+            }
+        } else if (pos < json.length() && json[pos] == ']') {
+            ++pos;
+        }
+        
+        geometry = std::move(collection);
+        return Result::Success();
+    }
+    
     if (!MatchString(json, pos, "\"coordinates\"")) {
         return Result::Error(DbResult::kInvalidGeometry, "Invalid GeoJSON: missing coordinates");
     }
@@ -389,6 +450,72 @@ Result GeoJsonConverter::ReadGeometry(const std::string& json, size_t& pos, std:
         }
         
         geometry = std::move(poly);
+    }
+    else if (type == kGeoJsonTypeMultiPoint) {
+        CoordinateList coords;
+        Result result = ReadCoordinateArray(json, pos, coords);
+        if (!result.IsSuccess()) return result;
+        
+        auto mp = MultiPoint::Create();
+        for (const auto& coord : coords) {
+            mp->AddPoint(Point::Create(coord));
+        }
+        geometry = std::move(mp);
+    }
+    else if (type == kGeoJsonTypeMultiLineString) {
+        std::vector<std::vector<Coordinate>> lineCoords;
+        Result result = ReadPolygonCoordinates(json, pos, lineCoords);
+        if (!result.IsSuccess()) return result;
+        
+        auto ml = MultiLineString::Create();
+        for (const auto& coords : lineCoords) {
+            ml->AddLineString(LineString::Create(coords));
+        }
+        geometry = std::move(ml);
+    }
+    else if (type == kGeoJsonTypeMultiPolygon) {
+        SkipWhitespace(json, pos);
+        if (pos >= json.length() || json[pos] != '[') {
+            return Result::Error(DbResult::kInvalidGeometry, "Expected [ for MultiPolygon");
+        }
+        ++pos;
+        
+        auto mp = MultiPolygon::Create();
+        
+        SkipWhitespace(json, pos);
+        if (pos < json.length() && json[pos] != ']') {
+            while (true) {
+                std::vector<std::vector<Coordinate>> rings;
+                Result result = ReadPolygonCoordinates(json, pos, rings);
+                if (!result.IsSuccess()) return result;
+                
+                if (!rings.empty()) {
+                    auto exterior = LinearRing::Create(rings[0], true);
+                    auto poly = Polygon::Create(std::move(exterior));
+                    
+                    for (size_t i = 1; i < rings.size(); ++i) {
+                        auto interior = LinearRing::Create(rings[i], true);
+                        poly->AddInteriorRing(std::move(interior));
+                    }
+                    
+                    mp->AddPolygon(std::move(poly));
+                }
+                
+                SkipWhitespace(json, pos);
+                if (pos < json.length() && json[pos] == ',') {
+                    ++pos;
+                } else if (pos < json.length() && json[pos] == ']') {
+                    ++pos;
+                    break;
+                } else {
+                    return Result::Error(DbResult::kInvalidGeometry, "Invalid MultiPolygon");
+                }
+            }
+        } else if (pos < json.length() && json[pos] == ']') {
+            ++pos;
+        }
+        
+        geometry = std::move(mp);
     }
     else {
         return Result::Error(DbResult::kNotSupported, "Unsupported GeoJSON type: " + type);

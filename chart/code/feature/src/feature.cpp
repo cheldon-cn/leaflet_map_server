@@ -349,12 +349,17 @@ GeometryPtr CNFeature::StealGeometry(size_t index) {
 }
 
 std::unique_ptr<Envelope> CNFeature::GetEnvelope() const {
+    bool hasGeometry = false;
     Envelope result;
     for (const auto& geom : impl_->geometries_) {
         if (geom) {
+            hasGeometry = true;
             const Envelope& geom_env = geom->GetEnvelope();
             result.ExpandToInclude(geom_env);
         }
+    }
+    if (!hasGeometry) {
+        return nullptr;
     }
     return std::unique_ptr<Envelope>(new Envelope(result));
 }

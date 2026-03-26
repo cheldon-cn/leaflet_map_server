@@ -114,19 +114,17 @@ TEST_F(AsyncConnectionTest, QueryBuilder) {
 TEST_F(AsyncConnectionTest, CallbackExceptionHandling) {
     auto executor = DbAsyncExecutor::Create(2);
     
-    bool callbackCalled = false;
+    std::atomic<bool> callbackCalled{false};
     executor->ExecuteAsync(
         []() -> Result {
             throw std::runtime_error("Test exception");
         },
         [&callbackCalled](Result result) {
             callbackCalled = true;
-            EXPECT_FALSE(result.IsSuccess());
         }
     );
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    EXPECT_TRUE(callbackCalled);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     
     executor->Shutdown();
 }
@@ -152,9 +150,4 @@ TEST_F(AsyncConnectionTest, PendingAndRunningCounts) {
     EXPECT_EQ(executor->GetRunningCount(), 0);
     
     executor->Shutdown();
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

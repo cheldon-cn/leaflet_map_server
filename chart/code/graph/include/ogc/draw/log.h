@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LOG_H
 #define OGC_DRAW_LOG_H
 
+#include "ogc/draw/export.h"
 #include <string>
 #include <fstream>
 #include <mutex>
@@ -19,7 +20,7 @@ enum class LogLevel {
     kNone = 6
 };
 
-class Logger {
+class OGC_GRAPH_API Logger {
 public:
     static Logger& Instance();
     
@@ -61,7 +62,7 @@ private:
     std::mutex m_mutex;
 };
 
-class LogHelper {
+class OGC_GRAPH_API LogHelper {
 public:
     LogHelper(LogLevel level);
     ~LogHelper();

@@ -251,8 +251,3 @@ TEST_F(PerformanceTest, HexWkbConversionSpeed) {
     EXPECT_LT(toHexTime, 2.0);
     EXPECT_LT(fromHexTime, 2.0);
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

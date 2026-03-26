@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_TILE_RENDERER_H
 #define OGC_DRAW_TILE_RENDERER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/tile_key.h"
 #include "ogc/draw/tile_cache.h"
 #include "ogc/draw/rule_engine.h"
@@ -48,7 +49,7 @@ typedef std::function<bool(const TileKey& key, TileRenderResult& result)> TileRe
 class TileRenderer;
 typedef std::shared_ptr<TileRenderer> TileRendererPtr;
 
-class TileRenderer {
+class OGC_GRAPH_API TileRenderer {
 public:
     TileRenderer();
     explicit TileRenderer(TilePyramidPtr pyramid);

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_FONT_H
 #define OGC_DRAW_FONT_H
 
+#include "ogc/draw/export.h"
 #include <string>
 
 namespace ogc {
@@ -25,7 +26,7 @@ enum class FontWeight {
     kBlack = 900
 };
 
-class Font {
+class OGC_GRAPH_API Font {
 public:
     Font();
     Font(const std::string& family, double size);

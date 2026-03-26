@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_ERROR_H
 #define OGC_DRAW_DRAW_ERROR_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include <stdexcept>
 #include <string>
@@ -8,7 +9,7 @@
 namespace ogc {
 namespace draw {
 
-class DrawError {
+class OGC_GRAPH_API DrawError {
 public:
     DrawError();
     explicit DrawError(DrawResult result);
@@ -46,7 +47,7 @@ private:
     std::string m_context;
 };
 
-class DrawException : public std::runtime_error {
+class OGC_GRAPH_API DrawException : public std::runtime_error {
 public:
     explicit DrawException(DrawResult result);
     DrawException(DrawResult result, const std::string& message);

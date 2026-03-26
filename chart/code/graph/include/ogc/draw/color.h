@@ -1,13 +1,14 @@
 #ifndef OGC_DRAW_COLOR_H
 #define OGC_DRAW_COLOR_H
 
+#include "ogc/draw/export.h"
 #include <cstdint>
 #include <string>
 
 namespace ogc {
 namespace draw {
 
-class Color {
+class OGC_GRAPH_API Color {
 public:
     Color();
     Color(uint8_t r, uint8_t g, uint8_t b);

@@ -189,7 +189,7 @@ std::vector<uint8_t> CNWkbWktConverter::GeometryToWKB(GeometryPtr geometry) {
         }
         case GeomType::kPolygon: {
             auto polygon = static_cast<const class Polygon*>(geometry.get());
-            uint32_t num_rings = static_cast<uint32_t>(polygon->GetNumRings() + 1);
+            uint32_t num_rings = static_cast<uint32_t>(polygon->GetNumRings());
             WriteUInt32(num_rings, wkb, impl_->byte_order_);
             
             auto exterior = polygon->GetExteriorRing();

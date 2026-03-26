@@ -134,6 +134,7 @@ private:
     void SplitNode(Node* node);
     void AdjustTree(Node* node);
     void Reinsert(Node* node, size_t level);
+    Node* FindParent(Node* current, Node* target);
 };
 
 /**
@@ -181,6 +182,10 @@ private:
     std::unique_ptr<QuadNode> m_root;
     Config m_config;
     size_t m_size = 0;
+    
+    GeomResult InsertRecursive(QuadNode* node, const Envelope& envelope, const T& item, size_t depth);
+    void SplitNode(QuadNode* node);
+    void QueryRecursive(const QuadNode* node, const Envelope& envelope, std::vector<T>& results) const;
 };
 
 /**

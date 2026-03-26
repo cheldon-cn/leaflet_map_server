@@ -14,7 +14,7 @@ namespace draw {
 class CoordinateTransform;
 typedef std::unique_ptr<CoordinateTransform> CoordinateTransformPtr;
 
-class CoordinateTransform {
+class OGC_GRAPH_API CoordinateTransform {
 public:
     CoordinateTransform();
     CoordinateTransform(const TransformMatrix& matrix);

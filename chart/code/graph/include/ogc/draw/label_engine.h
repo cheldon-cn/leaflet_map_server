@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LABEL_ENGINE_H
 #define OGC_DRAW_LABEL_ENGINE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/symbolizer_rule.h"
 #include "ogc/draw/draw_context.h"
 #include "ogc/feature/feature.h"
@@ -54,7 +55,7 @@ typedef std::shared_ptr<LabelConflictResolver> LabelConflictResolverPtr;
 class LabelEngine;
 typedef std::shared_ptr<LabelEngine> LabelEnginePtr;
 
-class LabelEngine {
+class OGC_GRAPH_API LabelEngine {
 public:
     LabelEngine();
     ~LabelEngine() = default;

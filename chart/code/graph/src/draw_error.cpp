@@ -5,7 +5,7 @@ namespace ogc {
 namespace draw {
 
 DrawError::DrawError()
-    : m_result(DrawResult::kSuccess)
+    : m_result(DrawResult::kFailed)
     , m_message("")
     , m_context("") {
 }
@@ -74,7 +74,7 @@ std::string DrawError::ToString() const {
 }
 
 void DrawError::Reset() {
-    m_result = DrawResult::kSuccess;
+    m_result = DrawResult::kFailed;
     m_message = "";
     m_context = "";
 }

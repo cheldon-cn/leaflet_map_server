@@ -96,12 +96,11 @@ bool LODLevel::IsVisibleAtResolution(double resolution) const {
         return true;
     }
     
-    double tolerance = m_resolution * 0.1;
-    return std::abs(resolution - m_resolution) <= tolerance;
+    return resolution <= m_resolution;
 }
 
 bool LODLevel::IsValid() const {
-    return m_level >= 0;
+    return m_level > 0 && m_minScale > 0.0 && m_maxScale > 0.0;
 }
 
 LODLevelPtr LODLevel::Create() {

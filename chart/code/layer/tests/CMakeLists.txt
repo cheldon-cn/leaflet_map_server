@@ -15,7 +15,8 @@ link_directories(
 
 set(TEST_SOURCES
     test_layer_type.cpp
-    # test_utils.cpp
+    # test_layer_types.cpp  # Skipped: TestVectorLayer/TestRasterLayer need more pure virtual function implementations
+    # test_utils.cpp  # Skipped: uses outdated Geometry/CNFieldValue API
     test_memory_layer.cpp
     test_layer_group.cpp
     test_layer_utils.cpp
@@ -25,6 +26,8 @@ set(TEST_SOURCES
     test_untested_classes.cpp
     test_layer_formats.cpp
     test_layer_feature_integration.cpp
+    test_layer_boundary.cpp
+    test_layer_performance.cpp
 )
 
 add_executable(ogc_layer_tests ${TEST_SOURCES})

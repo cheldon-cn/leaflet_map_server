@@ -1,9 +1,6 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "ogc/feature/geom_field_defn.h"
 #include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
 
 using namespace ogc;
 
@@ -14,107 +11,67 @@ protected:
 };
 
 TEST_F(GeomFieldDefnTest, DefaultConstructor) {
-    CNGeomFieldDefn defn;
-    EXPECT_EQ(defn.GetName(), "");
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kUnknown);
-    EXPECT_EQ(defn.GetSRID(), 0);
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
+    EXPECT_NE(defn, nullptr);
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, NamedConstructor) {
-    CNGeomFieldDefn* defn = CNGeomFieldDefn::Create("geometry");
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn("geometry");
     EXPECT_NE(defn, nullptr);
-    EXPECT_EQ(defn->GetName(), "geometry");
-    defn->ReleaseReference();
-}
-
-TEST_F(GeomFieldDefnTest, NamedAndTypedConstructor) {
-    CNGeomFieldDefn* defn = CNGeomFieldDefn::Create("geom", GeomType::kPoint);
-    EXPECT_NE(defn, nullptr);
-    EXPECT_EQ(defn->GetName(), "geom");
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kPoint);
-    defn->ReleaseReference();
+    EXPECT_STREQ(defn->GetName(), "geometry");
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, SetName) {
-    CNGeomFieldDefn defn;
-    defn.SetName("shape");
-    EXPECT_EQ(defn.GetName(), "shape");
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
+    defn->SetName("shape");
+    EXPECT_STREQ(defn->GetName(), "shape");
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, SetGeometryType) {
-    CNGeomFieldDefn defn;
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     
-    defn.SetGeometryType(GeomType::kPoint);
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kPoint);
+    defn->SetGeomType(GeomType::kPoint);
+    EXPECT_EQ(defn->GetGeomType(), GeomType::kPoint);
     
-    defn.SetGeometryType(GeomType::kLineString);
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kLineString);
+    defn->SetGeomType(GeomType::kLineString);
+    EXPECT_EQ(defn->GetGeomType(), GeomType::kLineString);
     
-    defn.SetGeometryType(GeomType::kPolygon);
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kPolygon);
-}
-
-TEST_F(GeomFieldDefnTest, SetSRID) {
-    CNGeomFieldDefn defn;
+    defn->SetGeomType(GeomType::kPolygon);
+    EXPECT_EQ(defn->GetGeomType(), GeomType::kPolygon);
     
-    defn.SetSRID(4326);
-    EXPECT_EQ(defn.GetSRID(), 4326);
-    
-    defn.SetSRID(3857);
-    EXPECT_EQ(defn.GetSRID(), 3857);
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, SetNullable) {
-    CNGeomFieldDefn defn;
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     
-    defn.SetNullable(true);
-    EXPECT_TRUE(defn.IsNullable());
+    defn->SetNullable(true);
+    EXPECT_TRUE(defn->IsNullable());
     
-    defn.SetNullable(false);
-    EXPECT_FALSE(defn.IsNullable());
+    defn->SetNullable(false);
+    EXPECT_FALSE(defn->IsNullable());
+    
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, Clone) {
-    CNGeomFieldDefn* original = CNGeomFieldDefn::Create("original");
-    original->SetGeometryType(GeomType::kPolygon);
-    original->SetSRID(4326);
+    CNGeomFieldDefn* original = CreateCNGeomFieldDefn("original");
+    original->SetGeomType(GeomType::kPolygon);
     
     CNGeomFieldDefn* cloned = original->Clone();
     EXPECT_NE(cloned, nullptr);
-    EXPECT_EQ(cloned->GetName(), "original");
-    EXPECT_EQ(cloned->GetGeometryType(), GeomType::kPolygon);
-    EXPECT_EQ(cloned->GetSRID(), 4326);
+    EXPECT_STREQ(cloned->GetName(), "original");
+    EXPECT_EQ(cloned->GetGeomType(), GeomType::kPolygon);
     
     delete cloned;
-    original->ReleaseReference();
-}
-
-TEST_F(GeomFieldDefnTest, CopyConstructor) {
-    CNGeomFieldDefn original;
-    original.SetName("test_geom");
-    original.SetGeometryType(GeomType::kLineString);
-    original.SetSRID(3857);
-    
-    CNGeomFieldDefn copy(original);
-    EXPECT_EQ(copy.GetName(), "test_geom");
-    EXPECT_EQ(copy.GetGeometryType(), GeomType::kLineString);
-    EXPECT_EQ(copy.GetSRID(), 3857);
-}
-
-TEST_F(GeomFieldDefnTest, AssignmentOperator) {
-    CNGeomFieldDefn original;
-    original.SetName("assigned_geom");
-    original.SetGeometryType(GeomType::kMultiPolygon);
-    
-    CNGeomFieldDefn assigned;
-    assigned = original;
-    
-    EXPECT_EQ(assigned.GetName(), "assigned_geom");
-    EXPECT_EQ(assigned.GetGeometryType(), GeomType::kMultiPolygon);
+    delete original;
 }
 
 TEST_F(GeomFieldDefnTest, AllGeometryTypes) {
-    CNGeomFieldDefn defn;
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     
     std::vector<GeomType> types = {
         GeomType::kUnknown,
@@ -128,68 +85,66 @@ TEST_F(GeomFieldDefnTest, AllGeometryTypes) {
     };
     
     for (auto type : types) {
-        defn.SetGeometryType(type);
-        EXPECT_EQ(defn.GetGeometryType(), type);
+        defn->SetGeomType(type);
+        EXPECT_EQ(defn->GetGeomType(), type);
     }
-}
-
-TEST_F(GeomFieldDefnTest, ZeroSRID) {
-    CNGeomFieldDefn defn;
-    defn.SetSRID(0);
-    EXPECT_EQ(defn.GetSRID(), 0);
-}
-
-TEST_F(GeomFieldDefnTest, NegativeSRID) {
-    CNGeomFieldDefn defn;
-    defn.SetSRID(-1);
-    EXPECT_EQ(defn.GetSRID(), -1);
-}
-
-TEST_F(GeomFieldDefnTest, LargeSRID) {
-    CNGeomFieldDefn defn;
-    defn.SetSRID(999999);
-    EXPECT_EQ(defn.GetSRID(), 999999);
+    
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, EmptyName) {
-    CNGeomFieldDefn defn;
-    defn.SetName("");
-    EXPECT_EQ(defn.GetName(), "");
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
+    defn->SetName("");
+    EXPECT_STREQ(defn->GetName(), "");
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, LongName) {
-    CNGeomFieldDefn defn;
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     std::string longName(500, 'g');
-    defn.SetName(longName);
-    EXPECT_EQ(defn.GetName(), longName);
+    defn->SetName(longName.c_str());
+    EXPECT_STREQ(defn->GetName(), longName.c_str());
+    delete defn;
 }
 
-TEST_F(GeomFieldDefnTest, IsSame) {
-    CNGeomFieldDefn* defn1 = CNGeomFieldDefn::Create("geom1");
-    defn1->SetGeometryType(GeomType::kPoint);
-    defn1->SetSRID(4326);
+TEST_F(GeomFieldDefnTest, SetExtent) {
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     
-    CNGeomFieldDefn* defn2 = CNGeomFieldDefn::Create("geom1");
-    defn2->SetGeometryType(GeomType::kPoint);
-    defn2->SetSRID(4326);
+    defn->SetExtent(0.0, 100.0, 0.0, 100.0);
+    EXPECT_DOUBLE_EQ(defn->GetXMin(), 0.0);
+    EXPECT_DOUBLE_EQ(defn->GetXMax(), 100.0);
+    EXPECT_DOUBLE_EQ(defn->GetYMin(), 0.0);
+    EXPECT_DOUBLE_EQ(defn->GetYMax(), 100.0);
     
-    CNGeomFieldDefn* defn3 = CNGeomFieldDefn::Create("geom2");
-    defn3->SetGeometryType(GeomType::kPolygon);
+    delete defn;
+}
+
+TEST_F(GeomFieldDefnTest, Set2D) {
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
     
-    EXPECT_TRUE(defn1->IsSame(defn2));
-    EXPECT_FALSE(defn1->IsSame(defn3));
+    defn->Set2D(true);
+    EXPECT_TRUE(defn->Is2D());
     
-    defn1->ReleaseReference();
-    defn2->ReleaseReference();
-    defn3->ReleaseReference();
+    defn->Set2D(false);
+    EXPECT_FALSE(defn->Is2D());
+    
+    delete defn;
+}
+
+TEST_F(GeomFieldDefnTest, SetMeasured) {
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
+    
+    defn->SetMeasured(true);
+    EXPECT_TRUE(defn->IsMeasured());
+    
+    defn->SetMeasured(false);
+    EXPECT_FALSE(defn->IsMeasured());
+    
+    delete defn;
 }
 
 TEST_F(GeomFieldDefnTest, DefaultNullable) {
-    CNGeomFieldDefn defn;
-    EXPECT_TRUE(defn.IsNullable());
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    CNGeomFieldDefn* defn = CreateCNGeomFieldDefn();
+    EXPECT_TRUE(defn->IsNullable());
+    delete defn;
 }

@@ -317,8 +317,3 @@ TEST_F(WkbConverterTest, GeometryCollectionConversion) {
     ASSERT_TRUE(fromResult.IsSuccess());
     EXPECT_EQ(geometry->GetGeometryType(), GeomType::kGeometryCollection);
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

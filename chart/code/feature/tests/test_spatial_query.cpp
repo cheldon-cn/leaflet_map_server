@@ -3,6 +3,7 @@
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
+#include "ogc/geometry.h"
 
 using namespace ogc;
 
@@ -23,7 +24,7 @@ TEST_F(SpatialQueryTest, SetGeometry) {
     CNSpatialQuery query;
     auto point = Point::Create(100.0, 200.0);
     
-    query.SetGeometry(point);
+    query.SetGeometry(std::move(point));
     GeometryPtr geom = query.GetGeometry();
     ASSERT_NE(geom, nullptr);
     EXPECT_EQ(geom->GetGeometryType(), GeomType::kPoint);
@@ -61,7 +62,7 @@ TEST_F(SpatialQueryTest, SetSRID) {
 
 TEST_F(SpatialQueryTest, StaticIntersects) {
     auto point = Point::Create(0.0, 0.0);
-    CNSpatialQuery query = CNSpatialQuery::Intersects(point);
+    CNSpatialQuery query = CNSpatialQuery::Intersects(std::move(point));
     
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kIntersects);
     ASSERT_NE(query.GetGeometry(), nullptr);
@@ -69,7 +70,7 @@ TEST_F(SpatialQueryTest, StaticIntersects) {
 
 TEST_F(SpatialQueryTest, StaticContains) {
     auto polygon = Polygon::Create();
-    CNSpatialQuery query = CNSpatialQuery::Contains(polygon);
+    CNSpatialQuery query = CNSpatialQuery::Contains(std::move(polygon));
     
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kContains);
     ASSERT_NE(query.GetGeometry(), nullptr);
@@ -77,7 +78,7 @@ TEST_F(SpatialQueryTest, StaticContains) {
 
 TEST_F(SpatialQueryTest, StaticWithin) {
     auto point = Point::Create(10.0, 20.0);
-    CNSpatialQuery query = CNSpatialQuery::Within(point);
+    CNSpatialQuery query = CNSpatialQuery::Within(std::move(point));
     
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kWithin);
     ASSERT_NE(query.GetGeometry(), nullptr);
@@ -85,7 +86,7 @@ TEST_F(SpatialQueryTest, StaticWithin) {
 
 TEST_F(SpatialQueryTest, StaticOverlaps) {
     auto line = LineString::Create();
-    CNSpatialQuery query = CNSpatialQuery::Overlaps(line);
+    CNSpatialQuery query = CNSpatialQuery::Overlaps(std::move(line));
     
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kOverlaps);
     ASSERT_NE(query.GetGeometry(), nullptr);
@@ -93,7 +94,7 @@ TEST_F(SpatialQueryTest, StaticOverlaps) {
 
 TEST_F(SpatialQueryTest, StaticWithinDistance) {
     auto point = Point::Create(0.0, 0.0);
-    CNSpatialQuery query = CNSpatialQuery::WithinDistance(point, 50.0);
+    CNSpatialQuery query = CNSpatialQuery::WithinDistance(std::move(point), 50.0);
     
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kIntersects);
     EXPECT_DOUBLE_EQ(query.GetBufferDistance(), 50.0);
@@ -103,7 +104,7 @@ TEST_F(SpatialQueryTest, StaticWithinDistance) {
 TEST_F(SpatialQueryTest, MoveConstructor) {
     CNSpatialQuery query1;
     auto point = Point::Create(100.0, 200.0);
-    query1.SetGeometry(point);
+    query1.SetGeometry(std::move(point));
     query1.SetOperation(SpatialOperation::kContains);
     
     CNSpatialQuery query2(std::move(query1));
@@ -114,7 +115,7 @@ TEST_F(SpatialQueryTest, MoveConstructor) {
 TEST_F(SpatialQueryTest, MoveAssignment) {
     CNSpatialQuery query1;
     auto point = Point::Create(50.0, 100.0);
-    query1.SetGeometry(point);
+    query1.SetGeometry(std::move(point));
     query1.SetSRID(4326);
     
     CNSpatialQuery query2;
@@ -126,7 +127,7 @@ TEST_F(SpatialQueryTest, MoveAssignment) {
 TEST_F(SpatialQueryTest, ToWKT) {
     CNSpatialQuery query;
     auto point = Point::Create(0.0, 0.0);
-    query.SetGeometry(point);
+    query.SetGeometry(std::move(point));
     
     std::string wkt = query.ToWKT();
     EXPECT_FALSE(wkt.empty());
@@ -136,7 +137,7 @@ TEST_F(SpatialQueryTest, ToWKT) {
 TEST_F(SpatialQueryTest, NullGeometry) {
     CNSpatialQuery query;
     GeometryPtr nullGeom;
-    query.SetGeometry(nullGeom);
+    query.SetGeometry(std::move(nullGeom));
     EXPECT_EQ(query.GetGeometry(), nullptr);
 }
 
@@ -176,7 +177,7 @@ TEST_F(SpatialQueryTest, ChainedOperations) {
     auto point = Point::Create(0.0, 0.0);
     
     CNSpatialQuery query;
-    query.SetGeometry(point)
+    query.SetGeometry(std::move(point))
          .SetOperation(SpatialOperation::kWithin)
          .SetBufferDistance(100.0)
          .SetSRID(4326);
@@ -184,9 +185,4 @@ TEST_F(SpatialQueryTest, ChainedOperations) {
     EXPECT_EQ(query.GetOperation(), SpatialOperation::kWithin);
     EXPECT_DOUBLE_EQ(query.GetBufferDistance(), 100.0);
     EXPECT_EQ(query.GetSRID(), 4326);
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

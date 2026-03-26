@@ -11,7 +11,7 @@
 #include "ogc/multipoint.h"
 #include "ogc/multilinestring.h"
 #include "ogc/multipolygon.h"
-#include "ogc/geometry_collection.h"
+#include "ogc/geometrycollection.h"
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -268,9 +268,4 @@ TEST_F(IntegrationTestBase, ErrorHandlingAcrossModules) {
     auto pool = DbConnectionPool::Create();
     result = pool->Release(nullptr);
     EXPECT_FALSE(result.IsSuccess()) << "Releasing null connection should fail";
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

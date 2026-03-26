@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_ASYNC_RENDERER_H
 #define OGC_DRAW_ASYNC_RENDERER_H
 
+#include "ogc/draw/export.h"
 #include <ogc/draw/render_task.h>
 #include <ogc/draw/render_queue.h>
 #include <ogc/draw/draw_context.h>
@@ -72,7 +73,7 @@ struct AsyncRenderStats {
 class AsyncRenderer;
 using AsyncRendererPtr = std::shared_ptr<AsyncRenderer>;
 
-class AsyncRenderer {
+class OGC_GRAPH_API AsyncRenderer {
 public:
     
     AsyncRenderer();
@@ -156,7 +157,7 @@ private:
     std::atomic<size_t> m_nextRenderId;
 };
 
-class AsyncRenderBuilder {
+class OGC_GRAPH_API AsyncRenderBuilder {
 public:
     AsyncRenderBuilder();
     ~AsyncRenderBuilder() = default;

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_ENGINE_H
 #define OGC_DRAW_DRAW_ENGINE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/engine_type.h"
 #include "ogc/draw/draw_params.h"
@@ -18,7 +19,7 @@
 namespace ogc {
 namespace draw {
 
-class DrawEngine {
+class OGC_GRAPH_API DrawEngine {
 public:
     virtual ~DrawEngine() = default;
     

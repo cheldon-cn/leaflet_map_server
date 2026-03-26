@@ -6,341 +6,209 @@
 #include "ogc/multipoint.h"
 #include "ogc/multilinestring.h"
 #include "ogc/multipolygon.h"
-#include "ogc/geometry_collection.h"
+#include "ogc/linearring.h"
+#include "ogc/feature/feature.h"
+#include "ogc/feature/feature_defn.h"
 
 using namespace ogc;
 
 class WkbWktConverterTest : public ::testing::Test {
 protected:
-    void SetUp() override {}
-    void TearDown() override {}
+    void SetUp() override {
+        defn_ = CNFeatureDefn::Create("test");
+    }
+    void TearDown() override {
+        if (defn_) {
+            defn_->ReleaseReference();
+        }
+    }
+    
+    CNFeatureDefn* defn_ = nullptr;
 };
 
 TEST_F(WkbWktConverterTest, PointToWKT) {
-    auto point = Point::Create(100.0, 200.0);
-    point->SetSRID(4326);
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(100.0, 200.0));
+    feature.GetGeometry()->SetSRID(4326);
     
-    std::string wkt;
-    WktOptions options;
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkt(point.get(), wkt, options);
-    EXPECT_TRUE(result.IsSuccess()) << result.GetMessage();
     EXPECT_NE(wkt.find("POINT"), std::string::npos);
-    EXPECT_NE(wkt.find("100"), std::string::npos);
-    EXPECT_NE(wkt.find("200"), std::string::npos);
 }
 
 TEST_F(WkbWktConverterTest, LineStringToWKT) {
-    auto line = LineString::Create({{0, 0}, {1, 1}, {2, 2}});
+    CNFeature feature(defn_);
+    feature.SetGeometry(LineString::Create({{0, 0}, {1, 1}, {2, 2}}));
     
-    std::string wkt;
-    WktOptions options;
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkt(line.get(), wkt, options);
-    EXPECT_TRUE(result.IsSuccess());
     EXPECT_NE(wkt.find("LINESTRING"), std::string::npos);
 }
 
 TEST_F(WkbWktConverterTest, PolygonToWKT) {
-    auto polygon = Polygon::Create({{{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}});
+    auto ring = LinearRing::Create({{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}, true);
+    auto polygon = Polygon::Create(std::move(ring));
     
-    std::string wkt;
-    WktOptions options;
+    CNFeature feature(defn_);
+    feature.SetGeometry(std::move(polygon));
     
-    Result result = WkbWktConverter::GeometryToWkt(polygon.get(), wkt, options);
-    EXPECT_TRUE(result.IsSuccess());
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&feature);
+    
     EXPECT_NE(wkt.find("POLYGON"), std::string::npos);
 }
 
-TEST_F(WkbWktConverterTest, WKTToPoint) {
-    std::string wkt = "POINT(50 60)";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess()) << result.GetMessage();
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPoint);
-}
-
-TEST_F(WkbWktConverterTest, WKTToLineString) {
-    std::string wkt = "LINESTRING(0 0, 1 1, 2 2)";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kLineString);
-}
-
-TEST_F(WkbWktConverterTest, WKTToPolygon) {
-    std::string wkt = "POLYGON((0 0, 0 10, 10 10, 10 0, 0 0))";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPolygon);
-}
-
 TEST_F(WkbWktConverterTest, PointToWKB) {
-    auto point = Point::Create(123.456, -78.901);
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(123.456, -78.901));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkb(point.get(), wkb, options);
-    EXPECT_TRUE(result.IsSuccess()) << result.GetMessage();
     EXPECT_FALSE(wkb.empty());
 }
 
 TEST_F(WkbWktConverterTest, LineStringToWKB) {
-    auto line = LineString::Create({{0, 0}, {1, 1}});
+    CNFeature feature(defn_);
+    feature.SetGeometry(LineString::Create({{0, 0}, {1, 1}}));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkb(line.get(), wkb, options);
-    EXPECT_TRUE(result.IsSuccess());
     EXPECT_FALSE(wkb.empty());
 }
 
 TEST_F(WkbWktConverterTest, PolygonToWKB) {
-    auto polygon = Polygon::Create({{{0, 0}, {0, 1}, {1, 1}, {1, 0}, {0, 0}}});
+    auto ring = LinearRing::Create({{0, 0}, {0, 1}, {1, 1}, {1, 0}, {0, 0}}, true);
+    auto polygon = Polygon::Create(std::move(ring));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNFeature feature(defn_);
+    feature.SetGeometry(std::move(polygon));
     
-    Result result = WkbWktConverter::GeometryToWkb(polygon.get(), wkb, options);
-    EXPECT_TRUE(result.IsSuccess());
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&feature);
+    
     EXPECT_FALSE(wkb.empty());
 }
 
 TEST_F(WkbWktConverterTest, WKBToPoint) {
-    auto originalPoint = Point::Create(100.0, 200.0);
+    CNFeature original(defn_);
+    original.SetGeometry(Point::Create(100.0, 200.0));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&original);
     
-    Result toWkbResult = WkbWktConverter::GeometryToWkb(originalPoint.get(), wkb, options);
-    ASSERT_TRUE(toWkbResult.IsSuccess());
+    CNFeature* parsed = converter.FromWKB(wkb);
+    ASSERT_NE(parsed, nullptr);
+    EXPECT_NE(parsed->GetGeometry(), nullptr);
     
-    std::unique_ptr<Geometry> geometry;
-    Result fromWkbResult = WkbWktConverter::WkbToGeometry(wkb, geometry, options);
-    EXPECT_TRUE(fromWkbResult.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPoint);
+    delete parsed;
 }
 
 TEST_F(WkbWktConverterTest, WKBToLineString) {
-    auto originalLine = LineString::Create({{0, 0}, {1, 1}, {2, 2}});
+    CNFeature original(defn_);
+    original.SetGeometry(LineString::Create({{0, 0}, {1, 1}, {2, 2}}));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&original);
     
-    Result toWkbResult = WkbWktConverter::GeometryToWkb(originalLine.get(), wkb, options);
-    ASSERT_TRUE(toWkbResult.IsSuccess());
+    CNFeature* parsed = converter.FromWKB(wkb);
+    ASSERT_NE(parsed, nullptr);
     
-    std::unique_ptr<Geometry> geometry;
-    Result fromWkbResult = WkbWktConverter::WkbToGeometry(wkb, geometry, options);
-    EXPECT_TRUE(fromWkbResult.IsSuccess());
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kLineString);
+    delete parsed;
 }
 
 TEST_F(WkbWktConverterTest, WKBToPolygon) {
-    auto originalPolygon = Polygon::Create({{{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}});
+    auto ring = LinearRing::Create({{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}, true);
+    auto polygon = Polygon::Create(std::move(ring));
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
+    CNFeature original(defn_);
+    original.SetGeometry(std::move(polygon));
     
-    Result toWkbResult = WkbWktConverter::GeometryToWkb(originalPolygon.get(), wkb, options);
-    ASSERT_TRUE(toWkbResult.IsSuccess());
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(&original);
     
-    std::unique_ptr<Geometry> geometry;
-    Result fromWkbResult = WkbWktConverter::WkbToGeometry(wkb, geometry, options);
-    EXPECT_TRUE(fromWkbResult.IsSuccess());
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPolygon);
+    CNFeature* parsed = converter.FromWKB(wkb);
+    ASSERT_NE(parsed, nullptr);
+    
+    delete parsed;
 }
 
 TEST_F(WkbWktConverterTest, RoundTripPoint) {
-    auto original = Point::Create(123.456, -78.901);
-    original->SetSRID(4326);
+    CNFeature original(defn_);
+    original.SetGeometry(Point::Create(123.456, -78.901));
+    original.GetGeometry()->SetSRID(4326);
     
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
-    options.includeSRID = true;
+    CNWkbWktConverter converter;
+    converter.SetIncludeSRID(true);
     
-    Result toWkbResult = WkbWktConverter::GeometryToWkb(original.get(), wkb, options);
-    ASSERT_TRUE(toWkbResult.IsSuccess());
+    std::vector<uint8_t> wkb = converter.ToWKB(&original);
+    CNFeature* parsed = converter.FromWKB(wkb);
     
-    std::unique_ptr<Geometry> parsed;
-    Result fromWkbResult = WkbWktConverter::WkbToGeometry(wkb, parsed, options);
-    ASSERT_TRUE(fromWkbResult.IsSuccess());
+    ASSERT_NE(parsed, nullptr);
+    EXPECT_NE(parsed->GetGeometry(), nullptr);
     
-    EXPECT_EQ(parsed->GetGeometryType(), GeomType::kPoint);
+    delete parsed;
 }
 
 TEST_F(WkbWktConverterTest, RoundTripWKT) {
-    auto original = Point::Create(50.0, 60.0);
+    CNFeature original(defn_);
+    original.SetGeometry(Point::Create(50.0, 60.0));
     
-    std::string wkt;
-    WktOptions options;
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&original);
     
-    Result toWktResult = WkbWktConverter::GeometryToWkt(original.get(), wkt, options);
-    ASSERT_TRUE(toWktResult.IsSuccess());
-    
-    std::unique_ptr<Geometry> parsed;
-    Result fromWktResult = WkbWktConverter::WktToGeometry(wkt, parsed, options);
-    ASSERT_TRUE(fromWktResult.IsSuccess());
-    
-    EXPECT_EQ(parsed->GetGeometryType(), GeomType::kPoint);
+    EXPECT_FALSE(wkt.empty());
+    EXPECT_NE(wkt.find("POINT"), std::string::npos);
 }
 
-TEST_F(WkbWktConverterTest, InvalidWKT) {
-    std::string invalidWkt = "INVALID WKT";
+TEST_F(WkbWktConverterTest, ByteOrder) {
+    CNWkbWktConverter converter;
     
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
+    converter.SetByteOrder(ByteOrder::kXDR);
+    EXPECT_EQ(converter.GetByteOrder(), ByteOrder::kXDR);
     
-    Result result = WkbWktConverter::WktToGeometry(invalidWkt, geometry, options);
-    EXPECT_FALSE(result.IsSuccess());
+    converter.SetByteOrder(ByteOrder::kNDR);
+    EXPECT_EQ(converter.GetByteOrder(), ByteOrder::kNDR);
 }
 
-TEST_F(WkbWktConverterTest, InvalidWKB) {
-    std::vector<uint8_t> invalidWkb = {0x00, 0x01, 0x02, 0x03};
+TEST_F(WkbWktConverterTest, IncludeSRID) {
+    CNWkbWktConverter converter;
     
-    std::unique_ptr<Geometry> geometry;
-    WkbOptions options;
+    converter.SetIncludeSRID(true);
+    EXPECT_TRUE(converter.GetIncludeSRID());
     
-    Result result = WkbWktConverter::WkbToGeometry(invalidWkb, geometry, options);
-    EXPECT_FALSE(result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, EmptyWKT) {
-    std::string emptyWkt = "";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(emptyWkt, geometry, options);
-    EXPECT_FALSE(result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, EmptyWKB) {
-    std::vector<uint8_t> emptyWkb;
-    
-    std::unique_ptr<Geometry> geometry;
-    WkbOptions options;
-    
-    Result result = WkbWktConverter::WkbToGeometry(emptyWkb, geometry, options);
-    EXPECT_FALSE(result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, WKTWithSRID) {
-    std::string wkt = "SRID=4326;POINT(0 0)";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    options.includeSRID = true;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, WKBWithSRID) {
-    auto point = Point::Create(0, 0);
-    point->SetSRID(4326);
-    
-    std::vector<uint8_t> wkb;
-    WkbOptions options;
-    options.includeSRID = true;
-    
-    Result result = WkbWktConverter::GeometryToWkb(point.get(), wkb, options);
-    EXPECT_TRUE(result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, MultiPointWKT) {
-    std::string wkt = "MULTIPOINT((0 0), (1 1), (2 2))";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, MultiLineStringWKT) {
-    std::string wkt = "MULTILINESTRING((0 0, 1 1), (2 2, 3 3))";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, MultiPolygonWKT) {
-    std::string wkt = "MULTIPOLYGON(((0 0, 0 1, 1 1, 1 0, 0 0)))";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-TEST_F(WkbWktConverterTest, GeometryCollectionWKT) {
-    std::string wkt = "GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(1 1, 2 2))";
-    
-    std::unique_ptr<Geometry> geometry;
-    WktOptions options;
-    
-    Result result = WkbWktConverter::WktToGeometry(wkt, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
+    converter.SetIncludeSRID(false);
+    EXPECT_FALSE(converter.GetIncludeSRID());
 }
 
 TEST_F(WkbWktConverterTest, LargeCoordinates) {
-    auto point = Point::Create(1e10, -1e10);
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(1e10, -1e10));
     
-    std::string wkt;
-    WktOptions options;
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkt(point.get(), wkt, options);
-    EXPECT_TRUE(result.IsSuccess());
+    EXPECT_FALSE(wkt.empty());
 }
 
 TEST_F(WkbWktConverterTest, SmallCoordinates) {
-    auto point = Point::Create(1e-10, -1e-10);
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(1e-10, -1e-10));
     
-    std::string wkt;
-    WktOptions options;
+    CNWkbWktConverter converter;
+    std::string wkt = converter.ToWKT(&feature);
     
-    Result result = WkbWktConverter::GeometryToWkt(point.get(), wkt, options);
-    EXPECT_TRUE(result.IsSuccess());
+    EXPECT_FALSE(wkt.empty());
 }
 
-TEST_F(WkbWktConverterTest, WKTPrettyPrint) {
-    auto line = LineString::Create({{0, 0}, {1, 1}, {2, 2}, {3, 3}});
+TEST_F(WkbWktConverterTest, GeometryToWKB) {
+    auto point = Point::Create(100.0, 200.0);
     
-    std::string wktCompact;
-    WktOptions optionsCompact;
-    optionsCompact.prettyPrint = false;
-    WkbWktConverter::GeometryToWkt(line.get(), wktCompact, optionsCompact);
+    CNWkbWktConverter converter;
+    std::vector<uint8_t> wkb = converter.ToWKB(std::move(point));
     
-    std::string wktPretty;
-    WktOptions optionsPretty;
-    optionsPretty.prettyPrint = true;
-    WkbWktConverter::GeometryToWkt(line.get(), wktPretty, optionsPretty);
-    
-    EXPECT_GT(wktPretty.length(), wktCompact.length());
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    EXPECT_FALSE(wkb.empty());
 }

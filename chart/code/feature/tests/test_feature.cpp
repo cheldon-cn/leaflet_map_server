@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "ogc/feature/feature.h"
 #include "ogc/feature/feature_defn.h"
 #include "ogc/feature/field_defn.h"
@@ -6,6 +6,7 @@
 #include "ogc/geometry.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
+#include "ogc/linearring.h"
 #include "ogc/polygon.h"
 
 using namespace ogc;
@@ -14,6 +15,18 @@ class FeatureTest : public ::testing::Test {
 protected:
     void SetUp() override {
         defn_ = CNFeatureDefn::Create("test_feature");
+        
+        CNFieldDefn* idField = CreateCNFieldDefn("id");
+        idField->SetType(CNFieldType::kInteger);
+        defn_->AddFieldDefn(idField);
+        
+        CNFieldDefn* nameField = CreateCNFieldDefn("name");
+        nameField->SetType(CNFieldType::kString);
+        defn_->AddFieldDefn(nameField);
+        
+        CNFieldDefn* valueField = CreateCNFieldDefn("value");
+        valueField->SetType(CNFieldType::kReal);
+        defn_->AddFieldDefn(valueField);
     }
     
     void TearDown() override {
@@ -81,7 +94,8 @@ TEST_F(FeatureTest, SetGeometry_LineString) {
 TEST_F(FeatureTest, SetGeometry_Polygon) {
     CNFeature feature(defn_);
     
-    auto polygon = Polygon::Create({{{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}});
+    auto ring = LinearRing::Create({{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}, true);
+    auto polygon = Polygon::Create(std::move(ring));
     feature.SetGeometry(std::move(polygon));
     
     GeometryPtr retrieved = feature.GetGeometry();
@@ -95,27 +109,22 @@ TEST_F(FeatureTest, SetGeometry_NullGeometry) {
     GeometryPtr nullGeom;
     feature.SetGeometry(std::move(nullGeom));
     
-    GeometryPtr retrieved = feature.GetGeometry();
-    EXPECT_EQ(retrieved, nullptr);
+    EXPECT_EQ(feature.GetGeometry(), nullptr);
 }
 
 TEST_F(FeatureTest, StealGeometry) {
     CNFeature feature(defn_);
-    
-    auto point = Point::Create(50.0, 60.0);
+    auto point = Point::Create(100.0, 200.0);
     feature.SetGeometry(std::move(point));
     
     GeometryPtr stolen = feature.StealGeometry();
     ASSERT_NE(stolen, nullptr);
     EXPECT_EQ(stolen->GetGeometryType(), GeomType::kPoint);
-    
-    GeometryPtr afterSteal = feature.GetGeometry();
-    EXPECT_EQ(afterSteal, nullptr);
+    EXPECT_EQ(feature.GetGeometry(), nullptr);
 }
 
 TEST_F(FeatureTest, GetEnvelope) {
     CNFeature feature(defn_);
-    
     auto point = Point::Create(100.0, 200.0);
     feature.SetGeometry(std::move(point));
     
@@ -243,61 +252,61 @@ TEST_F(FeatureTest, SetFeatureDefn) {
 
 TEST_F(FeatureTest, SetFieldInteger) {
     CNFeature feature(defn_);
-    feature.SetFieldInteger(0, 42);
-    EXPECT_EQ(feature.GetFieldAsInteger(0), 42);
+    feature.SetFieldInteger(static_cast<size_t>(0), 42);
+    EXPECT_EQ(feature.GetFieldAsInteger(static_cast<size_t>(0)), 42);
 }
 
 TEST_F(FeatureTest, SetFieldInteger64) {
     CNFeature feature(defn_);
-    feature.SetFieldInteger64(0, 1234567890123LL);
-    EXPECT_EQ(feature.GetFieldAsInteger64(0), 1234567890123LL);
+    feature.SetFieldInteger64(static_cast<size_t>(0), 1234567890123LL);
+    EXPECT_EQ(feature.GetFieldAsInteger64(static_cast<size_t>(0)), 1234567890123LL);
 }
 
 TEST_F(FeatureTest, SetFieldReal) {
     CNFeature feature(defn_);
-    feature.SetFieldReal(0, 3.14159);
-    EXPECT_DOUBLE_EQ(feature.GetFieldAsReal(0), 3.14159);
+    feature.SetFieldReal(static_cast<size_t>(2), 3.14159);
+    EXPECT_DOUBLE_EQ(feature.GetFieldAsReal(static_cast<size_t>(2)), 3.14159);
 }
 
 TEST_F(FeatureTest, SetFieldString) {
     CNFeature feature(defn_);
-    feature.SetFieldString(0, "test_value");
-    EXPECT_EQ(feature.GetFieldAsString(0), "test_value");
+    feature.SetFieldString(static_cast<size_t>(1), "test_value");
+    EXPECT_EQ(feature.GetFieldAsString(static_cast<size_t>(1)), "test_value");
 }
 
 TEST_F(FeatureTest, SetFieldString_Empty) {
     CNFeature feature(defn_);
-    feature.SetFieldString(0, "");
-    EXPECT_EQ(feature.GetFieldAsString(0), "");
+    feature.SetFieldString(static_cast<size_t>(1), "");
+    EXPECT_EQ(feature.GetFieldAsString(static_cast<size_t>(1)), "");
 }
 
 TEST_F(FeatureTest, SetFieldNull) {
     CNFeature feature(defn_);
-    feature.SetFieldInteger(0, 42);
-    feature.SetFieldNull(0);
-    EXPECT_TRUE(feature.IsFieldNull(0));
+    feature.SetFieldInteger(static_cast<size_t>(0), 42);
+    feature.SetFieldNull(static_cast<size_t>(0));
+    EXPECT_TRUE(feature.IsFieldNull(static_cast<size_t>(0)));
 }
 
 TEST_F(FeatureTest, IsFieldSet) {
     CNFeature feature(defn_);
-    EXPECT_FALSE(feature.IsFieldSet(0));
+    EXPECT_FALSE(feature.IsFieldSet(static_cast<size_t>(0)));
     
-    feature.SetFieldInteger(0, 42);
-    EXPECT_TRUE(feature.IsFieldSet(0));
+    feature.SetFieldInteger(static_cast<size_t>(0), 42);
+    EXPECT_TRUE(feature.IsFieldSet(static_cast<size_t>(0)));
 }
 
 TEST_F(FeatureTest, UnsetField) {
     CNFeature feature(defn_);
-    feature.SetFieldInteger(0, 42);
-    feature.UnsetField(0);
-    EXPECT_FALSE(feature.IsFieldSet(0));
+    feature.SetFieldInteger(static_cast<size_t>(0), 42);
+    feature.UnsetField(static_cast<size_t>(0));
+    EXPECT_FALSE(feature.IsFieldSet(static_cast<size_t>(0)));
 }
 
 TEST_F(FeatureTest, SetFieldByName) {
     CNFeature feature(defn_);
-    feature.SetFieldInteger("field1", 100);
-    feature.SetFieldReal("field2", 3.14);
-    feature.SetFieldString("field3", "hello");
+    feature.SetFieldInteger("id", 100);
+    feature.SetFieldReal("value", 3.14);
+    feature.SetFieldString("name", "hello");
 }
 
 TEST_F(FeatureTest, GetFieldByName) {
@@ -347,9 +356,4 @@ TEST_F(FeatureTest, SelfMove) {
     
     feature = std::move(feature);
     EXPECT_EQ(feature.GetFID(), 200);
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

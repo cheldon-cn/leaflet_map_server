@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LOD_MANAGER_H
 #define OGC_DRAW_LOD_MANAGER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/lod.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -14,7 +15,7 @@ namespace draw {
 class LODManager;
 typedef std::shared_ptr<LODManager> LODManagerPtr;
 
-class LODManager {
+class OGC_GRAPH_API LODManager {
 public:
     LODManager();
     explicit LODManager(LODStrategyPtr strategy);
@@ -69,6 +70,7 @@ public:
 
 private:
     bool IsLODInRange(int lod) const;
+    LODLevelPtr GetLODLevelInternal(int level) const;
     
     LODStrategyPtr m_strategy;
     std::vector<LODLevelPtr> m_levels;

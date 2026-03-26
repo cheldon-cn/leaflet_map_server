@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_RENDER_QUEUE_H
 #define OGC_DRAW_RENDER_QUEUE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/render_task.h"
 #include <memory>
 #include <vector>
@@ -38,7 +39,7 @@ struct RenderQueueStats {
 
 typedef std::function<void(const RenderTaskPtr&)> TaskEventHandler;
 
-class RenderQueue {
+class OGC_GRAPH_API RenderQueue {
 public:
     RenderQueue();
     explicit RenderQueue(size_t maxQueueSize);

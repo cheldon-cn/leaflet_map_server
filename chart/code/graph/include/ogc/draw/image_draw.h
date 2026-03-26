@@ -37,7 +37,7 @@ struct ImageInfo {
 class ImageData;
 using ImageDataPtr = std::unique_ptr<ImageData>;
 
-class ImageData {
+class OGC_GRAPH_API ImageData {
 public:
     ImageData();
     ImageData(int width, int height, int channels);
@@ -106,7 +106,7 @@ public:
     virtual std::vector<ImageFormat> GetSupportedFormats() const = 0;
 };
 
-class ImageDraw {
+class OGC_GRAPH_API ImageDraw {
 public:
     ImageDraw();
     explicit ImageDraw(ImageData* imageData);

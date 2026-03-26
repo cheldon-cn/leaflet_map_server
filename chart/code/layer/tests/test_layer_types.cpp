@@ -34,7 +34,7 @@ public:
         return CNStatus::kSuccess;
     }
     
-    int64_t GetFeatureCount(bool force) const override {
+    int64_t GetFeatureCount(bool force = true) const override {
         (void)force;
         return static_cast<int64_t>(features_.size());
     }
@@ -43,24 +43,48 @@ public:
     
     std::unique_ptr<CNFeature> GetNextFeature() override {
         if (read_cursor_ >= features_.size()) return nullptr;
-        return features_[read_cursor_++]->Clone();
+        return std::unique_ptr<CNFeature>(features_[read_cursor_++]->Clone());
     }
     
     std::unique_ptr<CNFeature> GetFeature(int64_t fid) override {
         for (auto& f : features_) {
-            if (f->GetFID() == fid) return f->Clone();
+            if (f->GetFID() == fid) return std::unique_ptr<CNFeature>(f->Clone());
         }
         return nullptr;
     }
     
     CNStatus CreateFeature(CNFeature* feature) override {
-        features_.push_back(feature->Clone());
+        features_.push_back(std::unique_ptr<CNFeature>(feature->Clone()));
         return CNStatus::kSuccess;
     }
     
     std::string GetDataSourcePath() const override { return ""; }
     std::string GetFormatName() const override { return "TestVector"; }
     bool IsReadOnly() const override { return false; }
+    
+    void SetSpatialFilter(const CNGeometry* geometry) override {
+        (void)geometry;
+    }
+    
+    const CNGeometry* GetSpatialFilter() const override { return nullptr; }
+    
+    CNStatus SetAttributeFilter(const std::string& query) override {
+        (void)query;
+        return CNStatus::kNotSupported;
+    }
+    
+    bool TestCapability(CNLayerCapability capability) const override {
+        (void)capability;
+        return false;
+    }
+    
+    std::unique_ptr<CNLayer> Clone() const override {
+        auto cloned = std::make_unique<TestVectorLayer>(name_, geom_type_);
+        for (const auto& f : features_) {
+            cloned->features_.push_back(std::unique_ptr<CNFeature>(f->Clone()));
+        }
+        return cloned;
+    }
     
     void AddFeature(std::unique_ptr<CNFeature> feature) {
         features_.push_back(std::move(feature));
@@ -274,6 +298,26 @@ public:
         return CNStatus::kSuccess;
     }
     
+    void SetSpatialFilter(const CNGeometry* geometry) override {
+        (void)geometry;
+    }
+    
+    const CNGeometry* GetSpatialFilter() const override { return nullptr; }
+    
+    CNStatus SetAttributeFilter(const std::string& query) override {
+        (void)query;
+        return CNStatus::kNotSupported;
+    }
+    
+    bool TestCapability(CNLayerCapability capability) const override {
+        (void)capability;
+        return false;
+    }
+    
+    std::unique_ptr<CNLayer> Clone() const override {
+        return std::make_unique<TestRasterLayer>(name_, width_, height_);
+    }
+    
 private:
     std::string name_;
     int width_;
@@ -471,12 +515,12 @@ TEST_F(CNGDALAdapterTest, UnwrapDatasetNull) {
 }
 
 TEST_F(CNGDALAdapterTest, ConvertFeatureNull) {
-    auto feature = CNGDALAdapter::ConvertFeature(nullptr);
+    auto feature = CNGDALAdapter::ConvertFeature(static_cast<const void*>(nullptr));
     EXPECT_EQ(feature, nullptr);
 }
 
 TEST_F(CNGDALAdapterTest, ConvertGeometryNull) {
-    auto geom = CNGDALAdapter::ConvertGeometry(nullptr);
+    auto geom = CNGDALAdapter::ConvertGeometry(static_cast<const void*>(nullptr));
     EXPECT_EQ(geom, nullptr);
 }
 

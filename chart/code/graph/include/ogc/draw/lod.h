@@ -13,7 +13,7 @@ namespace draw {
 class LODLevel;
 typedef std::shared_ptr<LODLevel> LODLevelPtr;
 
-class LODLevel {
+class OGC_GRAPH_API LODLevel {
 public:
     LODLevel();
     LODLevel(int level, double minScale, double maxScale);

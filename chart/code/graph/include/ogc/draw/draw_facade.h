@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_FACADE_H
 #define OGC_DRAW_DRAW_FACADE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_result.h"
 #include "ogc/draw/draw_params.h"
 #include "ogc/draw/draw_style.h"
@@ -20,7 +21,7 @@
 namespace ogc {
 namespace draw {
 
-class DrawFacade {
+class OGC_GRAPH_API DrawFacade {
 public:
     static DrawFacade& Instance();
     

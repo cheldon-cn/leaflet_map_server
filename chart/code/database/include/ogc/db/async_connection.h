@@ -75,7 +75,15 @@ private:
             try {
                 callback(func());
             } catch (const std::exception& e) {
+                try {
+                    callback(typename std::decay<decltype(func())>::type());
+                } catch (...) {
+                }
             } catch (...) {
+                try {
+                    callback(typename std::decay<decltype(func())>::type());
+                } catch (...) {
+                }
             }
         }
     };

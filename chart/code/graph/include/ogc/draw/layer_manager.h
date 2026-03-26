@@ -51,7 +51,7 @@ public:
 class LayerConfig;
 using LayerConfigPtr = std::unique_ptr<LayerConfig>;
 
-class LayerConfig {
+class OGC_GRAPH_API LayerConfig {
 public:
     LayerConfig();
     explicit LayerConfig(const std::string& name);
@@ -103,7 +103,7 @@ private:
 class LayerItem;
 using LayerItemPtr = std::unique_ptr<LayerItem>;
 
-class LayerItem {
+class OGC_GRAPH_API LayerItem {
 public:
     LayerItem();
     explicit LayerItem(CNLayer* layer, const LayerConfig& config);
@@ -130,7 +130,7 @@ private:
 class LayerManager;
 using LayerManagerPtr = std::unique_ptr<LayerManager>;
 
-class LayerManager {
+class OGC_GRAPH_API LayerManager {
 public:
     using LayerChangedCallback = std::function<void(int index)>;
     

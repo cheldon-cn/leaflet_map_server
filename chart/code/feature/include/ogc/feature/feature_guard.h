@@ -6,7 +6,7 @@
 
 namespace ogc {
 
-class CNFeatureGuard {
+class OGC_FEATURE_API CNFeatureGuard {
 public:
     explicit CNFeatureGuard(CNFeature* feature);
     ~CNFeatureGuard();

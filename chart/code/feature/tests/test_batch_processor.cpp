@@ -231,8 +231,3 @@ TEST_F(BatchProcessorTest, ErrorMessageTracking) {
     BatchResult result = processor.Process(&collection, BatchOperation::kRead);
     EXPECT_EQ(result.error_messages.size(), 0);
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

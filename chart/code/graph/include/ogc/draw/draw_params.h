@@ -1,13 +1,14 @@
 #ifndef OGC_DRAW_DRAW_PARAMS_H
 #define OGC_DRAW_DRAW_PARAMS_H
 
+#include "ogc/draw/export.h"
 #include "ogc/envelope.h"
 #include <cstdint>
 
 namespace ogc {
 namespace draw {
 
-struct DrawParams {
+struct OGC_GRAPH_API DrawParams {
     Envelope extent;
     double logical_width;
     double logical_height;

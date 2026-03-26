@@ -51,6 +51,10 @@ DrawResult CompositeSymbolizer::Symbolize(DrawContextPtr context, const Geometry
 }
 
 bool CompositeSymbolizer::CanSymbolize(GeomType geomType) const {
+    if (m_symbolizers.empty()) {
+        return true;
+    }
+    
     for (const auto& symbolizer : m_symbolizers) {
         if (symbolizer && symbolizer->CanSymbolize(geomType)) {
             return true;

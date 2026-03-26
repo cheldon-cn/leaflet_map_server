@@ -16,7 +16,6 @@ namespace ogc {
 namespace db {
 
 class DbResultSet;
-
 using DbResultSetPtr = std::unique_ptr<DbResultSet>;
 
 class OGC_DB_API DbStatement {
@@ -40,9 +39,8 @@ public:
     virtual Result BindNull(int paramIndex) = 0;
     virtual Result BindBlob(int paramIndex, const std::vector<uint8_t>& data) = 0;
     virtual Result BindBlob(int paramIndex, const uint8_t* data, size_t size) = 0;
-    
     virtual Result BindGeometry(int paramIndex, const Geometry* geometry) = 0;
-    virtual Result BindEnvelope(int paramIndex, const Envelope& envelope) = 0;
+    virtual Result BindEnvelope(int paramIndex, const ::ogc::Envelope& envelope) = 0;
     
     virtual Result BindInt(const std::string& paramName, int32_t value) = 0;
     virtual Result BindInt64(const std::string& paramName, int64_t value) = 0;

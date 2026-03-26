@@ -584,8 +584,3 @@ TEST_F(ReadWriteLockPerformanceTest, MixedReadWrite_Performance) {
     EXPECT_EQ(write_counter, num_writers * operations_per_thread);
     EXPECT_LT(duration.count(), 3000) << "Mixed read/write should complete in < 3s";
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

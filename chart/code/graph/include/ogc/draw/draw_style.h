@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_STYLE_H
 #define OGC_DRAW_DRAW_STYLE_H
 
+#include "ogc/draw/export.h"
 #include <cstdint>
 #include <string>
 
@@ -19,7 +20,7 @@ enum class LineJoinStyle {
     kBevel = 2
 };
 
-struct StrokeStyle {
+struct OGC_GRAPH_API StrokeStyle {
     uint32_t color;
     double width;
     LineCapStyle cap;
@@ -41,7 +42,7 @@ struct StrokeStyle {
     void Reset();
 };
 
-struct FillStyle {
+struct OGC_GRAPH_API FillStyle {
     uint32_t color;
     double opacity;
     bool visible;
@@ -61,7 +62,7 @@ struct FillStyle {
     void Reset();
 };
 
-struct DrawStyle {
+struct OGC_GRAPH_API DrawStyle {
     StrokeStyle stroke;
     FillStyle fill;
     double opacity;

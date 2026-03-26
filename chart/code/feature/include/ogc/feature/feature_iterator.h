@@ -7,7 +7,7 @@
 
 namespace ogc {
 
-class CNFeatureIterator {
+class OGC_FEATURE_API CNFeatureIterator {
 public:
     explicit CNFeatureIterator(const CNFeatureCollection* collection);
     ~CNFeatureIterator();

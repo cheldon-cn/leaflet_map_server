@@ -22,6 +22,7 @@ class LayerBoundaryTest : public ::testing::Test {
 protected:
     void SetUp() override {
         layer_ = std::make_unique<CNMemoryLayer>("boundary_test", GeomType::kPoint);
+        layer_->SetAutoFIDGeneration(false);
         
         auto* int_field = CreateCNFieldDefn("int_field");
         int_field->SetType(CNFieldType::kInteger);
@@ -711,9 +712,4 @@ TEST_F(FeatureStreamBoundaryTest, ResetAfterEnd) {
     
     auto batch = stream.ReadNextBatch(10);
     EXPECT_EQ(batch.size(), 5);
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
 }

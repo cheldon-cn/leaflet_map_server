@@ -1,8 +1,8 @@
 #ifndef OGC_DRAW_TRANSFORM_MANAGER_H
 #define OGC_DRAW_TRANSFORM_MANAGER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/coordinate_transformer.h"
-#include "export.h"
 #include <memory>
 #include <string>
 #include <unordered_map>

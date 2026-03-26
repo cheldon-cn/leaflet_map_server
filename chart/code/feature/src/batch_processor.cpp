@@ -12,7 +12,7 @@ struct CNBatchProcessor::Impl {
 };
 
 CNBatchProcessor::CNBatchProcessor()
-    : impl_(new Impl()), batch_size_(1000) {
+    : impl_(new Impl()), batch_size_(100) {
 }
 
 CNBatchProcessor::~CNBatchProcessor() {
@@ -46,6 +46,11 @@ BatchResult CNBatchProcessor::Process(CNFeatureCollection* collection, BatchOper
 
     switch (operation) {
         case BatchOperation::kRead:
+            for (size_t i = 0; i < total; ++i) {
+                if (impl_->progress_callback) {
+                    impl_->progress_callback(i + 1, total);
+                }
+            }
             result.success_count = total;
             break;
         case BatchOperation::kDelete:
@@ -58,6 +63,11 @@ BatchResult CNBatchProcessor::Process(CNFeatureCollection* collection, BatchOper
             break;
         case BatchOperation::kCreate:
         case BatchOperation::kUpdate:
+            for (size_t i = 0; i < total; ++i) {
+                if (impl_->progress_callback) {
+                    impl_->progress_callback(i + 1, total);
+                }
+            }
             result.success_count = total;
             break;
     }

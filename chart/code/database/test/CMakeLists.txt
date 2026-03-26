@@ -25,6 +25,10 @@ link_directories(
 set(TEST_SOURCES
     ${DATABASE_SOURCE_DIR}/test/wkb_converter_test.cpp
     ${DATABASE_SOURCE_DIR}/test/geojson_converter_test.cpp
+    ${DATABASE_SOURCE_DIR}/test/async_connection_test.cpp
+    ${DATABASE_SOURCE_DIR}/test/connection_pool_test.cpp
+    ${DATABASE_SOURCE_DIR}/test/integration_test.cpp
+    ${DATABASE_SOURCE_DIR}/test/performance_test.cpp
 )
 
 add_executable(ogc_database_test ${TEST_SOURCES})

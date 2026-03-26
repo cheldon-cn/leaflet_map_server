@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_ENGINE_TYPE_H
 #define OGC_DRAW_ENGINE_TYPE_H
 
+#include "ogc/draw/export.h"
 #include <string>
 
 namespace ogc {
@@ -14,9 +15,9 @@ enum class EngineType {
     kGPUAccelerated = 4
 };
 
-std::string GetEngineTypeString(EngineType type);
+OGC_GRAPH_API std::string GetEngineTypeString(EngineType type);
 
-std::string GetEngineTypeDescription(EngineType type);
+OGC_GRAPH_API std::string GetEngineTypeDescription(EngineType type);
 
 }  
 }  

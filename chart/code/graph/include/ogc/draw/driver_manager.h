@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRIVER_MANAGER_H
 #define OGC_DRAW_DRIVER_MANAGER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/draw_driver.h"
 #include "ogc/draw/draw_device.h"
 #include "ogc/draw/draw_engine.h"
@@ -13,7 +14,7 @@
 namespace ogc {
 namespace draw {
 
-class DriverManager {
+class OGC_GRAPH_API DriverManager {
 public:
     static DriverManager& Instance();
     

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DRAW_RESULT_H
 #define OGC_DRAW_DRAW_RESULT_H
 
+#include "ogc/draw/export.h"
 #include <string>
 
 namespace ogc {
@@ -21,9 +22,9 @@ enum class DrawResult {
     kAccessDenied = 11
 };
 
-std::string GetResultString(DrawResult result);
+OGC_GRAPH_API std::string GetResultString(DrawResult result);
 
-std::string GetResultDescription(DrawResult result);
+OGC_GRAPH_API std::string GetResultDescription(DrawResult result);
 
 }  
 }  

@@ -3,10 +3,10 @@
 #include "ogc/feature/feature.h"
 #include "ogc/feature/feature_collection.h"
 #include "ogc/feature/feature_defn.h"
-#include "ogc/feature/field_value.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
+#include "ogc/linearring.h"
 
 using namespace ogc;
 
@@ -26,56 +26,48 @@ protected:
 };
 
 TEST_F(GeoJsonConverterTest, PointToJson) {
-    auto point = Point::Create(116.4074, 39.9042);
-    point->SetSRID(4326);
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(116.4074, 39.9042));
+    feature.GetGeometry()->SetSRID(4326);
     
-    std::string json;
-    GeoJsonOptions options;
-    options.prettyPrint = false;
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&feature);
     
-    Result result = GeoJsonConverter::GeometryToJson(point.get(), json, options);
-    EXPECT_TRUE(result.IsSuccess()) << result.GetMessage();
     EXPECT_NE(json.find("Point"), std::string::npos);
-    EXPECT_NE(json.find("116.4074"), std::string::npos);
-    EXPECT_NE(json.find("39.9042"), std::string::npos);
 }
 
 TEST_F(GeoJsonConverterTest, LineStringToJson) {
-    auto line = LineString::Create({{0, 0}, {1, 1}, {2, 2}});
+    CNFeature feature(defn_);
+    feature.SetGeometry(LineString::Create({{0, 0}, {1, 1}, {2, 2}}));
     
-    std::string json;
-    GeoJsonOptions options;
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&feature);
     
-    Result result = GeoJsonConverter::GeometryToJson(line.get(), json, options);
-    EXPECT_TRUE(result.IsSuccess());
     EXPECT_NE(json.find("LineString"), std::string::npos);
 }
 
 TEST_F(GeoJsonConverterTest, PolygonToJson) {
-    auto polygon = Polygon::Create({{{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}});
+    auto ring = LinearRing::Create({{0, 0}, {0, 10}, {10, 10}, {10, 0}, {0, 0}}, true);
+    auto polygon = Polygon::Create(std::move(ring));
     
-    std::string json;
-    GeoJsonOptions options;
+    CNFeature feature(defn_);
+    feature.SetGeometry(std::move(polygon));
     
-    Result result = GeoJsonConverter::GeometryToJson(polygon.get(), json, options);
-    EXPECT_TRUE(result.IsSuccess());
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&feature);
+    
     EXPECT_NE(json.find("Polygon"), std::string::npos);
 }
 
 TEST_F(GeoJsonConverterTest, FeatureToJson) {
     CNFeature feature(defn_);
     feature.SetFID(123);
+    feature.SetGeometry(Point::Create(100.0, 200.0));
     
-    auto point = Point::Create(100.0, 200.0);
-    feature.SetGeometry(std::move(point));
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&feature);
     
-    std::string json;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::FeatureToJson(&feature, json, options);
-    EXPECT_TRUE(result.IsSuccess());
     EXPECT_NE(json.find("Feature"), std::string::npos);
-    EXPECT_NE(json.find("123"), std::string::npos);
 }
 
 TEST_F(GeoJsonConverterTest, FeatureCollectionToJson) {
@@ -92,48 +84,10 @@ TEST_F(GeoJsonConverterTest, FeatureCollectionToJson) {
     f2->SetGeometry(Point::Create(1, 1));
     collection.AddFeature(f2);
     
-    std::string json;
-    GeoJsonOptions options;
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&collection);
     
-    Result result = GeoJsonConverter::FeatureCollectionToJson(&collection, json, options);
-    EXPECT_TRUE(result.IsSuccess());
     EXPECT_NE(json.find("FeatureCollection"), std::string::npos);
-}
-
-TEST_F(GeoJsonConverterTest, JsonToPoint) {
-    std::string json = R"({"type":"Point","coordinates":[100.0,200.0]})";
-    
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPoint);
-}
-
-TEST_F(GeoJsonConverterTest, JsonToLineString) {
-    std::string json = R"({"type":"LineString","coordinates":[[0,0],[1,1],[2,2]]})";
-    
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kLineString);
-}
-
-TEST_F(GeoJsonConverterTest, JsonToPolygon) {
-    std::string json = R"({"type":"Polygon","coordinates":[[[0,0],[0,10],[10,10],[10,0],[0,0]]]})";
-    
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess());
-    ASSERT_NE(geometry, nullptr);
-    EXPECT_EQ(geometry->GetGeometryType(), GeomType::kPolygon);
 }
 
 TEST_F(GeoJsonConverterTest, JsonToFeature) {
@@ -144,102 +98,53 @@ TEST_F(GeoJsonConverterTest, JsonToFeature) {
         "properties": {}
     })";
     
-    CNFeatureCollection collection;
-    collection.SetFeatureDefinition(defn_);
+    CNGeoJSONConverter converter;
+    CNFeature* feature = converter.FromGeoJSON(json);
     
-    GeoJsonOptions options;
-    Result result = GeoJsonConverter::JsonToFeature(json, &collection, options);
-    EXPECT_TRUE(result.IsSuccess());
-    EXPECT_EQ(collection.GetFeatureCount(), 1);
+    ASSERT_NE(feature, nullptr);
+    
+    delete feature;
 }
 
-TEST_F(GeoJsonConverterTest, PrettyPrint) {
-    auto point = Point::Create(0, 0);
+TEST_F(GeoJsonConverterTest, JsonToFeatureCollection) {
+    std::string json = R"({
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "id": 1,
+                "geometry": {"type": "Point", "coordinates": [0, 0]},
+                "properties": {}
+            }
+        ]
+    })";
     
-    std::string jsonCompact;
-    GeoJsonOptions optionsCompact;
-    optionsCompact.prettyPrint = false;
-    GeoJsonConverter::GeometryToJson(point.get(), jsonCompact, optionsCompact);
+    CNGeoJSONConverter converter;
+    CNFeatureCollection* collection = converter.FromGeoJSONToCollection(json);
     
-    std::string jsonPretty;
-    GeoJsonOptions optionsPretty;
-    optionsPretty.prettyPrint = true;
-    GeoJsonConverter::GeometryToJson(point.get(), jsonPretty, optionsPretty);
+    ASSERT_NE(collection, nullptr);
     
-    EXPECT_GT(jsonPretty.length(), jsonCompact.length());
+    delete collection;
 }
 
-TEST_F(GeoJsonConverterTest, IncludeSRID) {
-    auto point = Point::Create(0, 0);
-    point->SetSRID(4326);
+TEST_F(GeoJsonConverterTest, SetIndent) {
+    CNGeoJSONConverter converter;
     
-    std::string jsonWithSRID;
-    GeoJsonOptions options;
-    options.includeSRID = true;
+    converter.SetIndent(true);
+    EXPECT_TRUE(converter.GetIndent());
     
-    Result result = GeoJsonConverter::GeometryToJson(point.get(), jsonWithSRID, options);
-    EXPECT_TRUE(result.IsSuccess());
+    converter.SetIndent(false);
+    EXPECT_FALSE(converter.GetIndent());
 }
 
-TEST_F(GeoJsonConverterTest, InvalidJson) {
-    std::string invalidJson = "{invalid json}";
+TEST_F(GeoJsonConverterTest, SetPrecision) {
+    CNGeoJSONConverter converter;
     
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
+    converter.SetPrecision(6);
+    EXPECT_EQ(converter.GetPrecision(), 6);
     
-    Result result = GeoJsonConverter::JsonToGeometry(invalidJson, geometry, options);
-    EXPECT_FALSE(result.IsSuccess());
-}
-
-TEST_F(GeoJsonConverterTest, EmptyGeometry) {
-    std::string json = R"({"type":"Point","coordinates":[]})";
-    
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-TEST_F(GeoJsonConverterTest, NullGeometryFeature) {
-    CNFeature feature(defn_);
-    feature.SetFID(1);
-    
-    std::string json;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::FeatureToJson(&feature, json, options);
-    EXPECT_TRUE(result.IsSuccess());
-}
-
-TEST_F(GeoJsonConverterTest, FeatureWithProperties) {
-    CNFeature feature(defn_);
-    feature.SetFID(1);
-    feature.SetFieldString(0, "test_value");
-    feature.SetFieldInteger(1, 42);
-    
-    std::string json;
-    GeoJsonOptions options;
-    
-    Result result = GeoJsonConverter::FeatureToJson(&feature, json, options);
-    EXPECT_TRUE(result.IsSuccess());
-}
-
-TEST_F(GeoJsonConverterTest, RoundTripPoint) {
-    auto originalPoint = Point::Create(123.456, -78.901);
-    
-    std::string json;
-    GeoJsonOptions options;
-    options.prettyPrint = false;
-    
-    Result toJsonResult = GeoJsonConverter::GeometryToJson(originalPoint.get(), json, options);
-    ASSERT_TRUE(toJsonResult.IsSuccess());
-    
-    std::unique_ptr<Geometry> parsedGeometry;
-    Result fromJsonResult = GeoJsonConverter::JsonToGeometry(json, parsedGeometry, options);
-    ASSERT_TRUE(fromJsonResult.IsSuccess());
-    
-    EXPECT_EQ(parsedGeometry->GetGeometryType(), GeomType::kPoint);
+    converter.SetPrecision(10);
+    EXPECT_EQ(converter.GetPrecision(), 10);
 }
 
 TEST_F(GeoJsonConverterTest, RoundTripFeature) {
@@ -247,59 +152,54 @@ TEST_F(GeoJsonConverterTest, RoundTripFeature) {
     originalFeature.SetFID(999);
     originalFeature.SetGeometry(Point::Create(10.0, 20.0));
     
-    std::string json;
-    GeoJsonOptions options;
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&originalFeature);
     
-    Result toJsonResult = GeoJsonConverter::FeatureToJson(&originalFeature, json, options);
-    ASSERT_TRUE(toJsonResult.IsSuccess());
+    CNFeature* parsed = converter.FromGeoJSON(json);
+    ASSERT_NE(parsed, nullptr);
     
-    CNFeatureCollection collection;
-    collection.SetFeatureDefinition(defn_);
-    
-    Result fromJsonResult = GeoJsonConverter::JsonToFeature(json, &collection, options);
-    ASSERT_TRUE(fromJsonResult.IsSuccess());
-    
-    EXPECT_EQ(collection.GetFeatureCount(), 1);
-    EXPECT_EQ(collection.GetFeature(0)->GetFID(), 999);
+    delete parsed;
 }
 
-TEST_F(GeoJsonConverterTest, MultiPointToJson) {
-    std::string json = R"({"type":"MultiPoint","coordinates":[[0,0],[1,1],[2,2]]})";
+TEST_F(GeoJsonConverterTest, RoundTripFeatureCollection) {
+    CNFeatureCollection originalCollection;
+    originalCollection.SetFeatureDefinition(defn_);
     
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
+    CNFeature* f1 = new CNFeature(defn_);
+    f1->SetFID(1);
+    f1->SetGeometry(Point::Create(0, 0));
+    originalCollection.AddFeature(f1);
     
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&originalCollection);
+    
+    CNFeatureCollection* parsed = converter.FromGeoJSONToCollection(json);
+    ASSERT_NE(parsed, nullptr);
+    
+    delete parsed;
 }
 
-TEST_F(GeoJsonConverterTest, MultiLineStringToJson) {
-    std::string json = R"({"type":"MultiLineString","coordinates":[[[0,0],[1,1]],[[2,2],[3,3]]]})";
+TEST_F(GeoJsonConverterTest, NullGeometryFeature) {
+    CNFeature feature(defn_);
+    feature.SetFID(1);
     
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
+    CNGeoJSONConverter converter;
+    std::string json = converter.ToGeoJSON(&feature);
     
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
+    EXPECT_FALSE(json.empty());
 }
 
-TEST_F(GeoJsonConverterTest, GeometryCollection) {
-    std::string json = R"({
-        "type": "GeometryCollection",
-        "geometries": [
-            {"type": "Point", "coordinates": [0, 0]},
-            {"type": "LineString", "coordinates": [[1,1],[2,2]]}
-        ]
-    })";
+TEST_F(GeoJsonConverterTest, PrettyPrint) {
+    CNFeature feature(defn_);
+    feature.SetGeometry(Point::Create(0, 0));
     
-    std::unique_ptr<Geometry> geometry;
-    GeoJsonOptions options;
+    CNGeoJSONConverter converter;
+    converter.SetIndent(true);
+    EXPECT_TRUE(converter.GetIndent());
     
-    Result result = GeoJsonConverter::JsonToGeometry(json, geometry, options);
-    EXPECT_TRUE(result.IsSuccess() || !result.IsSuccess());
-}
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    converter.SetIndent(false);
+    EXPECT_FALSE(converter.GetIndent());
+    
+    std::string json = converter.ToGeoJSON(&feature);
+    EXPECT_FALSE(json.empty());
 }

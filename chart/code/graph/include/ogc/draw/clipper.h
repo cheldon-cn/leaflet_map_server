@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_CLIPPER_H
 #define OGC_DRAW_CLIPPER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/envelope.h"
 #include "ogc/geometry.h"
 #include <memory>
@@ -19,7 +20,7 @@ enum class ClipResult {
 class Clipper;
 typedef std::unique_ptr<Clipper> ClipperPtr;
 
-class Clipper {
+class OGC_GRAPH_API Clipper {
 public:
     Clipper();
     explicit Clipper(const Envelope& clipEnvelope);

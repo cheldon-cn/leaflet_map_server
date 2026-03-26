@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_PERFORMANCE_METRICS_H
 #define OGC_DRAW_PERFORMANCE_METRICS_H
 
+#include "ogc/draw/export.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -171,7 +172,7 @@ struct CpuMetrics {
     }
 };
 
-struct PerformanceMetrics {
+struct OGC_GRAPH_API PerformanceMetrics {
     FrameMetrics frame;
     std::vector<RenderPassMetrics> renderPasses;
     MemoryMetrics memory;
@@ -186,7 +187,7 @@ struct PerformanceMetrics {
     double GetEfficiencyScore() const;
 };
 
-class PerformanceMetricsCollector {
+class OGC_GRAPH_API PerformanceMetricsCollector {
 public:
     using Ptr = std::shared_ptr<PerformanceMetricsCollector>;
     

@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_DEVICE_TYPE_H
 #define OGC_DRAW_DEVICE_TYPE_H
 
+#include "ogc/draw/export.h"
 #include <string>
 
 namespace ogc {
@@ -16,9 +17,9 @@ enum class DeviceType {
     kPrinter = 6
 };
 
-std::string GetDeviceTypeString(DeviceType type);
+OGC_GRAPH_API std::string GetDeviceTypeString(DeviceType type);
 
-std::string GetDeviceTypeDescription(DeviceType type);
+OGC_GRAPH_API std::string GetDeviceTypeDescription(DeviceType type);
 
 }  
 }  

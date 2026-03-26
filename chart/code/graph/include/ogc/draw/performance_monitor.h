@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_PERFORMANCE_MONITOR_H
 #define OGC_DRAW_PERFORMANCE_MONITOR_H
 
+#include "ogc/draw/export.h"
 #include <ogc/draw/performance_metrics.h>
 #include <functional>
 #include <memory>
@@ -70,7 +71,7 @@ enum class PerformanceLevel {
     kCritical = 4
 };
 
-class PerformanceMonitor {
+class OGC_GRAPH_API PerformanceMonitor {
 public:
     using Ptr = std::shared_ptr<PerformanceMonitor>;
     

@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "ogc/feature/feature_defn.h"
 #include "ogc/feature/field_defn.h"
 #include "ogc/feature/geom_field_defn.h"
@@ -12,136 +12,143 @@ protected:
 };
 
 TEST_F(FeatureDefnTest, DefaultConstructor) {
-    CNFeatureDefn defn;
-    EXPECT_EQ(defn.GetFieldCount(), 0);
-    EXPECT_EQ(defn.GetGeomFieldCount(), 0);
-    EXPECT_EQ(defn.GetName(), "");
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
+    EXPECT_NE(defn, nullptr);
+    EXPECT_EQ(defn->GetFieldCount(), 0);
+    EXPECT_EQ(defn->GetGeomFieldCount(), 0);
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, NamedConstructor) {
     CNFeatureDefn* defn = CNFeatureDefn::Create("test_feature");
     EXPECT_NE(defn, nullptr);
-    EXPECT_EQ(defn->GetName(), "test_feature");
+    EXPECT_STREQ(defn->GetName(), "test_feature");
     defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, SetName) {
-    CNFeatureDefn defn;
-    defn.SetName("my_feature");
-    EXPECT_EQ(defn.GetName(), "my_feature");
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
+    defn->SetName("my_feature");
+    EXPECT_STREQ(defn->GetName(), "my_feature");
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, AddFieldDefn) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNFieldDefn* fieldDefn = CNFieldDefn::Create("id", CNFieldType::kInteger);
-    int index = defn.AddFieldDefn(fieldDefn);
+    CNFieldDefn* fieldDefn = CreateCNFieldDefn("id");
+    fieldDefn->SetType(CNFieldType::kInteger);
+    defn->AddFieldDefn(fieldDefn);
     
-    EXPECT_EQ(index, 0);
-    EXPECT_EQ(defn.GetFieldCount(), 1);
+    EXPECT_EQ(defn->GetFieldCount(), 1);
     
-    fieldDefn->ReleaseReference();
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, AddMultipleFields) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNFieldDefn* f1 = CNFieldDefn::Create("id", CNFieldType::kInteger);
-    CNFieldDefn* f2 = CNFieldDefn::Create("name", CNFieldType::kString);
-    CNFieldDefn* f3 = CNFieldDefn::Create("value", CNFieldType::kReal);
+    CNFieldDefn* f1 = CreateCNFieldDefn("id");
+    f1->SetType(CNFieldType::kInteger);
     
-    defn.AddFieldDefn(f1);
-    defn.AddFieldDefn(f2);
-    defn.AddFieldDefn(f3);
+    CNFieldDefn* f2 = CreateCNFieldDefn("name");
+    f2->SetType(CNFieldType::kString);
     
-    EXPECT_EQ(defn.GetFieldCount(), 3);
+    CNFieldDefn* f3 = CreateCNFieldDefn("value");
+    f3->SetType(CNFieldType::kReal);
     
-    f1->ReleaseReference();
-    f2->ReleaseReference();
-    f3->ReleaseReference();
+    defn->AddFieldDefn(f1);
+    defn->AddFieldDefn(f2);
+    defn->AddFieldDefn(f3);
+    
+    EXPECT_EQ(defn->GetFieldCount(), 3);
+    
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetFieldDefn) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNFieldDefn* field = CNFieldDefn::Create("test_field", CNFieldType::kString);
-    defn.AddFieldDefn(field);
+    CNFieldDefn* field = CreateCNFieldDefn("test_field");
+    field->SetType(CNFieldType::kString);
+    defn->AddFieldDefn(field);
     
-    CNFieldDefn* retrieved = defn.GetFieldDefn(0);
+    CNFieldDefn* retrieved = defn->GetFieldDefn(0);
     ASSERT_NE(retrieved, nullptr);
-    EXPECT_EQ(retrieved->GetName(), "test_field");
+    EXPECT_STREQ(retrieved->GetName(), "test_field");
     
-    field->ReleaseReference();
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetFieldDefnByName) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNFieldDefn* field = CNFieldDefn::Create("my_field", CNFieldType::kReal);
-    defn.AddFieldDefn(field);
+    CNFieldDefn* field = CreateCNFieldDefn("my_field");
+    field->SetType(CNFieldType::kReal);
+    defn->AddFieldDefn(field);
     
-    int index = defn.GetFieldIndex("my_field");
+    int index = defn->GetFieldIndex("my_field");
     EXPECT_EQ(index, 0);
     
-    CNFieldDefn* retrieved = defn.GetFieldDefn("my_field");
-    ASSERT_NE(retrieved, nullptr);
-    
-    field->ReleaseReference();
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetFieldDefn_InvalidIndex) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNFieldDefn* retrieved = defn.GetFieldDefn(999);
+    CNFieldDefn* retrieved = defn->GetFieldDefn(999);
     EXPECT_EQ(retrieved, nullptr);
+    
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetFieldIndex_NotFound) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    int index = defn.GetFieldIndex("nonexistent");
+    int index = defn->GetFieldIndex("nonexistent");
     EXPECT_EQ(index, -1);
+    
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, AddGeomFieldDefn) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNGeomFieldDefn* geomField = CNGeomFieldDefn::Create("geometry");
-    int index = defn.AddGeomFieldDefn(geomField);
+    CNGeomFieldDefn* geomField = CreateCNGeomFieldDefn("geometry");
+    defn->AddGeomFieldDefn(geomField);
     
-    EXPECT_EQ(index, 0);
-    EXPECT_EQ(defn.GetGeomFieldCount(), 1);
+    EXPECT_EQ(defn->GetGeomFieldCount(), 1);
     
-    geomField->ReleaseReference();
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetGeomFieldDefn) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNGeomFieldDefn* geomField = CNGeomFieldDefn::Create("shape");
-    geomField->SetGeometryType(GeomType::kPoint);
-    defn.AddGeomFieldDefn(geomField);
+    CNGeomFieldDefn* geomField = CreateCNGeomFieldDefn("shape");
+    geomField->SetGeomType(GeomType::kPoint);
+    defn->AddGeomFieldDefn(geomField);
     
-    CNGeomFieldDefn* retrieved = defn.GetGeomFieldDefn(0);
+    CNGeomFieldDefn* retrieved = defn->GetGeomFieldDefn(0);
     ASSERT_NE(retrieved, nullptr);
-    EXPECT_EQ(retrieved->GetName(), "shape");
+    EXPECT_STREQ(retrieved->GetName(), "shape");
     
-    geomField->ReleaseReference();
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, Clone) {
     CNFeatureDefn* original = CNFeatureDefn::Create("original");
     
-    CNFieldDefn* field = CNFieldDefn::Create("id", CNFieldType::kInteger);
+    CNFieldDefn* field = CreateCNFieldDefn("id");
+    field->SetType(CNFieldType::kInteger);
     original->AddFieldDefn(field);
-    field->ReleaseReference();
     
     CNFeatureDefn* cloned = original->Clone();
     ASSERT_NE(cloned, nullptr);
-    EXPECT_EQ(cloned->GetName(), "original");
+    EXPECT_STREQ(cloned->GetName(), "original");
     EXPECT_EQ(cloned->GetFieldCount(), 1);
     
-    delete cloned;
+    cloned->ReleaseReference();
     original->ReleaseReference();
 }
 
@@ -153,7 +160,7 @@ TEST_F(FeatureDefnTest, Clone_Empty) {
     EXPECT_EQ(cloned->GetFieldCount(), 0);
     EXPECT_EQ(cloned->GetGeomFieldCount(), 0);
     
-    delete cloned;
+    cloned->ReleaseReference();
     original->ReleaseReference();
 }
 
@@ -170,126 +177,92 @@ TEST_F(FeatureDefnTest, ReferenceCounting) {
     defn->ReleaseReference();
 }
 
-TEST_F(FeatureDefnTest, IsSame) {
-    CNFeatureDefn* defn1 = CNFeatureDefn::Create("feature1");
-    CNFeatureDefn* defn2 = CNFeatureDefn::Create("feature1");
-    CNFeatureDefn* defn3 = CNFeatureDefn::Create("feature2");
+TEST_F(FeatureDefnTest, DeleteFieldDefn) {
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    EXPECT_TRUE(defn1->IsSame(defn2));
-    EXPECT_FALSE(defn1->IsSame(defn3));
+    CNFieldDefn* f1 = CreateCNFieldDefn("field1");
+    f1->SetType(CNFieldType::kInteger);
     
-    defn1->ReleaseReference();
-    defn2->ReleaseReference();
-    defn3->ReleaseReference();
+    CNFieldDefn* f2 = CreateCNFieldDefn("field2");
+    f2->SetType(CNFieldType::kString);
+    
+    defn->AddFieldDefn(f1);
+    defn->AddFieldDefn(f2);
+    
+    EXPECT_EQ(defn->GetFieldCount(), 2);
+    
+    defn->DeleteFieldDefn(0);
+    EXPECT_EQ(defn->GetFieldCount(), 1);
+    
+    defn->ReleaseReference();
 }
 
-TEST_F(FeatureDefnTest, RemoveFieldDefn) {
-    CNFeatureDefn defn;
-    
-    CNFieldDefn* f1 = CNFieldDefn::Create("field1", CNFieldType::kInteger);
-    CNFieldDefn* f2 = CNFieldDefn::Create("field2", CNFieldType::kString);
-    
-    defn.AddFieldDefn(f1);
-    defn.AddFieldDefn(f2);
-    
-    EXPECT_EQ(defn.GetFieldCount(), 2);
-    
-    defn.RemoveFieldDefn(0);
-    EXPECT_EQ(defn.GetFieldCount(), 1);
-    
-    f1->ReleaseReference();
-    f2->ReleaseReference();
-}
-
-TEST_F(FeatureDefnTest, ClearFields) {
-    CNFeatureDefn defn;
+TEST_F(FeatureDefnTest, ClearFieldDefns) {
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
     for (int i = 0; i < 5; ++i) {
-        CNFieldDefn* field = CNFieldDefn::Create("field" + std::to_string(i), CNFieldType::kString);
-        defn.AddFieldDefn(field);
-        field->ReleaseReference();
+        CNFieldDefn* field = CreateCNFieldDefn(("field" + std::to_string(i)).c_str());
+        field->SetType(CNFieldType::kString);
+        defn->AddFieldDefn(field);
     }
     
-    EXPECT_EQ(defn.GetFieldCount(), 5);
+    EXPECT_EQ(defn->GetFieldCount(), 5);
     
-    defn.ClearFields();
-    EXPECT_EQ(defn.GetFieldCount(), 0);
+    defn->ClearFieldDefns();
+    EXPECT_EQ(defn->GetFieldCount(), 0);
+    
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, EmptyName) {
-    CNFeatureDefn defn;
-    defn.SetName("");
-    EXPECT_EQ(defn.GetName(), "");
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
+    defn->SetName("");
+    EXPECT_STREQ(defn->GetName(), "");
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, LongName) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     std::string longName(500, 'a');
-    defn.SetName(longName);
-    EXPECT_EQ(defn.GetName(), longName);
+    defn->SetName(longName.c_str());
+    EXPECT_STREQ(defn->GetName(), longName.c_str());
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, MultipleGeomFields) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNGeomFieldDefn* g1 = CNGeomFieldDefn::Create("geom1");
-    g1->SetGeometryType(GeomType::kPoint);
+    CNGeomFieldDefn* g1 = CreateCNGeomFieldDefn("geom1");
+    g1->SetGeomType(GeomType::kPoint);
     
-    CNGeomFieldDefn* g2 = CNGeomFieldDefn::Create("geom2");
-    g2->SetGeometryType(GeomType::kPolygon);
+    CNGeomFieldDefn* g2 = CreateCNGeomFieldDefn("geom2");
+    g2->SetGeomType(GeomType::kPolygon);
     
-    defn.AddGeomFieldDefn(g1);
-    defn.AddGeomFieldDefn(g2);
+    defn->AddGeomFieldDefn(g1);
+    defn->AddGeomFieldDefn(g2);
     
-    EXPECT_EQ(defn.GetGeomFieldCount(), 2);
+    EXPECT_EQ(defn->GetGeomFieldCount(), 2);
     
-    g1->ReleaseReference();
-    g2->ReleaseReference();
-}
-
-TEST_F(FeatureDefnTest, CopyConstructor) {
-    CNFeatureDefn original;
-    original.SetName("original");
-    
-    CNFeatureDefn copy(original);
-    EXPECT_EQ(copy.GetName(), "original");
-}
-
-TEST_F(FeatureDefnTest, AssignmentOperator) {
-    CNFeatureDefn original;
-    original.SetName("assigned");
-    
-    CNFeatureDefn assigned;
-    assigned = original;
-    
-    EXPECT_EQ(assigned.GetName(), "assigned");
-}
-
-TEST_F(FeatureDefnTest, SetGeometryType) {
-    CNFeatureDefn defn;
-    defn.SetGeometryType(GeomType::kPoint);
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kPoint);
-    
-    defn.SetGeometryType(GeomType::kPolygon);
-    EXPECT_EQ(defn.GetGeometryType(), GeomType::kPolygon);
+    defn->ReleaseReference();
 }
 
 TEST_F(FeatureDefnTest, GetGeomFieldIndex) {
-    CNFeatureDefn defn;
+    CNFeatureDefn* defn = CNFeatureDefn::Create();
     
-    CNGeomFieldDefn* geom = CNGeomFieldDefn::Create("my_geom");
-    defn.AddGeomFieldDefn(geom);
+    CNGeomFieldDefn* geom = CreateCNGeomFieldDefn("my_geom");
+    defn->AddGeomFieldDefn(geom);
     
-    int index = defn.GetGeomFieldIndex("my_geom");
+    int index = defn->GetGeomFieldIndex("my_geom");
     EXPECT_EQ(index, 0);
     
-    int notFound = defn.GetGeomFieldIndex("nonexistent");
+    int notFound = defn->GetGeomFieldIndex("nonexistent");
     EXPECT_EQ(notFound, -1);
     
-    geom->ReleaseReference();
+    defn->ReleaseReference();
 }
 
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+TEST_F(FeatureDefnTest, IsValid) {
+    CNFeatureDefn* defn = CNFeatureDefn::Create("valid_feature");
+    EXPECT_TRUE(defn->IsValid());
+    defn->ReleaseReference();
 }

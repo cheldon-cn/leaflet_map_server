@@ -85,6 +85,15 @@ LODLevelPtr LODManager::GetLODLevel(int level) const {
     return it != m_levels.end() ? *it : nullptr;
 }
 
+LODLevelPtr LODManager::GetLODLevelInternal(int level) const {
+    auto it = std::find_if(m_levels.begin(), m_levels.end(),
+        [level](const LODLevelPtr& l) {
+            return l && l->GetLevel() == level;
+        });
+    
+    return it != m_levels.end() ? *it : nullptr;
+}
+
 std::vector<LODLevelPtr> LODManager::GetLODLevels() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_levels;
@@ -219,7 +228,7 @@ void LODManager::CreateWebMercatorLODs(int minLevel, int maxLevel) {
 double LODManager::GetResolutionForLevel(int level) const {
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    auto lodLevel = GetLODLevel(level);
+    auto lodLevel = GetLODLevelInternal(level);
     if (lodLevel) {
         return lodLevel->GetResolution();
     }
@@ -243,13 +252,34 @@ int LODManager::GetLevelForResolution(double resolution) const {
 }
 
 double LODManager::GetScaleForLevel(int level, double dpi) const {
-    double resolution = GetResolutionForLevel(level);
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    auto lodLevel = GetLODLevelInternal(level);
+    double resolution = 0.0;
+    if (lodLevel) {
+        resolution = lodLevel->GetResolution();
+    } else {
+        resolution = WEB_MERCATOR_RESOLUTION_0 / std::pow(2.0, level);
+    }
+    
     return resolution * dpi * INCHES_PER_METER;
 }
 
 int LODManager::GetLevelForScale(double scale, double dpi) const {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
     double resolution = scale / (dpi * INCHES_PER_METER);
-    return GetLevelForResolution(resolution);
+    
+    for (const auto& level : m_levels) {
+        if (level) {
+            double levelRes = level->GetResolution();
+            if (levelRes > 0.0 && resolution >= levelRes / m_transitionFactor) {
+                return level->GetLevel();
+            }
+        }
+    }
+    
+    return m_levels.empty() ? 0 : m_levels.back()->GetLevel();
 }
 
 bool LODManager::IsLODInRange(int lod) const {

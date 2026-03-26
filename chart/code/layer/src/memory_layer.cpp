@@ -169,7 +169,7 @@ CNStatus CNMemoryLayer::CreateFeature(CNFeature* feature) {
     }
 
     int64_t fid = feature->GetFID();
-    if (fid <= 0 || fid_index_.find(fid) != fid_index_.end()) {
+    if (fid_index_.find(fid) != fid_index_.end()) {
         if (auto_fid_generation_) {
             fid = GenerateFID();
             feature->SetFID(fid);

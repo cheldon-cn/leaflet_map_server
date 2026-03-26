@@ -5,6 +5,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <set>
 
 namespace ogc {
 
@@ -32,6 +33,8 @@ GeomResult RTree<T>::Insert(const Envelope& envelope, const T& item) {
         return GeomResult::kInvalidGeometry;
     }
     
+    m_root->bounds.ExpandToInclude(envelope);
+    
     Node* leaf = ChooseLeaf(envelope);
     
     leaf->entries.emplace_back(envelope, item);
@@ -40,9 +43,9 @@ GeomResult RTree<T>::Insert(const Envelope& envelope, const T& item) {
     
     if (leaf->entries.size() > m_config.maxEntries) {
         SplitNode(leaf);
+    } else {
+        AdjustTree(leaf);
     }
-    
-    AdjustTree(leaf);
     
     return GeomResult::kSuccess;
 }
@@ -78,7 +81,53 @@ GeomResult RTree<T>::BulkLoad(const std::vector<std::pair<Envelope, T>>& items) 
 
 template<typename T>
 bool RTree<T>::Remove(const Envelope& envelope, const T& item) {
-    return false;
+    if (!m_root || envelope.IsNull()) {
+        return false;
+    }
+    
+    std::function<bool(Node*, const Envelope&, const T&)> removeRecursive;
+    removeRecursive = [&](Node* node, const Envelope& env, const T& value) -> bool {
+        if (node->isLeaf) {
+            for (auto it = node->entries.begin(); it != node->entries.end(); ++it) {
+                if (it->first == env && it->second == value) {
+                    node->entries.erase(it);
+                    m_size--;
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        for (auto& child : node->children) {
+            if (child->bounds.Intersects(env)) {
+                if (removeRecursive(child.get(), env, value)) {
+                    child->bounds = Envelope();
+                    for (const auto& entry : child->entries) {
+                        child->bounds.ExpandToInclude(entry.first);
+                    }
+                    for (const auto& grandchild : child->children) {
+                        child->bounds.ExpandToInclude(grandchild->bounds);
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    
+    bool result = removeRecursive(m_root.get(), envelope, item);
+    
+    if (result) {
+        m_root->bounds = Envelope();
+        for (const auto& entry : m_root->entries) {
+            m_root->bounds.ExpandToInclude(entry.first);
+        }
+        for (const auto& child : m_root->children) {
+            m_root->bounds.ExpandToInclude(child->bounds);
+        }
+    }
+    
+    return result;
 }
 
 template<typename T>
@@ -185,7 +234,7 @@ std::vector<T> RTree<T>::QueryNearest(const Coordinate& point, size_t k) const {
 
 template<typename T>
 Envelope RTree<T>::GetBounds() const {
-    if (!m_root) return Envelope();
+    if (!m_root || m_size == 0) return Envelope();
     return m_root->bounds;
 }
 
@@ -204,7 +253,7 @@ size_t RTree<T>::GetHeight() const {
 
 template<typename T>
 size_t RTree<T>::GetNodeCount() const {
-    if (!m_root) return 0;
+    if (!m_root || m_size == 0) return 0;
     
     size_t count = 0;
     std::queue<Node*> queue;
@@ -317,71 +366,196 @@ typename RTree<T>::Node* RTree<T>::ChooseLeaf(const Envelope& envelope) {
 template<typename T>
 void RTree<T>::SplitNode(Node* node) {
     std::vector<std::pair<Envelope, T>> entries = std::move(node->entries);
+    std::vector<std::unique_ptr<Node>> children = std::move(node->children);
     
-    size_t seed1 = 0, seed2 = 1;
-    double maxWaste = -1.0;
-    for (size_t i = 0; i < entries.size(); ++i) {
-        for (size_t j = i + 1; j < entries.size(); ++j) {
-            Envelope combined = entries[i].first.Union(entries[j].first);
-            double waste = combined.GetArea() - entries[i].first.GetArea() - entries[j].first.GetArea();
-            
-            if (waste > maxWaste) {
-                maxWaste = waste;
-                seed1 = i;
-                seed2 = j;
+    if (children.empty()) {
+        size_t seed1 = 0, seed2 = 1;
+        double maxWaste = -1.0;
+        for (size_t i = 0; i < entries.size(); ++i) {
+            for (size_t j = i + 1; j < entries.size(); ++j) {
+                Envelope combined = entries[i].first.Union(entries[j].first);
+                double waste = combined.GetArea() - entries[i].first.GetArea() - entries[j].first.GetArea();
+                
+                if (waste > maxWaste) {
+                    maxWaste = waste;
+                    seed1 = i;
+                    seed2 = j;
+                }
             }
         }
-    }
-    
-    std::unique_ptr<Node> newNode(new Node());
-    newNode->isLeaf = true;
-    
-    node->entries.clear();
-    node->bounds = Envelope();
-    newNode->bounds = Envelope();
-    
-    node->entries.push_back(entries[seed1]);
-    node->bounds.ExpandToInclude(entries[seed1].first);
-    
-    newNode->entries.push_back(entries[seed2]);
-    newNode->bounds.ExpandToInclude(entries[seed2].first);
-    
-    std::vector<bool> assigned(entries.size(), false);
-    assigned[seed1] = true;
-    assigned[seed2] = true;
-    
-    for (size_t i = 0; i < entries.size(); ++i) {
-        if (assigned[i]) continue;
         
-        double enlarge1 = EnlargeArea(node->bounds, entries[i].first);
-        double enlarge2 = EnlargeArea(newNode->bounds, entries[i].first);
+        std::unique_ptr<Node> newNode(new Node());
+        newNode->isLeaf = true;
         
-        if (enlarge1 < enlarge2 || 
-            (enlarge1 == enlarge2 && node->entries.size() < newNode->entries.size())) {
-            node->entries.push_back(entries[i]);
-            node->bounds.ExpandToInclude(entries[i].first);
-        } else {
-            newNode->entries.push_back(entries[i]);
-            newNode->bounds.ExpandToInclude(entries[i].first);
+        node->entries.clear();
+        node->bounds = Envelope();
+        newNode->bounds = Envelope();
+        
+        node->entries.push_back(entries[seed1]);
+        node->bounds.ExpandToInclude(entries[seed1].first);
+        
+        newNode->entries.push_back(entries[seed2]);
+        newNode->bounds.ExpandToInclude(entries[seed2].first);
+        
+        std::vector<bool> assigned(entries.size(), false);
+        assigned[seed1] = true;
+        assigned[seed2] = true;
+        
+        for (size_t i = 0; i < entries.size(); ++i) {
+            if (assigned[i]) continue;
+            
+            double enlarge1 = EnlargeArea(node->bounds, entries[i].first);
+            double enlarge2 = EnlargeArea(newNode->bounds, entries[i].first);
+            
+            if (enlarge1 < enlarge2 || 
+                (enlarge1 == enlarge2 && node->entries.size() < newNode->entries.size())) {
+                node->entries.push_back(entries[i]);
+                node->bounds.ExpandToInclude(entries[i].first);
+            } else {
+                newNode->entries.push_back(entries[i]);
+                newNode->bounds.ExpandToInclude(entries[i].first);
+            }
+            assigned[i] = true;
         }
-        assigned[i] = true;
-    }
-    
-    if (node == m_root.get()) {
-        std::unique_ptr<Node> newRoot(new Node());
-        newRoot->isLeaf = false;
         
-        newRoot->children.push_back(std::move(m_root));
-        newRoot->children.push_back(std::move(newNode));
+        if (node == m_root.get()) {
+            std::unique_ptr<Node> newRoot(new Node());
+            newRoot->isLeaf = false;
+            
+            std::unique_ptr<Node> leftNode(new Node());
+            leftNode->isLeaf = node->isLeaf;
+            leftNode->entries = std::move(node->entries);
+            leftNode->children = std::move(node->children);
+            leftNode->bounds = node->bounds;
+            
+            newRoot->children.push_back(std::move(leftNode));
+            newRoot->children.push_back(std::move(newNode));
+            newRoot->bounds = newRoot->children[0]->bounds.Union(newRoot->children[1]->bounds);
+            
+            m_root = std::move(newRoot);
+        } else {
+            Node* parent = FindParent(m_root.get(), node);
+            if (parent) {
+                parent->children.push_back(std::move(newNode));
+                parent->bounds = Envelope();
+                for (auto& child : parent->children) {
+                    parent->bounds.ExpandToInclude(child->bounds);
+                }
+                
+                if (parent->children.size() > m_config.maxEntries) {
+                    SplitNode(parent);
+                }
+            }
+        }
+    } else {
+        size_t seed1 = 0, seed2 = 1;
+        double maxWaste = -1.0;
+        for (size_t i = 0; i < children.size(); ++i) {
+            for (size_t j = i + 1; j < children.size(); ++j) {
+                Envelope combined = children[i]->bounds.Union(children[j]->bounds);
+                double waste = combined.GetArea() - children[i]->bounds.GetArea() - children[j]->bounds.GetArea();
+                
+                if (waste > maxWaste) {
+                    maxWaste = waste;
+                    seed1 = i;
+                    seed2 = j;
+                }
+            }
+        }
         
-        newRoot->bounds = newRoot->children[0]->bounds.Union(newRoot->children[1]->bounds);
+        std::unique_ptr<Node> newNode(new Node());
+        newNode->isLeaf = false;
         
-        m_root = std::move(newRoot);
+        node->children.clear();
+        node->bounds = Envelope();
+        newNode->bounds = Envelope();
+        
+        node->children.push_back(std::move(children[seed1]));
+        node->bounds.ExpandToInclude(node->children.back()->bounds);
+        
+        newNode->children.push_back(std::move(children[seed2]));
+        newNode->bounds.ExpandToInclude(newNode->children.back()->bounds);
+        
+        std::vector<bool> assigned(children.size(), false);
+        assigned[seed1] = true;
+        assigned[seed2] = true;
+        
+        for (size_t i = 0; i < children.size(); ++i) {
+            if (assigned[i]) continue;
+            
+            double enlarge1 = EnlargeArea(node->bounds, children[i]->bounds);
+            double enlarge2 = EnlargeArea(newNode->bounds, children[i]->bounds);
+            
+            if (enlarge1 < enlarge2 || 
+                (enlarge1 == enlarge2 && node->children.size() < newNode->children.size())) {
+                node->children.push_back(std::move(children[i]));
+                node->bounds.ExpandToInclude(node->children.back()->bounds);
+            } else {
+                newNode->children.push_back(std::move(children[i]));
+                newNode->bounds.ExpandToInclude(newNode->children.back()->bounds);
+            }
+            assigned[i] = true;
+        }
+        
+        if (node == m_root.get()) {
+            std::unique_ptr<Node> newRoot(new Node());
+            newRoot->isLeaf = false;
+            
+            std::unique_ptr<Node> leftNode(new Node());
+            leftNode->isLeaf = false;
+            leftNode->children = std::move(node->children);
+            leftNode->bounds = node->bounds;
+            
+            newRoot->children.push_back(std::move(leftNode));
+            newRoot->children.push_back(std::move(newNode));
+            newRoot->bounds = newRoot->children[0]->bounds.Union(newRoot->children[1]->bounds);
+            
+            m_root = std::move(newRoot);
+        } else {
+            Node* parent = FindParent(m_root.get(), node);
+            if (parent) {
+                parent->children.push_back(std::move(newNode));
+                parent->bounds = Envelope();
+                for (auto& child : parent->children) {
+                    parent->bounds.ExpandToInclude(child->bounds);
+                }
+                
+                if (parent->children.size() > m_config.maxEntries) {
+                    SplitNode(parent);
+                }
+            }
+        }
     }
 }
 
 template<typename T>
 void RTree<T>::AdjustTree(Node* node) {
+    if (!node || node == m_root.get()) return;
+    
+    while (node) {
+        Node* parent = FindParent(m_root.get(), node);
+        if (parent) {
+            parent->bounds.ExpandToInclude(node->bounds);
+            node = parent;
+            if (node == m_root.get()) break;
+        } else {
+            break;
+        }
+    }
+}
+
+template<typename T>
+typename RTree<T>::Node* RTree<T>::FindParent(Node* current, Node* target) {
+    if (!current || current->isLeaf) return nullptr;
+    
+    for (auto& child : current->children) {
+        if (child.get() == target) {
+            return current;
+        }
+        Node* result = FindParent(child.get(), target);
+        if (result) return result;
+    }
+    return nullptr;
 }
 
 template<typename T>
@@ -395,16 +569,88 @@ template class RTree<std::shared_ptr<Point>>;
 
 template<typename T>
 Quadtree<T>::Quadtree(const Config& config) : m_config(config) {
+    if (!m_config.bounds.IsNull()) {
+        m_root = std::make_unique<QuadNode>();
+        m_root->bounds = m_config.bounds;
+    }
 }
 
 template<typename T>
 GeomResult Quadtree<T>::Insert(const Envelope& envelope, const T& item) {
-    return GeomResult::kNotImplemented;
+    if (envelope.IsNull()) {
+        return GeomResult::kInvalidGeometry;
+    }
+    
+    if (!m_root) {
+        m_root = std::make_unique<QuadNode>();
+        m_root->bounds = envelope;
+    }
+    
+    return InsertRecursive(m_root.get(), envelope, item, 0);
+}
+
+template<typename T>
+GeomResult Quadtree<T>::InsertRecursive(QuadNode* node, const Envelope& envelope, const T& item, size_t depth) {
+    if (depth >= m_config.maxDepth || node->items.size() < m_config.maxItemsPerNode) {
+        node->items.emplace_back(envelope, item);
+        m_size++;
+        return GeomResult::kSuccess;
+    }
+    
+    if (node->children[0] == nullptr) {
+        SplitNode(node);
+    }
+    
+    for (int i = 0; i < 4; ++i) {
+        if (node->children[i]->bounds.Intersects(envelope)) {
+            return InsertRecursive(node->children[i].get(), envelope, item, depth + 1);
+        }
+    }
+    
+    for (int i = 0; i < 4; ++i) {
+        if (node->children[i]->bounds.Contains(envelope)) {
+            return InsertRecursive(node->children[i].get(), envelope, item, depth + 1);
+        }
+    }
+    
+    double minDist = std::numeric_limits<double>::max();
+    int bestChild = 0;
+    for (int i = 0; i < 4; ++i) {
+        double dist = std::abs((node->children[i]->bounds.GetMinX() + node->children[i]->bounds.GetMaxX()) / 2 - (envelope.GetMinX() + envelope.GetMaxX()) / 2) +
+                      std::abs((node->children[i]->bounds.GetMinY() + node->children[i]->bounds.GetMaxY()) / 2 - (envelope.GetMinY() + envelope.GetMaxY()) / 2);
+        if (dist < minDist) {
+            minDist = dist;
+            bestChild = i;
+        }
+    }
+    
+    return InsertRecursive(node->children[bestChild].get(), envelope, item, depth + 1);
+}
+
+template<typename T>
+void Quadtree<T>::SplitNode(QuadNode* node) {
+    double midX = (node->bounds.GetMinX() + node->bounds.GetMaxX()) / 2;
+    double midY = (node->bounds.GetMinY() + node->bounds.GetMaxY()) / 2;
+    
+    for (int i = 0; i < 4; ++i) {
+        node->children[i] = std::make_unique<QuadNode>();
+    }
+    
+    node->children[0]->bounds = Envelope(node->bounds.GetMinX(), midY, midX, node->bounds.GetMaxY());
+    node->children[1]->bounds = Envelope(midX, midY, node->bounds.GetMaxX(), node->bounds.GetMaxY());
+    node->children[2]->bounds = Envelope(node->bounds.GetMinX(), node->bounds.GetMinY(), midX, midY);
+    node->children[3]->bounds = Envelope(midX, node->bounds.GetMinY(), node->bounds.GetMaxX(), midY);
 }
 
 template<typename T>
 GeomResult Quadtree<T>::BulkLoad(const std::vector<std::pair<Envelope, T>>& items) {
-    return GeomResult::kNotImplemented;
+    for (const auto& item : items) {
+        GeomResult result = Insert(item.first, item.second);
+        if (result != GeomResult::kSuccess) {
+            return result;
+        }
+    }
+    return GeomResult::kSuccess;
 }
 
 template<typename T>
@@ -420,7 +666,28 @@ void Quadtree<T>::Clear() noexcept {
 
 template<typename T>
 std::vector<T> Quadtree<T>::Query(const Envelope& envelope) const {
-    return std::vector<T>();
+    std::vector<T> results;
+    if (!m_root) return results;
+    
+    QueryRecursive(m_root.get(), envelope, results);
+    return results;
+}
+
+template<typename T>
+void Quadtree<T>::QueryRecursive(const QuadNode* node, const Envelope& envelope, std::vector<T>& results) const {
+    if (!node->bounds.Intersects(envelope)) return;
+    
+    for (const auto& item : node->items) {
+        if (item.first.Intersects(envelope)) {
+            results.push_back(item.second);
+        }
+    }
+    
+    for (int i = 0; i < 4; ++i) {
+        if (node->children[i]) {
+            QueryRecursive(node->children[i].get(), envelope, results);
+        }
+    }
 }
 
 template<typename T>
@@ -491,12 +758,45 @@ GridIndex<T>::GridIndex(const Config& config) : m_config(config) {
 
 template<typename T>
 GeomResult GridIndex<T>::Insert(const Envelope& envelope, const T& item) {
-    return GeomResult::kNotImplemented;
+    if (envelope.IsNull() || m_config.bounds.IsNull()) {
+        return GeomResult::kInvalidGeometry;
+    }
+    
+    size_t minX = static_cast<size_t>(
+        std::max(0.0, (envelope.GetMinX() - m_config.bounds.GetMinX()) / 
+        (m_config.bounds.GetMaxX() - m_config.bounds.GetMinX()) * m_config.gridX));
+    size_t maxX = static_cast<size_t>(
+        std::min(static_cast<double>(m_config.gridX - 1),
+        (envelope.GetMaxX() - m_config.bounds.GetMinX()) / 
+        (m_config.bounds.GetMaxX() - m_config.bounds.GetMinX()) * m_config.gridX));
+    size_t minY = static_cast<size_t>(
+        std::max(0.0, (envelope.GetMinY() - m_config.bounds.GetMinY()) / 
+        (m_config.bounds.GetMaxY() - m_config.bounds.GetMinY()) * m_config.gridY));
+    size_t maxY = static_cast<size_t>(
+        std::min(static_cast<double>(m_config.gridY - 1),
+        (envelope.GetMaxY() - m_config.bounds.GetMinY()) / 
+        (m_config.bounds.GetMaxY() - m_config.bounds.GetMinY()) * m_config.gridY));
+    
+    for (size_t y = minY; y <= maxY && y < m_config.gridY; ++y) {
+        for (size_t x = minX; x <= maxX && x < m_config.gridX; ++x) {
+            size_t index = y * m_config.gridX + x;
+            m_grid[index].emplace_back(envelope, item);
+        }
+    }
+    
+    m_size++;
+    return GeomResult::kSuccess;
 }
 
 template<typename T>
 GeomResult GridIndex<T>::BulkLoad(const std::vector<std::pair<Envelope, T>>& items) {
-    return GeomResult::kNotImplemented;
+    for (const auto& item : items) {
+        GeomResult result = Insert(item.first, item.second);
+        if (result != GeomResult::kSuccess) {
+            return result;
+        }
+    }
+    return GeomResult::kSuccess;
 }
 
 template<typename T>
@@ -514,7 +814,40 @@ void GridIndex<T>::Clear() noexcept {
 
 template<typename T>
 std::vector<T> GridIndex<T>::Query(const Envelope& envelope) const {
-    return std::vector<T>();
+    std::vector<T> results;
+    if (envelope.IsNull() || m_config.bounds.IsNull() || m_size == 0) {
+        return results;
+    }
+    
+    size_t minX = static_cast<size_t>(
+        std::max(0.0, (envelope.GetMinX() - m_config.bounds.GetMinX()) / 
+        (m_config.bounds.GetMaxX() - m_config.bounds.GetMinX()) * m_config.gridX));
+    size_t maxX = static_cast<size_t>(
+        std::min(static_cast<double>(m_config.gridX - 1),
+        (envelope.GetMaxX() - m_config.bounds.GetMinX()) / 
+        (m_config.bounds.GetMaxX() - m_config.bounds.GetMinX()) * m_config.gridX));
+    size_t minY = static_cast<size_t>(
+        std::max(0.0, (envelope.GetMinY() - m_config.bounds.GetMinY()) / 
+        (m_config.bounds.GetMaxY() - m_config.bounds.GetMinY()) * m_config.gridY));
+    size_t maxY = static_cast<size_t>(
+        std::min(static_cast<double>(m_config.gridY - 1),
+        (envelope.GetMaxY() - m_config.bounds.GetMinY()) / 
+        (m_config.bounds.GetMaxY() - m_config.bounds.GetMinY()) * m_config.gridY));
+    
+    std::set<T> uniqueResults;
+    for (size_t y = minY; y <= maxY && y < m_config.gridY; ++y) {
+        for (size_t x = minX; x <= maxX && x < m_config.gridX; ++x) {
+            size_t index = y * m_config.gridX + x;
+            for (const auto& item : m_grid[index]) {
+                if (item.first.Intersects(envelope)) {
+                    uniqueResults.insert(item.second);
+                }
+            }
+        }
+    }
+    
+    results.assign(uniqueResults.begin(), uniqueResults.end());
+    return results;
 }
 
 template<typename T>

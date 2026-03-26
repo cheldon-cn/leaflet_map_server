@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_RULE_ENGINE_H
 #define OGC_DRAW_RULE_ENGINE_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/symbolizer_rule.h"
 #include "ogc/draw/draw_context.h"
 #include "ogc/feature/feature.h"
@@ -24,7 +25,7 @@ struct RuleMatchResult {
     RuleMatchResult() : matched(false) {}
 };
 
-class RuleEngine {
+class OGC_GRAPH_API RuleEngine {
 public:
     RuleEngine();
     ~RuleEngine() = default;

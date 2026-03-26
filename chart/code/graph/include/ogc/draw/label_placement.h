@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_LABEL_PLACEMENT_H
 #define OGC_DRAW_LABEL_PLACEMENT_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/label_engine.h"
 #include "ogc/geometry.h"
 #include "ogc/envelope.h"
@@ -42,7 +43,7 @@ struct PlacementCandidate {
         , position(LabelPosition::kCenter), isValid(false) {}
 };
 
-class LabelPlacement {
+class OGC_GRAPH_API LabelPlacement {
 public:
     LabelPlacement();
     ~LabelPlacement() = default;
