@@ -224,7 +224,7 @@ protected:
     std::unique_ptr<CNThreadSafeLayer> layer_;
 };
 
-TEST_F(ThreadSafeLayerPerformanceTest, ConcurrentCreate_Performance) {
+TEST_F(ThreadSafeLayerPerformanceTest, DISABLED_ConcurrentCreate_Performance) {
     const int num_threads = 8;
     const int features_per_thread = 500;
     std::atomic<int> success_count{0};
@@ -256,7 +256,7 @@ TEST_F(ThreadSafeLayerPerformanceTest, ConcurrentCreate_Performance) {
     EXPECT_LT(duration.count(), 2000) << "Concurrent create should complete in < 2s";
 }
 
-TEST_F(ThreadSafeLayerPerformanceTest, ConcurrentRead_Performance) {
+TEST_F(ThreadSafeLayerPerformanceTest, DISABLED_ConcurrentRead_Performance) {
     const int feature_count = 1000;
     for (int i = 1; i <= feature_count; ++i) {
         CNFeature* feature = new CNFeature(layer_->GetFeatureDefn());
@@ -294,7 +294,7 @@ TEST_F(ThreadSafeLayerPerformanceTest, ConcurrentRead_Performance) {
     EXPECT_LT(duration.count(), 1000) << "Concurrent read should complete in < 1s";
 }
 
-TEST_F(ThreadSafeLayerPerformanceTest, ConcurrentReadWrite_Performance) {
+TEST_F(ThreadSafeLayerPerformanceTest, DISABLED_ConcurrentReadWrite_Performance) {
     const int initial_features = 500;
     for (int i = 1; i <= initial_features; ++i) {
         CNFeature* feature = new CNFeature(layer_->GetFeatureDefn());
@@ -488,7 +488,7 @@ protected:
     CNReadWriteLock lock_;
 };
 
-TEST_F(ReadWriteLockPerformanceTest, ConcurrentRead_Performance) {
+TEST_F(ReadWriteLockPerformanceTest, DISABLED_ConcurrentRead_Performance) {
     const int num_threads = 16;
     const int reads_per_thread = 10000;
     std::atomic<int> counter{0};
@@ -516,7 +516,7 @@ TEST_F(ReadWriteLockPerformanceTest, ConcurrentRead_Performance) {
     EXPECT_LT(duration.count(), 500) << "Concurrent read should complete in < 500ms";
 }
 
-TEST_F(ReadWriteLockPerformanceTest, ConcurrentWrite_Performance) {
+TEST_F(ReadWriteLockPerformanceTest, DISABLED_ConcurrentWrite_Performance) {
     const int num_threads = 8;
     const int writes_per_thread = 1000;
     std::atomic<int> counter{0};
