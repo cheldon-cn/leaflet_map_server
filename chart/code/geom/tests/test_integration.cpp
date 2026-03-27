@@ -48,7 +48,7 @@ TEST_F(IntegrationTest, FactoryToLineString_CompleteFlow) {
     auto lineString = m_factory->CreateLineString(coords);
     ASSERT_NE(lineString, nullptr);
     EXPECT_EQ(lineString->GetGeometryType(), GeomType::kLineString);
-    EXPECT_NEAR(lineString->Length(), 28.28, 0.001);
+    EXPECT_NEAR(lineString->Length(), 40.0, 0.001);
 }
 
 TEST_F(IntegrationTest, MultiGeometryContainsCheck_Integration) {
@@ -93,18 +93,18 @@ TEST_F(IntegrationTest, SpatialIndexWithGeometry_Integration) {
     
     for (int i = 0; i < 100; ++i) {
         auto point = Point::Create(i * 1.0, i * 1.0);
-        Envelope env(i, i + 1, i, i + 1);
+        Envelope env(i, i, i + 1, i + 1);
         tree.Insert(env, std::shared_ptr<Point>(point.release()));
     }
     
-    Envelope queryEnv(45, 55, 45, 55);
+    Envelope queryEnv(45, 45, 55, 55);
     auto results = tree.Query(queryEnv);
     
     EXPECT_GE(results.size(), static_cast<size_t>(10));
 }
 
 TEST_F(IntegrationTest, PrecisionModelWithGeometry_Integration) {
-    PrecisionModel model(0.01);
+    PrecisionModel model(100.0);
     
     Coordinate coord(10.123456, 20.654321);
     coord = model.MakePrecise(coord);
@@ -223,13 +223,15 @@ TEST_F(IntegrationTest, GeometryTypeConversion_Integration) {
 }
 
 TEST_F(IntegrationTest, QuadtreeIntegration_CompleteFlow) {
-    Quadtree<std::string> tree;
+    Quadtree<std::string>::Config config;
+    config.bounds = Envelope(0, 0, 40, 40);
+    Quadtree<std::string> tree(config);
     
-    tree.Insert(Envelope(0, 10, 0, 10), "A");
-    tree.Insert(Envelope(10, 20, 10, 20), "B");
-    tree.Insert(Envelope(20, 30, 20, 30), "C");
+    tree.Insert(Envelope(0, 0, 10, 10), "A");
+    tree.Insert(Envelope(10, 10, 20, 20), "B");
+    tree.Insert(Envelope(20, 20, 30, 30), "C");
     
-    auto results = tree.Query(Envelope(5, 25, 5, 25));
+    auto results = tree.Query(Envelope(5, 5, 25, 25));
     EXPECT_GE(results.size(), static_cast<size_t>(2));
 }
 
@@ -237,14 +239,14 @@ TEST_F(IntegrationTest, GridIndexIntegration_CompleteFlow) {
     typename GridIndex<int>::Config config;
     config.gridX = 100;
     config.gridY = 100;
-    config.bounds = Envelope(0, 100, 0, 100);
+    config.bounds = Envelope(0, 0, 100, 100);
     GridIndex<int> index(config);
     
-    index.Insert(Envelope(5, 15, 5, 15), 1);
-    index.Insert(Envelope(25, 35, 25, 35), 2);
-    index.Insert(Envelope(55, 65, 55, 65), 3);
+    index.Insert(Envelope(5, 5, 15, 15), 1);
+    index.Insert(Envelope(25, 25, 35, 35), 2);
+    index.Insert(Envelope(55, 55, 65, 65), 3);
     
-    auto results = index.Query(Envelope(0, 20, 0, 20));
+    auto results = index.Query(Envelope(0, 0, 20, 20));
     EXPECT_GE(results.size(), static_cast<size_t>(1));
 }
 

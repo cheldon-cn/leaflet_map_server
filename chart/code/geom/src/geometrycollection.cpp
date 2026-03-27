@@ -21,6 +21,9 @@ GeometryCollectionPtr GeometryCollection::Create(std::vector<GeometryPtr> geomet
 }
 
 Dimension GeometryCollection::GetDimension() const noexcept {
+    if (m_geometries.empty()) {
+        return Dimension::Unknown;
+    }
     Dimension maxDim = Dimension::Point;
     for (const auto& geom : m_geometries) {
         Dimension dim = geom->GetDimension();

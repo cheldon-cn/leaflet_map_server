@@ -34,7 +34,7 @@ public:
     ~TextSymbolizer() override = default;
     
     SymbolizerType GetType() const override { return SymbolizerType::kText; }
-    std::string GetName() const override { return "TextSymbolizer"; }
+    std::string GetName() const override { return m_name.empty() ? "TextSymbolizer" : m_name; }
     
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry) override;
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) override;

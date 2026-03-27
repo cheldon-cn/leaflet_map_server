@@ -120,9 +120,12 @@ void AsyncRenderer::WorkerThread(RenderSessionPtr session) {
             continue;
         }
         
-        RenderTaskPtr task = session->queue->Dequeue();
+        RenderTaskPtr task = session->queue->TryDequeue(100);
         if (!task) {
-            break;
+            if (session->queue->IsEmpty()) {
+                break;
+            }
+            continue;
         }
         
         ProcessTask(session, task);

@@ -86,9 +86,33 @@ private:
  */
 class OGC_GEOM_API GeometryStatistics : public GeometryConstVisitor {
 public:
-    void Visit(const Geometry* geom) override {
+    void VisitPoint(const Point* point) override {
         m_totalCount++;
-        m_typeCounts[geom->GetGeometryType()]++;
+        m_typeCounts[GeomType::kPoint]++;
+    }
+    void VisitLineString(const LineString* line) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kLineString]++;
+    }
+    void VisitPolygon(const Polygon* polygon) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kPolygon]++;
+    }
+    void VisitMultiPoint(const MultiPoint* multiPoint) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kMultiPoint]++;
+    }
+    void VisitMultiLineString(const MultiLineString* multiLine) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kMultiLineString]++;
+    }
+    void VisitMultiPolygon(const MultiPolygon* multiPolygon) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kMultiPolygon]++;
+    }
+    void VisitGeometryCollection(const GeometryCollection* collection) override {
+        m_totalCount++;
+        m_typeCounts[GeomType::kGeometryCollection]++;
     }
     
     size_t GetTotalCount() const noexcept { return m_totalCount; }

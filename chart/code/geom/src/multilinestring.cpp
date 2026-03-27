@@ -91,7 +91,48 @@ bool MultiLineString::IsClosed() const {
 }
 
 MultiLineStringPtr MultiLineString::Merge() const {
-    return Create();
+    if (m_lines.empty()) {
+        return Create();
+    }
+    
+    if (m_lines.size() == 1) {
+        CoordinateList coords = m_lines[0]->GetCoordinates();
+        std::vector<LineStringPtr> lines;
+        lines.push_back(LineString::Create(coords));
+        return Create(std::move(lines));
+    }
+    
+    CoordinateList mergedCoords;
+    
+    for (const auto& line : m_lines) {
+        auto coords = line->GetCoordinates();
+        if (mergedCoords.empty()) {
+            mergedCoords = coords;
+        } else {
+            if (!coords.empty()) {
+                double distToEnd = mergedCoords.back().Distance(coords.front());
+                double distToStart = mergedCoords.back().Distance(coords.back());
+                
+                if (distToEnd < 1e-10) {
+                    for (size_t i = 1; i < coords.size(); ++i) {
+                        mergedCoords.push_back(coords[i]);
+                    }
+                } else if (distToStart < 1e-10) {
+                    for (int i = static_cast<int>(coords.size()) - 2; i >= 0; --i) {
+                        mergedCoords.push_back(coords[i]);
+                    }
+                } else {
+                    for (const auto& coord : coords) {
+                        mergedCoords.push_back(coord);
+                    }
+                }
+            }
+        }
+    }
+    
+    std::vector<LineStringPtr> lines;
+    lines.push_back(LineString::Create(mergedCoords));
+    return Create(std::move(lines));
 }
 
 size_t MultiLineString::GetNumCoordinates() const noexcept {

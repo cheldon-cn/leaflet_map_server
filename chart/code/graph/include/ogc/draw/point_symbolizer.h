@@ -24,7 +24,7 @@ public:
     ~PointSymbolizer() override = default;
     
     SymbolizerType GetType() const override { return SymbolizerType::kPoint; }
-    std::string GetName() const override { return "PointSymbolizer"; }
+    std::string GetName() const override { return m_name.empty() ? "PointSymbolizer" : m_name; }
     
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry) override;
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) override;

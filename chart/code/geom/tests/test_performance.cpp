@@ -195,12 +195,12 @@ TEST_F(PerformanceTest, RTreeQuery_10000Items_CompletesQuickly) {
     const int count = 10000;
     
     for (int i = 0; i < count; ++i) {
-        Envelope env(i, i + 1, i, i + 1);
+        Envelope env(i, i, i + 1, i + 1);
         tree.Insert(env, i);
     }
     
     m_startTime = std::chrono::high_resolution_clock::now();
-    auto results = tree.Query(Envelope(1000, 2000, 1000, 2000));
+    auto results = tree.Query(Envelope(1000, 1000, 2000, 2000));
     double elapsed = GetElapsedMs();
     
     EXPECT_GT(results.size(), static_cast<size_t>(0));
@@ -234,17 +234,17 @@ TEST_F(PerformanceTest, RTreeBulkLoad_10000Items_FasterThanIndividual) {
 
 TEST_F(PerformanceTest, QuadtreeQuery_10000Items_CompletesQuickly) {
     Quadtree<int>::Config config;
-    config.bounds = Envelope(0, 10000, 0, 10000);
+    config.bounds = Envelope(0, 0, 10000, 10000);
     Quadtree<int> tree(config);
     const int count = 10000;
     
     for (int i = 0; i < count; ++i) {
-        Envelope env(i, i + 1, i, i + 1);
+        Envelope env(i, i, i + 1, i + 1);
         tree.Insert(env, i);
     }
     
     m_startTime = std::chrono::high_resolution_clock::now();
-    auto results = tree.Query(Envelope(1000, 2000, 1000, 2000));
+    auto results = tree.Query(Envelope(1000, 1000, 2000, 2000));
     double elapsed = GetElapsedMs();
     
     EXPECT_GT(results.size(), static_cast<size_t>(0));
@@ -288,12 +288,12 @@ TEST_F(PerformanceTest, CoordinateDistance_10000Calculations_CompletesQuickly) {
 
 TEST_F(PerformanceTest, EnvelopeIntersects_10000Checks_CompletesQuickly) {
     const int count = 10000;
-    Envelope env1(0, 100, 0, 100);
+    Envelope env1(0, 0, 100, 100);
     
     m_startTime = std::chrono::high_resolution_clock::now();
     int intersectCount = 0;
     for (int i = 0; i < count; ++i) {
-        Envelope env2(50 + i * 0.001, 150 + i * 0.001, 50 + i * 0.001, 150 + i * 0.001);
+        Envelope env2(50, 50, 150 + i * 0.001, 150 + i * 0.001);
         if (env1.Intersects(env2)) {
             intersectCount++;
         }

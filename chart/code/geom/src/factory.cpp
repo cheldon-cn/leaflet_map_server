@@ -1097,7 +1097,9 @@ PolygonPtr GeometryFactory::CreatePolygon(const std::vector<CoordinateList>& rin
 }
 
 MultiPointPtr GeometryFactory::CreateMultiPoint(const CoordinateList& coords) {
-    return nullptr;
+    auto multiPoint = MultiPoint::Create(coords);
+    multiPoint->SetSRID(m_defaultSRID);
+    return multiPoint;
 }
 
 PolygonPtr GeometryFactory::CreateRectangle(double minX, double minY, double maxX, double maxY) {

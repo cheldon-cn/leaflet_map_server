@@ -66,6 +66,34 @@ RenderTaskPtr RenderQueue::Dequeue() {
     return task;
 }
 
+RenderTaskPtr RenderQueue::TryDequeue(int64_t timeoutMs) {
+    std::unique_lock<std::mutex> lock(m_mutex);
+    
+    if (timeoutMs > 0) {
+        if (!m_condition.wait_for(lock, std::chrono::milliseconds(timeoutMs), 
+            [this] { return !m_queue.empty() && !m_paused; })) {
+            return nullptr;
+        }
+    } else {
+        if (m_queue.empty() || m_paused) {
+            return nullptr;
+        }
+    }
+    
+    if (m_queue.empty()) {
+        return nullptr;
+    }
+    
+    RenderTaskPtr task = m_queue.top();
+    m_queue.pop();
+    
+    m_stats.pendingTasks--;
+    
+    NotifyDequeued(task);
+    
+    return task;
+}
+
 RenderTaskPtr RenderQueue::Peek() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     

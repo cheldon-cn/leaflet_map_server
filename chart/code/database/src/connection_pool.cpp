@@ -47,6 +47,18 @@ Result DbConnectionPool::Initialize(const PoolConfig& config, const std::string&
     m_config = config;
     m_connectionString = connectionString;
     
+    if (m_config.maxConnections <= 0) {
+        return Result::Error(DbResult::kInvalidParameter, "maxConnections must be greater than 0");
+    }
+    
+    if (m_config.minConnections > m_config.maxConnections) {
+        return Result::Error(DbResult::kInvalidParameter, "minConnections cannot be greater than maxConnections");
+    }
+    
+    if (m_config.maxIdleTimeMs <= 0) {
+        return Result::Error(DbResult::kInvalidParameter, "maxIdleTimeMs must be greater than 0");
+    }
+    
     m_connections.resize(m_config.maxConnections);
     m_availableIndices = std::queue<size_t>();
     

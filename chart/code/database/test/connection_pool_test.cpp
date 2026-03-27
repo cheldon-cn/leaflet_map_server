@@ -6,6 +6,117 @@
 using namespace ogc;
 using namespace ogc::db;
 
+namespace {
+
+class SimpleMockConnection : public DbConnection {
+public:
+    SimpleMockConnection() : m_connected(true) {}
+    
+    Result Connect(const std::string&) override { 
+        m_connected = true; 
+        return Result::Success(); 
+    }
+    
+    void Disconnect() override { m_connected = false; }
+    
+    bool IsConnected() const override { return m_connected; }
+    bool Ping() const override { return m_connected; }
+    
+    Result Execute(const std::string&) override { return Result::Success(); }
+    
+    Result ExecuteQuery(const std::string&, DbResultSetPtr&) override { 
+        return Result::Success(); 
+    }
+    
+    Result PrepareStatement(const std::string&, const std::string&, DbStatementPtr&) override {
+        return Result::Success();
+    }
+    
+    Result BeginTransaction() override { return Result::Success(); }
+    Result Commit() override { return Result::Success(); }
+    Result Rollback() override { return Result::Success(); }
+    bool InTransaction() const override { return false; }
+    
+    Result InsertGeometry(const std::string&, const std::string&, 
+                         const Geometry*, const std::map<std::string, std::string>&,
+                         int64_t&) override { 
+        return Result::Success(); 
+    }
+    
+    Result InsertGeometries(const std::string&, const std::string&,
+                           const std::vector<const Geometry*>&,
+                           const std::vector<std::map<std::string, std::string>>&,
+                           std::vector<int64_t>&) override {
+        return Result::Success();
+    }
+    
+    Result SelectGeometries(const std::string&, const std::string&, const std::string&,
+                           std::vector<db::GeometryPtr>&) override {
+        return Result::Success();
+    }
+    
+    Result SpatialQuery(const std::string&, const std::string&, SpatialOperator,
+                       const Geometry*, std::vector<db::GeometryPtr>&) override {
+        return Result::Success();
+    }
+    
+    Result SpatialQueryWithEnvelope(const std::string&, const std::string&, SpatialOperator,
+                                   const Geometry*, const ::ogc::Envelope&,
+                                   std::vector<db::GeometryPtr>&) override {
+        return Result::Success();
+    }
+    
+    Result UpdateGeometry(const std::string&, const std::string&, int64_t,
+                         const Geometry*) override {
+        return Result::Success();
+    }
+    
+    Result DeleteGeometry(const std::string&, int64_t) override {
+        return Result::Success();
+    }
+    
+    Result CreateSpatialTable(const std::string&, const std::string&, int, int, int) override {
+        return Result::Success();
+    }
+    
+    Result CreateSpatialIndex(const std::string&, const std::string&) override {
+        return Result::Success();
+    }
+    
+    Result DropSpatialIndex(const std::string&, const std::string&) override {
+        return Result::Success();
+    }
+    
+    bool SpatialTableExists(const std::string&) const override { return false; }
+    
+    Result GetTableInfo(const std::string&, TableInfo&) const override {
+        return Result::Success();
+    }
+    
+    Result GetColumns(const std::string&, std::vector<ColumnInfo>&) const override {
+        return Result::Success();
+    }
+    
+    DatabaseType GetType() const override { return DatabaseType::kPostGIS; }
+    std::string GetVersion() const override { return "mock"; }
+    int64_t GetLastInsertId() const override { return 0; }
+    int64_t GetRowsAffected() const override { return 0; }
+    
+    Result SetIsolationLevel(TransactionIsolation) override { return Result::Success(); }
+    TransactionIsolation GetIsolationLevel() const override { 
+        return TransactionIsolation::kReadCommitted; 
+    }
+    
+    const ConnectionInfo& GetConnectionInfo() const override { return m_info; }
+    std::string EscapeString(const std::string& value) const override { return value; }
+
+private:
+    bool m_connected;
+    ConnectionInfo m_info;
+};
+
+}
+
 class ConnectionPoolTest : public ::testing::Test {
 protected:
     void SetUp() override {}
@@ -191,10 +302,18 @@ TEST_F(ConnectionPoolTest, ConcurrentAcquire_ThreadSafety) {
     PoolConfig config;
     config.minConnections = 1;
     config.maxConnections = 3;
+    config.maxIdleTimeMs = 60000;
     config.acquireTimeoutMs = 5000;
     
     auto pool = DbConnectionPool::Create();
     ASSERT_NE(pool, nullptr);
+    
+    pool->SetFactory([]() -> std::unique_ptr<DbConnection> {
+        return std::make_unique<SimpleMockConnection>();
+    });
+    
+    Result initResult = pool->Initialize(config, "");
+    ASSERT_TRUE(initResult.IsSuccess()) << "Pool should initialize with mock factory";
     
     std::vector<std::thread> threads;
     std::atomic<int> successCount{0};

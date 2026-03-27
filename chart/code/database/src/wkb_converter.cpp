@@ -323,25 +323,25 @@ Result WkbConverter::ReadGeometry(const uint8_t* data, size_t size, std::unique_
     
     switch (baseType) {
         case kWkbPoint:
-            result = ReadPoint(data + offset, size - offset, geometry);
+            result = ReadPoint(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbLineString:
-            result = ReadLineString(data + offset, size - offset, geometry);
+            result = ReadLineString(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbPolygon:
-            result = ReadPolygon(data + offset, size - offset, geometry);
+            result = ReadPolygon(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbMultiPoint:
-            result = ReadMultiPoint(data + offset, size - offset, geometry);
+            result = ReadMultiPoint(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbMultiLineString:
-            result = ReadMultiLineString(data + offset, size - offset, geometry);
+            result = ReadMultiLineString(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbMultiPolygon:
-            result = ReadMultiPolygon(data + offset, size - offset, geometry);
+            result = ReadMultiPolygon(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         case kWkbGeometryCollection:
-            result = ReadGeometryCollection(data + offset, size - offset, geometry);
+            result = ReadGeometryCollection(data + offset, size - offset, geometry, hasZ, hasM, order);
             break;
         default:
             return Result::Error(DbResult::kInvalidWkb, "Unknown geometry type");
@@ -517,25 +517,27 @@ Result WkbConverter::WriteGeometryCollection(std::vector<uint8_t>& buffer, const
     return Result::Success();
 }
 
-Result WkbConverter::ReadPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
-    if (size < 16) {
+Result WkbConverter::ReadPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
+    size_t coordSize = 16 + (hasZ ? 8 : 0) + (hasM ? 8 : 0);
+    if (size < coordSize) {
         return Result::Error(DbResult::kInvalidWkb, "Point WKB too short");
     }
     
-    Coordinate coord = ReadCoordinate(data, ByteOrder::kLittleEndian, true, true);
+    Coordinate coord = ReadCoordinate(data, order, hasZ, hasM);
     geometry = Point::Create(coord);
     
     return Result::Success();
 }
 
-Result WkbConverter::ReadLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "LineString WKB too short");
     }
     
-    uint32_t numPoints = ReadUInt32(data, ByteOrder::kLittleEndian);
+    uint32_t numPoints = ReadUInt32(data, order);
     
-    if (size < 4 + numPoints * 16) {
+    size_t coordSize = 16 + (hasZ ? 8 : 0) + (hasM ? 8 : 0);
+    if (size < 4 + numPoints * coordSize) {
         return Result::Error(DbResult::kInvalidWkb, "LineString WKB incomplete");
     }
     
@@ -543,8 +545,8 @@ Result WkbConverter::ReadLineString(const uint8_t* data, size_t size, std::uniqu
     size_t offset = 4;
     
     for (uint32_t i = 0; i < numPoints; ++i) {
-        coords.push_back(ReadCoordinate(data + offset, ByteOrder::kLittleEndian, true, true));
-        offset += 32;
+        coords.push_back(ReadCoordinate(data + offset, order, hasZ, hasM));
+        offset += coordSize;
     }
     
     geometry = LineString::Create(std::move(coords));
@@ -552,24 +554,25 @@ Result WkbConverter::ReadLineString(const uint8_t* data, size_t size, std::uniqu
     return Result::Success();
 }
 
-Result WkbConverter::ReadPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "Polygon WKB too short");
     }
     
-    uint32_t numRings = ReadUInt32(data, ByteOrder::kLittleEndian);
+    uint32_t numRings = ReadUInt32(data, order);
     size_t offset = 4;
     
+    size_t coordSize = 16 + (hasZ ? 8 : 0) + (hasM ? 8 : 0);
     CoordinateList exteriorCoords;
     
     if (numRings > 0 && offset + 4 <= size) {
-        uint32_t numPoints = ReadUInt32(data + offset, ByteOrder::kLittleEndian);
+        uint32_t numPoints = ReadUInt32(data + offset, order);
         offset += 4;
         
-        if (offset + numPoints * 32 <= size) {
+        if (offset + numPoints * coordSize <= size) {
             for (uint32_t i = 0; i < numPoints; ++i) {
-                exteriorCoords.push_back(ReadCoordinate(data + offset, ByteOrder::kLittleEndian, true, true));
-                offset += 32;
+                exteriorCoords.push_back(ReadCoordinate(data + offset, order, hasZ, hasM));
+                offset += coordSize;
             }
         }
     }
@@ -582,30 +585,28 @@ Result WkbConverter::ReadPolygon(const uint8_t* data, size_t size, std::unique_p
     return Result::Success();
 }
 
-Result WkbConverter::ReadMultiPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadMultiPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "MultiPoint WKB too short");
     }
     
-    uint32_t numPoints = ReadUInt32(data, ByteOrder::kLittleEndian);
+    uint32_t numPoints = ReadUInt32(data, order);
     size_t offset = 4;
     
     auto mpoint = MultiPoint::Create();
     
-    for (uint32_t i = 0; i < numPoints && offset + 5 <= size; ++i) {
+    for (uint32_t i = 0; i < numPoints && offset < size; ++i) {
         std::unique_ptr<Geometry> pointGeom;
         int srid = 0;
+        size_t startOffset = offset;
         Result result = ReadGeometry(data + offset, size - offset, pointGeom, srid);
         if (result.IsSuccess() && pointGeom) {
             auto point = dynamic_cast<Point*>(pointGeom.get());
             if (point) {
                 mpoint->AddPoint(Point::Create(point->GetCoordinate()));
-                pointGeom.release();
             }
-        }
-        
-        if (offset + 21 <= size) {
-            offset += 21;
+            size_t coordSize = 16 + (pointGeom->Is3D() ? 8 : 0) + (pointGeom->IsMeasured() ? 8 : 0);
+            offset += 5 + (srid > 0 ? 4 : 0) + coordSize;
         } else {
             break;
         }
@@ -616,46 +617,89 @@ Result WkbConverter::ReadMultiPoint(const uint8_t* data, size_t size, std::uniqu
     return Result::Success();
 }
 
-Result WkbConverter::ReadMultiLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadMultiLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "MultiLineString WKB too short");
     }
     
-    uint32_t numLines = ReadUInt32(data, ByteOrder::kLittleEndian);
-    geometry = MultiLineString::Create();
+    uint32_t numLines = ReadUInt32(data, order);
+    size_t offset = 4;
+    
+    auto mline = MultiLineString::Create();
+    
+    for (uint32_t i = 0; i < numLines && offset < size; ++i) {
+        std::unique_ptr<Geometry> lineGeom;
+        int srid = 0;
+        Result result = ReadGeometry(data + offset, size - offset, lineGeom, srid);
+        if (result.IsSuccess() && lineGeom) {
+            auto line = dynamic_cast<LineString*>(lineGeom.get());
+            if (line) {
+                CoordinateList coords = line->GetCoordinates();
+                mline->AddLineString(LineString::Create(coords));
+            }
+            offset += (data + offset - data);
+        } else {
+            break;
+        }
+    }
+    
+    geometry = std::move(mline);
     
     return Result::Success();
 }
 
-Result WkbConverter::ReadMultiPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadMultiPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "MultiPolygon WKB too short");
     }
     
-    uint32_t numPolys = ReadUInt32(data, ByteOrder::kLittleEndian);
-    geometry = MultiPolygon::Create();
+    uint32_t numPolys = ReadUInt32(data, order);
+    size_t offset = 4;
+    
+    auto mpoly = MultiPolygon::Create();
+    
+    for (uint32_t i = 0; i < numPolys && offset < size; ++i) {
+        std::unique_ptr<Geometry> polyGeom;
+        int srid = 0;
+        Result result = ReadGeometry(data + offset, size - offset, polyGeom, srid);
+        if (result.IsSuccess() && polyGeom) {
+            auto polygon = dynamic_cast<Polygon*>(polyGeom.get());
+            if (polygon) {
+                const LinearRing* ring = polygon->GetExteriorRing();
+                if (ring) {
+                    auto newRing = LinearRing::Create(ring->GetCoordinates(), true);
+                    mpoly->AddPolygon(Polygon::Create(std::move(newRing)));
+                }
+            }
+        } else {
+            break;
+        }
+    }
+    
+    geometry = std::move(mpoly);
     
     return Result::Success();
 }
 
-Result WkbConverter::ReadGeometryCollection(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry) {
+Result WkbConverter::ReadGeometryCollection(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order) {
     if (size < 4) {
         return Result::Error(DbResult::kInvalidWkb, "GeometryCollection WKB too short");
     }
     
-    uint32_t numGeoms = ReadUInt32(data, ByteOrder::kLittleEndian);
+    uint32_t numGeoms = ReadUInt32(data, order);
+    size_t offset = 4;
+    
     auto collection = GeometryCollection::Create();
     
-    size_t offset = 4;
     for (uint32_t i = 0; i < numGeoms && offset < size; ++i) {
         std::unique_ptr<Geometry> childGeom;
         int srid = 0;
         Result result = ReadGeometry(data + offset, size - offset, childGeom, srid);
         if (result.IsSuccess() && childGeom) {
             collection->AddGeometry(std::move(childGeom));
+        } else {
+            break;
         }
-        
-        if (offset >= size - 5) break;
     }
     
     geometry = std::move(collection);

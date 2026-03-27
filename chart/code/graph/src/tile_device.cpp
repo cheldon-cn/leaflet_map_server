@@ -606,6 +606,7 @@ DrawResult TileDevice::BeginTile(int x, int y, int z) {
     m_currentZ = z;
     
     m_tileData.assign(m_tileSize * m_tileSize * m_channels, 0);
+    m_drawing = true;
     
     return DrawResult::kSuccess;
 }
@@ -621,6 +622,7 @@ DrawResult TileDevice::EndTile() {
     tile.valid = true;
     
     m_tiles[std::make_tuple(m_currentX, m_currentY, m_currentZ)] = tile;
+    m_drawing = false;
     
     return DrawResult::kSuccess;
 }

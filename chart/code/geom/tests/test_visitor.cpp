@@ -275,7 +275,9 @@ TEST_F(GeometryVisitorTest, NestedGeometryCollection_VisitsAll) {
     
     outerCollection->Apply(m_visitor);
     
-    EXPECT_EQ(m_visitor.GetCollectionCount(), 1);
+    EXPECT_EQ(m_visitor.GetCollectionCount(), 2);
+    EXPECT_EQ(m_visitor.GetPointCount(), 2);
+    EXPECT_EQ(m_visitor.GetPolygonCount(), 1);
 }
 
 }

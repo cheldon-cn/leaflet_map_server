@@ -13,7 +13,7 @@ public:
     ~CompositeSymbolizer() override = default;
     
     SymbolizerType GetType() const override { return SymbolizerType::kComposite; }
-    std::string GetName() const override { return "CompositeSymbolizer"; }
+    std::string GetName() const override { return m_name.empty() ? "CompositeSymbolizer" : m_name; }
     
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry) override;
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) override;

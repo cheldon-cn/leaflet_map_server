@@ -101,13 +101,13 @@ private:
     static Result WriteMultiPolygon(std::vector<uint8_t>& buffer, const MultiPolygon* mpoly, ByteOrder order, bool includeSRID);
     static Result WriteGeometryCollection(std::vector<uint8_t>& buffer, const GeometryCollection* collection, ByteOrder order, bool includeSRID);
     
-    static Result ReadPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadMultiPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadMultiLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadMultiPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
-    static Result ReadGeometryCollection(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry);
+    static Result ReadPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadMultiPoint(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadMultiLineString(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadMultiPolygon(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
+    static Result ReadGeometryCollection(const uint8_t* data, size_t size, std::unique_ptr<Geometry>& geometry, bool hasZ, bool hasM, ByteOrder order);
     
     static uint32_t GetWkbTypeCode(GeomType type, bool hasZ, bool hasM);
     static GeomType GetGeomTypeFromWkb(uint32_t typeCode);

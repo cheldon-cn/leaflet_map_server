@@ -47,6 +47,7 @@ public:
     
     bool Enqueue(RenderTaskPtr task);
     RenderTaskPtr Dequeue();
+    RenderTaskPtr TryDequeue(int64_t timeoutMs = 0);
     
     RenderTaskPtr Peek() const;
     

@@ -40,7 +40,7 @@ public:
     ~RasterSymbolizer() override = default;
     
     SymbolizerType GetType() const override { return SymbolizerType::kRaster; }
-    std::string GetName() const override { return "RasterSymbolizer"; }
+    std::string GetName() const override { return m_name.empty() ? "RasterSymbolizer" : m_name; }
     
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry) override;
     DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) override;

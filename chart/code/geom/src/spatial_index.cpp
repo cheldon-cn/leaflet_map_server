@@ -655,7 +655,30 @@ GeomResult Quadtree<T>::BulkLoad(const std::vector<std::pair<Envelope, T>>& item
 
 template<typename T>
 bool Quadtree<T>::Remove(const Envelope& envelope, const T& item) {
-    return false;
+    if (!m_root) return false;
+    
+    std::function<bool(QuadNode*)> removeRecursive;
+    removeRecursive = [&](QuadNode* node) -> bool {
+        for (auto it = node->items.begin(); it != node->items.end(); ++it) {
+            if (it->first == envelope && it->second == item) {
+                node->items.erase(it);
+                m_size--;
+                return true;
+            }
+        }
+        
+        for (int i = 0; i < 4; ++i) {
+            if (node->children[i] && node->children[i]->bounds.Intersects(envelope)) {
+                if (removeRecursive(node->children[i].get())) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    };
+    
+    return removeRecursive(m_root.get());
 }
 
 template<typename T>
@@ -702,7 +725,39 @@ std::vector<T> Quadtree<T>::QueryIntersects(const Geometry* geom) const {
 
 template<typename T>
 std::vector<T> Quadtree<T>::QueryNearest(const Coordinate& point, size_t k) const {
-    return std::vector<T>();
+    std::vector<T> results;
+    if (!m_root || k == 0) return results;
+    
+    std::vector<std::pair<double, T>> distances;
+    
+    std::function<void(const QuadNode*)> collectItems;
+    collectItems = [&](const QuadNode* node) {
+        if (!node) return;
+        
+        for (const auto& item : node->items) {
+            double dist = item.first.Distance(point);
+            distances.emplace_back(dist, item.second);
+        }
+        
+        for (int i = 0; i < 4; ++i) {
+            if (node->children[i]) {
+                collectItems(node->children[i].get());
+            }
+        }
+    };
+    
+    collectItems(m_root.get());
+    
+    std::sort(distances.begin(), distances.end(),
+              [](const std::pair<double, T>& a, const std::pair<double, T>& b) {
+                  return a.first < b.first;
+              });
+    
+    for (size_t i = 0; i < std::min(k, distances.size()); ++i) {
+        results.push_back(distances[i].second);
+    }
+    
+    return results;
 }
 
 template<typename T>
@@ -723,12 +778,47 @@ Envelope Quadtree<T>::GetBounds() const {
 
 template<typename T>
 size_t Quadtree<T>::GetHeight() const {
-    return 0;
+    if (!m_root) return 0;
+    
+    std::function<size_t(const QuadNode*)> getHeight;
+    getHeight = [&](const QuadNode* node) -> size_t {
+        if (!node) return 0;
+        
+        size_t maxChildHeight = 0;
+        for (int i = 0; i < 4; ++i) {
+            if (node->children[i]) {
+                maxChildHeight = std::max(maxChildHeight, getHeight(node->children[i].get()));
+            }
+        }
+        
+        return 1 + maxChildHeight;
+    };
+    
+    return getHeight(m_root.get());
 }
 
 template<typename T>
 size_t Quadtree<T>::GetNodeCount() const {
-    return 0;
+    if (!m_root) return 0;
+    
+    size_t count = 0;
+    
+    std::function<void(const QuadNode*)> countNodes;
+    countNodes = [&](const QuadNode* node) {
+        if (!node) return;
+        
+        count++;
+        
+        for (int i = 0; i < 4; ++i) {
+            if (node->children[i]) {
+                countNodes(node->children[i].get());
+            }
+        }
+    };
+    
+    countNodes(m_root.get());
+    
+    return count;
 }
 
 template<typename T>

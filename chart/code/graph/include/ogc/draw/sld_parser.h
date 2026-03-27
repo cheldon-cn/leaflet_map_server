@@ -13,6 +13,7 @@
 #include "ogc/draw/logical_filter.h"
 #include "ogc/draw/spatial_filter.h"
 #include "ogc/draw/color.h"
+#include "ogc/draw/export.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -60,7 +61,7 @@ struct SldStyledLayerDescriptor {
     SldStyledLayerDescriptor() = default;
 };
 
-class SldParser {
+class OGC_GRAPH_API SldParser {
 public:
     SldParser();
     ~SldParser() = default;

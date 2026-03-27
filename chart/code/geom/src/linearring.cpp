@@ -134,7 +134,61 @@ bool LinearRing::IsPointOnBoundary(const Coordinate& point, double tolerance) co
 }
 
 LinearRingPtr LinearRing::Offset(double distance) const {
-    return Create();
+    if (m_coords.size() < 4) {
+        return Create();
+    }
+    
+    CoordinateList offsetCoords;
+    size_t n = m_coords.size() - 1;
+    
+    for (size_t i = 0; i < n; ++i) {
+        size_t prev = (i + n - 1) % n;
+        size_t next = (i + 1) % n;
+        
+        double dx1 = m_coords[i].x - m_coords[prev].x;
+        double dy1 = m_coords[i].y - m_coords[prev].y;
+        double len1 = std::sqrt(dx1 * dx1 + dy1 * dy1);
+        
+        double dx2 = m_coords[next].x - m_coords[i].x;
+        double dy2 = m_coords[next].y - m_coords[i].y;
+        double len2 = std::sqrt(dx2 * dx2 + dy2 * dy2);
+        
+        if (len1 < 1e-10 || len2 < 1e-10) {
+            offsetCoords.push_back(m_coords[i]);
+            continue;
+        }
+        
+        double nx1 = -dy1 / len1;
+        double ny1 = dx1 / len1;
+        
+        double nx2 = -dy2 / len2;
+        double ny2 = dx2 / len2;
+        
+        double bisectX = nx1 + nx2;
+        double bisectY = ny1 + ny2;
+        double bisectLen = std::sqrt(bisectX * bisectX + bisectY * bisectY);
+        
+        if (bisectLen < 1e-10) {
+            offsetCoords.emplace_back(
+                m_coords[i].x + distance * nx1,
+                m_coords[i].y + distance * ny1
+            );
+        } else {
+            double dot = nx1 * nx2 + ny1 * ny2;
+            double scale = distance / (1.0 + dot);
+            
+            offsetCoords.emplace_back(
+                m_coords[i].x + scale * bisectX,
+                m_coords[i].y + scale * bisectY
+            );
+        }
+    }
+    
+    if (!offsetCoords.empty()) {
+        offsetCoords.push_back(offsetCoords.front());
+    }
+    
+    return Create(offsetCoords, false);
 }
 
 void LinearRing::Normalize() {
@@ -158,6 +212,93 @@ void LinearRing::Normalize() {
 
 std::vector<LinearRing::Triangle> LinearRing::Triangulate() const {
     std::vector<Triangle> triangles;
+    
+    if (m_coords.size() < 4) {
+        return triangles;
+    }
+    
+    std::vector<Coordinate> polygon;
+    for (size_t i = 0; i < m_coords.size() - 1; ++i) {
+        polygon.push_back(m_coords[i]);
+    }
+    
+    auto crossProduct = [](const Coordinate& o, const Coordinate& a, const Coordinate& b) -> double {
+        return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    };
+    
+    auto isConvex = [&](size_t i, size_t n) -> bool {
+        size_t prev = (i + n - 1) % n;
+        size_t next = (i + 1) % n;
+        double cross = crossProduct(polygon[prev], polygon[i], polygon[next]);
+        return cross > 0;
+    };
+    
+    auto isInsideTriangle = [](const Coordinate& p, const Coordinate& a, 
+                               const Coordinate& b, const Coordinate& c) -> bool {
+        double d1 = (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+        double d2 = (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y);
+        double d3 = (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y);
+        
+        bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+        
+        return !(hasNeg && hasPos);
+    };
+    
+    auto isEar = [&](size_t i, size_t n) -> bool {
+        if (!isConvex(i, n)) {
+            return false;
+        }
+        
+        size_t prev = (i + n - 1) % n;
+        size_t next = (i + 1) % n;
+        
+        for (size_t j = 0; j < n; ++j) {
+            if (j == prev || j == i || j == next) {
+                continue;
+            }
+            
+            if (isInsideTriangle(polygon[j], polygon[prev], polygon[i], polygon[next])) {
+                return false;
+            }
+        }
+        
+        return true;
+    };
+    
+    while (polygon.size() > 3) {
+        bool earFound = false;
+        
+        for (size_t i = 0; i < polygon.size(); ++i) {
+            if (isEar(i, polygon.size())) {
+                size_t prev = (i + polygon.size() - 1) % polygon.size();
+                size_t next = (i + 1) % polygon.size();
+                
+                Triangle t;
+                t.p1 = polygon[prev];
+                t.p2 = polygon[i];
+                t.p3 = polygon[next];
+                triangles.push_back(t);
+                
+                polygon.erase(polygon.begin() + i);
+                earFound = true;
+                break;
+            }
+        }
+        
+        if (!earFound) {
+            break;
+        }
+    }
+    
+    if (polygon.size() == 3) {
+        Triangle t;
+        t.p1 = polygon[0];
+        t.p2 = polygon[1];
+        t.p3 = polygon[2];
+        triangles.push_back(t);
+    }
+    
     return triangles;
 }
 
