@@ -196,7 +196,7 @@ Result SpatiaLiteConnection::InsertGeometry(const std::string& table,
     
     std::vector<uint8_t> wkb;
     WkbOptions options;
-    options.includeSRID = true;
+    options.includeSRID = false;
     
     Result wkbResult = WkbConverter::GeometryToWkb(geometry, wkb, options);
     if (!wkbResult.IsSuccess()) {
@@ -209,6 +209,8 @@ Result SpatiaLiteConnection::InsertGeometry(const std::string& table,
         return wkbResult;
     }
     
+    int srid = geometry ? geometry->GetSRID() : 0;
+    
     std::ostringstream sql;
     sql << "INSERT INTO " << table << " (";
     
@@ -220,7 +222,11 @@ Result SpatiaLiteConnection::InsertGeometry(const std::string& table,
     sql << ") VALUES (";
     
     first = true;
-    sql << "GeomFromEWKB(X'" << hexWkb << "')";
+    if (srid > 0) {
+        sql << "ST_GeomFromWKB(X'" << hexWkb << "', " << srid << ")";
+    } else {
+        sql << "ST_GeomFromWKB(X'" << hexWkb << "')";
+    }
     for (const auto& attr : attributes) {
         sql << ", '" << attr.second << "'";
     }
@@ -883,7 +889,7 @@ Result SpatiaLiteConnection::SpatialQuery(const std::string& table,
     
     std::string opName = GetSpatialOperatorName(op);
     std::ostringstream sql;
-    sql << "SELECT " << geomColumn << " FROM " << table 
+    sql << "SELECT ST_AsBinary(" << geomColumn << ") FROM " << table 
         << " WHERE " << opName << "(" << geomColumn << ", GeomFromText('" 
         << queryGeom->AsText() << "')) = 1";
     
@@ -909,18 +915,17 @@ Result SpatiaLiteConnection::SpatialQueryWithEnvelope(const std::string& table,
                                                       const Geometry* queryGeom,
                                                       const ::ogc::Envelope& filter,
                                                       std::vector<GeometryPtr>& results) {
-    if (!queryGeom) {
-        return Result::Error(DbResult::kInvalidParameter, "Query geometry is null");
-    }
-    
-    std::string opName = GetSpatialOperatorName(op);
     std::ostringstream sql;
-    sql << "SELECT " << geomColumn << " FROM " << table 
+    sql << "SELECT ST_AsBinary(" << geomColumn << ") FROM " << table 
         << " WHERE MbrIntersects(" << geomColumn << ", BuildMbr(" 
         << filter.GetMinX() << ", " << filter.GetMinY() << ", "
-        << filter.GetMaxX() << ", " << filter.GetMaxY() << "))"
-        << " AND " << opName << "(" << geomColumn << ", GeomFromText('" 
-        << queryGeom->AsText() << "')) = 1";
+        << filter.GetMaxX() << ", " << filter.GetMaxY() << "))";
+    
+    if (queryGeom) {
+        std::string opName = GetSpatialOperatorName(op);
+        sql << " AND " << opName << "(" << geomColumn << ", GeomFromText('" 
+            << queryGeom->AsText() << "')) = 1";
+    }
     
     DbResultSetPtr resultSet;
     Result result = ExecuteQuery(sql.str(), resultSet);

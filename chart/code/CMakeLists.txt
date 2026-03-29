@@ -91,7 +91,7 @@ endif()
 
 add_subdirectory(feature)
 add_subdirectory(layer)
-
+add_subdirectory(draw)
 if(ENABLE_GRAPH)
     add_subdirectory(graph)
 endif()
