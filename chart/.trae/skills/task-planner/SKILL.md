@@ -168,15 +168,203 @@ if [ -f "geom/doc/tasks.md" ]; then
 fi
 ```
 
+## Large Document Processing Strategy
+
+### Document Size Estimation
+
+在生成任务计划前，先预估输出文档大小：
+
+| 设计文档规模 | 预估任务数 | 输出文档大小 | 处理策略 |
+|-------------|-----------|-------------|----------|
+| 小型 (<5模块) | <20任务 | <5KB | 直接生成 |
+| 中型 (5-15模块) | 20-50任务 | 5-20KB | 直接生成 |
+| 大型 (15-30模块) | 50-100任务 | 20-50KB | 分段生成 |
+| 超大型 (>30模块) | >100任务 | >50KB | 分段并行生成 |
+
+### 预估公式
+
+```
+预估任务数 = 模块数 × 平均每模块任务数(3-5)
+预估文档大小 = 预估任务数 × 平均每任务字节数(约500字节)
+```
+
+### 分段生成流程
+
+对于大型/超大型文档，采用以下流程：
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      大文档分段生成流程                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Step 1: 文档分析                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ • 读取设计文档                                                   │   │
+│  │ • 统计模块数量                                                   │   │
+│  │ • 预估任务数量                                                   │   │
+│  │ • 预估输出大小                                                   │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  Step 2: 判断处理策略                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ if (预估大小 < 20KB):                                            │   │
+│  │     直接生成完整文档                                             │   │
+│  │ else:                                                            │   │
+│  │     执行分段生成流程                                             │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  Step 3: 生成大纲 (每项≤32字)                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ 1. 概述与资源分配                                                │   │
+│  │ 2. 任务摘要表                                                    │   │
+│  │ 3. 关键路径分析                                                  │   │
+│  │ 4. M1里程碑任务详情                                              │   │
+│  │ 5. M2里程碑任务详情                                              │   │
+│  │ ...                                                              │   │
+│  │ N. 变更日志                                                      │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  Step 4: 并行生成章节                                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ 子代理A: 概述+资源分配+任务摘要                                  │   │
+│  │ 子代理B: M1里程碑详情                                            │   │
+│  │ 子代理C: M2里程碑详情                                            │   │
+│  │ 子代理D: M3里程碑详情                                            │   │
+│  │ ...                                                              │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  Step 5: 合并文档                                                       │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ • 按大纲顺序合并各章节                                           │   │
+│  │ • 检查章节间引用一致性                                           │   │
+│  │ • 生成最终tasks.md                                               │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 大纲格式要求
+
+大纲每项不超过32个字符，格式如下：
+
+```markdown
+## 生成大纲
+
+1. 概述与资源分配 (约2KB)
+2. 任务摘要表 (约5KB)
+3. 关键路径与依赖图 (约3KB)
+4. M1核心框架详情 (约8KB)
+5. M2 CPU渲染详情 (约6KB)
+6. M3 GPU加速详情 (约8KB)
+7. M4瓦片渲染详情 (约6KB)
+8. M5矢量输出详情 (约6KB)
+9. M6平台适配详情 (约8KB)
+10. M7高级特性详情 (约8KB)
+11. 风险登记与变更日志 (约2KB)
+
+预计总大小: 约62KB
+处理策略: 分段并行生成
+```
+
+### 章节文件命名
+
+分段生成时，每个章节保存为独立文件：
+
+| 章节 | 文件名 | 说明 |
+|------|--------|------|
+| 概述 | `tasks_part_01_overview.md` | 概述、资源分配 |
+| 任务摘要 | `tasks_part_02_summary.md` | 任务摘要表 |
+| 关键路径 | `tasks_part_03_critical.md` | 关键路径、依赖图 |
+| M1详情 | `tasks_part_04_m1.md` | M1里程碑任务详情 |
+| M2详情 | `tasks_part_05_m2.md` | M2里程碑任务详情 |
+| ... | ... | ... |
+| 风险日志 | `tasks_part_NN_risk.md` | 风险登记、变更日志 |
+
+### 合并策略
+
+```bash
+# 合并顺序
+1. 概述与资源分配
+2. 任务摘要表
+3. 关键路径分析
+4. 里程碑详情 (按M1, M2, ... 顺序)
+5. 依赖关系图
+6. 风险登记
+7. 变更日志
+
+# 合并后清理临时文件
+rm tasks_part_*.md
+```
+
+### 并行处理示例
+
+对于大型项目，使用以下方式并行处理：
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      并行处理示例                                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  主代理                                                                 │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │ 1. 分析设计文档，生成大纲                                        │   │
+│  │ 2. 分配章节给子代理                                              │   │
+│  │ 3. 收集子代理输出                                                │   │
+│  │ 4. 合并最终文档                                                  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│          ┌───────────────────┼───────────────────┐                     │
+│          ▼                   ▼                   ▼                     │
+│  ┌───────────────┐   ┌───────────────┐   ┌───────────────┐            │
+│  │   子代理 A    │   │   子代理 B    │   │   子代理 C    │            │
+│  │───────────────│   │───────────────│   │───────────────│            │
+│  │ 概述+摘要     │   │ M1+M2详情     │   │ M3+M4详情     │            │
+│  │ 关键路径      │   │               │   │               │            │
+│  └───────────────┘   └───────────────┘   └───────────────┘            │
+│          │                   │                   │                     │
+│          └───────────────────┼───────────────────┘                     │
+│                              ▼                                          │
+│                    合并 → tasks.md                                      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Task Planning Process
 
-### Step 1: Document Analysis
+### Step 1: Document Analysis and Size Estimation
 
 1. Read and understand the design document thoroughly
 2. Identify all modules, components, and features
 3. Map dependencies between components
 4. Identify technical risks and challenges
 5. Identify required skills and expertise
+6. **Estimate output document size**
+
+**Size Estimation Process**:
+```
+模块数 = 统计设计文档中的模块/章节数量
+预估任务数 = 模块数 × 3~5 (平均每模块任务数)
+预估文档大小 = 预估任务数 × 500字节 (平均每任务)
+
+if (预估文档大小 >= 20KB):
+    执行分段生成流程
+    1. 生成大纲 (每项≤32字)
+    2. 按大纲分段生成
+    3. 合并最终文档
+else:
+    直接生成完整文档
+```
+
+**Output Size Thresholds**:
+| 预估大小 | 处理策略 | 说明 |
+|----------|----------|------|
+| < 20KB | 直接生成 | 单次输出即可完成 |
+| 20-50KB | 分段生成 | 按里程碑分段 |
+| > 50KB | 分段并行 | 多子代理并行处理 |
 
 **Error Handling**:
 - If document is empty: Return error "设计文档为空，请提供有效的设计文档"
@@ -463,6 +651,124 @@ For tasks with integration dependencies:
 
 Generate a structured task file with **Task Summary First**:
 
+#### Small Document Output (< 20KB)
+
+直接生成完整文档：
+
+```markdown
+# Project Task Plan
+
+## Overview
+- Total Tasks: X
+- Total Estimated Hours: Y (PERT expected)
+- Critical Path Duration: Z hours
+- Target Completion: W weeks
+- Team Size: N developers
+
+## Reference Documents
+- **Design Doc**: [设计文档名称.md](path/to/design_doc.md)
+- 实施时以设计文档中的描述为准
+- 如有疑问请查阅对应设计文档
+
+## Task Summary
+
+| Task ID | Task Name | Priority | Milestone | Effort | Status | Design Doc | Dependencies |
+|---------|-----------|----------|-----------|--------|--------|-------------|--------------|
+| T1 | Project Setup | P0 | M1 | 4h | 📋 Todo | - | - |
+| T2 | Core Interfaces | P0 | M1 | 8h | 📋 Todo | design_doc_v1.md | T1 |
+...
+```
+
+#### Large Document Output (>= 20KB)
+
+对于大型文档，执行分段生成流程：
+
+**Phase 1: 生成大纲**
+
+首先输出文档大纲，每项不超过32字：
+
+```markdown
+## 生成大纲
+
+预估文档大小: 约45KB
+处理策略: 分段生成
+
+1. 概述与资源分配 (约2KB)
+2. 任务摘要表 (约5KB)
+3. 关键路径与依赖图 (约3KB)
+4. M1里程碑任务详情 (约8KB)
+5. M2里程碑任务详情 (约6KB)
+6. M3里程碑任务详情 (约8KB)
+7. M4里程碑任务详情 (约6KB)
+8. 风险登记与变更日志 (约2KB)
+```
+
+**Phase 2: 分段生成**
+
+按大纲逐段生成，每段保存为独立文件：
+
+```
+tasks_part_01_overview.md
+tasks_part_02_summary.md
+tasks_part_03_critical.md
+tasks_part_04_m1.md
+tasks_part_05_m2.md
+...
+```
+
+**Phase 3: 合并文档**
+
+将所有分段文件合并为最终tasks.md：
+
+```markdown
+# Project Task Plan
+
+[概述与资源分配内容]
+
+[任务摘要表内容]
+
+[关键路径内容]
+
+[M1详情内容]
+
+[M2详情内容]
+
+...
+
+[风险登记与变更日志内容]
+```
+
+**Phase 4: 清理临时文件**
+
+合并完成后删除分段文件：
+```bash
+rm tasks_part_*.md
+```
+
+#### Parallel Generation for Very Large Documents (> 50KB)
+
+对于超大型文档，使用并行处理：
+
+```
+主代理:
+1. 分析设计文档
+2. 生成大纲
+3. 分配章节给子代理
+
+子代理A: 概述 + 任务摘要 + 关键路径
+子代理B: M1 + M2 里程碑详情
+子代理C: M3 + M4 里程碑详情
+子代理D: M5 + M6 里程碑详情
+...
+
+主代理:
+4. 收集子代理输出
+5. 合并最终文档
+6. 清理临时文件
+```
+
+#### Standard Output Structure
+
 ```markdown
 # Project Task Plan
 
@@ -644,14 +950,38 @@ Before finalizing the task plan:
 - [ ] Task summary table present at top
 - [ ] Existing task file backed up (if any)
 
+### Large Document Checklist
+
+For documents >= 20KB:
+
+- [ ] Output size estimated before generation
+- [ ] Outline generated (each item ≤ 32 chars)
+- [ ] Sections generated in correct order
+- [ ] All section files merged correctly
+- [ ] Cross-references between sections verified
+- [ ] Temporary files cleaned up after merge
+- [ ] Final document size matches estimate (±20%)
+
+### Parallel Generation Checklist
+
+For documents > 50KB:
+
+- [ ] Sections distributed evenly among sub-agents
+- [ ] Each sub-agent has clear section boundaries
+- [ ] No overlapping content between sections
+- [ ] All sub-agent outputs collected before merge
+- [ ] Merge order follows outline sequence
+
 ## Example Usage
 
-### Creating New Task Plan
+### Creating New Task Plan (Small Document)
 
 ```
 User: "Based on database_model_design.md, create a task plan for the geom module"
 
 AI: [Invokes task-planner skill]
+    [Estimates output size: ~15KB < 20KB]
+    [Strategy: Direct generation]
     [Checks for existing geom/doc/tasks.md]
     [Backs up existing file if found]
     [Analyzes design document]
@@ -665,6 +995,88 @@ AI: [Invokes task-planner skill]
       - Milestones
       - Detailed descriptions
       - Change log]
+```
+
+### Creating New Task Plan (Large Document)
+
+```
+User: "Based on render_category_design.md, create a task plan"
+
+AI: [Invokes task-planner skill]
+    [Estimates output size: ~45KB >= 20KB]
+    [Strategy: Segmented generation]
+    
+    Phase 1: Generate Outline
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ ## 生成大纲                                                     │
+    │                                                                 │
+    │ 预估文档大小: 约45KB                                            │
+    │ 处理策略: 分段生成                                               │
+    │                                                                 │
+    │ 1. 概述与资源分配 (约2KB)                                       │
+    │ 2. 任务摘要表 (约5KB)                                           │
+    │ 3. 关键路径与依赖图 (约3KB)                                      │
+    │ 4. M1核心框架详情 (约8KB)                                       │
+    │ 5. M2 CPU渲染详情 (约6KB)                                       │
+    │ 6. M3 GPU加速详情 (约8KB)                                       │
+    │ 7. M4瓦片渲染详情 (约6KB)                                       │
+    │ 8. 风险登记与变更日志 (约2KB)                                    │
+    └─────────────────────────────────────────────────────────────────┘
+    
+    Phase 2: Generate Sections
+    [Generates tasks_part_01_overview.md]
+    [Generates tasks_part_02_summary.md]
+    [Generates tasks_part_03_critical.md]
+    [Generates tasks_part_04_m1.md]
+    ...
+    
+    Phase 3: Merge Document
+    [Merges all parts into tasks.md]
+    
+    Phase 4: Cleanup
+    [Removes tasks_part_*.md]
+```
+
+### Creating New Task Plan (Very Large Document - Parallel)
+
+```
+User: "Based on enterprise_system_design.md, create a task plan"
+
+AI: [Invokes task-planner skill]
+    [Estimates output size: ~80KB > 50KB]
+    [Strategy: Parallel generation]
+    
+    Phase 1: Generate Outline
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ ## 生成大纲                                                     │
+    │                                                                 │
+    │ 预估文档大小: 约80KB                                            │
+    │ 处理策略: 分段并行生成                                           │
+    │                                                                 │
+    │ 1. 概述与资源分配 (约3KB)                                       │
+    │ 2. 任务摘要表 (约8KB)                                           │
+    │ 3. 关键路径与依赖图 (约5KB)                                      │
+    │ 4. M1基础框架详情 (约10KB)                                      │
+    │ 5. M2核心模块详情 (约12KB)                                      │
+    │ 6. M3扩展功能详情 (约15KB)                                      │
+    │ 7. M4优化完善详情 (约10KB)                                      │
+    │ 8. 风险登记与变更日志 (约3KB)                                    │
+    └─────────────────────────────────────────────────────────────────┘
+    
+    Phase 2: Parallel Generation
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 子代理A: 概述 + 任务摘要 + 关键路径                              │
+    │ 子代理B: M1 + M2 里程碑详情                                      │
+    │ 子代理C: M3 + M4 里程碑详情                                      │
+    │ 子代理D: 风险登记 + 变更日志                                     │
+    └─────────────────────────────────────────────────────────────────┘
+    
+    Phase 3: Merge Document
+    [Collects all sub-agent outputs]
+    [Merges in outline order]
+    
+    Phase 4: Cleanup
+    [Removes all temporary files]
 ```
 
 ### Updating Task Status
