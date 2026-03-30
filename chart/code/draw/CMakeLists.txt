@@ -46,6 +46,26 @@ set(OGC_DRAW_SOURCES
     src/draw/svg_engine.cpp
     src/draw/geometry.cpp
     src/draw/gpu_resource_manager.cpp
+    src/draw/render_memory_pool.cpp
+    src/draw/gpu_accelerated_engine.cpp
+    src/draw/texture_cache.cpp
+    src/draw/gpu_resource_wrapper.cpp
+    src/draw/thread_safe_engine.cpp
+    src/draw/pdf_device.cpp
+    src/draw/pdf_engine.cpp
+    src/draw/capability_negotiator.cpp
+    src/draw/gpu_device_selector.cpp
+    src/draw/draw_scope_guard.cpp
+    src/draw/library_compatibility.cpp
+    src/draw/gdiplus_engine.cpp
+    src/draw/direct2d_engine.cpp
+    src/draw/windows_platform.cpp
+    src/draw/plugin_manager.cpp
+    src/draw/draw_version.cpp
+    src/draw/engine_pool.cpp
+    src/draw/batch_renderer.cpp
+    src/draw/render_cache.cpp
+    src/draw/lod_strategy.cpp
 )
 
 set(OGC_DRAW_HEADERS
@@ -73,6 +93,28 @@ set(OGC_DRAW_HEADERS
     include/ogc/draw/svg_device.h
     include/ogc/draw/svg_engine.h
     include/ogc/draw/gpu_resource_manager.h
+    include/ogc/draw/render_memory_pool.h
+    include/ogc/draw/gpu_accelerated_engine.h
+    include/ogc/draw/texture_cache.h
+    include/ogc/draw/gpu_resource_wrapper.h
+    include/ogc/draw/thread_safe_engine.h
+    include/ogc/draw/pdf_device.h
+    include/ogc/draw/pdf_engine.h
+    include/ogc/draw/capability_negotiator.h
+    include/ogc/draw/gpu_device_selector.h
+    include/ogc/draw/draw_scope_guard.h
+    include/ogc/draw/library_compatibility.h
+    include/ogc/draw/gdiplus_engine.h
+    include/ogc/draw/direct2d_engine.h
+    include/ogc/draw/windows_platform.h
+    include/ogc/draw/plugin_manager.h
+    include/ogc/draw/draw_engine_plugin.h
+    include/ogc/draw/draw_device_plugin.h
+    include/ogc/draw/draw_version.h
+    include/ogc/draw/engine_pool.h
+    include/ogc/draw/batch_renderer.h
+    include/ogc/draw/render_cache.h
+    include/ogc/draw/lod_strategy.h
 )
 
 if(OGC_DRAW_STATIC)
@@ -91,6 +133,43 @@ target_include_directories(ogc_draw
 )
 
 target_link_libraries(ogc_draw PUBLIC ogc_geometry)
+
+if(WIN32)
+    target_link_libraries(ogc_draw PRIVATE gdiplus d2d1 dwrite)
+endif()
+
+option(DRAW_WITH_QT "Build with Qt support" OFF)
+
+if(DRAW_WITH_QT)
+    find_package(Qt6 QUIET COMPONENTS Core Gui Widgets)
+    if(Qt6_FOUND)
+        message(STATUS "Found Qt6: ${Qt6_VERSION}")
+        set(QT_VERSION_MAJOR 6)
+    else()
+        find_package(Qt5 QUIET COMPONENTS Core Gui Widgets)
+        if(Qt5_FOUND)
+            message(STATUS "Found Qt5: ${Qt5_VERSION}")
+            set(QT_VERSION_MAJOR 5)
+        endif()
+    endif()
+    
+    if(Qt5_FOUND OR Qt6_FOUND)
+        list(APPEND OGC_DRAW_SOURCES src/draw/qt_engine.cpp)
+        list(APPEND OGC_DRAW_HEADERS include/ogc/draw/qt_engine.h)
+        list(APPEND OGC_DRAW_SOURCES src/draw/qt_display_device.cpp)
+        list(APPEND OGC_DRAW_HEADERS include/ogc/draw/qt_display_device.h)
+        
+        if(QT_VERSION_MAJOR EQUAL 6)
+            target_link_libraries(ogc_draw PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+        else()
+            target_link_libraries(ogc_draw PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
+        endif()
+        
+        target_compile_definitions(ogc_draw PRIVATE DRAW_HAS_QT)
+    else()
+        message(STATUS "Qt not found, QtEngine will not be built")
+    endif()
+endif()
 
 set_target_properties(ogc_draw PROPERTIES
     VERSION ${PROJECT_VERSION}

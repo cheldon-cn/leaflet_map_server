@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+
 set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest root directory")
 
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h
@@ -61,6 +63,31 @@ set(TEST_SOURCES
     test_async_render_manager.cpp
     test_svg.cpp
     test_gpu_resource_manager.cpp
+    test_render_memory_pool.cpp
+    test_gpu_accelerated_engine.cpp
+    test_texture_cache.cpp
+    test_gpu_resource_wrapper.cpp
+    test_thread_safe_engine.cpp
+    test_pdf_device.cpp
+    test_pdf_engine.cpp
+    test_capability_negotiator.cpp
+    test_gpu_device_selector.cpp
+    test_draw_scope_guard.cpp
+    test_library_compatibility.cpp
+    test_qt_engine.cpp
+    test_qt_display_device.cpp
+    test_gdiplus_engine.cpp
+    test_direct2d_engine.cpp
+    test_windows_platform.cpp
+    test_plugin_manager.cpp
+    test_draw_version.cpp
+    test_engine_pool.cpp
+    test_performance.cpp
+    test_cairo_engine.cpp
+    test_coregraphics_engine.cpp
+    test_metal_engine.cpp
+    test_webgl_engine.cpp
+    test_boundary_values.cpp
 )
 
 foreach(TEST_SRC ${TEST_SOURCES})
@@ -69,6 +96,11 @@ foreach(TEST_SRC ${TEST_SOURCES})
     set(FULL_TEST_NAME "draw_${TEST_NAME}")
     
     add_executable(${FULL_TEST_NAME} ${TEST_SRC})
+    
+    if(ENABLE_COVERAGE)
+        target_compile_options(${FULL_TEST_NAME} PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+        target_link_options(${FULL_TEST_NAME} PRIVATE --coverage)
+    endif()
     
     target_link_libraries(${FULL_TEST_NAME}
         ogc_draw
@@ -83,3 +115,21 @@ foreach(TEST_SRC ${TEST_SOURCES})
     
     add_test(NAME ${FULL_TEST_NAME} COMMAND ${FULL_TEST_NAME})
 endforeach()
+
+if(ENABLE_COVERAGE)
+    find_program(LCOV_PATH lcov)
+    find_program(GENHTML_PATH genhtml)
+    
+    if(LCOV_PATH AND GENHTML_PATH)
+        add_custom_target(coverage
+            COMMAND ${LCOV_PATH} --directory . --zerocounters
+            COMMAND ctest --output-on-failure
+            COMMAND ${LCOV_PATH} --directory . --capture --output-file coverage.info
+            COMMAND ${LCOV_PATH} --remove coverage.info '/usr/*' --output-file coverage.info
+            COMMAND ${LCOV_PATH} --remove coverage.info '*/tests/*' --output-file coverage.info
+            COMMAND ${GENHTML_PATH} -o coverage_report coverage.info
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating code coverage report"
+        )
+    endif()
+endif()

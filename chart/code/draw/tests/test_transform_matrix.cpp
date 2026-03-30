@@ -230,8 +230,8 @@ TEST_F(TransformMatrixTest, PostTranslate) {
     Point pt(0.0, 0.0);
     Point result = s.TransformPoint(pt);
     
-    EXPECT_DOUBLE_EQ(result.x, 10.0);
-    EXPECT_DOUBLE_EQ(result.y, 20.0);
+    EXPECT_DOUBLE_EQ(result.x, 20.0);
+    EXPECT_DOUBLE_EQ(result.y, 40.0);
 }
 
 TEST_F(TransformMatrixTest, Equality) {

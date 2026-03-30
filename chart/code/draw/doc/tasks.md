@@ -146,47 +146,47 @@ Week 13-15: M7 高级特性 + 集成测试
 | T14 | Simple2DEngine多边形绘制 | M2 | P0 | Dev B | 6h | T12 | ✅完成 |
 | T15 | Simple2DEngine文本渲染 | M2 | P1 | Dev B | 8h | T12 | ✅完成 |
 | T16 | Simple2DEngine图像绘制 | M2 | P1 | Dev B | 6h | T12 | ✅完成 |
-| T17 | GPUResourceManager | M3 | P0 | Dev A | 10h | T2 | ⏳待实施 |
-| T18 | RenderMemoryPool | M3 | P0 | Dev A | 10h | T17 | ⏳待实施 |
-| T19 | TextureCache纹理缓存 | M3 | P1 | Dev A | 8h | T17 | ⏳待实施 |
-| T20 | GPUAcceleratedEngine | M3 | P0 | Dev A | 14h | T17,T18 | ⏳待实施 |
-| T21 | GPU资源RAII包装 | M3 | P1 | Dev A | 6h | T17 | ⏳待实施 |
-| T22 | 多GPU设备选择 | M3 | P2 | Dev A | 4h | T17 | ⏳待实施 |
+| T17 | GPUResourceManager | M3 | P0 | Dev A | 10h | T2 | ✅完成 |
+| T18 | RenderMemoryPool | M3 | P0 | Dev A | 10h | T17 | ✅完成 |
+| T19 | TextureCache纹理缓存 | M3 | P1 | Dev A | 8h | T17 | ✅完成 |
+| T20 | GPUAcceleratedEngine | M3 | P0 | Dev A | 14h | T17,T18 | ✅完成 |
+| T21 | GPU资源RAII包装 | M3 | P1 | Dev A | 6h | T17 | ✅完成 |
+| T22 | 多GPU设备选择 | M3 | P2 | Dev A | 4h | T17 | ✅完成 |
 | T23 | TileDevice瓦片设备 | M4 | P0 | Dev B | 8h | T1 | ✅完成 |
 | T24 | TileBasedEngine | M4 | P0 | Dev B | 12h | T23,T12 | ✅完成 |
 | T25 | AsyncRenderTask | M4 | P0 | Dev B | 8h | T24 | ✅完成 |
 | T26 | AsyncRenderManager | M4 | P0 | Dev B | 8h | T25 | ✅完成 |
 | T27 | 瓦片大小动态策略 | M4 | P1 | Dev B | 4h | T24 | ✅完成 |
 | T28 | VectorEngine基类 | M5 | P0 | Dev A | 8h | T2 | ✅完成 |
-| T29 | PdfDevice实现 | M5 | P0 | Dev A | 6h | T1 | ⏳待实施 |
-| T30 | PdfEngine实现(podofo) | M5 | P0 | Dev A | 8h | T28,T29 | ⏳待实施 |
+| T29 | PdfDevice实现 | M5 | P0 | Dev A | 6h | T1 | ✅完成 |
+| T30 | PdfEngine实现(podofo) | M5 | P0 | Dev A | 8h | T28,T29 | ✅完成 |
 | T31 | SvgDevice实现 | M5 | P1 | Dev A | 4h | T1 | ✅完成 |
 | T32 | SvgEngine实现(cairo) | M5 | P1 | Dev A | 6h | T28,T31 | ✅完成 |
 | T33 | 矢量输出测试 | M5 | P1 | Dev B | 4h | T30,T32 | ✅完成 |
-| T34 | QtEngine实现 | M6 | P0 | Dev A | 12h | T12 | ⏳待实施 |
-| T35 | QtDisplayDevice | M6 | P0 | Dev A | 6h | T34 | ⏳待实施 |
-| T36 | GDIPlusEngine | M6 | P1 | Dev A | 8h | T12 | ⏳待实施 |
-| T37 | Direct2DEngine | M6 | P1 | Dev A | 10h | T17 | ⏳待实施 |
-| T38 | Windows平台集成 | M6 | P1 | Dev A | 4h | T36,T37 | ⏳待实施 |
-| T39 | CairoEngine | M6 | P1 | Dev B | 8h | T12 | ⏳待实施 |
-| T40 | X11DisplayDevice | M6 | P1 | Dev B | 6h | T39 | ⏳待实施 |
-| T41 | CoreGraphicsEngine | M6 | P1 | Dev B | 8h | T12 | ⏳待实施 |
-| T42 | MetalEngine | M6 | P2 | Dev B | 10h | T17 | ⏳待实施 |
-| T43 | macOS平台集成 | M6 | P1 | Dev B | 4h | T41,T42 | ⏳待实施 |
-| T44 | WebGLEngine | M6 | P1 | Dev B | 10h | T17 | ⏳待实施 |
-| T45 | WebGLDevice | M6 | P1 | Dev B | 6h | T44 | ⏳待实施 |
-| T46 | Web平台集成 | M6 | P1 | Dev B | 4h | T44,T45 | ⏳待实施 |
-| T47 | PluginManager | M7 | P1 | Dev A | 10h | T2 | ⏳待实施 |
-| T48 | DrawEnginePlugin接口 | M7 | P1 | Dev A | 6h | T47 | ⏳待实施 |
-| T49 | DrawDevicePlugin接口 | M7 | P1 | Dev A | 4h | T47 | ⏳待实施 |
-| T50 | 版本兼容性完善 | M7 | P2 | Dev A | 6h | T47 | ⏳待实施 |
-| T51 | EnginePool引擎池 | M7 | P1 | Dev B | 6h | T3 | ⏳待实施 |
-| T52 | 性能优化与测试 | M7 | P0 | Dev B | 12h | T1-T51 | ⏳待实施 |
+| T34 | QtEngine实现 | M6 | P0 | Dev A | 12h | T12 | ✅完成 |
+| T35 | QtDisplayDevice | M6 | P0 | Dev A | 6h | T34 | ✅完成 |
+| T36 | GDIPlusEngine | M6 | P1 | Dev A | 8h | T12 | ✅完成 |
+| T37 | Direct2DEngine | M6 | P1 | Dev A | 10h | T17 | ✅完成 |
+| T38 | Windows平台集成 | M6 | P1 | Dev A | 4h | T36,T37 | ✅完成 |
+| T39 | CairoEngine | M6 | P1 | Dev B | 8h | T12 | ✅完成 |
+| T40 | X11DisplayDevice | M6 | P1 | Dev B | 6h | T39 | ✅完成 |
+| T41 | CoreGraphicsEngine | M6 | P1 | Dev B | 8h | T12 | ✅完成 |
+| T42 | MetalEngine | M6 | P2 | Dev B | 10h | T17 | ✅完成 |
+| T43 | macOS平台集成 | M6 | P1 | Dev B | 4h | T41,T42 | ✅完成 |
+| T44 | WebGLEngine | M6 | P1 | Dev B | 10h | T17 | ✅完成 |
+| T45 | WebGLDevice | M6 | P1 | Dev B | 6h | T44 | ✅完成 |
+| T46 | Web平台集成 | M6 | P1 | Dev B | 4h | T44,T45 | ✅完成 |
+| T47 | PluginManager | M7 | P1 | Dev A | 10h | T2 | ✅完成 |
+| T48 | DrawEnginePlugin接口 | M7 | P1 | Dev A | 6h | T47 | ✅完成 |
+| T49 | DrawDevicePlugin接口 | M7 | P1 | Dev A | 4h | T47 | ✅完成 |
+| T50 | 版本兼容性完善 | M7 | P2 | Dev A | 6h | T47 | ✅完成 |
+| T51 | EnginePool引擎池 | M7 | P1 | Dev B | 6h | T3 | ✅完成 |
+| T52 | 性能优化与测试 | M7 | P0 | Dev B | 12h | T1-T51 | ✅完成 |
 | T53 | StateSerializer状态序列化器 | M1 | P1 | Dev A | 4h | T2 | ✅完成 |
-| T54 | ThreadSafeEngine线程安全包装 | M3 | P1 | Dev A | 4h | T2 | ⏳待实施 |
-| T55 | 辅助工具类(DrawScopeGuard/DrawSession) | M2 | P2 | Dev B | 4h | T3 | ⏳待实施 |
-| T56 | 设备能力协商与丢失恢复 | M3 | P1 | Dev A | 6h | T1,T17 | ⏳待实施 |
-| T57 | 库兼容性检查工具 | M7 | P2 | Dev B | 4h | T6 | ⏳待实施 |
+| T54 | ThreadSafeEngine线程安全包装 | M3 | P1 | Dev A | 4h | T2 | ✅完成 |
+| T55 | 辅助工具类(DrawScopeGuard/DrawSession) | M2 | P2 | Dev B | 4h | T3 | ✅完成 |
+| T56 | 设备能力协商与丢失恢复 | M3 | P1 | Dev A | 6h | T1,T17 | ✅完成 |
+| T57 | 库兼容性检查工具 | M7 | P2 | Dev B | 4h | T6 | ✅完成 |
 
 
 ---
@@ -1439,10 +1439,10 @@ private:
 - 平台相关API (Windows: DXGI, Linux: EGL, macOS: Metal)
 
 **验收标准**:
-- [ ] GPU枚举正确
-- [ ] GPU评分算法合理
-- [ ] 偏好选择正确
-- [ ] 单元测试覆盖率 > 80%
+- [x] GPU枚举正确
+- [x] GPU评分算法合理
+- [x] 偏好选择正确
+- [x] 单元测试覆盖率 > 80%
 
 **参考文档**: render_category_design.md 第2900-3100行 (多GPU设备选择)
 
@@ -3608,10 +3608,10 @@ private:
 - 无
 
 **验收标准**:
-- [ ] 多线程绘制无数据竞争
-- [ ] 性能损失 < 10%
-- [ ] 线程安全测试通过
-- [ ] 单元测试覆盖率 > 80%
+- [x] 多线程绘制无数据竞争
+- [x] 性能损失 < 10%
+- [x] 线程安全测试通过
+- [x] 单元测试覆盖率 > 80%
 
 **参考文档**: render_category_design.md 第1100-1200行
 
