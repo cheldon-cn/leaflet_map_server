@@ -4540,4 +4540,1643 @@ void PerformanceMonitor::Reset() {
 
 ---
 
+## 13. S52样式规范实现详细设计
+
+### 13.1 S52规范概述
+
+S52是IHO（国际海道测量组织）制定的电子海图显示与信息系统（ECDIS）中海图内容和显示方面的规范，定义了海图要素的显示样式、符号库、颜色方案等。
+
+### 13.2 符号库管理
+
+#### 13.2.1 符号库数据结构
+
+```cpp
+namespace chart {
+
+enum class SymbolType {
+    kVector = 0,     // 矢量符号
+    kRaster = 1,     // 栅格符号
+    kComposite = 2   // 组合符号
+};
+
+struct SymbolDefinition {
+    std::string symbolId;           // 符号ID (如"SNDMRK01")
+    SymbolType type;                // 符号类型
+    std::string description;        // 符号描述
+    
+    // 矢量符号参数
+    std::vector<VectorCommand> vectorCommands;
+    
+    // 栅格符号参数
+    std::string rasterImagePath;
+    int width;
+    int height;
+    
+    // 组合符号参数
+    std::vector<std::string> componentSymbolIds;
+    
+    // 显示参数
+    double pivotX;
+    double pivotY;
+    double minScale;
+    double maxScale;
+    int displayPriority;
+};
+
+class SymbolLibrary {
+public:
+    static SymbolLibrary& Instance();
+    
+    bool LoadFromFile(const std::string& filePath);
+    bool LoadFromDatabase(DbConnection* conn);
+    
+    const SymbolDefinition* GetSymbol(const std::string& symbolId) const;
+    std::vector<std::string> GetSymbolsByFeatureType(FeatureType type) const;
+    
+    void SetDayNightMode(DayNightMode mode);
+    QColor GetColor(const std::string& colorToken) const;
+    
+private:
+    SymbolLibrary() = default;
+    
+    std::map<std::string, SymbolDefinition> m_symbols;
+    std::map<std::string, QColor> m_dayColors;
+    std::map<std::string, QColor> m_nightColors;
+    DayNightMode m_mode;
+};
+
+} // namespace chart
+```
+
+#### 13.2.2 符号渲染引擎
+
+```cpp
+namespace chart {
+
+class SymbolRenderer {
+public:
+    SymbolRenderer();
+    ~SymbolRenderer();
+    
+    void Render(QPainter* painter, 
+                const std::string& symbolId,
+                const QPointF& position,
+                double rotation = 0.0,
+                double scale = 1.0);
+    
+    void RenderVectorSymbol(QPainter* painter,
+                            const SymbolDefinition* symbol,
+                            const QPointF& position,
+                            double rotation,
+                            double scale);
+    
+    void RenderRasterSymbol(QPainter* painter,
+                            const SymbolDefinition* symbol,
+                            const QPointF& position,
+                            double rotation,
+                            double scale);
+    
+private:
+    std::map<std::string, QPixmap> m_rasterCache;
+    std::mutex m_cacheMutex;
+    
+    QPixmap RasterizeVectorSymbol(const SymbolDefinition* symbol, double scale);
+    void ApplyRotation(QPainter* painter, const QPointF& center, double rotation);
+};
+
+} // namespace chart
+```
+
+### 13.3 样式规则引擎
+
+#### 13.3.1 规则数据结构
+
+```cpp
+namespace chart {
+
+enum class ConditionOperator {
+    kEqual = 0,
+    kNotEqual = 1,
+    kGreaterThan = 2,
+    kLessThan = 3,
+    kGreaterEqual = 4,
+    kLessEqual = 5,
+    kContains = 6,
+    kInRange = 7
+};
+
+struct StyleCondition {
+    std::string attributeName;
+    ConditionOperator op;
+    std::string value;
+    std::string valueRangeEnd;  // 用于范围条件
+};
+
+struct StyleRule {
+    std::string ruleId;
+    FeatureType featureType;
+    std::vector<StyleCondition> conditions;
+    
+    // 样式属性
+    std::string symbolId;
+    QColor lineColor;
+    QColor fillColor;
+    double lineWidth;
+    Qt::PenStyle lineStyle;
+    int displayPriority;
+    double minScale;
+    double maxScale;
+    
+    // 显示控制
+    bool visibleByDefault;
+    std::string displayCategory;  // DISPLAYCAT, BASE, STANDARD, OTHER
+};
+
+class StyleRuleEngine {
+public:
+    static StyleRuleEngine& Instance();
+    
+    bool LoadRulesFromFile(const std::string& filePath);
+    bool LoadRulesFromDatabase(DbConnection* conn);
+    
+    const StyleRule* MatchRule(const Feature& feature, int scale) const;
+    std::vector<const StyleRule*> GetRulesByFeatureType(FeatureType type) const;
+    
+    void SetDisplayCategory(const std::string& category);
+    std::string GetDisplayCategory() const { return m_displayCategory; }
+    
+private:
+    StyleRuleEngine() = default;
+    
+    std::vector<StyleRule> m_rules;
+    std::string m_displayCategory;
+    
+    bool EvaluateCondition(const Feature& feature, const StyleCondition& cond) const;
+};
+
+} // namespace chart
+```
+
+#### 13.3.2 规则匹配算法
+
+```cpp
+const StyleRule* StyleRuleEngine::MatchRule(const Feature& feature, int scale) const {
+    const StyleRule* bestMatch = nullptr;
+    int bestPriority = -1;
+    
+    for (const auto& rule : m_rules) {
+        if (rule.featureType != feature.GetType()) {
+            continue;
+        }
+        
+        if (scale < rule.minScale || scale > rule.maxScale) {
+            continue;
+        }
+        
+        bool allConditionsMatch = true;
+        for (const auto& cond : rule.conditions) {
+            if (!EvaluateCondition(feature, cond)) {
+                allConditionsMatch = false;
+                break;
+            }
+        }
+        
+        if (allConditionsMatch) {
+            if (rule.displayPriority > bestPriority) {
+                bestMatch = &rule;
+                bestPriority = rule.displayPriority;
+            }
+        }
+    }
+    
+    return bestMatch;
+}
+
+bool StyleRuleEngine::EvaluateCondition(const Feature& feature, 
+                                         const StyleCondition& cond) const {
+    std::string attrValue = feature.GetAttribute(cond.attributeName);
+    
+    if (attrValue.empty()) {
+        return false;
+    }
+    
+    switch (cond.op) {
+        case ConditionOperator::kEqual:
+            return attrValue == cond.value;
+        case ConditionOperator::kNotEqual:
+            return attrValue != cond.value;
+        case ConditionOperator::kGreaterThan:
+            return std::stod(attrValue) > std::stod(cond.value);
+        case ConditionOperator::kLessThan:
+            return std::stod(attrValue) < std::stod(cond.value);
+        case ConditionOperator::kGreaterEqual:
+            return std::stod(attrValue) >= std::stod(cond.value);
+        case ConditionOperator::kLessEqual:
+            return std::stod(attrValue) <= std::stod(cond.value);
+        case ConditionOperator::kContains:
+            return attrValue.find(cond.value) != std::string::npos;
+        case ConditionOperator::kInRange:
+            double val = std::stod(attrValue);
+            double minVal = std::stod(cond.value);
+            double maxVal = std::stod(cond.valueRangeEnd);
+            return val >= minVal && val <= maxVal;
+    }
+    
+    return false;
+}
+```
+
+### 13.4 显示优先级算法
+
+#### 13.4.1 优先级计算
+
+```cpp
+namespace chart {
+
+class DisplayPriorityCalculator {
+public:
+    static int CalculatePriority(const Feature& feature, const StyleRule* rule) {
+        if (!rule) {
+            return CalculateDefaultPriority(feature);
+        }
+        
+        int priority = rule->displayPriority;
+        
+        priority += GetFeatureTypePriority(feature.GetType());
+        priority += GetScalePriority(feature, rule);
+        priority += GetImportancePriority(feature);
+        
+        return priority;
+    }
+    
+private:
+    static int CalculateDefaultPriority(const Feature& feature) {
+        int priority = 0;
+        
+        priority += GetFeatureTypePriority(feature.GetType());
+        priority += GetImportancePriority(feature);
+        
+        return priority;
+    }
+    
+    static int GetFeatureTypePriority(FeatureType type) {
+        static const std::map<FeatureType, int> typePriorities = {
+            {FeatureType::kSounding, 100},         // 水深 - 最高优先级
+            {FeatureType::kWreck, 95},             // 沉船
+            {FeatureType::kObstruction, 90},       // 障碍物
+            {FeatureType::kBeacon, 85},            // 航标
+            {FeatureType::kLight, 80},             // 灯光
+            {FeatureType::kBuoy, 75},              // 浮标
+            {FeatureType::kDepthContour, 70},      // 等深线
+            {FeatureType::kNavigationLine, 65},    // 航道
+            {FeatureType::kShoreline, 60},         // 岸线
+            {FeatureType::kLandArea, 50},          // 陆地
+            {FeatureType::kWaterArea, 40}          // 水域
+        };
+        
+        auto it = typePriorities.find(type);
+        return it != typePriorities.end() ? it->second : 0;
+    }
+    
+    static int GetScalePriority(const Feature& feature, const StyleRule* rule) {
+        int scalePriority = 0;
+        
+        if (feature.GetMinScale() > 0 && feature.GetMaxScale() > 0) {
+            double scaleRange = feature.GetMaxScale() - feature.GetMinScale();
+            if (scaleRange < 10000) {
+                scalePriority += 10;
+            }
+        }
+        
+        return scalePriority;
+    }
+    
+    static int GetImportancePriority(const Feature& feature) {
+        int importance = 0;
+        
+        std::string cat = feature.GetAttribute("CAT");
+        if (cat == "1" || cat == "2") {
+            importance += 20;
+        }
+        
+        std::string expo = feature.GetAttribute("EXPO");
+        if (expo == "1") {
+            importance += 15;
+        }
+        
+        return importance;
+    }
+};
+
+} // namespace chart
+```
+
+### 13.5 日/夜模式颜色映射
+
+#### 13.5.1 颜色令牌定义
+
+| 颜色令牌 | 日间模式 | 夜间模式 | 用途 |
+|---------|---------|---------|------|
+| CHGRF | #000000 | #8B8B00 | 图表轮廓 |
+| CHGRD | #BEBEBE | #5F5F00 | 图表区域 |
+| CHGRF | #000000 | #8B8B00 | 图表文本 |
+| LANDF | #F0E68C | #5F5F00 | 陆地轮廓 |
+| LANDA | #F5DEB3 | #3F3F00 | 陆地区域 |
+| DEPVS | #00FFFF | #008B8B | 深水等深线 |
+| DEPDW | #0000FF | #00008B | 深水区域 |
+| DEPMS | #0080FF | #00408B | 中水等深线 |
+| DEPMD | #00BFFF | #005F8B | 中水区域 |
+| DEPVS | #00FFFF | #008B8B | 浅水等深线 |
+| DEPVS | #00FFFF | #008B8B | 浅水区域 |
+| RESBL | #000000 | #FFFFFF | 保留黑色 |
+| RESTR | #FFFFFF | #000000 | 保留白色 |
+
+#### 13.5.2 颜色管理实现
+
+```cpp
+namespace chart {
+
+class ColorSchemeManager {
+public:
+    static ColorSchemeManager& Instance();
+    
+    void LoadColorScheme(const std::string& schemeFile);
+    void SetDayNightMode(DayNightMode mode);
+    
+    QColor GetColor(const std::string& token) const;
+    QColor GetDayColor(const std::string& token) const;
+    QColor GetNightColor(const std::string& token) const;
+    
+private:
+    ColorSchemeManager() : m_mode(DayNightMode::kDay) {}
+    
+    std::map<std::string, QColor> m_dayColors;
+    std::map<std::string, QColor> m_nightColors;
+    DayNightMode m_mode;
+    
+    QColor ParseColor(const std::string& colorStr) const;
+};
+
+QColor ColorSchemeManager::GetColor(const std::string& token) const {
+    switch (m_mode) {
+        case DayNightMode::kDay:
+            return GetDayColor(token);
+        case DayNightMode::kNight:
+            return GetNightColor(token);
+        default:
+            return GetDayColor(token);
+    }
+}
+
+} // namespace chart
+```
+
+---
+
+## 14. 空间索引策略与优化方案
+
+### 14.1 索引类型选择
+
+#### 14.1.1 SpatiaLite R-Tree索引
+
+**特点**:
+- 基于R-Tree的空间索引
+- 支持动态更新
+- 查询性能优秀
+- 索引大小适中
+
+**适用场景**:
+- 实时更新的数据
+- 中等规模数据集（<100万要素）
+- 频繁的空间查询
+
+**创建方式**:
+```sql
+-- 创建空间索引
+SELECT CreateSpatialIndex('features', 'geometry');
+
+-- 查看索引信息
+SELECT * FROM geometry_columns WHERE f_table_name = 'features';
+
+-- 使用索引查询
+SELECT * FROM features
+WHERE rowid IN (
+    SELECT rowid FROM SpatialIndex
+    WHERE f_table_name = 'features'
+    AND f_geometry_column = 'geometry'
+    AND search_frame = BuildMbr(?, ?, ?, ?, 4326)
+);
+```
+
+#### 14.1.2 PostGIS GiST索引
+
+**特点**:
+- 基于GiST（通用搜索树）
+- 支持多种空间操作符
+- 高度优化的查询计划
+- 支持并发创建
+
+**适用场景**:
+- 大规模数据集（>100万要素）
+- 复杂空间查询
+- 企业级应用
+
+**创建方式**:
+```sql
+-- 创建GiST索引
+CREATE INDEX idx_features_geometry ON features USING GIST(geometry);
+
+-- 使用索引查询
+SELECT * FROM features
+WHERE ST_Intersects(geometry, ST_MakeEnvelope(?, ?, ?, ?, 4326));
+
+-- 分析查询计划
+EXPLAIN ANALYZE SELECT * FROM features
+WHERE ST_DWithin(geometry, ST_MakePoint(?, ?)::geography, 1000);
+```
+
+### 14.2 索引创建策略
+
+#### 14.2.1 批量导入场景
+
+```cpp
+namespace chart {
+
+class SpatialIndexStrategy {
+public:
+    enum class Strategy {
+        kCreateAfterImport,    // 导入后创建（推荐）
+        kCreateDuringImport,   // 导入时创建
+        kCreateOnDemand        // 按需创建
+    };
+    
+    static DbResult CreateIndexAfterImport(
+        DbConnection* conn,
+        const std::string& table,
+        const std::string& geomColumn) {
+        
+        LOG_INFO("开始创建空间索引: {}.{}", table, geomColumn);
+        
+        auto startTime = std::chrono::high_resolution_clock::now();
+        
+        DbResult result;
+        if (conn->GetType() == DatabaseType::kSpatiaLite) {
+            result = conn->Execute(
+                "SELECT CreateSpatialIndex('" + table + "', '" + geomColumn + "')");
+        } else if (conn->GetType() == DatabaseType::kPostGIS) {
+            std::string indexName = "idx_" + table + "_" + geomColumn;
+            result = conn->Execute(
+                "CREATE INDEX " + indexName + " ON " + table + 
+                " USING GIST(" + geomColumn + ")");
+        }
+        
+        auto endTime = std::chrono::high_resolution_clock::now();
+        double elapsedMs = std::chrono::duration<double, std::milli>(
+            endTime - startTime).count();
+        
+        LOG_INFO("空间索引创建完成: 耗时{:.2f}ms", elapsedMs);
+        
+        return result;
+    }
+    
+    static DbResult DropIndexForImport(
+        DbConnection* conn,
+        const std::string& table,
+        const std::string& geomColumn) {
+        
+        LOG_INFO("临时删除空间索引以提升导入性能");
+        
+        DbResult result;
+        if (conn->GetType() == DatabaseType::kSpatiaLite) {
+            result = conn->Execute(
+                "SELECT DisableSpatialIndex('" + table + "', '" + geomColumn + "')");
+        } else if (conn->GetType() == DatabaseType::kPostGIS) {
+            std::string indexName = "idx_" + table + "_" + geomColumn;
+            result = conn->Execute("DROP INDEX IF EXISTS " + indexName);
+        }
+        
+        return result;
+    }
+};
+
+} // namespace chart
+```
+
+#### 14.2.2 增量更新场景
+
+```cpp
+namespace chart {
+
+class IncrementalIndexUpdater {
+public:
+    IncrementalIndexUpdater(DbConnection* conn, 
+                            const std::string& table,
+                            const std::string& geomColumn);
+    
+    ~IncrementalIndexUpdater();
+    
+    void BeginBatchUpdate();
+    void EndBatchUpdate();
+    
+    void OnFeatureInserted(int64_t featureId, const Geometry* geom);
+    void OnFeatureUpdated(int64_t featureId, const Geometry* geom);
+    void OnFeatureDeleted(int64_t featureId);
+    
+private:
+    DbConnection* m_conn;
+    std::string m_table;
+    std::string m_geomColumn;
+    bool m_batchMode;
+    std::vector<int64_t> m_pendingUpdates;
+    
+    void UpdateIndexEntry(int64_t featureId, const Geometry* geom);
+    void RemoveIndexEntry(int64_t featureId);
+};
+
+void IncrementalIndexUpdater::OnFeatureInserted(int64_t featureId, const Geometry* geom) {
+    if (m_conn->GetType() == DatabaseType::kSpatiaLite) {
+        std::string sql = fmt::format(
+            "INSERT INTO idx_features_geometry (pkid, xmin, xmax, ymin, ymax) "
+            "VALUES ({}, {}, {}, {}, {})",
+            featureId,
+            geom->GetEnvelope().GetMinX(),
+            geom->GetEnvelope().GetMaxX(),
+            geom->GetEnvelope().GetMinY(),
+            geom->GetEnvelope().GetMaxY()
+        );
+        m_conn->Execute(sql);
+    }
+    // PostGIS会自动维护GiST索引
+}
+
+} // namespace chart
+```
+
+### 14.3 查询优化方案
+
+#### 14.3.1 查询计划分析
+
+```cpp
+namespace chart {
+
+class QueryPlanAnalyzer {
+public:
+    struct QueryPlan {
+        std::string planText;
+        bool usesIndex;
+        double estimatedCost;
+        int estimatedRows;
+        std::vector<std::string> indexNames;
+    };
+    
+    static QueryPlan Analyze(DbConnection* conn, const std::string& sql) {
+        QueryPlan plan;
+        
+        std::string explainSql;
+        if (conn->GetType() == DatabaseType::kPostGIS) {
+            explainSql = "EXPLAIN (FORMAT JSON) " + sql;
+        } else if (conn->GetType() == DatabaseType::kSpatiaLite) {
+            explainSql = "EXPLAIN QUERY PLAN " + sql;
+        }
+        
+        std::unique_ptr<DbResultSet> result;
+        conn->ExecuteQuery(explainSql, result);
+        
+        if (result && result->Next()) {
+            plan.planText = result->GetString(0);
+            plan.usesIndex = AnalyzeIndexUsage(plan.planText);
+            plan.estimatedCost = ExtractEstimatedCost(plan.planText);
+        }
+        
+        return plan;
+    }
+    
+    static bool SuggestIndex(DbConnection* conn,
+                             const std::string& table,
+                             const std::string& whereClause) {
+        // 分析WHERE子句，建议创建索引
+        // ...
+        return true;
+    }
+    
+private:
+    static bool AnalyzeIndexUsage(const std::string& planText) {
+        return planText.find("Index Scan") != std::string::npos ||
+               planText.find("idx_") != std::string::npos;
+    }
+    
+    static double ExtractEstimatedCost(const std::string& planText) {
+        // 从查询计划中提取估算成本
+        // ...
+        return 0.0;
+    }
+};
+
+} // namespace chart
+```
+
+#### 14.3.2 空间查询优化
+
+```cpp
+namespace chart {
+
+class SpatialQueryOptimizer {
+public:
+    struct QueryOptions {
+        bool useIndex = true;
+        double bufferDistance = 0.0;
+        int limitResults = 0;
+        bool useCache = true;
+    };
+    
+    static DbResult OptimizedSpatialQuery(
+        DbConnection* conn,
+        const std::string& table,
+        const std::string& geomColumn,
+        SpatialOperator op,
+        const Geometry* queryGeom,
+        std::vector<CNGeometryPtr>& results,
+        const QueryOptions& options = {}) {
+        
+        std::string sql = BuildOptimizedQuery(
+            conn->GetType(), table, geomColumn, op, queryGeom, options);
+        
+        // 使用预编译语句
+        std::unique_ptr<DbStatement> stmt;
+        DbResult result = conn->PrepareStatement("spatial_query", sql, stmt);
+        
+        if (result != DbResult::kSuccess) {
+            return result;
+        }
+        
+        // 绑定参数
+        BindGeometryParameter(stmt.get(), queryGeom);
+        
+        // 执行查询
+        std::unique_ptr<DbResultSet> resultSet;
+        result = stmt->ExecuteQuery(resultSet);
+        
+        if (result == DbResult::kSuccess) {
+            while (resultSet->Next()) {
+                CNGeometryPtr geom = ParseGeometry(resultSet.get());
+                results.push_back(geom);
+            }
+        }
+        
+        return result;
+    }
+    
+private:
+    static std::string BuildOptimizedQuery(
+        DatabaseType dbType,
+        const std::string& table,
+        const std::string& geomColumn,
+        SpatialOperator op,
+        const Geometry* queryGeom,
+        const QueryOptions& options) {
+        
+        std::ostringstream sql;
+        
+        if (dbType == DatabaseType::kSpatiaLite) {
+            sql << "SELECT * FROM " << table << " WHERE rowid IN ("
+                << "SELECT rowid FROM SpatialIndex WHERE "
+                << "f_table_name = '" << table << "' AND "
+                << "f_geometry_column = '" << geomColumn << "' AND "
+                << "search_frame = BuildMbr(?, ?, ?, ?, 4326)"
+                << ")";
+        } else if (dbType == DatabaseType::kPostGIS) {
+            sql << "SELECT * FROM " << table << " WHERE "
+                << GetSpatialOperator(op, geomColumn, "?");
+        }
+        
+        if (options.limitResults > 0) {
+            sql << " LIMIT " << options.limitResults;
+        }
+        
+        return sql.str();
+    }
+    
+    static std::string GetSpatialOperator(SpatialOperator op, 
+                                           const std::string& column,
+                                           const std::string& param) {
+        static const std::map<SpatialOperator, std::string> operators = {
+            {SpatialOperator::kIntersects, "ST_Intersects(" + column + ", " + param + ")"},
+            {SpatialOperator::kContains, "ST_Contains(" + column + ", " + param + ")"},
+            {SpatialOperator::kWithin, "ST_Within(" + column + ", " + param + ")"},
+            {SpatialOperator::kDWithin, "ST_DWithin(" + column + "::geography, " + param + "::geography, ?)"}
+        };
+        
+        auto it = operators.find(op);
+        return it != operators.end() ? it->second : "";
+    }
+};
+
+} // namespace chart
+```
+
+### 14.4 索引性能基准
+
+| 数据规模 | 索引创建时间 | 索引大小 | 查询时间（无索引） | 查询时间（有索引） |
+|---------|-------------|---------|-------------------|-------------------|
+| 10万要素 | 2-5秒 | 5-10MB | 500-1000ms | 5-20ms |
+| 50万要素 | 10-20秒 | 25-50MB | 2-5秒 | 10-50ms |
+| 100万要素 | 20-40秒 | 50-100MB | 5-10秒 | 20-100ms |
+| 500万要素 | 2-4分钟 | 250-500MB | 25-50秒 | 50-200ms |
+
+---
+
+## 15. 多线程渲染安全机制
+
+### 15.1 线程模型设计
+
+#### 15.1.1 线程角色定义
+
+```cpp
+namespace chart {
+
+enum class ThreadRole {
+    kMainThread,       // 主线程（UI线程）
+    kRenderThread,     // 渲染线程
+    kDataThread,       // 数据加载线程
+    kWorkerThread      // 工作线程
+};
+
+class ThreadManager {
+public:
+    static ThreadManager& Instance();
+    
+    void Initialize();
+    void Shutdown();
+    
+    ThreadRole GetCurrentThreadRole() const;
+    bool IsMainThread() const;
+    bool IsRenderThread() const;
+    
+    void SetRenderThreadEnabled(bool enabled);
+    bool IsRenderThreadEnabled() const { return m_renderThreadEnabled; }
+    
+private:
+    ThreadManager() = default;
+    
+    std::atomic<bool> m_renderThreadEnabled{false};
+    std::thread::id m_mainThreadId;
+    std::thread::id m_renderThreadId;
+    std::unique_ptr<std::thread> m_renderThread;
+};
+
+} // namespace chart
+```
+
+#### 15.1.2 渲染线程模型
+
+```cpp
+namespace chart {
+
+class RenderThread {
+public:
+    RenderThread();
+    ~RenderThread();
+    
+    void Start();
+    void Stop();
+    
+    void RequestRender(const Viewport& viewport);
+    void WaitForRender();
+    
+    bool IsRunning() const { return m_running; }
+    
+    // 线程安全的资源访问
+    std::shared_ptr<const QImage> GetRenderResult();
+    
+private:
+    std::atomic<bool> m_running{false};
+    std::thread m_thread;
+    
+    std::mutex m_requestMutex;
+    std::condition_variable m_requestCV;
+    std::optional<Viewport> m_pendingViewport;
+    
+    std::mutex m_resultMutex;
+    std::shared_ptr<QImage> m_renderResult;
+    
+    std::mutex m_dataMutex;
+    std::shared_ptr<LayerManager> m_layerManager;
+    
+    void RenderLoop();
+    void DoRender(const Viewport& viewport);
+};
+
+void RenderThread::RenderLoop() {
+    while (m_running) {
+        Viewport viewport;
+        {
+            std::unique_lock<std::mutex> lock(m_requestMutex);
+            m_requestCV.wait(lock, [this] {
+                return !m_running || m_pendingViewport.has_value();
+            });
+            
+            if (!m_running) break;
+            
+            viewport = *m_pendingViewport;
+            m_pendingViewport.reset();
+        }
+        
+        DoRender(viewport);
+    }
+}
+
+void RenderThread::DoRender(const Viewport& viewport) {
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
+    // 创建渲染目标
+    QImage image(viewport.width, viewport.height, QImage::Format_ARGB32);
+    QPainter painter(&image);
+    
+    // 获取图层数据（线程安全）
+    std::vector<Layer> layers;
+    {
+        std::lock_guard<std::mutex> lock(m_dataMutex);
+        layers = m_layerManager->GetActiveLayers();
+    }
+    
+    // 渲染各图层
+    for (const auto& layer : layers) {
+        RenderLayer(&painter, layer, viewport);
+    }
+    
+    // 更新渲染结果（线程安全）
+    {
+        std::lock_guard<std::mutex> lock(m_resultMutex);
+        m_renderResult = std::make_shared<QImage>(image);
+    }
+    
+    auto endTime = std::chrono::high_resolution_clock::now();
+    double elapsedMs = std::chrono::duration<double, std::milli>(
+        endTime - startTime).count();
+    
+    LOG_DEBUG("后台渲染完成: 耗时{:.2f}ms", elapsedMs);
+}
+
+} // namespace chart
+```
+
+### 15.2 资源访问控制
+
+#### 15.2.1 读写锁设计
+
+```cpp
+namespace chart {
+
+template<typename T>
+class ThreadSafeResource {
+public:
+    ThreadSafeResource() = default;
+    explicit ThreadSafeResource(const T& value) : m_value(value) {}
+    
+    // 读访问（共享锁）
+    class ReadAccessor {
+    public:
+        ReadAccessor(const ThreadSafeResource* resource)
+            : m_resource(resource), m_lock(resource->m_mutex) {}
+        
+        const T& Get() const { return m_resource->m_value; }
+        const T* operator->() const { return &m_resource->m_value; }
+        
+    private:
+        const ThreadSafeResource* m_resource;
+        std::shared_lock<std::shared_mutex> m_lock;
+    };
+    
+    // 写访问（独占锁）
+    class WriteAccessor {
+    public:
+        WriteAccessor(ThreadSafeResource* resource)
+            : m_resource(resource), m_lock(resource->m_mutex) {}
+        
+        T& Get() { return m_resource->m_value; }
+        T* operator->() { return &m_resource->m_value; }
+        
+    private:
+        ThreadSafeResource* m_resource;
+        std::unique_lock<std::shared_mutex> m_lock;
+    };
+    
+    ReadAccessor Read() const { return ReadAccessor(this); }
+    WriteAccessor Write() { return WriteAccessor(this); }
+    
+private:
+    T m_value;
+    mutable std::shared_mutex m_mutex;
+};
+
+// 使用示例
+using ThreadSafeLayerManager = ThreadSafeResource<LayerManager>;
+using ThreadSafeFeatureCache = ThreadSafeResource<std::map<int, Feature>>;
+
+} // namespace chart
+```
+
+#### 15.2.2 线程安全的数据结构
+
+```cpp
+namespace chart {
+
+template<typename K, typename V>
+class ConcurrentHashMap {
+public:
+    ConcurrentHashMap(size_t shardCount = 16) : m_shards(shardCount) {}
+    
+    void Insert(const K& key, const V& value) {
+        size_t index = GetShardIndex(key);
+        std::lock_guard<std::mutex> lock(m_shards[index].mutex);
+        m_shards[index].data[key] = value;
+    }
+    
+    bool Find(const K& key, V& value) const {
+        size_t index = GetShardIndex(key);
+        std::lock_guard<std::mutex> lock(m_shards[index].mutex);
+        auto it = m_shards[index].data.find(key);
+        if (it != m_shards[index].data.end()) {
+            value = it->second;
+            return true;
+        }
+        return false;
+    }
+    
+    void Erase(const K& key) {
+        size_t index = GetShardIndex(key);
+        std::lock_guard<std::mutex> lock(m_shards[index].mutex);
+        m_shards[index].data.erase(key);
+    }
+    
+    size_t Size() const {
+        size_t total = 0;
+        for (const auto& shard : m_shards) {
+            std::lock_guard<std::mutex> lock(shard.mutex);
+            total += shard.data.size();
+        }
+        return total;
+    }
+    
+private:
+    struct Shard {
+        mutable std::mutex mutex;
+        std::unordered_map<K, V> data;
+    };
+    
+    std::vector<Shard> m_shards;
+    
+    size_t GetShardIndex(const K& key) const {
+        return std::hash<K>{}(key) % m_shards.size();
+    }
+};
+
+// 使用示例：要素缓存
+using FeatureCache = ConcurrentHashMap<int, Feature>;
+
+} // namespace chart
+```
+
+### 15.3 死锁预防策略
+
+#### 15.3.1 锁层次设计
+
+```cpp
+namespace chart {
+
+enum class LockLevel {
+    kGlobalConfig = 0,     // 全局配置
+    kLayerManager = 1,     // 图层管理器
+    kLayer = 2,            // 单个图层
+    kFeature = 3,          // 单个要素
+    kGeometry = 4          // 几何对象
+};
+
+class HierarchicalLock {
+public:
+    HierarchicalLock(std::mutex& mutex, LockLevel level)
+        : m_mutex(mutex), m_level(level) {
+        
+        ValidateLockOrder(level);
+        m_mutex.lock();
+    }
+    
+    ~HierarchicalLock() {
+        m_mutex.unlock();
+        s_threadLockLevel = m_previousLevel;
+    }
+    
+private:
+    std::mutex& m_mutex;
+    LockLevel m_level;
+    LockLevel m_previousLevel;
+    
+    static thread_local LockLevel s_threadLockLevel;
+    
+    void ValidateLockOrder(LockLevel level) {
+        if (static_cast<int>(level) <= static_cast<int>(s_threadLockLevel)) {
+            throw std::logic_error("Lock hierarchy violation");
+        }
+        m_previousLevel = s_threadLockLevel;
+        s_threadLockLevel = level;
+    }
+};
+
+thread_local LockLevel HierarchicalLock::s_threadLockLevel = LockLevel::kGlobalConfig;
+
+} // namespace chart
+```
+
+#### 15.3.2 超时锁机制
+
+```cpp
+namespace chart {
+
+class TimedLock {
+public:
+    explicit TimedLock(std::timed_mutex& mutex, int timeoutMs = 5000)
+        : m_mutex(mutex), m_locked(false) {
+        
+        m_locked = m_mutex.try_lock_for(std::chrono::milliseconds(timeoutMs));
+        
+        if (!m_locked) {
+            LOG_ERROR("锁获取超时: {}ms", timeoutMs);
+            throw std::runtime_error("Lock timeout");
+        }
+    }
+    
+    ~TimedLock() {
+        if (m_locked) {
+            m_mutex.unlock();
+        }
+    }
+    
+    bool IsLocked() const { return m_locked; }
+    
+private:
+    std::timed_mutex& m_mutex;
+    bool m_locked;
+};
+
+// 使用示例
+void SafeRenderOperation(LayerManager* layerMgr, FeatureCache* cache) {
+    try {
+        std::timed_mutex layerMutex, cacheMutex;
+        
+        TimedLock layerLock(layerMutex, 3000);
+        TimedLock cacheLock(cacheMutex, 3000);
+        
+        // 执行渲染操作
+        // ...
+        
+    } catch (const std::runtime_error& e) {
+        LOG_ERROR("渲染操作失败: {}", e.what());
+    }
+}
+
+} // namespace chart
+```
+
+### 15.4 线程池管理
+
+```cpp
+namespace chart {
+
+class RenderThreadPool {
+public:
+    RenderThreadPool(size_t threadCount = 4);
+    ~RenderThreadPool();
+    
+    void Start();
+    void Stop();
+    
+    std::future<void> SubmitTask(std::function<void()> task);
+    
+    size_t GetActiveTaskCount() const;
+    size_t GetPendingTaskCount() const;
+    
+private:
+    std::vector<std::thread> m_threads;
+    std::queue<std::function<void()>> m_tasks;
+    
+    mutable std::mutex m_mutex;
+    std::condition_variable m_condition;
+    std::atomic<bool> m_running{false};
+    
+    void WorkerThread();
+};
+
+RenderThreadPool::RenderThreadPool(size_t threadCount) {
+    m_threads.reserve(threadCount);
+}
+
+void RenderThreadPool::Start() {
+    m_running = true;
+    for (size_t i = 0; i < m_threads.capacity(); ++i) {
+        m_threads.emplace_back(&RenderThreadPool::WorkerThread, this);
+    }
+}
+
+void RenderThreadPool::WorkerThread() {
+    while (m_running) {
+        std::function<void()> task;
+        
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            m_condition.wait(lock, [this] {
+                return !m_running || !m_tasks.empty();
+            });
+            
+            if (!m_running && m_tasks.empty()) {
+                break;
+            }
+            
+            task = std::move(m_tasks.front());
+            m_tasks.pop();
+        }
+        
+        task();
+    }
+}
+
+std::future<void> RenderThreadPool::SubmitTask(std::function<void()> task) {
+    std::promise<void> promise;
+    std::future<void> future = promise.get_future();
+    
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_tasks.push([task = std::move(task), promise = std::move(promise)]() mutable {
+            try {
+                task();
+                promise.set_value();
+            } catch (...) {
+                promise.set_exception(std::current_exception());
+            }
+        });
+    }
+    
+    m_condition.notify_one();
+    return future;
+}
+
+} // namespace chart
+```
+
+---
+
+## 16. 坐标转换精度验证方案
+
+### 16.1 精度测试数据集
+
+#### 16.1.1 标准验证点
+
+| 点ID | WGS-84经度 | WGS-84纬度 | CGCS2000经度 | CGCS2000纬度 | 允许误差 |
+|------|-----------|-----------|-------------|-------------|---------|
+| P001 | 116.391 | 39.907 | 116.391 | 39.907 | <0.1m |
+| P002 | 121.474 | 31.230 | 121.474 | 31.230 | <0.1m |
+| P003 | 113.264 | 23.129 | 113.264 | 23.129 | <0.1m |
+| P004 | 114.058 | 22.543 | 114.058 | 22.543 | <0.1m |
+| P005 | 120.155 | 30.274 | 120.155 | 30.274 | <0.1m |
+
+#### 16.1.2 边界测试点
+
+| 测试类型 | 描述 | 测试点数量 |
+|---------|------|-----------|
+| 极值测试 | 经度±180°，纬度±90° | 4个 |
+| 跨带测试 | 跨越投影带边界 | 10个 |
+| 极地区域 | 高纬度区域（>60°） | 5个 |
+| 赤道区域 | 低纬度区域（<10°） | 5个 |
+
+### 16.2 精度验证实现
+
+```cpp
+namespace chart {
+
+struct CoordinateTestPoint {
+    std::string id;
+    double sourceLon;
+    double sourceLat;
+    double targetLon;
+    double targetLat;
+    double tolerance;  // 允许误差（米）
+};
+
+class CoordinateTransformValidator {
+public:
+    static ValidationResult ValidateTransform(
+        CoordTrans* transform,
+        const std::vector<CoordinateTestPoint>& testPoints,
+        CoordSystem fromSystem,
+        CoordSystem toSystem) {
+        
+        ValidationResult result;
+        result.totalTests = testPoints.size();
+        result.passedTests = 0;
+        
+        for (const auto& point : testPoints) {
+            Point source(point.sourceLon, point.sourceLat);
+            Point transformed = transform->Transform(source, fromSystem, toSystem);
+            
+            double distance = CalculateDistance(
+                transformed.x, transformed.y,
+                point.targetLon, point.targetLat);
+            
+            TestResult testResult;
+            testResult.pointId = point.id;
+            testResult.actualDistance = distance;
+            testResult.tolerance = point.tolerance;
+            testResult.passed = distance <= point.tolerance;
+            
+            result.testResults.push_back(testResult);
+            
+            if (testResult.passed) {
+                result.passedTests++;
+            } else {
+                LOG_WARNING("坐标转换精度不达标: {} 实际误差={:.4f}m 允许误差={:.4f}m",
+                           point.id, distance, point.tolerance);
+            }
+        }
+        
+        result.passRate = static_cast<double>(result.passedTests) / result.totalTests;
+        result.allPassed = (result.passedTests == result.totalTests);
+        
+        return result;
+    }
+    
+private:
+    static double CalculateDistance(double lon1, double lat1, 
+                                     double lon2, double lat2) {
+        // 使用Haversine公式计算球面距离
+        const double R = 6371000.0;  // 地球半径（米）
+        
+        double dLat = (lat2 - lat1) * M_PI / 180.0;
+        double dLon = (lon2 - lon1) * M_PI / 180.0;
+        
+        double a = std::sin(dLat / 2) * std::sin(dLat / 2) +
+                   std::cos(lat1 * M_PI / 180.0) * 
+                   std::cos(lat2 * M_PI / 180.0) *
+                   std::sin(dLon / 2) * std::sin(dLon / 2);
+        
+        double c = 2 * std::atan2(std::sqrt(a), std::sqrt(1 - a));
+        
+        return R * c;
+    }
+};
+
+struct ValidationResult {
+    size_t totalTests;
+    size_t passedTests;
+    double passRate;
+    bool allPassed;
+    std::vector<TestResult> testResults;
+};
+
+struct TestResult {
+    std::string pointId;
+    double actualDistance;
+    double tolerance;
+    bool passed;
+};
+
+} // namespace chart
+```
+
+### 16.3 精度监控机制
+
+```cpp
+namespace chart {
+
+class CoordinateTransformMonitor {
+public:
+    static CoordinateTransformMonitor& Instance();
+    
+    void RecordTransform(const std::string& transformType,
+                         double sourceX, double sourceY,
+                         double targetX, double targetY,
+                         double elapsedMs);
+    
+    void CheckAccuracy(const std::string& transformType);
+    
+    void GenerateReport(const std::string& filePath);
+    
+private:
+    CoordinateTransformMonitor() = default;
+    
+    std::map<std::string, std::vector<TransformRecord>> m_records;
+    std::mutex m_mutex;
+    
+    struct TransformRecord {
+        std::chrono::system_clock::time_point timestamp;
+        double sourceX, sourceY;
+        double targetX, targetY;
+        double elapsedMs;
+    };
+};
+
+void CoordinateTransformMonitor::CheckAccuracy(const std::string& transformType) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    auto it = m_records.find(transformType);
+    if (it == m_records.end() || it->second.empty()) {
+        return;
+    }
+    
+    // 随机抽样验证
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, it->second.size() - 1);
+    
+    int sampleIndex = dis(gen);
+    const auto& record = it->second[sampleIndex];
+    
+    // 反向转换验证
+    // ...
+    
+    LOG_INFO("坐标转换精度检查: {} 抽样验证通过", transformType);
+}
+
+} // namespace chart
+```
+
+---
+
+## 17. 离线数据同步机制
+
+### 17.1 版本管理设计
+
+```cpp
+namespace chart {
+
+struct ChartVersion {
+    std::string chartId;
+    int majorVersion;
+    int minorVersion;
+    int patchVersion;
+    std::string checksum;
+    std::chrono::system_clock::time_point updateTime;
+    
+    bool IsNewerThan(const ChartVersion& other) const {
+        if (majorVersion != other.majorVersion) {
+            return majorVersion > other.majorVersion;
+        }
+        if (minorVersion != other.minorVersion) {
+            return minorVersion > other.minorVersion;
+        }
+        return patchVersion > other.patchVersion;
+    }
+    
+    std::string ToString() const {
+        return fmt::format("{}.{}.{}", majorVersion, minorVersion, patchVersion);
+    }
+};
+
+class OfflineDataManager {
+public:
+    OfflineDataManager();
+    ~OfflineDataManager();
+    
+    bool Initialize(const std::string& dataPath);
+    
+    ChartVersion GetLocalVersion(const std::string& chartId);
+    ChartVersion GetRemoteVersion(const std::string& chartId);
+    
+    bool CheckForUpdates(const std::string& chartId);
+    std::vector<std::string> GetPendingUpdates();
+    
+    bool DownloadUpdate(const std::string& chartId, ProgressCallback callback);
+    bool ApplyUpdate(const std::string& chartId);
+    
+private:
+    std::string m_dataPath;
+    std::map<std::string, ChartVersion> m_localVersions;
+    std::map<std::string, ChartVersion> m_remoteVersions;
+    
+    bool LoadVersionInfo();
+    bool SaveVersionInfo();
+};
+
+} // namespace chart
+```
+
+### 17.2 增量更新策略
+
+```cpp
+namespace chart {
+
+struct UpdateDelta {
+    std::string chartId;
+    std::vector<int64_t> addedFeatures;
+    std::vector<int64_t> modifiedFeatures;
+    std::vector<int64_t> deletedFeatures;
+    size_t totalSize;
+};
+
+class IncrementalUpdater {
+public:
+    IncrementalUpdater(DbConnection* conn);
+    
+    UpdateDelta CalculateDelta(const std::string& chartId,
+                                const ChartVersion& fromVersion,
+                                const ChartVersion& toVersion);
+    
+    bool ApplyDelta(const std::string& chartId, const UpdateDelta& delta);
+    
+    bool RollbackDelta(const std::string& chartId, const UpdateDelta& delta);
+    
+private:
+    DbConnection* m_conn;
+    
+    bool DownloadDeltaData(const std::string& chartId,
+                           const UpdateDelta& delta,
+                           std::vector<uint8_t>& data);
+    
+    bool ParseDeltaData(const std::vector<uint8_t>& data,
+                        std::vector<Feature>& features);
+};
+
+UpdateDelta IncrementalUpdater::CalculateDelta(
+    const std::string& chartId,
+    const ChartVersion& fromVersion,
+    const ChartVersion& toVersion) {
+    
+    UpdateDelta delta;
+    delta.chartId = chartId;
+    
+    // 查询新增要素
+    std::string sql = fmt::format(
+        "SELECT id FROM features WHERE chart_id = '{}' "
+        "AND created_at > (SELECT update_time FROM chart_versions WHERE chart_id = '{}' AND version = '{}')",
+        chartId, chartId, fromVersion.ToString());
+    
+    std::unique_ptr<DbResultSet> result;
+    m_conn->ExecuteQuery(sql, result);
+    
+    while (result->Next()) {
+        delta.addedFeatures.push_back(result->GetInt64(0));
+    }
+    
+    // 查询修改要素
+    sql = fmt::format(
+        "SELECT id FROM features WHERE chart_id = '{}' "
+        "AND updated_at > (SELECT update_time FROM chart_versions WHERE chart_id = '{}' AND version = '{}') "
+        "AND created_at <= (SELECT update_time FROM chart_versions WHERE chart_id = '{}' AND version = '{}')",
+        chartId, chartId, fromVersion.ToString(), chartId, fromVersion.ToString());
+    
+    m_conn->ExecuteQuery(sql, result);
+    
+    while (result->Next()) {
+        delta.modifiedFeatures.push_back(result->GetInt64(0));
+    }
+    
+    // 查询删除要素
+    sql = fmt::format(
+        "SELECT id FROM deleted_features WHERE chart_id = '{}' "
+        "AND deleted_at > (SELECT update_time FROM chart_versions WHERE chart_id = '{}' AND version = '{}')",
+        chartId, chartId, fromVersion.ToString());
+    
+    m_conn->ExecuteQuery(sql, result);
+    
+    while (result->Next()) {
+        delta.deletedFeatures.push_back(result->GetInt64(0));
+    }
+    
+    delta.totalSize = delta.addedFeatures.size() + 
+                      delta.modifiedFeatures.size() + 
+                      delta.deletedFeatures.size();
+    
+    return delta;
+}
+
+} // namespace chart
+```
+
+### 17.3 冲突检测与解决
+
+```cpp
+namespace chart {
+
+enum class ConflictType {
+    kNoConflict,
+    kLocalModified,
+    kRemoteModified,
+    kBothModified,
+    kLocalDeleted,
+    kRemoteDeleted
+};
+
+struct ConflictInfo {
+    int64_t featureId;
+    ConflictType type;
+    Feature localFeature;
+    Feature remoteFeature;
+};
+
+class ConflictResolver {
+public:
+    enum class ResolutionStrategy {
+        kLocalWins,     // 本地优先
+        kRemoteWins,    // 远程优先
+        kManual,        // 手动解决
+        kMerge          // 自动合并
+    };
+    
+    std::vector<ConflictInfo> DetectConflicts(
+        const std::string& chartId,
+        const UpdateDelta& delta);
+    
+    Feature ResolveConflict(const ConflictInfo& conflict,
+                            ResolutionStrategy strategy);
+    
+private:
+    bool CanAutoMerge(const ConflictInfo& conflict);
+    Feature MergeFeatures(const Feature& local, const Feature& remote);
+};
+
+std::vector<ConflictInfo> ConflictResolver::DetectConflicts(
+    const std::string& chartId,
+    const UpdateDelta& delta) {
+    
+    std::vector<ConflictInfo> conflicts;
+    
+    for (int64_t featureId : delta.modifiedFeatures) {
+        ConflictInfo conflict;
+        conflict.featureId = featureId;
+        
+        // 检查本地是否也修改了该要素
+        bool localModified = CheckLocalModification(chartId, featureId);
+        
+        if (localModified) {
+            conflict.type = ConflictType::kBothModified;
+            conflict.localFeature = GetLocalFeature(chartId, featureId);
+            conflict.remoteFeature = GetRemoteFeature(chartId, featureId);
+            conflicts.push_back(conflict);
+        }
+    }
+    
+    return conflicts;
+}
+
+Feature ConflictResolver::ResolveConflict(
+    const ConflictInfo& conflict,
+    ResolutionStrategy strategy) {
+    
+    switch (strategy) {
+        case ResolutionStrategy::kLocalWins:
+            return conflict.localFeature;
+            
+        case ResolutionStrategy::kRemoteWins:
+            return conflict.remoteFeature;
+            
+        case ResolutionStrategy::kMerge:
+            if (CanAutoMerge(conflict)) {
+                return MergeFeatures(conflict.localFeature, conflict.remoteFeature);
+            }
+            // 无法自动合并，返回远程版本
+            return conflict.remoteFeature;
+            
+        default:
+            return conflict.remoteFeature;
+    }
+}
+
+} // namespace chart
+```
+
+### 17.4 同步流程图
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        离线数据同步流程                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  1. 检查更新                                                             │
+│  ┌───────────┐                                                          │
+│  │ 获取本地版本│ ──► 获取远程版本 ──► 比较版本 ──► 有更新？              │
+│  └───────────┘                                    │                     │
+│                                                   ▼                     │
+│  2. 计算增量                                        是                    │
+│  ┌───────────┐                                                          │
+│  │ 计算更新增量│ ──► 新增要素 ──► 修改要素 ──► 删除要素                 │
+│  └───────────┘                                                          │
+│                                                                         │
+│  3. 检测冲突                                                             │
+│  ┌───────────┐                                                          │
+│  │ 检测本地修改│ ──► 与增量对比 ──► 有冲突？                            │
+│  └───────────┘                          │                               │
+│                                         ▼                               │
+│  4. 解决冲突                             是                              │
+│  ┌───────────┐                                                          │
+│  │ 应用解决策略│ ──► 本地优先/远程优先/合并                              │
+│  └───────────┘                                                          │
+│                                                                         │
+│  5. 应用更新                                                             │
+│  ┌───────────┐                                                          │
+│  │ 下载增量数据│ ──► 应用增量 ──► 更新版本号 ──► 完成                    │
+│  └───────────┘                                                          │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 **文档结束**
