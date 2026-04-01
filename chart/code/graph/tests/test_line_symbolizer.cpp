@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/draw_style.h>
 #include "ogc/common.h"
 #include <vector>
 
@@ -49,19 +49,19 @@ TEST_F(LineSymbolizerTest, SetOpacity) {
 }
 
 TEST_F(LineSymbolizerTest, SetCapStyle) {
-    symbolizer->SetCapStyle(LineCapStyle::kRound);
-    EXPECT_EQ(symbolizer->GetCapStyle(), LineCapStyle::kRound);
+    symbolizer->SetCapStyle(LineCap::kRound);
+    EXPECT_EQ(symbolizer->GetCapStyle(), LineCap::kRound);
     
-    symbolizer->SetCapStyle(LineCapStyle::kSquare);
-    EXPECT_EQ(symbolizer->GetCapStyle(), LineCapStyle::kSquare);
+    symbolizer->SetCapStyle(LineCap::kSquare);
+    EXPECT_EQ(symbolizer->GetCapStyle(), LineCap::kSquare);
 }
 
 TEST_F(LineSymbolizerTest, SetJoinStyle) {
-    symbolizer->SetJoinStyle(LineJoinStyle::kRound);
-    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoinStyle::kRound);
+    symbolizer->SetJoinStyle(LineJoin::kRound);
+    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoin::kRound);
     
-    symbolizer->SetJoinStyle(LineJoinStyle::kMiter);
-    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoinStyle::kMiter);
+    symbolizer->SetJoinStyle(LineJoin::kMiter);
+    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoin::kMiter);
 }
 
 TEST_F(LineSymbolizerTest, SetDashStyle) {

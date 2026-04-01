@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/raster_image_device.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -60,8 +60,8 @@ TEST_F(IntegrationBasicRenderTest, DrawPoint) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 1.0;
     
     DrawResult result = device->DrawPoint(50, 50, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -78,8 +78,8 @@ TEST_F(IntegrationBasicRenderTest, DrawLine) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawLine(10, 10, 90, 90, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -96,10 +96,10 @@ TEST_F(IntegrationBasicRenderTest, DrawRect) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 1.0;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 1.0;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
     
     DrawResult result = device->DrawRect(20, 20, 60, 60, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -116,10 +116,10 @@ TEST_F(IntegrationBasicRenderTest, DrawCircle) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Magenta().GetRGBA();
-    style.stroke.width = 2.0;
-    style.fill.color = Color::Cyan().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Magenta().GetRGBA();
+    style.pen.width = 2.0;
+    style.brush.color = Color::Cyan().GetRGBA();
+    style.brush.visible = true;
     
     DrawResult result = device->DrawCircle(50, 50, 25, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -136,8 +136,8 @@ TEST_F(IntegrationBasicRenderTest, DrawEllipse) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 1.0;
     
     DrawResult result = device->DrawEllipse(50, 50, 30, 20, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -154,10 +154,10 @@ TEST_F(IntegrationBasicRenderTest, DrawPolygon) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
-    style.fill.color = Color::Gray().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
+    style.brush.color = Color::Gray().GetRGBA();
+    style.brush.visible = true;
     
     double x[] = {10, 50, 90, 50};
     double y[] = {50, 10, 50, 90};
@@ -177,8 +177,8 @@ TEST_F(IntegrationBasicRenderTest, DrawPolyline) {
     device->BeginDraw(params);
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 2.0;
     
     double x[] = {10, 30, 50, 70, 90};
     double y[] = {50, 20, 80, 20, 50};
@@ -238,8 +238,8 @@ TEST_F(IntegrationBasicRenderTest, ClipRect) {
     EXPECT_TRUE(device->HasClipRect());
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 1.0;
     
     DrawResult result = device->DrawRect(0, 0, 100, 100, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -270,3 +270,4 @@ TEST_F(IntegrationBasicRenderTest, Transform) {
     
     device->EndDraw();
 }
+

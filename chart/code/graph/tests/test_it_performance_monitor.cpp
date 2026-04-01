@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/performance_monitor.h"
 #include "ogc/draw/performance_metrics.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_style.h>
 #include "ogc/envelope.h"
 #include <memory>
 #include <chrono>

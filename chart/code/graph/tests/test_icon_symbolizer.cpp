@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/icon_symbolizer.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
 #include "ogc/common.h"
 #include <memory>
 

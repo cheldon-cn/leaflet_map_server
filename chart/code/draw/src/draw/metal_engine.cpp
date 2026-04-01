@@ -92,7 +92,7 @@ DrawResult MetalEngine::DrawText(double x, double y, const std::string& text, co
 }
 
 DrawResult MetalEngine::DrawImage(double x, double y, const Image& image, double scaleX, double scaleY) {
-    if (!m_renderEncoder || image.data.empty()) {
+    if (!m_renderEncoder || image.IsEmpty()) {
         return DrawResult::InvalidParameter;
     }
     

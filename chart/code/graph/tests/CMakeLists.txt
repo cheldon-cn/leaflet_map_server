@@ -9,15 +9,8 @@ set(TEST_SOURCES
     test_device_type.cpp
     test_engine_type.cpp
     test_draw_params.cpp
-    test_draw_style.cpp
-    test_color.cpp
-    test_font.cpp
-    test_transform_matrix.cpp
     test_draw_error.cpp
     test_tile_key.cpp
-    test_raster_image_device.cpp
-    test_draw_context.cpp
-    test_tile_device.cpp
     test_coordinate_transform.cpp
     test_tile_cache.cpp
     test_disk_tile_cache.cpp
@@ -28,7 +21,6 @@ set(TEST_SOURCES
     test_polygon_symbolizer.cpp
     test_point_symbolizer.cpp
     test_text_symbolizer.cpp
-    test_device_state.cpp
     test_image_draw.cpp
     test_clipper.cpp
     test_label_placement.cpp
@@ -53,14 +45,14 @@ set(TEST_SOURCES
     test_render_queue.cpp
     test_async_renderer.cpp
     test_basic_render_task.cpp
-    test_display_device.cpp
-    test_pdf_device.cpp
     test_draw_facade.cpp
-    test_driver_manager.cpp
     test_proj_transformer.cpp
     test_coordinate_transformer.cpp
     test_thread_safe.cpp
     test_log.cpp
+    test_graph_boundary.cpp
+    test_graph_concurrent.cpp
+    test_graph_performance.cpp
     test_it_basic_render.cpp
     test_it_transform_render.cpp
     test_it_tile_index.cpp
@@ -88,7 +80,6 @@ set(TEST_SOURCES
     test_it_draw_facade.cpp
     test_it_sld_render.cpp
     test_it_mapbox_style_render.cpp
-    test_it_display_device.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)

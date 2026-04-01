@@ -42,27 +42,24 @@ DrawResult PointSymbolizer::Symbolize(DrawContextPtr context, const Geometry* ge
 
 DrawResult PointSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }
     
     DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
-    if (!finalStyle.fill.visible) {
-        finalStyle.fill.color = m_color;
-        finalStyle.fill.visible = true;
+    if (finalStyle.brush.color.GetAlpha() == 0) {
+        finalStyle.brush = Brush(Color(m_color));
     }
-    if (!finalStyle.stroke.visible) {
-        finalStyle.stroke.color = m_strokeColor;
-        finalStyle.stroke.width = m_strokeWidth;
-        finalStyle.stroke.visible = true;
+    if (finalStyle.pen.width == 0) {
+        finalStyle.pen = Pen(Color(m_strokeColor), m_strokeWidth);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -93,7 +90,7 @@ DrawResult PointSymbolizer::Symbolize(DrawContextPtr context, const Geometry* ge
         }
     }
     
-    return DrawResult::kInvalidParams;
+    return DrawResult::kInvalidParameter;
 }
 
 bool PointSymbolizer::CanSymbolize(GeomType geomType) const {
@@ -207,13 +204,14 @@ DrawResult PointSymbolizer::DrawSymbol(DrawContextPtr context, double x, double 
     double halfSize = size / 2.0;
     
     if (m_rotation != 0.0) {
-        context->PushTransform();
+        context->Save();
         context->Translate(x, y);
         context->Rotate(m_rotation);
         context->Translate(-x, -y);
     }
     
-    context->PushStyle(style);
+    context->Save();
+    context->SetStyle(style);
     DrawResult result = DrawResult::kSuccess;
     
     switch (type) {
@@ -266,10 +264,10 @@ DrawResult PointSymbolizer::DrawSymbol(DrawContextPtr context, double x, double 
         }
     }
     
-    context->PopStyle();
+    context->Restore();
     
     if (m_rotation != 0.0) {
-        context->PopTransform();
+        context->Restore();
     }
     
     return result;

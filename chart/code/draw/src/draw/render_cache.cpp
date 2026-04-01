@@ -175,16 +175,16 @@ std::string RenderCache::GenerateKey(const Geometry& geometry, const DrawStyle& 
         << envelope.GetMinX() << "," << envelope.GetMinY() << ","
         << envelope.GetMaxX() << "," << envelope.GetMaxY() << "_";
     
-    oss << static_cast<int>(style.pen.color.r) << ","
-        << static_cast<int>(style.pen.color.g) << ","
-        << static_cast<int>(style.pen.color.b) << ","
-        << static_cast<int>(style.pen.color.a) << "_";
+    oss << static_cast<int>(style.pen.color.GetRed()) << ","
+        << static_cast<int>(style.pen.color.GetGreen()) << ","
+        << static_cast<int>(style.pen.color.GetBlue()) << ","
+        << static_cast<int>(style.pen.color.GetAlpha()) << "_";
     oss << std::fixed << std::setprecision(2) << style.pen.width << "_";
     
-    oss << static_cast<int>(style.brush.color.r) << ","
-        << static_cast<int>(style.brush.color.g) << ","
-        << static_cast<int>(style.brush.color.b) << ","
-        << static_cast<int>(style.brush.color.a);
+    oss << static_cast<int>(style.brush.color.GetRed()) << ","
+        << static_cast<int>(style.brush.color.GetGreen()) << ","
+        << static_cast<int>(style.brush.color.GetBlue()) << ","
+        << static_cast<int>(style.brush.color.GetAlpha());
     
     return oss.str();
 }

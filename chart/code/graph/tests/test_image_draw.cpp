@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/image_draw.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
 #include <vector>
 #include <memory>
 

@@ -1,9 +1,15 @@
 #include "ogc/draw/label_engine.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
 #include <cmath>
+
+using ogc::Point;
+using ogc::LineString;
+using ogc::Polygon;
+using ogc::Coordinate;
+using ogc::Geometry;
 
 namespace ogc {
 namespace draw {
@@ -207,13 +213,13 @@ LabelPlacementResult LabelEngine::PlacePointLabel(const Geometry* geometry, cons
         return result;
     }
     
-    const Point* point = dynamic_cast<const Point*>(geometry);
+    const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
     if (!point) {
         result.message = "Geometry is not a point";
         return result;
     }
     
-    Coordinate coord = point->GetCoordinate();
+    ogc::Coordinate coord = point->GetCoordinate();
     result.success = true;
     result.x = coord.x;
     result.y = coord.y;
@@ -231,7 +237,7 @@ LabelPlacementResult LabelEngine::PlaceLineLabel(const Geometry* geometry, const
         return result;
     }
     
-    const LineString* line = dynamic_cast<const LineString*>(geometry);
+    const ogc::LineString* line = dynamic_cast<const ogc::LineString*>(geometry);
     if (!line) {
         result.message = "Geometry is not a linestring";
         return result;
@@ -244,8 +250,8 @@ LabelPlacementResult LabelEngine::PlaceLineLabel(const Geometry* geometry, const
     }
     
     size_t midIndex = numPoints / 2;
-    Coordinate startCoord = line->GetPointN(midIndex - 1);
-    Coordinate endCoord = line->GetPointN(midIndex);
+    ogc::Coordinate startCoord = line->GetPointN(midIndex - 1);
+    ogc::Coordinate endCoord = line->GetPointN(midIndex);
     
     double dx = endCoord.x - startCoord.x;
     double dy = endCoord.y - startCoord.y;
@@ -253,8 +259,8 @@ LabelPlacementResult LabelEngine::PlaceLineLabel(const Geometry* geometry, const
     
     double totalLength = 0.0;
     for (size_t i = 1; i < numPoints; ++i) {
-        Coordinate c1 = line->GetPointN(i - 1);
-        Coordinate c2 = line->GetPointN(i);
+        ogc::Coordinate c1 = line->GetPointN(i - 1);
+        ogc::Coordinate c2 = line->GetPointN(i);
         double dx = c2.x - c1.x;
         double dy = c2.y - c1.y;
         totalLength += std::sqrt(dx * dx + dy * dy);
@@ -264,10 +270,10 @@ LabelPlacementResult LabelEngine::PlaceLineLabel(const Geometry* geometry, const
     double currentLength = 0.0;
     double targetLength = halfLength;
     
-    Coordinate labelCoord = line->GetPointN(0);
+    ogc::Coordinate labelCoord = line->GetPointN(0);
     for (size_t i = 1; i < numPoints; ++i) {
-        Coordinate c1 = line->GetPointN(i - 1);
-        Coordinate c2 = line->GetPointN(i);
+        ogc::Coordinate c1 = line->GetPointN(i - 1);
+        ogc::Coordinate c2 = line->GetPointN(i);
         double dx = c2.x - c1.x;
         double dy = c2.y - c1.y;
         double segmentLength = std::sqrt(dx * dx + dy * dy);
@@ -299,14 +305,14 @@ LabelPlacementResult LabelEngine::PlacePolygonLabel(const Geometry* geometry, co
         return result;
     }
     
-    const Polygon* polygon = dynamic_cast<const Polygon*>(geometry);
+    const ogc::Polygon* polygon = dynamic_cast<const ogc::Polygon*>(geometry);
     if (!polygon) {
         result.message = "Geometry is not a polygon";
         return result;
     }
     
-    Envelope env = polygon->GetEnvelope();
-    Coordinate centre = env.GetCentre();
+    ogc::Envelope env = polygon->GetEnvelope();
+    ogc::Coordinate centre = env.GetCentre();
     
     result.success = true;
     result.x = centre.x;
@@ -349,7 +355,7 @@ DrawResult LabelEngine::RenderLabels(const std::vector<LabelInfo>& labels, DrawC
         }
         
         if (label.rotation != 0.0) {
-            context.PushTransform();
+            context.Save();
             context.Translate(label.x, label.y);
             context.Rotate(label.rotation);
             context.Translate(-label.x, -label.y);
@@ -367,7 +373,7 @@ DrawResult LabelEngine::RenderLabels(const std::vector<LabelInfo>& labels, DrawC
         context.DrawText(label.x, label.y, label.text, m_font, textColor);
         
         if (label.rotation != 0.0) {
-            context.PopTransform();
+            context.Restore();
         }
     }
     

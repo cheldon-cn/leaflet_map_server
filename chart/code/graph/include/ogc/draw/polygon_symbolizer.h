@@ -2,7 +2,8 @@
 #define OGC_DRAW_POLYGON_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 
 namespace ogc {
@@ -18,6 +19,9 @@ enum class FillPattern {
     kDot,
     kCustom
 };
+
+class PolygonSymbolizer;
+using PolygonSymbolizerPtr = std::shared_ptr<PolygonSymbolizer>;
 
 class OGC_GRAPH_API PolygonSymbolizer : public Symbolizer {
 public:

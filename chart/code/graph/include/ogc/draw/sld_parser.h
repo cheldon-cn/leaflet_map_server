@@ -12,7 +12,7 @@
 #include "ogc/draw/comparison_filter.h"
 #include "ogc/draw/logical_filter.h"
 #include "ogc/draw/spatial_filter.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
 #include "ogc/draw/export.h"
 #include <memory>
 #include <string>

@@ -4,7 +4,7 @@
 #include "ogc/draw/polygon_symbolizer.h"
 #include "ogc/draw/point_symbolizer.h"
 #include "ogc/draw/text_symbolizer.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/draw_style.h>
 #include "ogc/common.h"
 
 using namespace ogc::draw;
@@ -107,14 +107,14 @@ TEST_F(SymbolizerTest, SymbolizerSetDefaultStyle) {
     auto symbolizer = LineSymbolizer::Create();
     
     DrawStyle style;
-    style.stroke.color = 0xFF0000;
-    style.stroke.width = 2.0;
+    style.pen.color = Color(255, 0, 0, 255);
+    style.pen.width = 2.0;
     
     symbolizer->SetDefaultStyle(style);
     DrawStyle retrieved = symbolizer->GetDefaultStyle();
     
-    EXPECT_EQ(retrieved.stroke.color, 0xFF0000);
-    EXPECT_DOUBLE_EQ(retrieved.stroke.width, 2.0);
+    EXPECT_EQ(retrieved.pen.color, Color(255, 0, 0, 255));
+    EXPECT_DOUBLE_EQ(retrieved.pen.width, 2.0);
 }
 
 TEST_F(SymbolizerTest, LineSymbolizerCanSymbolize) {

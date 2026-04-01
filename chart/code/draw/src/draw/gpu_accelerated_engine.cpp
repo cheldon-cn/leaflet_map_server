@@ -320,7 +320,7 @@ DrawResult GPUAcceleratedEngine::DrawImage(double x, double y, const Image& imag
     if (!m_active) return DrawResult::kInvalidState;
     if (!image.IsValid()) return DrawResult::kInvalidParameter;
     
-    return DrawImageRect(x, y, image.width * scaleX, image.height * scaleY, image);
+    return DrawImageRect(x, y, image.GetWidth() * scaleX, image.GetHeight() * scaleY, image);
 }
 
 DrawResult GPUAcceleratedEngine::DrawImageRect(double x, double y, double w, double h,
@@ -414,11 +414,12 @@ void GPUAcceleratedEngine::SetAntialiasingEnabled(bool enabled) {
 
 TextMetrics GPUAcceleratedEngine::MeasureText(const std::string& text, const Font& font) {
     TextMetrics metrics;
-    metrics.width = text.length() * font.size * 0.6;
-    metrics.height = font.size;
-    metrics.ascent = font.size * 0.8;
-    metrics.descent = font.size * 0.2;
-    metrics.lineHeight = font.size * 1.2;
+    double fontSize = font.GetSize();
+    metrics.width = text.length() * fontSize * 0.6;
+    metrics.height = fontSize;
+    metrics.ascent = fontSize * 0.8;
+    metrics.descent = fontSize * 0.2;
+    metrics.lineHeight = fontSize * 1.2;
     return metrics;
 }
 
@@ -465,10 +466,10 @@ void GPUAcceleratedEngine::AddVertex(std::vector<float>& vertices, double x, dou
                                      const Color& color, double opacity) {
     vertices.push_back(static_cast<float>(x));
     vertices.push_back(static_cast<float>(y));
-    vertices.push_back(color.r / 255.0f);
-    vertices.push_back(color.g / 255.0f);
-    vertices.push_back(color.b / 255.0f);
-    vertices.push_back(color.a / 255.0f * static_cast<float>(opacity));
+    vertices.push_back(color.GetRed() / 255.0f);
+    vertices.push_back(color.GetGreen() / 255.0f);
+    vertices.push_back(color.GetBlue() / 255.0f);
+    vertices.push_back(color.GetAlpha() / 255.0f * static_cast<float>(opacity));
 }
 
 bool GPUAcceleratedEngine::InitializeShaders() {

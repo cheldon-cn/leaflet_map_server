@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/label_engine.h"
 #include "ogc/draw/label_conflict.h"
-#include "ogc/draw/font.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_context.h"
+#include <ogc/draw/font.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_context.h>
 #include <memory>
 
 using namespace ogc::draw;

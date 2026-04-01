@@ -559,10 +559,11 @@ ComPtr<IDWriteTextFormat> Direct2DEngine::CreateTextFormat(const Font& font) {
     }
     
     std::wstring familyName;
-    if (!font.family.empty()) {
-        int wcharsNeeded = MultiByteToWideChar(CP_UTF8, 0, font.family.c_str(), -1, nullptr, 0);
+    std::string fontFamily = font.GetFamily();
+    if (!fontFamily.empty()) {
+        int wcharsNeeded = MultiByteToWideChar(CP_UTF8, 0, fontFamily.c_str(), -1, nullptr, 0);
         familyName.resize(wcharsNeeded);
-        MultiByteToWideChar(CP_UTF8, 0, font.family.c_str(), -1, &familyName[0], wcharsNeeded);
+        MultiByteToWideChar(CP_UTF8, 0, fontFamily.c_str(), -1, &familyName[0], wcharsNeeded);
         if (!familyName.empty() && familyName.back() == L'\0') {
             familyName.pop_back();
         }
@@ -580,7 +581,7 @@ ComPtr<IDWriteTextFormat> Direct2DEngine::CreateTextFormat(const Font& font) {
         style = DWRITE_FONT_STYLE_ITALIC;
     }
     
-    float size = static_cast<float>(font.size > 0 ? font.size : 12.0);
+    float size = static_cast<float>(font.GetSize() > 0 ? font.GetSize() : 12.0);
     
     ComPtr<IDWriteTextFormat> textFormat;
     HRESULT hr = s_writeFactory->CreateTextFormat(
@@ -602,10 +603,10 @@ ComPtr<IDWriteTextFormat> Direct2DEngine::CreateTextFormat(const Font& font) {
 
 D2D1_COLOR_F Direct2DEngine::ToD2DColor(const Color& color) const {
     return D2D1::ColorF(
-        static_cast<float>(color.r) / 255.0f,
-        static_cast<float>(color.g) / 255.0f,
-        static_cast<float>(color.b) / 255.0f,
-        static_cast<float>(color.a) / 255.0f
+        static_cast<float>(color.GetRed()) / 255.0f,
+        static_cast<float>(color.GetGreen()) / 255.0f,
+        static_cast<float>(color.GetBlue()) / 255.0f,
+        static_cast<float>(color.GetAlpha()) / 255.0f
     );
 }
 

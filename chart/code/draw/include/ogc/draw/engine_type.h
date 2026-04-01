@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_ENGINE_TYPE_H
 #define OGC_DRAW_ENGINE_TYPE_H
 
+#include "ogc/draw/export.h"
 #include <string>
 #include <vector>
 
@@ -8,33 +9,21 @@ namespace ogc {
 namespace draw {
 
 enum class EngineType {
-    kSimple2D = 0,
-    kGPU = 1,
-    kVector = 2,
-    kTile = 3,
-    kWebGL = 4
+    kUnknown = 0,
+    kSimple2D = 1,
+    kGPU = 2,
+    kVector = 3,
+    kTile = 4,
+    kWebGL = 5
 };
 
-inline const char* EngineTypeToString(EngineType type) {
-    switch (type) {
-        case EngineType::kSimple2D: return "Simple2D";
-        case EngineType::kGPU:      return "GPU";
-        case EngineType::kVector:   return "Vector";
-        case EngineType::kTile:     return "Tile";
-        case EngineType::kWebGL:    return "WebGL";
-        default:                    return "Unknown";
-    }
-}
+OGC_DRAW_API const char* EngineTypeToString(EngineType type);
 
-inline std::vector<EngineType> GetAllEngineTypes() {
-    return std::vector<EngineType>{
-        EngineType::kSimple2D,
-        EngineType::kGPU,
-        EngineType::kVector,
-        EngineType::kTile,
-        EngineType::kWebGL
-    };
-}
+OGC_DRAW_API std::string GetEngineTypeString(EngineType type);
+
+OGC_DRAW_API std::string GetEngineTypeDescription(EngineType type);
+
+OGC_DRAW_API std::vector<EngineType> GetAllEngineTypes();
 
 }  
 }  

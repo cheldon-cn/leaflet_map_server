@@ -154,26 +154,26 @@ void RasterImageDevice::SetPixel(int x, int y, const Color& color) {
 
     switch (m_format) {
         case PixelFormat::kGray8: {
-            uint8_t gray = static_cast<uint8_t>((color.r * 299 + color.g * 587 + color.b * 114) / 1000);
+            uint8_t gray = static_cast<uint8_t>((color.GetRed() * 299 + color.GetGreen() * 587 + color.GetBlue() * 114) / 1000);
             pixel[0] = gray;
             break;
         }
         case PixelFormat::kRGB888:
-            pixel[0] = color.r;
-            pixel[1] = color.g;
-            pixel[2] = color.b;
+            pixel[0] = color.GetRed();
+            pixel[1] = color.GetGreen();
+            pixel[2] = color.GetBlue();
             break;
         case PixelFormat::kRGBA8888:
-            pixel[0] = color.r;
-            pixel[1] = color.g;
-            pixel[2] = color.b;
-            pixel[3] = color.a;
+            pixel[0] = color.GetRed();
+            pixel[1] = color.GetGreen();
+            pixel[2] = color.GetBlue();
+            pixel[3] = color.GetAlpha();
             break;
         case PixelFormat::kBGRA8888:
-            pixel[0] = color.b;
-            pixel[1] = color.g;
-            pixel[2] = color.r;
-            pixel[3] = color.a;
+            pixel[0] = color.GetBlue();
+            pixel[1] = color.GetGreen();
+            pixel[2] = color.GetRed();
+            pixel[3] = color.GetAlpha();
             break;
         default:
             break;
@@ -192,26 +192,26 @@ void RasterImageDevice::Clear(const Color& color) {
     }
 }
 
-bool RasterImageDevice::SaveToFile(const std::string& path, ImageFormat format) {
+bool RasterImageDevice::SaveToFile(const std::string& path, OutputFormat format) {
     if (!m_pixelData) {
         return false;
     }
 
-    ImageFormat actualFormat = format;
-    if (format == ImageFormat::kAuto) {
+    OutputFormat actualFormat = format;
+    if (format == OutputFormat::kAuto) {
         if (path.find(".png") != std::string::npos || 
             path.find(".PNG") != std::string::npos) {
-            actualFormat = ImageFormat::kPNG;
+            actualFormat = OutputFormat::kPNG;
         } else if (path.find(".jpg") != std::string::npos || 
                    path.find(".jpeg") != std::string::npos ||
                    path.find(".JPG") != std::string::npos ||
                    path.find(".JPEG") != std::string::npos) {
-            actualFormat = ImageFormat::kJPEG;
+            actualFormat = OutputFormat::kJPEG;
         } else if (path.find(".bmp") != std::string::npos ||
                    path.find(".BMP") != std::string::npos) {
-            actualFormat = ImageFormat::kBMP;
+            actualFormat = OutputFormat::kBMP;
         } else {
-            actualFormat = ImageFormat::kPNG;
+            actualFormat = OutputFormat::kPNG;
         }
     }
 
@@ -236,15 +236,15 @@ bool RasterImageDevice::SaveToFile(const std::string& path, ImageFormat format) 
     int result = 0;
 
     switch (actualFormat) {
-        case ImageFormat::kPNG:
+        case OutputFormat::kPNG:
             result = stbi_write_png(path.c_str(), m_width, m_height, channels, 
                                     dataToWrite, stride);
             break;
-        case ImageFormat::kJPEG:
+        case OutputFormat::kJPEG:
             result = stbi_write_jpg(path.c_str(), m_width, m_height, channels, 
                                     dataToWrite, 90);
             break;
-        case ImageFormat::kBMP:
+        case OutputFormat::kBMP:
             result = stbi_write_bmp(path.c_str(), m_width, m_height, channels, 
                                     dataToWrite);
             break;

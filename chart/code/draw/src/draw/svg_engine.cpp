@@ -71,7 +71,7 @@ void SvgEngine::WriteFill(const Color& color, FillRule rule)
 
     m_content << "fill=\"" << ColorToSvg(color) << "\" ";
     m_content << "fill-rule=\"" << fillRule << "\" ";
-    m_content << "fill-opacity=\"" << (color.a / 255.0) << "\" ";
+    m_content << "fill-opacity=\"" << (color.GetAlpha() / 255.0) << "\" ";
 
     if (m_opacity < 1.0) {
         m_content << "opacity=\"" << m_opacity << "\" ";
@@ -85,7 +85,7 @@ void SvgEngine::WriteStroke(const Pen& pen)
     m_content << "fill=\"none\" ";
     m_content << "stroke=\"" << ColorToSvg(pen.color) << "\" ";
     m_content << "stroke-width=\"" << pen.width << "\" ";
-    m_content << "stroke-opacity=\"" << (pen.color.a / 255.0) << "\" ";
+    m_content << "stroke-opacity=\"" << (pen.color.GetAlpha() / 255.0) << "\" ";
 
     switch (pen.style) {
     case PenStyle::kSolid:
@@ -140,13 +140,13 @@ void SvgEngine::WriteText(double x, double y, const std::string& text,
 {
     m_content << "  <text x=\"" << std::fixed << std::setprecision(2) << x << "\" "
               << "y=\"" << y << "\" "
-              << "font-family=\"" << font.family << "\" "
-              << "font-size=\"" << font.size << "\" ";
+              << "font-family=\"" << font.GetFamily() << "\" "
+              << "font-size=\"" << font.GetSize() << "\" ";
 
-    if (font.weight >= FontWeight::kBold) {
+    if (font.GetWeight() >= FontWeight::kBold) {
         m_content << "font-weight=\"bold\" ";
     }
-    if (font.style == FontStyle::kItalic || font.style == FontStyle::kOblique) {
+    if (font.IsItalic()) {
         m_content << "font-style=\"italic\" ";
     }
 
@@ -175,13 +175,19 @@ void SvgEngine::WriteText(double x, double y, const std::string& text,
 void SvgEngine::WriteImage(double x, double y, const Image& image,
                           double scaleX, double scaleY)
 {
+    int imgWidth = image.GetWidth();
+    int imgHeight = image.GetHeight();
+    int imgChannels = image.GetChannels();
+    const uint8_t* imgData = image.GetData();
+    size_t dataSize = image.GetDataSize();
+
     m_content << "  <image x=\"" << std::fixed << std::setprecision(2) << x << "\" "
               << "y=\"" << y << "\" "
-              << "width=\"" << image.width * scaleX << "\" "
-              << "height=\"" << image.height * scaleY << "\" ";
+              << "width=\"" << imgWidth * scaleX << "\" "
+              << "height=\"" << imgHeight * scaleY << "\" ";
 
-    std::string format = (image.channels == 4) ? "png" : "jpeg";
-    std::string base64 = EncodeBase64(image.data.data(), image.data.size());
+    std::string format = (imgChannels == 4) ? "png" : "jpeg";
+    std::string base64 = EncodeBase64(imgData, dataSize);
 
     m_content << "href=\"data:image/" << format << ";base64," << base64 << "\" ";
 
@@ -225,9 +231,9 @@ std::string SvgEngine::ColorToSvg(const Color& color) const
     std::stringstream ss;
     ss << "#"
        << std::hex << std::setfill('0')
-       << std::setw(2) << static_cast<int>(color.r)
-       << std::setw(2) << static_cast<int>(color.g)
-       << std::setw(2) << static_cast<int>(color.b);
+       << std::setw(2) << static_cast<int>(color.GetRed())
+       << std::setw(2) << static_cast<int>(color.GetGreen())
+       << std::setw(2) << static_cast<int>(color.GetBlue());
     return ss.str();
 }
 

@@ -2,8 +2,9 @@
 #define OGC_DRAW_LINE_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,9 @@ enum class DashStyle {
     kDashDotDot,
     kCustom
 };
+
+class LineSymbolizer;
+using LineSymbolizerPtr = std::shared_ptr<LineSymbolizer>;
 
 class OGC_GRAPH_API LineSymbolizer : public Symbolizer {
 public:
@@ -44,11 +48,11 @@ public:
     void SetOpacity(double opacity);
     double GetOpacity() const;
     
-    void SetCapStyle(LineCapStyle style);
-    LineCapStyle GetCapStyle() const;
+    void SetCapStyle(LineCap style);
+    LineCap GetCapStyle() const;
     
-    void SetJoinStyle(LineJoinStyle style);
-    LineJoinStyle GetJoinStyle() const;
+    void SetJoinStyle(LineJoin style);
+    LineJoin GetJoinStyle() const;
     
     void SetDashStyle(DashStyle style);
     DashStyle GetDashStyle() const;
@@ -85,8 +89,8 @@ private:
     double m_width;
     uint32_t m_color;
     double m_opacity;
-    LineCapStyle m_capStyle;
-    LineJoinStyle m_joinStyle;
+    LineCap m_capStyle;
+    LineJoin m_joinStyle;
     DashStyle m_dashStyle;
     std::vector<double> m_dashPattern;
     double m_dashOffset;

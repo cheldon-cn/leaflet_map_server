@@ -2,11 +2,15 @@
 #define OGC_DRAW_ICON_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 
 namespace ogc {
 namespace draw {
+
+class IconSymbolizer;
+using IconSymbolizerPtr = std::shared_ptr<IconSymbolizer>;
 
 class OGC_GRAPH_API IconSymbolizer : public Symbolizer {
 public:

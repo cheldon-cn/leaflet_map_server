@@ -297,8 +297,9 @@ Gdiplus::Brush* GDIPlusEngine::CreateBrush(const DrawStyle& style) {
 
 Gdiplus::Font* GDIPlusEngine::CreateFont(const Font& font) {
     std::wstring familyName;
-    if (!font.family.empty()) {
-        familyName = std::wstring(font.family.begin(), font.family.end());
+    std::string fontFamily = font.GetFamily();
+    if (!fontFamily.empty()) {
+        familyName = std::wstring(fontFamily.begin(), fontFamily.end());
     } else {
         familyName = L"Arial";
     }
@@ -315,7 +316,7 @@ Gdiplus::Font* GDIPlusEngine::CreateFont(const Font& font) {
         fontStyle = Gdiplus::FontStyleItalic;
     }
     
-    Gdiplus::REAL size = static_cast<Gdiplus::REAL>(font.size > 0 ? font.size : 12.0);
+    Gdiplus::REAL size = static_cast<Gdiplus::REAL>(font.GetSize() > 0 ? font.GetSize() : 12.0);
     
     Gdiplus::Font* gdiFont = new Gdiplus::Font(familyName.c_str(), size, fontStyle);
     return gdiFont;
@@ -323,10 +324,10 @@ Gdiplus::Font* GDIPlusEngine::CreateFont(const Font& font) {
 
 Gdiplus::Color GDIPlusEngine::ToGdiColor(const Color& color) {
     return Gdiplus::Color(
-        static_cast<BYTE>(color.a),
-        static_cast<BYTE>(color.r),
-        static_cast<BYTE>(color.g),
-        static_cast<BYTE>(color.b)
+        static_cast<BYTE>(color.GetAlpha()),
+        static_cast<BYTE>(color.GetRed()),
+        static_cast<BYTE>(color.GetGreen()),
+        static_cast<BYTE>(color.GetBlue())
     );
 }
 

@@ -127,10 +127,10 @@ DrawResult VectorEngine::DrawPolygon(const double* x, const double* y, int count
     std::vector<Point> polyPath = TransformPoints(x, y, count);
     WritePath(polyPath, true);
 
-    if (fill && style.brush.color.a > 0) {
+    if (fill && style.brush.color.GetAlpha() > 0) {
         WriteFill(style.brush.color, FillRule::kNonZero);
     }
-    if (style.pen.width > 0 && style.pen.color.a > 0) {
+    if (style.pen.width > 0 && style.pen.color.GetAlpha() > 0) {
         WriteStroke(style.pen);
     }
 
@@ -151,10 +151,10 @@ DrawResult VectorEngine::DrawRect(double x, double y, double w, double h,
     std::vector<Point> rectPath = TransformPoints(rx, ry, 4);
     WritePath(rectPath, true);
 
-    if (fill && style.brush.color.a > 0) {
+    if (fill && style.brush.color.GetAlpha() > 0) {
         WriteFill(style.brush.color, FillRule::kNonZero);
     }
-    if (style.pen.width > 0 && style.pen.color.a > 0) {
+    if (style.pen.width > 0 && style.pen.color.GetAlpha() > 0) {
         WriteStroke(style.pen);
     }
 
@@ -189,10 +189,10 @@ DrawResult VectorEngine::DrawEllipse(double cx, double cy, double rx, double ry,
 
     WritePath(ellipsePath, true);
 
-    if (fill && style.brush.color.a > 0) {
+    if (fill && style.brush.color.GetAlpha() > 0) {
         WriteFill(style.brush.color, FillRule::kNonZero);
     }
-    if (style.pen.width > 0 && style.pen.color.a > 0) {
+    if (style.pen.width > 0 && style.pen.color.GetAlpha() > 0) {
         WriteStroke(style.pen);
     }
 
@@ -244,7 +244,7 @@ DrawResult VectorEngine::DrawImage(double x, double y, const Image& image,
                                   double scaleX, double scaleY)
 {
     if (!m_active) return DrawResult::kInvalidState;
-    if (image.width <= 0 || image.height <= 0 || image.data.empty()) {
+    if (!image.IsValid()) {
         return DrawResult::kInvalidParameter;
     }
 
@@ -258,15 +258,15 @@ DrawResult VectorEngine::DrawImageRect(double x, double y, double w, double h,
                                       const Image& image)
 {
     if (!m_active) return DrawResult::kInvalidState;
-    if (image.width <= 0 || image.height <= 0 || image.data.empty()) {
+    if (!image.IsValid()) {
         return DrawResult::kInvalidParameter;
     }
     if (w <= 0 || h <= 0) {
         return DrawResult::kInvalidParameter;
     }
 
-    double scaleX = w / image.width;
-    double scaleY = h / image.height;
+    double scaleX = w / image.GetWidth();
+    double scaleY = h / image.GetHeight();
 
     return DrawImage(x, y, image, scaleX, scaleY);
 }
@@ -413,10 +413,11 @@ void VectorEngine::SetOpacity(double opacity)
 TextMetrics VectorEngine::MeasureText(const std::string& text, const Font& font)
 {
     TextMetrics metrics;
-    metrics.width = static_cast<double>(text.length()) * font.size * 0.6;
-    metrics.height = font.size;
-    metrics.ascent = font.size * 0.8;
-    metrics.descent = font.size * 0.2;
+    double fontSize = font.GetSize();
+    metrics.width = static_cast<double>(text.length()) * fontSize * 0.6;
+    metrics.height = fontSize;
+    metrics.ascent = fontSize * 0.8;
+    metrics.descent = fontSize * 0.2;
     return metrics;
 }
 

@@ -303,8 +303,8 @@ DrawResult TileBasedEngine::DrawImage(double x, double y, const Image& image,
     if (!m_active) return DrawResult::kInvalidState;
     if (!image.IsValid()) return DrawResult::kInvalidParameter;
 
-    double w = image.width * scaleX;
-    double h = image.height * scaleY;
+    double w = image.GetWidth() * scaleX;
+    double h = image.GetHeight() * scaleY;
 
     Point topLeft = m_transform.TransformPoint(Point(x, y));
     Point bottomRight = m_transform.TransformPoint(Point(x + w, y + h));
@@ -331,8 +331,8 @@ DrawResult TileBasedEngine::DrawImage(double x, double y, const Image& image,
 DrawResult TileBasedEngine::DrawImageRect(double x, double y, double w, double h,
                                            const Image& image) {
     if (!image.IsValid()) return DrawResult::kInvalidParameter;
-    double scaleX = w / image.width;
-    double scaleY = h / image.height;
+    double scaleX = w / image.GetWidth();
+    double scaleY = h / image.GetHeight();
     return DrawImage(x, y, image, scaleX, scaleY);
 }
 
@@ -389,11 +389,12 @@ void TileBasedEngine::SetOpacity(double opacity) {
 TextMetrics TileBasedEngine::MeasureText(const std::string& text, const Font& font) {
     (void)text;
     TextMetrics metrics;
-    metrics.width = text.length() * font.size * 0.6;
-    metrics.height = font.size;
-    metrics.ascent = font.size * 0.8;
-    metrics.descent = font.size * 0.2;
-    metrics.lineHeight = font.size * 1.2;
+    double fontSize = font.GetSize();
+    metrics.width = text.length() * fontSize * 0.6;
+    metrics.height = fontSize;
+    metrics.ascent = fontSize * 0.8;
+    metrics.descent = fontSize * 0.2;
+    metrics.lineHeight = fontSize * 1.2;
     return metrics;
 }
 

@@ -7,9 +7,9 @@
 #include "ogc/draw/line_symbolizer.h"
 #include "ogc/draw/polygon_symbolizer.h"
 #include "ogc/draw/text_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_style.h>
 #include "ogc/geometry.h"
 #include "ogc/factory.h"
 #include "ogc/envelope.h"

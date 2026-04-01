@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/lod_manager.h"
 #include "ogc/draw/lod.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/tile_renderer.h"
 #include "ogc/draw/tile_key.h"
 #include "ogc/draw/tile_cache.h"

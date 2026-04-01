@@ -5,34 +5,34 @@ using namespace ogc::draw;
 
 TEST(ColorTest, DefaultConstructor) {
     Color c;
-    EXPECT_EQ(c.r, 0);
-    EXPECT_EQ(c.g, 0);
-    EXPECT_EQ(c.b, 0);
-    EXPECT_EQ(c.a, 255);
+    EXPECT_EQ(c.GetRed(), 0);
+    EXPECT_EQ(c.GetGreen(), 0);
+    EXPECT_EQ(c.GetBlue(), 0);
+    EXPECT_EQ(c.GetAlpha(), 255);
 }
 
 TEST(ColorTest, ParameterizedConstructor) {
     Color c(100, 150, 200, 128);
-    EXPECT_EQ(c.r, 100);
-    EXPECT_EQ(c.g, 150);
-    EXPECT_EQ(c.b, 200);
-    EXPECT_EQ(c.a, 128);
+    EXPECT_EQ(c.GetRed(), 100);
+    EXPECT_EQ(c.GetGreen(), 150);
+    EXPECT_EQ(c.GetBlue(), 200);
+    EXPECT_EQ(c.GetAlpha(), 128);
 }
 
 TEST(ColorTest, FromHex) {
     Color c = Color::FromHex(0xFF8000);
-    EXPECT_EQ(c.r, 255);
-    EXPECT_EQ(c.g, 128);
-    EXPECT_EQ(c.b, 0);
-    EXPECT_EQ(c.a, 255);
+    EXPECT_EQ(c.GetRed(), 255);
+    EXPECT_EQ(c.GetGreen(), 128);
+    EXPECT_EQ(c.GetBlue(), 0);
+    EXPECT_EQ(c.GetAlpha(), 255);
 }
 
 TEST(ColorTest, FromHexWithAlpha) {
     Color c = Color::FromHexWithAlpha(0xFF800080);
-    EXPECT_EQ(c.r, 255);
-    EXPECT_EQ(c.g, 128);
-    EXPECT_EQ(c.b, 0);
-    EXPECT_EQ(c.a, 128);
+    EXPECT_EQ(c.GetRed(), 255);
+    EXPECT_EQ(c.GetGreen(), 128);
+    EXPECT_EQ(c.GetBlue(), 0);
+    EXPECT_EQ(c.GetAlpha(), 128);
 }
 
 TEST(ColorTest, ToHex) {
@@ -47,29 +47,29 @@ TEST(ColorTest, ToHexWithAlpha) {
 
 TEST(ColorTest, FromHSV_Red) {
     Color c = Color::FromHSV(0, 1.0, 1.0);
-    EXPECT_EQ(c.r, 255);
-    EXPECT_EQ(c.g, 0);
-    EXPECT_EQ(c.b, 0);
+    EXPECT_EQ(c.GetRed(), 255);
+    EXPECT_EQ(c.GetGreen(), 0);
+    EXPECT_EQ(c.GetBlue(), 0);
 }
 
 TEST(ColorTest, FromHSV_Green) {
     Color c = Color::FromHSV(120, 1.0, 1.0);
-    EXPECT_EQ(c.r, 0);
-    EXPECT_EQ(c.g, 255);
-    EXPECT_EQ(c.b, 0);
+    EXPECT_EQ(c.GetRed(), 0);
+    EXPECT_EQ(c.GetGreen(), 255);
+    EXPECT_EQ(c.GetBlue(), 0);
 }
 
 TEST(ColorTest, FromHSV_Blue) {
     Color c = Color::FromHSV(240, 1.0, 1.0);
-    EXPECT_EQ(c.r, 0);
-    EXPECT_EQ(c.g, 0);
-    EXPECT_EQ(c.b, 255);
+    EXPECT_EQ(c.GetRed(), 0);
+    EXPECT_EQ(c.GetGreen(), 0);
+    EXPECT_EQ(c.GetBlue(), 255);
 }
 
 TEST(ColorTest, ToHSV) {
     Color c(255, 0, 0);
     double h, s, v;
-    c.ToHSV(h, s, v);
+    c.GetHSV(h, s, v);
     EXPECT_NEAR(h, 0.0, 0.1);
     EXPECT_NEAR(s, 1.0, 0.01);
     EXPECT_NEAR(v, 1.0, 0.01);
@@ -88,19 +88,19 @@ TEST(ColorTest, Equality) {
 TEST(ColorTest, WithAlpha) {
     Color c(100, 150, 200, 255);
     Color c2 = c.WithAlpha(128);
-    EXPECT_EQ(c2.r, 100);
-    EXPECT_EQ(c2.g, 150);
-    EXPECT_EQ(c2.b, 200);
-    EXPECT_EQ(c2.a, 128);
+    EXPECT_EQ(c2.GetRed(), 100);
+    EXPECT_EQ(c2.GetGreen(), 150);
+    EXPECT_EQ(c2.GetBlue(), 200);
+    EXPECT_EQ(c2.GetAlpha(), 128);
 }
 
 TEST(ColorTest, Blend) {
     Color c1(0, 0, 0, 255);
     Color c2(255, 255, 255, 255);
     Color blended = c1.Blend(c2, 0.5);
-    EXPECT_NEAR(blended.r, 127, 1);
-    EXPECT_NEAR(blended.g, 127, 1);
-    EXPECT_NEAR(blended.b, 127, 1);
+    EXPECT_NEAR(blended.GetRed(), 127, 1);
+    EXPECT_NEAR(blended.GetGreen(), 127, 1);
+    EXPECT_NEAR(blended.GetBlue(), 127, 1);
 }
 
 TEST(ColorTest, PredefinedColors) {

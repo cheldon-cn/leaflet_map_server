@@ -2,8 +2,9 @@
 #define OGC_DRAW_TEXT_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/font.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/font.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 
 namespace ogc {
@@ -26,6 +27,9 @@ enum class TextPlacement {
     kLine,
     kInterior
 };
+
+class TextSymbolizer;
+using TextSymbolizerPtr = std::shared_ptr<TextSymbolizer>;
 
 class OGC_GRAPH_API TextSymbolizer : public Symbolizer {
 public:

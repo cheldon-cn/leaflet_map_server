@@ -2,6 +2,7 @@
 #include "ogc/draw/state_serializer.h"
 #include "ogc/draw/draw_engine.h"
 #include "ogc/draw/transform_matrix.h"
+#include "ogc/geometry.h"
 
 using namespace ogc::draw;
 
@@ -33,7 +34,7 @@ public:
     DrawResult DrawText(double, double, const std::string&, const Font&, const Color&) override { return DrawResult::kSuccess; }
     DrawResult DrawImage(double, double, const Image&, double, double) override { return DrawResult::kSuccess; }
     DrawResult DrawImageRect(double, double, double, double, const Image&) override { return DrawResult::kSuccess; }
-    DrawResult DrawGeometry(const Geometry*, const DrawStyle&) override { return DrawResult::kSuccess; }
+    DrawResult DrawGeometry(const ogc::Geometry*, const DrawStyle&) override { return DrawResult::kSuccess; }
 
     void SetTransform(const TransformMatrix& matrix) override { m_transform = matrix; }
     TransformMatrix GetTransform() const override { return m_transform; }

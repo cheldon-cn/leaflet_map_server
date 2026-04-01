@@ -2,10 +2,14 @@
 #define OGC_DRAW_COMPOSITE_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
+#include <ogc/draw/draw_types.h>
 #include <vector>
 
 namespace ogc {
 namespace draw {
+
+class CompositeSymbolizer;
+using CompositeSymbolizerPtr = std::shared_ptr<CompositeSymbolizer>;
 
 class OGC_GRAPH_API CompositeSymbolizer : public Symbolizer {
 public:

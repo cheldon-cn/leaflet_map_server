@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include "ogc/common.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -168,8 +168,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderWithContext) {
     symbolizer->SetColor(Color::Blue().GetRGBA());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 2.0;
     context->SetStyle(style);
     
     double x[] = {10, 100, 200, 246};
@@ -191,8 +191,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderMultipleLines) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 2.0;
     context->SetStyle(style);
     
     double x1[] = {0, 256};
@@ -221,8 +221,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderWithTransform) {
     context->SetTransform(transform);
     
     DrawStyle style;
-    style.stroke.color = Color::Magenta().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Magenta().GetRGBA();
+    style.pen.width = 2.0;
     context->SetStyle(style);
     
     double x[] = {0, 100};
@@ -249,8 +249,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderDashedLine) {
     symbolizer->SetDashStyle(DashStyle::kDash);
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
     context->SetStyle(style);
     
     double x[] = {0, 256};
@@ -276,8 +276,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderThickLine) {
     symbolizer->SetColor(Color::Green().GetRGBA());
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 10.0;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 10.0;
     context->SetStyle(style);
     
     double x[] = {50, 206};
@@ -306,8 +306,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderVerticalLine) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Cyan().GetRGBA();
-    style.stroke.width = 3.0;
+    style.pen.color = Color::Cyan().GetRGBA();
+    style.pen.width = 3.0;
     context->SetStyle(style);
     
     double x[] = {128, 128};
@@ -329,8 +329,8 @@ TEST_F(IntegrationLineSymbolizerTest, RenderHorizontalLine) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Yellow().GetRGBA();
-    style.stroke.width = 3.0;
+    style.pen.color = Color::Yellow().GetRGBA();
+    style.pen.width = 3.0;
     context->SetStyle(style);
     
     double x[] = {0, 256};
@@ -341,3 +341,4 @@ TEST_F(IntegrationLineSymbolizerTest, RenderHorizontalLine) {
     
     context->EndDraw();
 }
+

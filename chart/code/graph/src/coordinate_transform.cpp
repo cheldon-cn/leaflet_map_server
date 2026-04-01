@@ -7,6 +7,24 @@
 #include "ogc/multipolygon.h"
 #include "ogc/geometrycollection.h"
 
+using ogc::Point;
+using ogc::LineString;
+using ogc::Polygon;
+using ogc::MultiPoint;
+using ogc::MultiLineString;
+using ogc::MultiPolygon;
+using ogc::GeometryCollection;
+using ogc::LinearRing;
+using ogc::Coordinate;
+using ogc::Envelope;
+using ogc::Geometry;
+using ogc::GeomType;
+using ogc::CoordinateList;
+using ogc::LinearRingPtr;
+using ogc::LineStringPtr;
+using ogc::PolygonPtr;
+using ogc::GeometryPtr;
+
 namespace ogc {
 namespace draw {
 
@@ -279,7 +297,7 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
     
     switch (geometry->GetGeometryType()) {
         case GeomType::kPoint: {
-            const Point* point = dynamic_cast<const Point*>(geometry);
+            const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
             if (!point) return nullptr;
             Coordinate coord = point->GetCoordinate();
             if (forward) {
@@ -287,10 +305,10 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
             } else {
                 TransformInverse(coord.x, coord.y);
             }
-            return Point::Create(coord);
+            return ogc::Point::Create(coord);
         }
         case GeomType::kLineString: {
-            const LineString* lineString = dynamic_cast<const LineString*>(geometry);
+            const ogc::LineString* lineString = dynamic_cast<const ogc::LineString*>(geometry);
             if (!lineString) return nullptr;
             std::vector<Coordinate> coords;
             coords.reserve(lineString->GetNumPoints());
@@ -303,14 +321,14 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
                 }
                 coords.push_back(coord);
             }
-            return LineString::Create(coords);
+            return ogc::LineString::Create(coords);
         }
         case GeomType::kPolygon: {
-            const Polygon* polygon = dynamic_cast<const Polygon*>(geometry);
+            const ogc::Polygon* polygon = dynamic_cast<const ogc::Polygon*>(geometry);
             if (!polygon) return nullptr;
             
             std::vector<Coordinate> shellCoords;
-            const LinearRing* shell = polygon->GetExteriorRing();
+            const ogc::LinearRing* shell = polygon->GetExteriorRing();
             if (shell) {
                 shellCoords.reserve(shell->GetNumPoints());
                 for (size_t i = 0; i < shell->GetNumPoints(); ++i) {
@@ -324,16 +342,16 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
                 }
             }
             
-            LinearRingPtr exteriorRing = LinearRing::Create(shellCoords);
-            PolygonPtr result = Polygon::Create(std::move(exteriorRing));
+            ogc::LinearRingPtr exteriorRing = ogc::LinearRing::Create(shellCoords);
+            ogc::PolygonPtr result = ogc::Polygon::Create(std::move(exteriorRing));
             
             for (size_t i = 0; i < polygon->GetNumInteriorRings(); ++i) {
-                const LinearRing* hole = polygon->GetInteriorRingN(i);
+                const ogc::LinearRing* hole = polygon->GetInteriorRingN(i);
                 if (hole) {
-                    std::vector<Coordinate> holeCoords;
+                    std::vector<ogc::Coordinate> holeCoords;
                     holeCoords.reserve(hole->GetNumPoints());
                     for (size_t j = 0; j < hole->GetNumPoints(); ++j) {
-                        Coordinate coord = hole->GetCoordinateN(j);
+                        ogc::Coordinate coord = hole->GetCoordinateN(j);
                         if (forward) {
                             Transform(coord.x, coord.y);
                         } else {
@@ -341,7 +359,7 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
                         }
                         holeCoords.push_back(coord);
                     }
-                    LinearRingPtr interiorRing = LinearRing::Create(holeCoords);
+                    ogc::LinearRingPtr interiorRing = ogc::LinearRing::Create(holeCoords);
                     result->AddInteriorRing(std::move(interiorRing));
                 }
             }
@@ -349,15 +367,15 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
             return result;
         }
         case GeomType::kMultiPoint: {
-            const MultiPoint* multiPoint = dynamic_cast<const MultiPoint*>(geometry);
+            const ogc::MultiPoint* multiPoint = dynamic_cast<const ogc::MultiPoint*>(geometry);
             if (!multiPoint) return nullptr;
             
-            CoordinateList coords;
+            ogc::CoordinateList coords;
             coords.reserve(multiPoint->GetNumGeometries());
             for (size_t i = 0; i < multiPoint->GetNumGeometries(); ++i) {
-                const Point* point = multiPoint->GetPointN(i);
+                const ogc::Point* point = multiPoint->GetPointN(i);
                 if (point) {
-                    Coordinate coord = point->GetCoordinate();
+                    ogc::Coordinate coord = point->GetCoordinate();
                     if (forward) {
                         Transform(coord.x, coord.y);
                     } else {
@@ -366,58 +384,58 @@ GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, boo
                     coords.push_back(coord);
                 }
             }
-            return MultiPoint::Create(coords);
+            return ogc::MultiPoint::Create(coords);
         }
         case GeomType::kMultiLineString: {
-            const MultiLineString* multiLineString = dynamic_cast<const MultiLineString*>(geometry);
+            const ogc::MultiLineString* multiLineString = dynamic_cast<const ogc::MultiLineString*>(geometry);
             if (!multiLineString) return nullptr;
             
-            std::vector<LineStringPtr> lineStrings;
+            std::vector<ogc::LineStringPtr> lineStrings;
             lineStrings.reserve(multiLineString->GetNumGeometries());
             for (size_t i = 0; i < multiLineString->GetNumGeometries(); ++i) {
-                const LineString* lineString = multiLineString->GetLineStringN(i);
+                const ogc::LineString* lineString = multiLineString->GetLineStringN(i);
                 if (lineString) {
-                    GeometryPtr transformed = TransformGeometry(lineString, forward);
-                    LineStringPtr transformedLine(static_cast<LineString*>(transformed.release()));
+                    ogc::GeometryPtr transformed = TransformGeometry(lineString, forward);
+                    ogc::LineStringPtr transformedLine(static_cast<ogc::LineString*>(transformed.release()));
                     if (transformedLine) {
                         lineStrings.push_back(std::move(transformedLine));
                     }
                 }
             }
-            return MultiLineString::Create(std::move(lineStrings));
+            return ogc::MultiLineString::Create(std::move(lineStrings));
         }
         case GeomType::kMultiPolygon: {
-            const MultiPolygon* multiPolygon = dynamic_cast<const MultiPolygon*>(geometry);
+            const ogc::MultiPolygon* multiPolygon = dynamic_cast<const ogc::MultiPolygon*>(geometry);
             if (!multiPolygon) return nullptr;
             
-            std::vector<PolygonPtr> polygons;
+            std::vector<ogc::PolygonPtr> polygons;
             polygons.reserve(multiPolygon->GetNumGeometries());
             for (size_t i = 0; i < multiPolygon->GetNumGeometries(); ++i) {
-                const Polygon* polygon = multiPolygon->GetPolygonN(i);
+                const ogc::Polygon* polygon = multiPolygon->GetPolygonN(i);
                 if (polygon) {
-                    GeometryPtr transformed = TransformGeometry(polygon, forward);
-                    PolygonPtr transformedPolygon(static_cast<Polygon*>(transformed.release()));
+                    ogc::GeometryPtr transformed = TransformGeometry(polygon, forward);
+                    ogc::PolygonPtr transformedPolygon(static_cast<ogc::Polygon*>(transformed.release()));
                     if (transformedPolygon) {
                         polygons.push_back(std::move(transformedPolygon));
                     }
                 }
             }
-            return MultiPolygon::Create(std::move(polygons));
+            return ogc::MultiPolygon::Create(std::move(polygons));
         }
         case GeomType::kGeometryCollection: {
-            const GeometryCollection* collection = dynamic_cast<const GeometryCollection*>(geometry);
+            const ogc::GeometryCollection* collection = dynamic_cast<const ogc::GeometryCollection*>(geometry);
             if (!collection) return nullptr;
             
-            std::vector<GeometryPtr> geometries;
+            std::vector<ogc::GeometryPtr> geometries;
             geometries.reserve(collection->GetNumGeometries());
             for (size_t i = 0; i < collection->GetNumGeometries(); ++i) {
-                const Geometry* geom = collection->GetGeometryN(i);
-                GeometryPtr transformed = TransformGeometry(geom, forward);
+                const ogc::Geometry* geom = collection->GetGeometryN(i);
+                ogc::GeometryPtr transformed = TransformGeometry(geom, forward);
                 if (transformed) {
                     geometries.push_back(std::move(transformed));
                 }
             }
-            return GeometryCollection::Create(std::move(geometries));
+            return ogc::GeometryCollection::Create(std::move(geometries));
         }
         default:
             return nullptr;

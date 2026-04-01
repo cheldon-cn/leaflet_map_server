@@ -63,13 +63,13 @@ TEST_F(CapabilityNegotiatorTest, NegotiateStyleDowngradeTransparency) {
     
     DrawStyle requested;
     requested.opacity = 0.5;
-    requested.pen.color.a = 128;
-    requested.brush.color.a = 200;
+    requested.pen.color.SetAlpha(128);
+    requested.brush.color.SetAlpha(200);
     
     DrawStyle negotiated = m_negotiator.NegotiateStyle(requested);
     EXPECT_DOUBLE_EQ(negotiated.opacity, 1.0);
-    EXPECT_EQ(negotiated.pen.color.a, 255);
-    EXPECT_EQ(negotiated.brush.color.a, 255);
+    EXPECT_EQ(negotiated.pen.color.GetAlpha(), 255);
+    EXPECT_EQ(negotiated.brush.color.GetAlpha(), 255);
 }
 
 TEST_F(CapabilityNegotiatorTest, NegotiateStyleDowngradeAntialiasing) {
@@ -85,12 +85,12 @@ TEST_F(CapabilityNegotiatorTest, NegotiateStyleDowngradeAntialiasing) {
 
 TEST_F(CapabilityNegotiatorTest, NegotiateFont) {
     Font requested;
-    requested.family = "Arial";
-    requested.size = 14.0;
+    requested.SetFamily("Arial");
+    requested.SetSize(14.0);
     
     Font negotiated = m_negotiator.NegotiateFont(requested);
-    EXPECT_EQ(negotiated.family, "Arial");
-    EXPECT_DOUBLE_EQ(negotiated.size, 14.0);
+    EXPECT_EQ(negotiated.GetFamily(), "Arial");
+    EXPECT_DOUBLE_EQ(negotiated.GetSize(), 14.0);
 }
 
 TEST_F(CapabilityNegotiatorTest, IsFeatureSupported) {

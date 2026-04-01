@@ -1,14 +1,15 @@
 #ifndef OGC_DRAW_TRANSFORM_MATRIX_H
 #define OGC_DRAW_TRANSFORM_MATRIX_H
 
-#include "ogc/draw/draw_types.h"
+#include "ogc/draw/export.h"
+#include "ogc/draw/geometry_types.h"
 #include <cmath>
 #include <cstring>
 
 namespace ogc {
 namespace draw {
 
-class TransformMatrix {
+class OGC_DRAW_API TransformMatrix {
 public:
     double m[3][3];
 
@@ -16,11 +17,23 @@ public:
         LoadIdentity();
     }
 
+    TransformMatrix(double m00, double m01, double m02,
+                    double m10, double m11, double m12) {
+        std::memset(m, 0, sizeof(m));
+        m[0][0] = m00; m[0][1] = m01; m[0][2] = m02;
+        m[1][0] = m10; m[1][1] = m11; m[1][2] = m12;
+        m[2][2] = 1.0;
+    }
+
     void LoadIdentity() {
         std::memset(m, 0, sizeof(m));
         m[0][0] = 1.0;
         m[1][1] = 1.0;
         m[2][2] = 1.0;
+    }
+
+    void Reset() {
+        LoadIdentity();
     }
 
     static TransformMatrix Identity() {
@@ -35,6 +48,10 @@ public:
         return mat;
     }
 
+    static TransformMatrix CreateTranslation(double tx, double ty) {
+        return Translate(tx, ty);
+    }
+
     static TransformMatrix Rotate(double angleRadians) {
         TransformMatrix mat;
         double c = std::cos(angleRadians);
@@ -46,8 +63,23 @@ public:
         return mat;
     }
 
+    static TransformMatrix Rotate(double angleRadians, double cx, double cy) {
+        double c = std::cos(angleRadians);
+        double s = std::sin(angleRadians);
+        return TransformMatrix(c, -s, cx - c * cx + s * cy,
+                               s, c, cy - s * cx - c * cy);
+    }
+
     static TransformMatrix RotateDegrees(double angleDegrees) {
         return Rotate(angleDegrees * 3.14159265358979323846 / 180.0);
+    }
+
+    static TransformMatrix CreateRotation(double angle) {
+        return Rotate(angle);
+    }
+
+    static TransformMatrix CreateRotation(double angle, double cx, double cy) {
+        return Rotate(angle, cx, cy);
     }
 
     static TransformMatrix Scale(double sx, double sy) {
@@ -61,12 +93,47 @@ public:
         return Scale(s, s);
     }
 
+    static TransformMatrix CreateScale(double sx, double sy) {
+        return Scale(sx, sy);
+    }
+
     static TransformMatrix Shear(double shx, double shy) {
         TransformMatrix mat;
         mat.m[0][1] = shx;
         mat.m[1][0] = shy;
         return mat;
     }
+
+    static TransformMatrix CreateShear(double shx, double shy) {
+        return Shear(shx, shy);
+    }
+
+    double Get(int row, int col) const {
+        if (row < 0 || row > 2 || col < 0 || col > 2) {
+            return 0.0;
+        }
+        return m[row][col];
+    }
+
+    void Set(int row, int col, double value) {
+        if (row >= 0 && row <= 2 && col >= 0 && col <= 2) {
+            m[row][col] = value;
+        }
+    }
+
+    double GetM00() const { return m[0][0]; }
+    double GetM01() const { return m[0][1]; }
+    double GetM02() const { return m[0][2]; }
+    double GetM10() const { return m[1][0]; }
+    double GetM11() const { return m[1][1]; }
+    double GetM12() const { return m[1][2]; }
+
+    void SetM00(double v) { m[0][0] = v; }
+    void SetM01(double v) { m[0][1] = v; }
+    void SetM02(double v) { m[0][2] = v; }
+    void SetM10(double v) { m[1][0] = v; }
+    void SetM11(double v) { m[1][1] = v; }
+    void SetM12(double v) { m[1][2] = v; }
 
     TransformMatrix operator*(const TransformMatrix& other) const {
         TransformMatrix result;
@@ -79,6 +146,10 @@ public:
             }
         }
         return result;
+    }
+
+    TransformMatrix Multiply(const TransformMatrix& other) const {
+        return *this * other;
     }
 
     TransformMatrix& operator*=(const TransformMatrix& other) {
@@ -126,6 +197,10 @@ public:
         outY = (m[1][0] * x + m[1][1] * y + m[1][2]) / w;
     }
 
+    void Transform(double x, double y, double& outX, double& outY) const {
+        TransformPoint(x, y, outX, outY);
+    }
+
     Point TransformPoint(const Point& pt) const {
         double x, y;
         TransformPoint(pt.x, pt.y, x, y);
@@ -154,6 +229,50 @@ public:
         return Rect(minX, minY, maxX - minX, maxY - minY);
     }
 
+    void ApplyTranslate(double tx, double ty) {
+        m[0][2] += (m[0][0] * tx + m[0][1] * ty);
+        m[1][2] += (m[1][0] * tx + m[1][1] * ty);
+    }
+
+    void ApplyScale(double sx, double sy) {
+        m[0][0] *= sx;
+        m[0][1] *= sx;
+        m[0][2] *= sx;
+        m[1][0] *= sy;
+        m[1][1] *= sy;
+        m[1][2] *= sy;
+    }
+
+    void ApplyRotate(double angle) {
+        double c = std::cos(angle);
+        double s = std::sin(angle);
+        double m00 = m[0][0], m01 = m[0][1];
+        double m10 = m[1][0], m11 = m[1][1];
+        
+        m[0][0] = m00 * c + m10 * s;
+        m[0][1] = m01 * c + m11 * s;
+        m[1][0] = m10 * c - m00 * s;
+        m[1][1] = m11 * c - m01 * s;
+    }
+
+    void ApplyRotate(double angle, double cx, double cy) {
+        ApplyTranslate(cx, cy);
+        ApplyRotate(angle);
+        ApplyTranslate(-cx, -cy);
+    }
+
+    void ApplyShear(double shx, double shy) {
+        double m00 = m[0][0], m01 = m[0][1], m02 = m[0][2];
+        double m10 = m[1][0], m11 = m[1][1], m12 = m[1][2];
+        
+        m[0][0] = m00 + m10 * shx;
+        m[0][1] = m01 + m11 * shx;
+        m[0][2] = m02 + m12 * shx;
+        m[1][0] = m10 + m00 * shy;
+        m[1][1] = m11 + m01 * shy;
+        m[1][2] = m12 + m02 * shy;
+    }
+
     bool IsIdentity() const {
         return std::abs(m[0][0] - 1.0) < 1e-10 &&
                std::abs(m[0][1]) < 1e-10 &&
@@ -178,6 +297,10 @@ public:
                std::abs(m[2][0]) < 1e-10 &&
                std::abs(m[2][1]) < 1e-10 &&
                std::abs(m[2][2] - 1.0) < 1e-10;
+    }
+
+    bool IsTranslation() const {
+        return IsTranslationOnly();
     }
 
     bool IsUniformScale() const {
@@ -233,10 +356,10 @@ public:
         *this = (*this) * Scale(sx, sy);
     }
 
-    bool operator==(const TransformMatrix& other) const {
+    bool Equals(const TransformMatrix& other, double epsilon = 1e-10) const {
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
-                if (std::abs(m[i][j] - other.m[i][j]) >= 1e-10) {
+                if (std::abs(m[i][j] - other.m[i][j]) > epsilon) {
                     return false;
                 }
             }
@@ -244,8 +367,12 @@ public:
         return true;
     }
 
+    bool operator==(const TransformMatrix& other) const {
+        return Equals(other);
+    }
+
     bool operator!=(const TransformMatrix& other) const {
-        return !(*this == other);
+        return !Equals(other);
     }
 };
 

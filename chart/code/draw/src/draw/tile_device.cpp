@@ -226,7 +226,7 @@ void TileDevice::ClearTile(int indexX, int indexY, const Color& color) {
 }
 
 bool TileDevice::SaveAllTiles(const std::string& directory, const std::string& prefix,
-                               ImageFormat format) {
+                               OutputFormat format) {
     bool allSuccess = true;
 
     for (int ty = 0; ty < m_tileCountY; ++ty) {
@@ -243,13 +243,13 @@ bool TileDevice::SaveAllTiles(const std::string& directory, const std::string& p
                 << std::setfill('0') << std::setw(4) << ty;
 
             switch (format) {
-                case ImageFormat::kPNG:
+                case OutputFormat::kPNG:
                     oss << ".png";
                     break;
-                case ImageFormat::kJPEG:
+                case OutputFormat::kJPEG:
                     oss << ".jpg";
                     break;
-                case ImageFormat::kBMP:
+                case OutputFormat::kBMP:
                     oss << ".bmp";
                     break;
                 default:

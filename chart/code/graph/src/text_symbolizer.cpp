@@ -54,14 +54,14 @@ DrawResult TextSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
 
 DrawResult TextSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }
@@ -107,7 +107,7 @@ DrawResult TextSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
             break;
     }
     
-    return DrawResult::kInvalidParams;
+    return DrawResult::kInvalidParameter;
 }
 
 bool TextSymbolizer::CanSymbolize(GeomType geomType) const {
@@ -305,7 +305,7 @@ DrawResult TextSymbolizer::DrawTextAtPoint(DrawContextPtr context, double x, dou
     double drawY = y + m_offsetY;
     
     if (m_rotation != 0.0) {
-        context->PushTransform();
+        context->Save();
         context->Translate(drawX, drawY);
         context->Rotate(m_rotation);
         context->Translate(-drawX, -drawY);
@@ -315,7 +315,7 @@ DrawResult TextSymbolizer::DrawTextAtPoint(DrawContextPtr context, double x, dou
     DrawResult result = context->DrawText(drawX, drawY, text, m_font, textColor);
     
     if (m_rotation != 0.0) {
-        context->PopTransform();
+        context->Restore();
     }
     
     return result;
@@ -323,7 +323,7 @@ DrawResult TextSymbolizer::DrawTextAtPoint(DrawContextPtr context, double x, dou
 
 DrawResult TextSymbolizer::DrawTextAlongLine(DrawContextPtr context, const ogc::LineString* lineString, const std::string& text) {
     if (!lineString || lineString->GetNumPoints() < 2) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     size_t numPoints = lineString->GetNumPoints();
@@ -340,7 +340,7 @@ DrawResult TextSymbolizer::DrawTextAlongLine(DrawContextPtr context, const ogc::
 
 DrawResult TextSymbolizer::DrawTextInPolygon(DrawContextPtr context, const ogc::Polygon* polygon, const std::string& text) {
     if (!polygon) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     ogc::Envelope env = polygon->GetEnvelope();

@@ -1,7 +1,8 @@
 #ifndef OGC_DRAW_STYLE_H
 #define OGC_DRAW_STYLE_H
 
-#include "ogc/draw/draw_types.h"
+#include "ogc/draw/font.h"
+#include "ogc/draw/color.h"
 #include <string>
 #include <vector>
 
@@ -39,24 +40,6 @@ enum class BrushStyle {
     kFDiagonal = 6,
     kDiagonalCross = 7,
     kTexture = 8
-};
-
-enum class FontWeight {
-    kThin = 100,
-    kExtraLight = 200,
-    kLight = 300,
-    kNormal = 400,
-    kMedium = 500,
-    kSemiBold = 600,
-    kBold = 700,
-    kExtraBold = 800,
-    kBlack = 900
-};
-
-enum class FontStyle {
-    kNormal = 0,
-    kItalic = 1,
-    kOblique = 2
 };
 
 enum class FillRule {
@@ -159,7 +142,7 @@ struct Pen {
     }
 
     bool IsVisible() const {
-        return style != PenStyle::kNone && color.a > 0 && width > 0;
+        return style != PenStyle::kNone && color.GetAlpha() > 0 && width > 0;
     }
 };
 
@@ -230,80 +213,7 @@ struct Brush {
 
     bool IsVisible() const {
         return style != BrushStyle::kNone && 
-               (style == BrushStyle::kTexture || color.a > 0);
-    }
-};
-
-struct Font {
-    std::string family;
-    double size;
-    FontWeight weight;
-    FontStyle style;
-    bool underline;
-    bool strikethrough;
-
-    Font()
-        : family("Arial")
-        , size(12.0)
-        , weight(FontWeight::kNormal)
-        , style(FontStyle::kNormal)
-        , underline(false)
-        , strikethrough(false) {}
-
-    Font(const std::string& family_, double size_)
-        : family(family_)
-        , size(size_)
-        , weight(FontWeight::kNormal)
-        , style(FontStyle::kNormal)
-        , underline(false)
-        , strikethrough(false) {}
-
-    static Font Default() {
-        return Font("Arial", 12.0);
-    }
-
-    Font WithFamily(const std::string& f) const {
-        Font ft = *this;
-        ft.family = f;
-        return ft;
-    }
-
-    Font WithSize(double s) const {
-        Font ft = *this;
-        ft.size = s;
-        return ft;
-    }
-
-    Font WithWeight(FontWeight w) const {
-        Font ft = *this;
-        ft.weight = w;
-        return ft;
-    }
-
-    Font WithStyle(FontStyle s) const {
-        Font ft = *this;
-        ft.style = s;
-        return ft;
-    }
-
-    Font Bold() const {
-        Font ft = *this;
-        ft.weight = FontWeight::kBold;
-        return ft;
-    }
-
-    Font Italic() const {
-        Font ft = *this;
-        ft.style = FontStyle::kItalic;
-        return ft;
-    }
-
-    bool IsBold() const {
-        return weight >= FontWeight::kBold;
-    }
-
-    bool IsItalic() const {
-        return style == FontStyle::kItalic || style == FontStyle::kOblique;
+               (style == BrushStyle::kTexture || color.GetAlpha() > 0);
     }
 };
 

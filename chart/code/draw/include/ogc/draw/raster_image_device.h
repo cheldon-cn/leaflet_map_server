@@ -19,7 +19,7 @@ enum class PixelFormat {
     kBGRA8888 = 5
 };
 
-enum class ImageFormat {
+enum class OutputFormat {
     kPNG,
     kJPEG,
     kBMP,
@@ -61,7 +61,7 @@ public:
     PixelFormat GetPixelFormat() const { return m_format; }
     int GetBytesPerPixel() const { return m_bytesPerPixel; }
 
-    bool SaveToFile(const std::string& path, ImageFormat format = ImageFormat::kAuto);
+    bool SaveToFile(const std::string& path, OutputFormat format = OutputFormat::kAuto);
     Color GetPixel(int x, int y) const;
     void SetPixel(int x, int y, const Color& color);
 

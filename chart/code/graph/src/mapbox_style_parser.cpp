@@ -670,11 +670,11 @@ LineSymbolizerPtr MapboxStyleParser::CreateLineSymbolizer(const MapboxLayer& lay
     if (it != layer.layout.end()) {
         std::string cap = ToLower(it->second);
         if (cap.find("butt") != std::string::npos) {
-            symbolizer->SetCapStyle(LineCapStyle::kButt);
+            symbolizer->SetCapStyle(LineCap::kFlat);
         } else if (cap.find("round") != std::string::npos) {
-            symbolizer->SetCapStyle(LineCapStyle::kRound);
+            symbolizer->SetCapStyle(LineCap::kRound);
         } else if (cap.find("square") != std::string::npos) {
-            symbolizer->SetCapStyle(LineCapStyle::kSquare);
+            symbolizer->SetCapStyle(LineCap::kSquare);
         }
     }
     
@@ -682,11 +682,11 @@ LineSymbolizerPtr MapboxStyleParser::CreateLineSymbolizer(const MapboxLayer& lay
     if (it != layer.layout.end()) {
         std::string join = ToLower(it->second);
         if (join.find("miter") != std::string::npos) {
-            symbolizer->SetJoinStyle(LineJoinStyle::kMiter);
+            symbolizer->SetJoinStyle(LineJoin::kMiter);
         } else if (join.find("round") != std::string::npos) {
-            symbolizer->SetJoinStyle(LineJoinStyle::kRound);
+            symbolizer->SetJoinStyle(LineJoin::kRound);
         } else if (join.find("bevel") != std::string::npos) {
-            symbolizer->SetJoinStyle(LineJoinStyle::kBevel);
+            symbolizer->SetJoinStyle(LineJoin::kBevel);
         }
     }
     

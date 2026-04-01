@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/basic_render_task.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -14,13 +14,12 @@ protected:
         m_task = BasicRenderTask::Create();
         ASSERT_NE(m_task, nullptr);
         
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_unique<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
     }
     
     void TearDown() override {
@@ -30,7 +29,7 @@ protected:
     }
     
     BasicRenderTaskPtr m_task;
-    DrawDevicePtr m_device;
+    std::unique_ptr<RasterImageDevice> m_device;
     DrawContextPtr m_context;
 };
 

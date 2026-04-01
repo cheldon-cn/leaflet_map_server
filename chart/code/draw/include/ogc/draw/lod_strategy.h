@@ -2,6 +2,7 @@
 #define OGC_DRAW_LOD_STRATEGY_H
 
 #include "ogc/draw/export.h"
+#include <string>
 #include <vector>
 #include <functional>
 

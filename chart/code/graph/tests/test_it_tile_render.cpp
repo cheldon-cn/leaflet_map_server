@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/tile_device.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/tile_device.h>
 #include "ogc/draw/tile_key.h"
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -58,8 +58,8 @@ TEST_F(IntegrationTileRenderTest, RenderSingleTile) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 2.0;
     
     result = tileDevice->DrawRect(10, 10, 236, 236, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -79,8 +79,8 @@ TEST_F(IntegrationTileRenderTest, RenderMultipleTiles) {
                 tileDevice->Clear(Color::White());
                 
                 DrawStyle style;
-                style.stroke.color = Color::Blue().GetRGBA();
-                style.stroke.width = 1.0;
+                style.pen.color = Color::Blue().GetRGBA();
+                style.pen.width = 1.0;
                 
                 tileDevice->DrawRect(0, 0, 256, 256, style);
                 
@@ -98,8 +98,8 @@ TEST_F(IntegrationTileRenderTest, DrawPrimitives) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
     
     result = tileDevice->DrawPoint(128, 128, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -124,8 +124,8 @@ TEST_F(IntegrationTileRenderTest, DrawPolyline) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 2.0;
     
     double x[] = {10, 50, 100, 200, 246};
     double y[] = {128, 50, 200, 50, 128};
@@ -144,10 +144,10 @@ TEST_F(IntegrationTileRenderTest, DrawPolygon) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 1.0;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 1.0;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
     
     double x[] = {128, 200, 200, 128, 56, 56};
     double y[] = {50, 100, 200, 250, 200, 100};
@@ -169,8 +169,8 @@ TEST_F(IntegrationTileRenderTest, TransformOperations) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Magenta().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Magenta().GetRGBA();
+    style.pen.width = 2.0;
     
     result = tileDevice->DrawRect(0, 0, 100, 100, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -191,8 +191,8 @@ TEST_F(IntegrationTileRenderTest, ClipRect) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 2.0;
     
     result = tileDevice->DrawRect(0, 0, 256, 256, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -214,8 +214,8 @@ TEST_F(IntegrationTileRenderTest, Opacity) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 5.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 5.0;
     
     result = tileDevice->DrawLine(0, 0, 256, 256, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -280,8 +280,8 @@ TEST_F(IntegrationTileRenderTest, MultipleZoomLevels) {
                 tileDevice->Clear(fillColor);
                 
                 DrawStyle style;
-                style.stroke.color = Color::White().GetRGBA();
-                style.stroke.width = 1.0;
+                style.pen.color = Color::White().GetRGBA();
+                style.pen.width = 1.0;
                 
                 tileDevice->DrawRect(10, 10, 236, 236, style);
                 
@@ -291,3 +291,4 @@ TEST_F(IntegrationTileRenderTest, MultipleZoomLevels) {
         }
     }
 }
+

@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/polygon_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include "ogc/common.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -157,11 +157,11 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderWithContext) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.fill.color = Color::Blue().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 2.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Blue().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 2.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -183,11 +183,11 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderMultiplePolygons) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Green().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Green().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double x1[] = {10, 100, 100, 10};
@@ -213,11 +213,11 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderTriangle) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Red().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 2.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Red().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 2.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double x[] = {128, 50, 206};
@@ -243,8 +243,8 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderWithDifferentFillPatterns) {
     symbolizer->SetFillColor(Color::Yellow().GetRGBA());
     
     DrawStyle style;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
     context->SetStyle(style);
     
     double x[] = {20, 230, 230, 20};
@@ -272,11 +272,11 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderSeaArea) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.fill.color = Color::Cyan().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 1.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Cyan().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 1.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double x[] = {50, 450, 450, 300, 200, 50};
@@ -303,11 +303,11 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderLandArea) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.fill.color = Color::LightGray().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 2.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::LightGray().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 2.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double x[] = {100, 400, 400, 100};
@@ -328,3 +328,4 @@ TEST_F(IntegrationPolygonSymbolizerTest, GetType) {
     auto symbolizer = PolygonSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kPolygon);
 }
+

@@ -2,7 +2,8 @@
 #define OGC_DRAW_RASTER_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,9 @@ struct ColorMapEntry {
         , opacity(o)
         , label(l) {}
 };
+
+class RasterSymbolizer;
+using RasterSymbolizerPtr = std::shared_ptr<RasterSymbolizer>;
 
 class OGC_GRAPH_API RasterSymbolizer : public Symbolizer {
 public:

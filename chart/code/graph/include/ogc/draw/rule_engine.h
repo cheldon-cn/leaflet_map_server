@@ -3,7 +3,7 @@
 
 #include "ogc/draw/export.h"
 #include "ogc/draw/symbolizer_rule.h"
-#include "ogc/draw/draw_context.h"
+#include <ogc/draw/draw_context.h>
 #include "ogc/feature/feature.h"
 #include "ogc/envelope.h"
 #include <memory>

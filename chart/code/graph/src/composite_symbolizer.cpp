@@ -14,14 +14,14 @@ DrawResult CompositeSymbolizer::Symbolize(DrawContextPtr context, const Geometry
 
 DrawResult CompositeSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }

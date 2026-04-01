@@ -479,21 +479,21 @@ bool SldParser::ParseLineSymbolizer(LineSymbolizerPtr& symbolizer)
             if (params.find("stroke-linecap") != params.end()) {
                 std::string cap = ToLower(params["stroke-linecap"]);
                 if (cap == "butt") {
-                    symbolizer->SetCapStyle(LineCapStyle::kButt);
+                    symbolizer->SetCapStyle(LineCap::kFlat);
                 } else if (cap == "round") {
-                    symbolizer->SetCapStyle(LineCapStyle::kRound);
+                    symbolizer->SetCapStyle(LineCap::kRound);
                 } else if (cap == "square") {
-                    symbolizer->SetCapStyle(LineCapStyle::kSquare);
+                    symbolizer->SetCapStyle(LineCap::kSquare);
                 }
             }
             if (params.find("stroke-linejoin") != params.end()) {
                 std::string join = ToLower(params["stroke-linejoin"]);
                 if (join == "miter") {
-                    symbolizer->SetJoinStyle(LineJoinStyle::kMiter);
+                    symbolizer->SetJoinStyle(LineJoin::kMiter);
                 } else if (join == "round") {
-                    symbolizer->SetJoinStyle(LineJoinStyle::kRound);
+                    symbolizer->SetJoinStyle(LineJoin::kRound);
                 } else if (join == "bevel") {
-                    symbolizer->SetJoinStyle(LineJoinStyle::kBevel);
+                    symbolizer->SetJoinStyle(LineJoin::kBevel);
                 }
             }
             if (params.find("stroke-dasharray") != params.end()) {

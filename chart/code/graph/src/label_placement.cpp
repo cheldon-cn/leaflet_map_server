@@ -5,6 +5,12 @@
 #include <cmath>
 #include <algorithm>
 
+using ogc::Point;
+using ogc::LineString;
+using ogc::Polygon;
+using ogc::Coordinate;
+using ogc::Geometry;
+
 namespace ogc {
 namespace draw {
 
@@ -178,12 +184,12 @@ PlacementCandidate LabelPlacement::GetBestCandidate(const Geometry* geometry, co
 std::vector<PlacementCandidate> LabelPlacement::GeneratePointCandidates(const Geometry* geometry, double textWidth, double textHeight) {
     std::vector<PlacementCandidate> candidates;
     
-    const Point* point = dynamic_cast<const Point*>(geometry);
+    const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
     if (!point) {
         return candidates;
     }
     
-    Coordinate coord = point->GetCoordinate();
+    ogc::Coordinate coord = point->GetCoordinate();
     double x = coord.x;
     double y = coord.y;
     
@@ -205,7 +211,7 @@ std::vector<PlacementCandidate> LabelPlacement::GeneratePointCandidates(const Ge
 std::vector<PlacementCandidate> LabelPlacement::GenerateLineCandidates(const Geometry* geometry, const std::string& text, double textWidth, double textHeight) {
     std::vector<PlacementCandidate> candidates;
     
-    const LineString* line = dynamic_cast<const LineString*>(geometry);
+    const ogc::LineString* line = dynamic_cast<const ogc::LineString*>(geometry);
     if (!line) {
         return candidates;
     }
@@ -217,8 +223,8 @@ std::vector<PlacementCandidate> LabelPlacement::GenerateLineCandidates(const Geo
     
     double totalLength = 0.0;
     for (size_t i = 1; i < numPoints; ++i) {
-        Coordinate c1 = line->GetPointN(i - 1);
-        Coordinate c2 = line->GetPointN(i);
+        ogc::Coordinate c1 = line->GetPointN(i - 1);
+        ogc::Coordinate c2 = line->GetPointN(i);
         double dx = c2.x - c1.x;
         double dy = c2.y - c1.y;
         totalLength += std::sqrt(dx * dx + dy * dy);
@@ -230,12 +236,12 @@ std::vector<PlacementCandidate> LabelPlacement::GenerateLineCandidates(const Geo
     
     double halfLength = totalLength / 2.0;
     double currentLength = 0.0;
-    Coordinate labelCoord = line->GetPointN(0);
+    ogc::Coordinate labelCoord = line->GetPointN(0);
     double labelRotation = 0.0;
     
     for (size_t i = 1; i < numPoints; ++i) {
-        Coordinate c1 = line->GetPointN(i - 1);
-        Coordinate c2 = line->GetPointN(i);
+        ogc::Coordinate c1 = line->GetPointN(i - 1);
+        ogc::Coordinate c2 = line->GetPointN(i);
         double dx = c2.x - c1.x;
         double dy = c2.y - c1.y;
         double segmentLength = std::sqrt(dx * dx + dy * dy);
@@ -259,8 +265,8 @@ std::vector<PlacementCandidate> LabelPlacement::GenerateLineCandidates(const Geo
         for (double pos : positions) {
             currentLength = 0.0;
             for (size_t i = 1; i < numPoints; ++i) {
-                Coordinate c1 = line->GetPointN(i - 1);
-                Coordinate c2 = line->GetPointN(i);
+                ogc::Coordinate c1 = line->GetPointN(i - 1);
+                ogc::Coordinate c2 = line->GetPointN(i);
                 double dx = c2.x - c1.x;
                 double dy = c2.y - c1.y;
                 double segmentLength = std::sqrt(dx * dx + dy * dy);
@@ -287,13 +293,13 @@ std::vector<PlacementCandidate> LabelPlacement::GenerateLineCandidates(const Geo
 std::vector<PlacementCandidate> LabelPlacement::GeneratePolygonCandidates(const Geometry* geometry, double textWidth, double textHeight) {
     std::vector<PlacementCandidate> candidates;
     
-    const Polygon* polygon = dynamic_cast<const Polygon*>(geometry);
+    const ogc::Polygon* polygon = dynamic_cast<const ogc::Polygon*>(geometry);
     if (!polygon) {
         return candidates;
     }
     
-    Envelope env = polygon->GetEnvelope();
-    Coordinate centre = env.GetCentre();
+    ogc::Envelope env = polygon->GetEnvelope();
+    ogc::Coordinate centre = env.GetCentre();
     
     candidates.push_back(CreateCandidate(centre.x, centre.y, m_rotation, LabelPosition::kCenter, 1.0));
     

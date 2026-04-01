@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/raster_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include "ogc/common.h"
 #include <memory>
@@ -229,8 +229,8 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithGrayscale) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Gray().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Gray().GetRGBA();
+    style.brush.visible = true;
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -261,8 +261,8 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithColorMap) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -289,8 +289,8 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithContrastEnhancement) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Gray().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Gray().GetRGBA();
+    style.brush.visible = true;
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -314,8 +314,8 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithOpacity) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Blue().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Blue().GetRGBA();
+    style.brush.visible = true;
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -337,7 +337,7 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderMultiplePolygons) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.visible = true;
+    style.brush.visible = true;
     m_context->SetStyle(style);
     
     for (int i = 0; i < 3; ++i) {
@@ -345,7 +345,7 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderMultiplePolygons) {
         double x[] = {offset + 10, offset + 60, offset + 60, offset + 10};
         double y[] = {10, 10, 60, 60};
         
-        style.fill.color = Color::Red().GetRGBA();
+        style.brush.color = Color::Red().GetRGBA();
         m_context->SetStyle(style);
         DrawResult result = m_context->DrawPolygon(x, y, 4);
         EXPECT_EQ(result, DrawResult::kSuccess);
@@ -373,3 +373,4 @@ TEST_F(IntegrationRasterSymbolizerTest, ValueRange) {
     EXPECT_DOUBLE_EQ(m_symbolizer->GetMinValue(), 10.0);
     EXPECT_DOUBLE_EQ(m_symbolizer->GetMaxValue(), 200.0);
 }
+

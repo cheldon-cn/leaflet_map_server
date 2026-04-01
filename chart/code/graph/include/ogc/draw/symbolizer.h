@@ -2,10 +2,10 @@
 #define OGC_DRAW_SYMBOLIZER_H
 
 #include "ogc/draw/export.h"
-#include "ogc/draw/draw_result.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/types.h"
+#include <ogc/draw/draw_result.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/draw_types.h>
 #include "ogc/geometry.h"
 #include "ogc/common.h"
 #include <memory>
@@ -23,6 +23,9 @@ enum class SymbolizerType {
     kComposite,
     kIcon
 };
+
+class Symbolizer;
+using SymbolizerPtr = std::shared_ptr<Symbolizer>;
 
 class OGC_GRAPH_API Symbolizer {
 public:

@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include <memory>
 
 using namespace ogc::draw;
@@ -209,8 +209,8 @@ TEST_F(IntegrationDrawContextTest, DrawPrimitives) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
     
     context->SetStyle(style);
     
@@ -240,10 +240,10 @@ TEST_F(IntegrationDrawContextTest, DrawPolygon) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
-    style.fill.color = Color::Red().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
+    style.brush.color = Color::Red().GetRGBA();
+    style.brush.visible = true;
     
     context->SetStyle(style);
     
@@ -290,13 +290,13 @@ TEST_F(IntegrationDrawContextTest, PushPopStyle) {
     context->BeginDraw(params);
     
     DrawStyle style1;
-    style1.stroke.color = Color::Red().GetRGBA();
+    style1.pen.color = Color::Red().GetRGBA();
     context->SetStyle(style1);
     
     context->PushStyle(style1);
     
     DrawStyle style2;
-    style2.stroke.color = Color::Blue().GetRGBA();
+    style2.pen.color = Color::Blue().GetRGBA();
     context->SetStyle(style2);
     
     context->PopStyle();
@@ -322,3 +322,4 @@ TEST_F(IntegrationDrawContextTest, PushPopOpacity) {
     
     context->EndDraw();
 }
+

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/draw_facade.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_engine.h"
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_engine.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -56,7 +56,7 @@ TEST_F(DrawFacadeTest, CreateContextWithDevice) {
     auto& facade = DrawFacade::Instance();
     facade.Initialize();
     
-    auto device = RasterImageDevice::Create(256, 256, 4);
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
     auto context = facade.CreateContext(device);
     EXPECT_NE(context, nullptr);
 }
@@ -74,11 +74,11 @@ TEST_F(DrawFacadeTest, SetDefaultDrawStyle) {
     facade.Initialize();
     
     DrawStyle style;
-    style.stroke.color = 0xFF0000;
+    style.pen.color = Color(0xFF, 0, 0);
     facade.SetDefaultDrawStyle(style);
     
     auto retrieved = facade.GetDefaultDrawStyle();
-    EXPECT_EQ(retrieved.stroke.color, 0xFF0000);
+    EXPECT_EQ(retrieved.pen.color.GetRed(), 0xFF);
 }
 
 TEST_F(DrawFacadeTest, SetDefaultFont) {
@@ -127,8 +127,8 @@ TEST_F(DrawFacadeTest, CreateStrokeStyle) {
     facade.Initialize();
     
     auto style = facade.CreateStrokeStyle(0xFF0000, 2.0);
-    EXPECT_EQ(style.stroke.color, 0xFF0000);
-    EXPECT_DOUBLE_EQ(style.stroke.width, 2.0);
+    EXPECT_EQ(style.pen.color, 0xFF0000);
+    EXPECT_DOUBLE_EQ(style.pen.width, 2.0);
 }
 
 TEST_F(DrawFacadeTest, CreateFillStyle) {
@@ -136,7 +136,7 @@ TEST_F(DrawFacadeTest, CreateFillStyle) {
     facade.Initialize();
     
     auto style = facade.CreateFillStyle(0x00FF00);
-    EXPECT_EQ(style.fill.color, 0x00FF00);
+    EXPECT_EQ(style.brush.color, 0x00FF00);
 }
 
 TEST_F(DrawFacadeTest, CreateStrokeFillStyle) {
@@ -144,8 +144,8 @@ TEST_F(DrawFacadeTest, CreateStrokeFillStyle) {
     facade.Initialize();
     
     auto style = facade.CreateStrokeFillStyle(0xFF0000, 2.0, 0x00FF00);
-    EXPECT_EQ(style.stroke.color, 0xFF0000);
-    EXPECT_EQ(style.fill.color, 0x00FF00);
+    EXPECT_EQ(style.pen.color, 0xFF0000);
+    EXPECT_EQ(style.brush.color, 0x00FF00);
 }
 
 TEST_F(DrawFacadeTest, CreateFont) {
@@ -203,7 +203,7 @@ TEST_F(DrawFacadeTest, RegisterDevice) {
     auto& facade = DrawFacade::Instance();
     facade.Initialize();
     
-    auto device = RasterImageDevice::Create(256, 256, 4);
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
     auto result = facade.RegisterDevice("test_device", device);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
@@ -226,3 +226,4 @@ TEST_F(DrawFacadeTest, RegisterEngine) {
         EXPECT_EQ(engine, nullptr);
     }
 }
+

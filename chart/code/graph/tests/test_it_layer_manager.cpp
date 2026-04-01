@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include "ogc/draw/layer_manager.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/draw/line_symbolizer.h"
 #include "ogc/draw/polygon_symbolizer.h"
 #include "ogc/layer/memory_layer.h"

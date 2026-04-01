@@ -2,7 +2,7 @@
 #define OGC_DRAW_LAYER_MANAGER_H
 
 #include "ogc/draw/export.h"
-#include "ogc/draw/draw_result.h"
+#include <ogc/draw/draw_result.h>
 #include "ogc/envelope.h"
 #include <string>
 #include <vector>

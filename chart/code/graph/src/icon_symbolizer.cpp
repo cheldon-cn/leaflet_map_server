@@ -47,14 +47,14 @@ DrawResult IconSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
 
 DrawResult IconSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }
@@ -89,7 +89,7 @@ DrawResult IconSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
         }
     }
     
-    return DrawResult::kInvalidParams;
+    return DrawResult::kInvalidParameter;
 }
 
 bool IconSymbolizer::CanSymbolize(GeomType geomType) const {
@@ -244,7 +244,7 @@ DrawResult IconSymbolizer::DrawIcon(DrawContextPtr context, double x, double y) 
     double drawY = y - m_height * m_anchorY;
     
     if (m_rotation != 0.0) {
-        context->PushTransform();
+        context->Save();
         context->Translate(x, y);
         context->Rotate(m_rotation);
         context->Translate(-x, -y);
@@ -253,22 +253,18 @@ DrawResult IconSymbolizer::DrawIcon(DrawContextPtr context, double x, double y) 
     DrawResult result = DrawResult::kSuccess;
     
     if (!m_iconData.empty() && m_dataWidth > 0 && m_dataHeight > 0) {
-        result = context->DrawImage(drawX, drawY, m_width, m_height, 
-                                    m_iconData.data(), m_dataWidth, m_dataHeight, m_dataChannels);
+        Image image = Image::FromData(m_dataWidth, m_dataHeight, m_dataChannels, m_iconData.data());
+        result = context->DrawImage(drawX, drawY, image, m_width / m_dataWidth, m_height / m_dataHeight);
     } else {
-        DrawStyle placeholderStyle;
-        placeholderStyle.fill.color = 0xFF808080;
-        placeholderStyle.fill.visible = true;
-        placeholderStyle.stroke.color = 0xFF000000;
-        placeholderStyle.stroke.width = 1.0;
-        placeholderStyle.stroke.visible = true;
-        context->PushStyle(placeholderStyle);
+        DrawStyle placeholderStyle = DrawStyle::StrokeAndFill(Color(0xFF000000), 1.0, Color(0xFF808080));
+        context->Save();
+        context->SetStyle(placeholderStyle);
         result = context->DrawRect(drawX, drawY, m_width, m_height);
-        context->PopStyle();
+        context->Restore();
     }
     
     if (m_rotation != 0.0) {
-        context->PopTransform();
+        context->Restore();
     }
     
     return result;

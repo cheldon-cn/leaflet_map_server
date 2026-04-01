@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/icon_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include "ogc/common.h"
 #include <memory>
@@ -201,7 +201,7 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeMultiplePoints) {
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
+    style.pen.color = Color::Blue().GetRGBA();
     m_context->SetStyle(style);
     
     double x[] = {50, 100, 150, 200};
@@ -294,3 +294,4 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithAnchorPoint) {
     
     m_context->EndDraw();
 }
+

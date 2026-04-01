@@ -132,53 +132,53 @@ TEST(BrushTest, IsVisible) {
 
 TEST(FontTest, DefaultConstructor) {
     Font font;
-    EXPECT_EQ(font.family, "Arial");
-    EXPECT_DOUBLE_EQ(font.size, 12.0);
-    EXPECT_EQ(font.weight, FontWeight::kNormal);
-    EXPECT_EQ(font.style, FontStyle::kNormal);
-    EXPECT_FALSE(font.underline);
-    EXPECT_FALSE(font.strikethrough);
+    EXPECT_EQ(font.GetFamily(), "Arial");
+    EXPECT_DOUBLE_EQ(font.GetSize(), 12.0);
+    EXPECT_EQ(font.GetWeight(), FontWeight::kNormal);
+    EXPECT_EQ(font.GetStyle(), FontStyle::kNormal);
+    EXPECT_FALSE(font.IsUnderline());
+    EXPECT_FALSE(font.IsStrikethrough());
 }
 
 TEST(FontTest, ParameterizedConstructor) {
     Font font("Times New Roman", 16.0);
-    EXPECT_EQ(font.family, "Times New Roman");
-    EXPECT_DOUBLE_EQ(font.size, 16.0);
+    EXPECT_EQ(font.GetFamily(), "Times New Roman");
+    EXPECT_DOUBLE_EQ(font.GetSize(), 16.0);
 }
 
 TEST(FontTest, DefaultFont) {
     Font font = Font::Default();
-    EXPECT_EQ(font.family, "Arial");
-    EXPECT_DOUBLE_EQ(font.size, 12.0);
+    EXPECT_EQ(font.GetFamily(), "Arial");
+    EXPECT_DOUBLE_EQ(font.GetSize(), 12.0);
 }
 
 TEST(FontTest, WithFamily) {
     Font font = Font::Default();
     Font font2 = font.WithFamily("Courier New");
-    EXPECT_EQ(font2.family, "Courier New");
+    EXPECT_EQ(font2.GetFamily(), "Courier New");
 }
 
 TEST(FontTest, WithSize) {
     Font font = Font::Default();
     Font font2 = font.WithSize(24.0);
-    EXPECT_DOUBLE_EQ(font2.size, 24.0);
+    EXPECT_DOUBLE_EQ(font2.GetSize(), 24.0);
 }
 
 TEST(FontTest, WithWeight) {
     Font font = Font::Default();
     Font font2 = font.WithWeight(FontWeight::kBold);
-    EXPECT_EQ(font2.weight, FontWeight::kBold);
+    EXPECT_EQ(font2.GetWeight(), FontWeight::kBold);
 }
 
 TEST(FontTest, Bold) {
     Font font = Font::Default();
-    Font font2 = font.Bold();
+    Font font2 = font.WithWeight(FontWeight::kBold);
     EXPECT_TRUE(font2.IsBold());
 }
 
 TEST(FontTest, Italic) {
     Font font = Font::Default();
-    Font font2 = font.Italic();
+    Font font2 = font.WithItalic(true);
     EXPECT_TRUE(font2.IsItalic());
 }
 

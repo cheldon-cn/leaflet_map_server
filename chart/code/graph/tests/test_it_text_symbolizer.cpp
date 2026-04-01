@@ -1,12 +1,12 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/text_symbolizer.h"
-#include "ogc/draw/font.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/font.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include "ogc/common.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -346,8 +346,8 @@ TEST_F(IntegrationTextSymbolizerTest, RenderChannelName) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 2.0;
     context->SetStyle(style);
     
     double x[] = {50, 200, 350, 480};
@@ -376,3 +376,4 @@ TEST_F(IntegrationTextSymbolizerTest, GetType) {
     auto symbolizer = TextSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kText);
 }
+

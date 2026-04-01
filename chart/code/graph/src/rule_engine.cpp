@@ -1,5 +1,5 @@
 #include "ogc/draw/rule_engine.h"
-#include "ogc/draw/draw_result.h"
+#include <ogc/draw/draw_result.h>
 #include <algorithm>
 
 namespace ogc {
@@ -143,12 +143,12 @@ std::vector<SymbolizerPtr> RuleEngine::GetSymbolizers(const Geometry* geometry, 
 
 DrawResult RuleEngine::Render(const CNFeature* feature, DrawContext& context, double scale) const {
     if (!feature) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     GeometryPtr geom = feature->GetGeometry();
     if (!geom) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     auto symbolizers = GetSymbolizers(feature, scale);
@@ -179,7 +179,7 @@ DrawResult RuleEngine::Render(const CNFeature* feature, DrawContext& context, do
 
 DrawResult RuleEngine::Render(const Geometry* geometry, DrawContext& context, double scale) const {
     if (!geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     auto symbolizers = GetSymbolizers(geometry, scale);

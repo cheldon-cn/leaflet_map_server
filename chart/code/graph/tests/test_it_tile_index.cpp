@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/tile_key.h"
-#include "ogc/draw/tile_device.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/tile_device.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -160,8 +160,8 @@ TEST_F(IntegrationTileIndexTest, TileDeviceRender) {
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 2.0;
     
     tileDevice->DrawLine(0, 0, 256, 256, style);
     
@@ -224,8 +224,8 @@ TEST_F(IntegrationTileIndexTest, RasterDeviceTileRender) {
     device->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawRect(10, 10, 236, 236, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -237,3 +237,4 @@ TEST_F(IntegrationTileIndexTest, RasterDeviceTileRender) {
     EXPECT_EQ(pixel.GetGreen(), 255);
     EXPECT_EQ(pixel.GetBlue(), 255);
 }
+

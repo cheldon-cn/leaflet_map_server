@@ -28,6 +28,7 @@
 | 状态 | 数量 | 说明 |
 |------|------|------|
 | ✅ 成功执行 | 5个测试程序 | 正常运行并生成XML结果 |
+| ❌ 执行失败 | 1个测试程序 | test_transform_matrix.exe 有1个失败用例 |
 | ⚠️ DLL依赖缺失 | 8个测试程序 | 缺少gtest.dll等动态库 |
 
 ---
@@ -393,8 +394,29 @@
 | GetTranslationX | ✅ 通过 | 0ms |
 | GetTranslationY | ✅ 通过 | 0ms |
 | PreTranslate | ✅ 通过 | 0ms |
-| PostTranslate | ✅ 通过 | 0ms |
+| **PostTranslate** | ❌ **失败** | 0ms |
 | Equality | ✅ 通过 | 0ms |
+
+**失败用例详情:**
+
+**TransformMatrixTest.PostTranslate**
+- 文件: `test_transform_matrix.cpp:233`
+- 错误信息:
+  ```
+  Expected equality of these values:
+    result.x
+      Which is: 20
+    10.0
+      Which is: 10
+  
+  Expected equality of these values:
+    result.y
+      Which is: 40
+    20.0
+      Which is: 20
+  ```
+- 原因分析: PostTranslate测试期望值与实际实现不一致。测试期望PostTranslate在缩放后添加平移(10, 20)，但实际结果是(20, 40)，说明PostTranslate的实现是先平移后缩放，而测试期望的是先缩放后平移。
+- 建议修复: 更新测试期望值以匹配正确的矩阵乘法顺序，或检查PostTranslate实现是否符合预期语义。
 
 **测试覆盖要点:**
 - 变换矩阵构造与基本操作
@@ -659,11 +681,11 @@
 
 ## 问题汇总
 
-### 已解决问题
+### 失败用例
 
-| # | 用例名称 | 文件 | 行号 | 问题描述 | 状态 |
-|---|----------|------|------|----------|------|
-| 1 | TransformMatrixTest.PostTranslate | test_transform_matrix.cpp | 233 | PostTranslate期望值与实际结果不一致 | ✅ 已修复 |
+| # | 用例名称 | 文件 | 行号 | 问题描述 |
+|---|----------|------|------|----------|
+| 1 | TransformMatrixTest.PostTranslate | test_transform_matrix.cpp | 233 | PostTranslate期望值与实际结果不一致 |
 
 ### DLL依赖问题
 
@@ -685,22 +707,24 @@
 | 指标 | 结果 |
 |------|------|
 | 执行测试数 | 149 |
-| 通过测试数 | 149 |
-| 失败测试数 | 0 |
-| 通过率 | 100% |
+| 通过测试数 | 148 |
+| 失败测试数 | 1 |
+| 通过率 | 99.3% |
 | 未执行测试文件 | 36 |
 
 ### 改进建议
 
-1. **解决DLL依赖**: 将gtest.dll等动态库复制到测试目录，或使用静态链接
-2. **编译更多测试**: 当前有大量测试文件未编译到测试程序中，建议完善CMakeLists.txt配置
-3. **平台特定测试**: 为WebGL、Metal、CoreGraphics、Cairo等平台特定引擎添加条件编译
+1. **修复失败测试**: TransformMatrixTest.PostTranslate 测试期望值需要更新以匹配正确的矩阵乘法顺序
+2. **解决DLL依赖**: 将gtest.dll等动态库复制到测试目录，或使用静态链接
+3. **编译更多测试**: 当前有大量测试文件未编译到测试程序中，建议完善CMakeLists.txt配置
+4. **平台特定测试**: 为WebGL、Metal、CoreGraphics、Cairo等平台特定引擎添加条件编译
 
 ### 下一步行动
 
-1. 解决DLL依赖问题，确保所有测试可执行
-2. 完善测试编译配置，增加测试覆盖率
-3. 添加集成测试和性能测试
+1. 修复 TransformMatrixTest.PostTranslate 测试用例
+2. 解决DLL依赖问题，确保所有测试可执行
+3. 完善测试编译配置，增加测试覆盖率
+4. 添加集成测试和性能测试
 
 ---
 
@@ -710,4 +734,4 @@
 
 | 问题 | 文件 | 状态 |
 |------|------|------|
-| TransformMatrixTest.PostTranslate期望值错误 | test_transform_matrix.cpp | ✅ 已修复 |
+| TransformMatrixTest.PostTranslate期望值错误 | test_transform_matrix.cpp | 待修复 |

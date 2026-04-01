@@ -1,6 +1,7 @@
+#include <gtest/gtest.h>
+
 #ifdef __APPLE__
 
-#include <gtest/gtest.h>
 #include "ogc/draw/coregraphics_engine.h"
 #include "ogc/draw/raster_image_device.h"
 #include <cmath>

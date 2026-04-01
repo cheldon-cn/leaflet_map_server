@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/draw_facade.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_engine.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/font.h"
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_engine.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/font.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -78,15 +78,15 @@ TEST_F(DrawFacadeITTest, CreateStyles) {
     auto& facade = DrawFacade::Instance();
     
     auto strokeStyle = facade.CreateStrokeStyle(0xFF0000, 2.0);
-    EXPECT_EQ(strokeStyle.stroke.color, 0xFF0000);
-    EXPECT_DOUBLE_EQ(strokeStyle.stroke.width, 2.0);
+    EXPECT_EQ(strokeStyle.pen.color, 0xFF0000);
+    EXPECT_DOUBLE_EQ(strokeStyle.pen.width, 2.0);
     
     auto fillStyle = facade.CreateFillStyle(0x00FF00);
-    EXPECT_EQ(fillStyle.fill.color, 0x00FF00);
+    EXPECT_EQ(fillStyle.brush.color, 0x00FF00);
     
     auto strokeFillStyle = facade.CreateStrokeFillStyle(0xFF0000, 2.0, 0x00FF00);
-    EXPECT_EQ(strokeFillStyle.stroke.color, 0xFF0000);
-    EXPECT_EQ(strokeFillStyle.fill.color, 0x00FF00);
+    EXPECT_EQ(strokeFillStyle.pen.color, 0xFF0000);
+    EXPECT_EQ(strokeFillStyle.brush.color, 0x00FF00);
 }
 
 TEST_F(DrawFacadeITTest, CreateColorAndFont) {
@@ -112,12 +112,12 @@ TEST_F(DrawFacadeITTest, SetDefaultStyles) {
     auto& facade = DrawFacade::Instance();
     
     DrawStyle style;
-    style.stroke.color = 0xFF0000;
-    style.stroke.width = 2.0;
+    style.pen.color = 0xFF0000;
+    style.pen.width = 2.0;
     facade.SetDefaultDrawStyle(style);
     
     auto retrievedStyle = facade.GetDefaultDrawStyle();
-    EXPECT_EQ(retrievedStyle.stroke.color, 0xFF0000);
+    EXPECT_EQ(retrievedStyle.pen.color, 0xFF0000);
     
     Font font("Arial", 12);
     facade.SetDefaultFont(font);
@@ -224,3 +224,4 @@ TEST_F(DrawFacadeITTest, CreateDriver) {
     auto driver = facade.CreateDriver("test_driver");
     EXPECT_TRUE(driver != nullptr || driver == nullptr);
 }
+

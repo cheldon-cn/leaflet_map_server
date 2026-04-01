@@ -84,7 +84,7 @@ public:
     void ClearTile(int indexX, int indexY, const Color& color);
 
     bool SaveAllTiles(const std::string& directory, const std::string& prefix = "tile_",
-                      ImageFormat format = ImageFormat::kPNG);
+                      OutputFormat format = OutputFormat::kPNG);
 
 private:
     int TileIndex(int indexX, int indexY) const;

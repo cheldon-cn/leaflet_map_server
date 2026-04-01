@@ -128,9 +128,9 @@ TEST_F(QtEngineTest, DrawText) {
     ASSERT_TRUE(engine.Begin());
     
     Font font;
-    font.family = "Arial";
-    font.size = 14;
-    font.bold = false;
+    font.SetFamily("Arial");
+    font.SetSize(14);
+    font.SetBold(false);
     
     Color color(0.0, 0.0, 0.0, 1.0);
     
@@ -147,9 +147,9 @@ TEST_F(QtEngineTest, DrawTextWithBold) {
     ASSERT_TRUE(engine.Begin());
     
     Font font;
-    font.family = "Arial";
-    font.size = 16;
-    font.bold = true;
+    font.SetFamily("Arial");
+    font.SetSize(16);
+    font.SetBold(true);
     
     Color color(1.0, 0.0, 0.0, 1.0);
     

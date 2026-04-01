@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/point_symbolizer.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/transform_matrix.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
 #include "ogc/common.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -165,8 +165,8 @@ TEST_F(IntegrationPointSymbolizerTest, RenderWithContext) {
     symbolizer->SetColor(Color::Red().GetRGBA());
     
     DrawStyle style;
-    style.fill.color = Color::Red().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Red().GetRGBA();
+    style.brush.visible = true;
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(128, 128, 10);
@@ -185,11 +185,11 @@ TEST_F(IntegrationPointSymbolizerTest, RenderMultiplePoints) {
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.fill.color = Color::Blue().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Blue().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double px[] = {50, 128, 200, 50, 200};
@@ -220,11 +220,11 @@ TEST_F(IntegrationPointSymbolizerTest, RenderLighthouse) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 2.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 2.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(256, 256, 20);
@@ -250,11 +250,11 @@ TEST_F(IntegrationPointSymbolizerTest, RenderBuoy) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.fill.color = Color::Red().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::White().GetRGBA();
-    style.stroke.width = 1.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Red().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::White().GetRGBA();
+    style.pen.width = 1.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     double px[] = {100, 200, 300, 400};
@@ -285,11 +285,11 @@ TEST_F(IntegrationPointSymbolizerTest, RenderBeacon) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.fill.color = Color::Green().GetRGBA();
-    style.fill.visible = true;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
-    style.stroke.visible = true;
+    style.brush.color = Color::Green().GetRGBA();
+    style.brush.visible = true;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
+    style.pen.visible = true;
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(256, 256, 18);
@@ -313,8 +313,8 @@ TEST_F(IntegrationPointSymbolizerTest, RenderWithRotation) {
     symbolizer->SetColor(Color::Magenta().GetRGBA());
     
     DrawStyle style;
-    style.fill.color = Color::Magenta().GetRGBA();
-    style.fill.visible = true;
+    style.brush.color = Color::Magenta().GetRGBA();
+    style.brush.visible = true;
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(128, 128, 15);
@@ -332,3 +332,4 @@ TEST_F(IntegrationPointSymbolizerTest, GetType) {
     auto symbolizer = PointSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kPoint);
 }
+

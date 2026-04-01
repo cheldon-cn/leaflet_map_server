@@ -1,6 +1,7 @@
+#include <gtest/gtest.h>
+
 #ifdef OGC_HAS_CAIRO
 
-#include <gtest/gtest.h>
 #include "ogc/draw/cairo_engine.h"
 #include "ogc/draw/raster_image_device.h"
 #include <cmath>

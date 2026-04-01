@@ -10,8 +10,8 @@ LineSymbolizer::LineSymbolizer()
     : m_width(1.0)
     , m_color(0xFF000000)
     , m_opacity(1.0)
-    , m_capStyle(LineCapStyle::kButt)
-    , m_joinStyle(LineJoinStyle::kMiter)
+    , m_capStyle(LineCap::kFlat)
+    , m_joinStyle(LineJoin::kMiter)
     , m_dashStyle(DashStyle::kSolid)
     , m_dashOffset(0.0)
     , m_offset(0.0)
@@ -25,8 +25,8 @@ LineSymbolizer::LineSymbolizer(double width, uint32_t color)
     : m_width(width)
     , m_color(color)
     , m_opacity(1.0)
-    , m_capStyle(LineCapStyle::kButt)
-    , m_joinStyle(LineJoinStyle::kMiter)
+    , m_capStyle(LineCap::kFlat)
+    , m_joinStyle(LineJoin::kMiter)
     , m_dashStyle(DashStyle::kSolid)
     , m_dashOffset(0.0)
     , m_offset(0.0)
@@ -42,23 +42,21 @@ DrawResult LineSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
 
 DrawResult LineSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }
     
     DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
-    if (!finalStyle.stroke.visible) {
-        finalStyle.stroke.color = m_color;
-        finalStyle.stroke.width = m_width;
-        finalStyle.stroke.visible = true;
+    if (finalStyle.pen.width == 0) {
+        finalStyle.pen = Pen(Color(m_color), m_width);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -75,7 +73,7 @@ DrawResult LineSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geo
         }
     }
     
-    return DrawResult::kInvalidParams;
+    return DrawResult::kInvalidParameter;
 }
 
 bool LineSymbolizer::CanSymbolize(GeomType geomType) const {
@@ -107,19 +105,19 @@ double LineSymbolizer::GetOpacity() const {
     return m_opacity;
 }
 
-void LineSymbolizer::SetCapStyle(LineCapStyle style) {
+void LineSymbolizer::SetCapStyle(LineCap style) {
     m_capStyle = style;
 }
 
-LineCapStyle LineSymbolizer::GetCapStyle() const {
+LineCap LineSymbolizer::GetCapStyle() const {
     return m_capStyle;
 }
 
-void LineSymbolizer::SetJoinStyle(LineJoinStyle style) {
+void LineSymbolizer::SetJoinStyle(LineJoin style) {
     m_joinStyle = style;
 }
 
-LineJoinStyle LineSymbolizer::GetJoinStyle() const {
+LineJoin LineSymbolizer::GetJoinStyle() const {
     return m_joinStyle;
 }
 
@@ -226,7 +224,7 @@ LineSymbolizerPtr LineSymbolizer::Create(double width, uint32_t color) {
 
 DrawResult LineSymbolizer::DrawLineString(DrawContextPtr context, const ogc::LineString* lineString, const DrawStyle& style) {
     if (!lineString || lineString->GetNumPoints() < 2) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     size_t numPoints = lineString->GetNumPoints();
@@ -239,15 +237,16 @@ DrawResult LineSymbolizer::DrawLineString(DrawContextPtr context, const ogc::Lin
         y[i] = coord.y;
     }
     
-    context->PushStyle(style);
-    DrawResult result = context->DrawPolyline(x.data(), y.data(), static_cast<int>(numPoints));
-    context->PopStyle();
+    context->Save();
+    context->SetStyle(style);
+    DrawResult result = context->DrawLineString(x.data(), y.data(), static_cast<int>(numPoints));
+    context->Restore();
     return result;
 }
 
 DrawResult LineSymbolizer::DrawMultiLineString(DrawContextPtr context, const ogc::MultiLineString* multiLineString, const DrawStyle& style) {
     if (!multiLineString) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     DrawResult result = DrawResult::kSuccess;

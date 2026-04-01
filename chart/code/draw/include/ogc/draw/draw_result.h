@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_RESULT_H
 #define OGC_DRAW_RESULT_H
 
+#include "ogc/draw/export.h"
 #include <string>
 #include <cstdint>
 
@@ -9,52 +10,39 @@ namespace draw {
 
 enum class DrawResult {
     kSuccess = 0,
-    kInvalidParameter = 1,
-    kOutOfMemory = 2,
-    kDeviceError = 3,
-    kEngineError = 4,
-    kNotImplemented = 5,
-    kCancelled = 6,
-    kTimeout = 7,
-    kDeviceNotReady = 8,
-    kDeviceLost = 9,
-    kUnsupportedOperation = 10,
-    kInvalidState = 11,
-    kFileError = 12,
-    kFontError = 13,
-    kImageError = 14
+    kFailed = 1,
+    kInvalidParameter = 2,
+    kOutOfMemory = 3,
+    kDeviceError = 4,
+    kEngineError = 5,
+    kNotImplemented = 6,
+    kCancelled = 7,
+    kTimeout = 8,
+    kDeviceNotReady = 9,
+    kDeviceLost = 10,
+    kEngineNotReady = 11,
+    kUnsupportedOperation = 12,
+    kInvalidState = 13,
+    kFileError = 14,
+    kFileNotFound = 15,
+    kFontError = 16,
+    kImageError = 17,
+    kUnsupportedFormat = 18,
+    kBufferOverflow = 19,
+    kAccessDenied = 20
 };
 
-inline const char* DrawResultToString(DrawResult result) {
-    switch (result) {
-        case DrawResult::kSuccess:           return "Success";
-        case DrawResult::kInvalidParameter:  return "Invalid Parameter";
-        case DrawResult::kOutOfMemory:       return "Out Of Memory";
-        case DrawResult::kDeviceError:       return "Device Error";
-        case DrawResult::kEngineError:       return "Engine Error";
-        case DrawResult::kNotImplemented:    return "Not Implemented";
-        case DrawResult::kCancelled:         return "Cancelled";
-        case DrawResult::kTimeout:           return "Timeout";
-        case DrawResult::kDeviceNotReady:    return "Device Not Ready";
-        case DrawResult::kDeviceLost:        return "Device Lost";
-        case DrawResult::kUnsupportedOperation: return "Unsupported Operation";
-        case DrawResult::kInvalidState:      return "Invalid State";
-        case DrawResult::kFileError:         return "File Error";
-        case DrawResult::kFontError:         return "Font Error";
-        case DrawResult::kImageError:        return "Image Error";
-        default:                             return "Unknown Error";
-    }
-}
+OGC_DRAW_API const char* DrawResultToString(DrawResult result);
 
-inline bool IsSuccess(DrawResult result) {
-    return result == DrawResult::kSuccess;
-}
+OGC_DRAW_API std::string GetResultString(DrawResult result);
 
-inline bool IsError(DrawResult result) {
-    return result != DrawResult::kSuccess;
-}
+OGC_DRAW_API std::string GetResultDescription(DrawResult result);
 
-class DrawError {
+OGC_DRAW_API bool IsSuccess(DrawResult result);
+
+OGC_DRAW_API bool IsError(DrawResult result);
+
+class OGC_DRAW_API DrawError {
 public:
     DrawResult code;
     std::string message;
@@ -75,38 +63,16 @@ public:
         , file(file_)
         , line(line_) {}
 
-    static DrawError FromResult(DrawResult result, const std::string& context = "") {
-        return DrawError(result, DrawResultToString(result), context);
-    }
-
+    static DrawError FromResult(DrawResult result, const std::string& context = "");
     static DrawError FromResultWithLocation(DrawResult result, 
                                             const std::string& context,
                                             const std::string& file,
-                                            int line) {
-        return DrawError(result, DrawResultToString(result), context, file, line);
-    }
+                                            int line);
 
-    std::string ToString() const {
-        std::string result = DrawResultToString(code);
-        if (!message.empty()) {
-            result += ": " + message;
-        }
-        if (!context.empty()) {
-            result += " [Context: " + context + "]";
-        }
-        if (!file.empty() && line > 0) {
-            result += " [" + file + ":" + std::to_string(line) + "]";
-        }
-        return result;
-    }
+    std::string ToString() const;
 
-    bool IsSuccess() const {
-        return code == DrawResult::kSuccess;
-    }
-
-    bool IsError() const {
-        return code != DrawResult::kSuccess;
-    }
+    bool IsSuccess() const;
+    bool IsError() const;
 };
 
 #define DRAW_RETURN_IF_ERROR(expr) \

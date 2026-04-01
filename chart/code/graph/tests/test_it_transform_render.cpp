@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/transform_matrix.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/transform_matrix.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/draw/draw_params.h"
 #include "ogc/envelope.h"
 #include <cmath>
@@ -45,8 +45,8 @@ TEST_F(IntegrationTransformRenderTest, TranslationTransform) {
     device->SetTransform(translate);
     
     DrawStyle style;
-    style.stroke.color = Color::Red().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Red().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawLine(0, 0, 100, 100, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -67,8 +67,8 @@ TEST_F(IntegrationTransformRenderTest, ScaleTransform) {
     device->SetTransform(scale);
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 1.0;
     
     DrawResult result = device->DrawRect(10, 10, 50, 50, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -89,8 +89,8 @@ TEST_F(IntegrationTransformRenderTest, RotationTransform) {
     device->SetTransform(rotate);
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawLine(-50, 0, 50, 0, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -114,8 +114,8 @@ TEST_F(IntegrationTransformRenderTest, CombinedTransform) {
     device->SetTransform(combined);
     
     DrawStyle style;
-    style.stroke.color = Color::Magenta().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Magenta().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawLine(-40, 0, 40, 0, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -199,11 +199,12 @@ TEST_F(IntegrationTransformRenderTest, ScaleAndTranslate) {
     device->SetTransform(combined);
     
     DrawStyle style;
-    style.stroke.color = Color::Cyan().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Cyan().GetRGBA();
+    style.pen.width = 2.0;
     
     DrawResult result = device->DrawRect(0, 0, 100, 100, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     device->EndDraw();
 }
+

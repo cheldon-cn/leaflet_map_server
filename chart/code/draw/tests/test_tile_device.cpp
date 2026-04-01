@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/tile_device.h"
 #include "ogc/draw/simple2d_engine.h"
 #include <cmath>
@@ -160,7 +160,7 @@ TEST_F(TileDeviceTest, Clear) {
     ASSERT_NE(tile, nullptr);
     
     Color pixel = tile->GetPixel(100, 100);
-    EXPECT_GT(pixel.r, 0);
+    EXPECT_GT(pixel.GetRed(), 0);
 }
 
 TEST_F(TileDeviceTest, ClearTile) {
@@ -173,7 +173,7 @@ TEST_F(TileDeviceTest, ClearTile) {
     ASSERT_NE(tile, nullptr);
     
     Color pixel = tile->GetPixel(100, 100);
-    EXPECT_GT(pixel.b, 0);
+    EXPECT_GT(pixel.GetBlue(), 0);
 }
 
 TEST_F(TileDeviceTest, DpiSetting) {
@@ -267,3 +267,4 @@ TEST_F(TileDeviceTest, SmallImage) {
     EXPECT_EQ(tile->GetWidth(), 100);
     EXPECT_EQ(tile->GetHeight(), 100);
 }
+

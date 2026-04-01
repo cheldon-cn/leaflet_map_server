@@ -2,12 +2,12 @@
 #include "ogc/draw/label_engine.h"
 #include "ogc/draw/label_conflict.h"
 #include "ogc/draw/label_placement.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/font.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/font.h>
 #include "ogc/envelope.h"
 #include <memory>
 

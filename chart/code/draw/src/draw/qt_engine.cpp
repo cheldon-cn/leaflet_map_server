@@ -278,10 +278,10 @@ QFont QtEngine::CreateFont(const Font& font) {
 
 QColor QtEngine::ToQColor(const Color& color) {
     return QColor(
-        static_cast<int>(color.r * 255),
-        static_cast<int>(color.g * 255),
-        static_cast<int>(color.b * 255),
-        static_cast<int>(color.a * 255)
+        static_cast<int>(color.GetRedF() * 255),
+        static_cast<int>(color.GetGreenF() * 255),
+        static_cast<int>(color.GetBlueF() * 255),
+        static_cast<int>(color.GetAlphaF() * 255)
     );
 }
 

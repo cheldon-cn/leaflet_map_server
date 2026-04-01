@@ -47,6 +47,8 @@ if(NOT GTest_FOUND)
 endif()
 
 set(TEST_SOURCES
+    test_color.cpp
+    test_geometry_types.cpp
     test_draw_types.cpp
     test_transform_matrix.cpp
     test_draw_style.cpp

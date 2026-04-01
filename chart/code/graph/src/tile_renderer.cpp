@@ -1,5 +1,5 @@
 #include "ogc/draw/tile_renderer.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/raster_image_device.h>
 #include <chrono>
 #include <cstring>
 
@@ -134,15 +134,10 @@ TileRenderResult TileRenderer::DoRenderTile(const TileKey& key, int width, int h
     Envelope tileExtent = m_pyramid->GetTileExtent(key);
     
     auto device = std::make_shared<RasterImageDevice>(width, height);
-    DrawContext context(device);
+    auto context = DrawContext::Create(device.get());
     
-    DrawParams params;
-    params.extent = tileExtent;
-    params.pixel_width = width;
-    params.pixel_height = height;
-    context.BeginDraw(params);
-    context.SetBackground(Color(m_backgroundColor));
-    context.Clear(Color(m_backgroundColor));
+    context->Begin();
+    context->Clear(Color(m_backgroundColor));
     
     if (m_ruleEngine) {
         double resolution = m_pyramid->GetResolution(key.z);
@@ -153,9 +148,9 @@ TileRenderResult TileRenderer::DoRenderTile(const TileKey& key, int width, int h
         m_renderCallback(key, result);
     }
     
-    context.EndDraw();
+    context->End();
     
-    const uint8_t* imageData = device->GetData();
+    const uint8_t* imageData = device->GetPixelData();
     size_t dataSize = device->GetDataSize();
     if (imageData && dataSize > 0) {
         result.data.resize(dataSize);
@@ -188,15 +183,10 @@ TileRenderResult TileRenderer::RenderTileFromFeatures(const TileKey& key, const 
     Envelope tileExtent = m_pyramid->GetTileExtent(key);
     
     auto device = std::make_shared<RasterImageDevice>(m_tileWidth, m_tileHeight);
-    DrawContext context(device);
+    auto context = DrawContext::Create(device.get());
     
-    DrawParams params;
-    params.extent = tileExtent;
-    params.pixel_width = m_tileWidth;
-    params.pixel_height = m_tileHeight;
-    context.BeginDraw(params);
-    context.SetBackground(Color(m_backgroundColor));
-    context.Clear(Color(m_backgroundColor));
+    context->Begin();
+    context->Clear(Color(m_backgroundColor));
     
     double resolution = m_pyramid->GetResolution(key.z);
     
@@ -209,12 +199,12 @@ TileRenderResult TileRenderer::RenderTileFromFeatures(const TileKey& key, const 
         Envelope featEnv = geom->GetEnvelope();
         if (!tileExtent.Intersects(featEnv)) continue;
         
-        m_ruleEngine->Render(feature, context, resolution);
+        m_ruleEngine->Render(feature, *context, resolution);
     }
     
-    context.EndDraw();
+    context->End();
     
-    const uint8_t* imageData = device->GetData();
+    const uint8_t* imageData = device->GetPixelData();
     size_t dataSize = device->GetDataSize();
     if (imageData && dataSize > 0) {
         result.data.resize(dataSize);
@@ -246,12 +236,7 @@ bool TileRenderer::RenderToImage(const TileKey& key, DrawContext& context) {
     
     Envelope tileExtent = m_pyramid->GetTileExtent(key);
     
-    DrawParams params;
-    params.extent = tileExtent;
-    params.pixel_width = m_tileWidth;
-    params.pixel_height = m_tileHeight;
-    context.BeginDraw(params);
-    context.SetBackground(Color(m_backgroundColor));
+    context.Begin();
     context.Clear(Color(m_backgroundColor));
     
     return true;

@@ -57,27 +57,24 @@ DrawResult PolygonSymbolizer::Symbolize(DrawContextPtr context, const Geometry* 
 
 DrawResult PolygonSymbolizer::Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) {
     if (!context || !geometry) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     if (!m_enabled) {
         return DrawResult::kSuccess;
     }
     
-    double scale = context->GetScale();
+    double scale = context->GetTransform().GetScaleX();
     if (!IsVisibleAtScale(scale)) {
         return DrawResult::kSuccess;
     }
     
     DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
-    if (!finalStyle.fill.visible) {
-        finalStyle.fill.color = m_fillColor;
-        finalStyle.fill.visible = true;
+    if (finalStyle.brush.color.GetAlpha() == 0) {
+        finalStyle.brush = Brush(Color(m_fillColor));
     }
-    if (!finalStyle.stroke.visible) {
-        finalStyle.stroke.color = m_strokeColor;
-        finalStyle.stroke.width = m_strokeWidth;
-        finalStyle.stroke.visible = true;
+    if (finalStyle.pen.width == 0) {
+        finalStyle.pen = Pen(Color(m_strokeColor), m_strokeWidth);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -94,7 +91,7 @@ DrawResult PolygonSymbolizer::Symbolize(DrawContextPtr context, const Geometry* 
         }
     }
     
-    return DrawResult::kInvalidParams;
+    return DrawResult::kInvalidParameter;
 }
 
 bool PolygonSymbolizer::CanSymbolize(GeomType geomType) const {
@@ -230,12 +227,12 @@ PolygonSymbolizerPtr PolygonSymbolizer::Create(uint32_t fillColor, uint32_t stro
 
 DrawResult PolygonSymbolizer::DrawPolygon(DrawContextPtr context, const ogc::Polygon* polygon, const DrawStyle& style) {
     if (!polygon) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     const ogc::LinearRing* exteriorRing = polygon->GetExteriorRing();
     if (!exteriorRing || exteriorRing->GetNumPoints() < 3) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     size_t numPoints = exteriorRing->GetNumPoints();
@@ -248,15 +245,16 @@ DrawResult PolygonSymbolizer::DrawPolygon(DrawContextPtr context, const ogc::Pol
         y[i] = coord.y + m_displacementY;
     }
     
-    context->PushStyle(style);
+    context->Save();
+    context->SetStyle(style);
     DrawResult result = context->DrawPolygon(x.data(), y.data(), static_cast<int>(numPoints));
-    context->PopStyle();
+    context->Restore();
     return result;
 }
 
 DrawResult PolygonSymbolizer::DrawMultiPolygon(DrawContextPtr context, const ogc::MultiPolygon* multiPolygon, const DrawStyle& style) {
     if (!multiPolygon) {
-        return DrawResult::kInvalidParams;
+        return DrawResult::kInvalidParameter;
     }
     
     DrawResult result = DrawResult::kSuccess;

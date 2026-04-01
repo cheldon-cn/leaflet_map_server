@@ -2,16 +2,15 @@
 #define OGC_DRAW_DRAW_FACADE_H
 
 #include "ogc/draw/export.h"
-#include "ogc/draw/draw_result.h"
+#include <ogc/draw/draw_result.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/draw_device.h"
-#include "ogc/draw/draw_engine.h"
-#include "ogc/draw/draw_driver.h"
-#include "ogc/draw/color.h"
-#include "ogc/draw/font.h"
-#include "ogc/draw/types.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/draw_device.h>
+#include <ogc/draw/draw_engine.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/font.h>
+#include <ogc/draw/draw_types.h>
 #include "ogc/geometry.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -35,15 +34,12 @@ public:
     
     DrawDevicePtr CreateDevice(DeviceType type, int width = 800, int height = 600);
     DrawEnginePtr CreateEngine(EngineType type);
-    DrawDriverPtr CreateDriver(const std::string& name);
     
     DrawResult RegisterDevice(const std::string& name, DrawDevicePtr device);
     DrawResult RegisterEngine(const std::string& name, DrawEnginePtr engine);
-    DrawResult RegisterDriver(const std::string& name, DrawDriverPtr driver);
     
     DrawDevicePtr GetDevice(const std::string& name);
     DrawEnginePtr GetEngine(const std::string& name);
-    DrawDriverPtr GetDriver(const std::string& name);
     
     DrawResult DrawGeometry(DrawDevicePtr device, const Geometry* geometry, const DrawStyle& style);
     DrawResult DrawGeometry(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style);

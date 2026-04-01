@@ -2,9 +2,10 @@
 #define OGC_DRAW_DEVICE_H
 
 #include "ogc/draw/device_type.h"
+#include "ogc/draw/device_state.h"
 #include "ogc/draw/engine_type.h"
 #include "ogc/draw/draw_result.h"
-#include "ogc/draw/draw_types.h"
+#include "ogc/draw/geometry_types.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -14,25 +15,6 @@ namespace ogc {
 namespace draw {
 
 class DrawEngine;
-
-enum class DeviceState {
-    kUninitialized = 0,
-    kReady = 1,
-    kActive = 2,
-    kError = 3,
-    kLost = 4
-};
-
-inline const char* DeviceStateToString(DeviceState state) {
-    switch (state) {
-        case DeviceState::kUninitialized: return "Uninitialized";
-        case DeviceState::kReady:         return "Ready";
-        case DeviceState::kActive:        return "Active";
-        case DeviceState::kError:         return "Error";
-        case DeviceState::kLost:          return "Lost";
-        default:                          return "Unknown";
-    }
-}
 
 struct DeviceCapabilities {
     bool supportsGPU;

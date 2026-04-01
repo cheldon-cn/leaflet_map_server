@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/device_type.h"
+#include <ogc/draw/device_type.h>
 
 TEST(DeviceTypeTest, AllValues) {
     EXPECT_EQ(static_cast<int>(ogc::draw::DeviceType::kUnknown), 0);

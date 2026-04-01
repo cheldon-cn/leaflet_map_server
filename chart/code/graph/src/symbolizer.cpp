@@ -73,16 +73,16 @@ double Symbolizer::GetOpacity() const {
 DrawStyle Symbolizer::MergeStyle(const DrawStyle& base, const DrawStyle& override) const {
     DrawStyle result = base;
     
-    if (override.stroke.visible) {
-        result.stroke = override.stroke;
-    } else if (base.stroke.visible) {
-        result.stroke = base.stroke;
+    if (override.pen.IsVisible()) {
+        result.pen = override.pen;
+    } else if (base.pen.IsVisible()) {
+        result.pen = base.pen;
     }
     
-    if (override.fill.visible) {
-        result.fill = override.fill;
-    } else if (base.fill.visible) {
-        result.fill = base.fill;
+    if (override.brush.IsVisible()) {
+        result.brush = override.brush;
+    } else if (base.brush.IsVisible()) {
+        result.brush = base.brush;
     }
     
     return result;

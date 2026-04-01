@@ -1,6 +1,7 @@
+#include <gtest/gtest.h>
+
 #ifdef __EMSCRIPTEN__
 
-#include <gtest/gtest.h>
 #include "ogc/draw/webgl_engine.h"
 #include "ogc/draw/webgl_device.h"
 #include <cmath>

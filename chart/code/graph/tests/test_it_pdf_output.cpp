@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/pdf_device.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/font.h"
-#include "ogc/draw/color.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/pdf_device.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/font.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 #include <cstdio>
@@ -161,18 +161,18 @@ TEST_F(PdfOutputITTest, PdfWithStyles) {
     m_context->BeginDraw(params);
     
     DrawStyle redStroke;
-    redStroke.stroke.color = 0xFF0000;
-    redStroke.stroke.width = 2.0;
+    redStroke.pen.color = 0xFF0000;
+    redStroke.pen.width = 2.0;
     m_context->DrawRect(50, 50, 100, 80);
     
     DrawStyle blueFill;
-    blueFill.fill.color = 0x0000FF;
+    blueFill.brush.color = 0x0000FF;
     m_context->DrawRect(200, 50, 100, 80);
     
     DrawStyle greenBoth;
-    greenBoth.stroke.color = 0x00FF00;
-    greenBoth.stroke.width = 3.0;
-    greenBoth.fill.color = 0x00FF00;
+    greenBoth.pen.color = 0x00FF00;
+    greenBoth.pen.width = 3.0;
+    greenBoth.brush.color = 0x00FF00;
     m_context->DrawRect(350, 50, 100, 80);
     
     m_context->EndDraw();
@@ -251,3 +251,4 @@ TEST_F(PdfOutputITTest, PdfClear) {
     
     std::remove(filename.c_str());
 }
+

@@ -31,6 +31,14 @@ if(MSVC)
 endif()
 
 set(OGC_DRAW_SOURCES
+    src/color.cpp
+    src/device_type.cpp
+    src/device_state.cpp
+    src/engine_type.cpp
+    src/draw_result.cpp
+    src/font.cpp
+    src/image.cpp
+    src/region.cpp
     src/draw/draw_context.cpp
     src/draw/state_serializer.cpp
     src/draw/raster_image_device.cpp
@@ -70,6 +78,8 @@ set(OGC_DRAW_SOURCES
 
 set(OGC_DRAW_HEADERS
     include/ogc/draw/export.h
+    include/ogc/draw/color.h
+    include/ogc/draw/geometry_types.h
     include/ogc/draw/device_type.h
     include/ogc/draw/engine_type.h
     include/ogc/draw/draw_types.h

@@ -11,6 +11,9 @@
 namespace ogc {
 namespace draw {
 
+class LabelPlacement;
+using LabelPlacementPtr = std::shared_ptr<LabelPlacement>;
+
 enum class LabelPlacementMode {
     kPoint,
     kLine,

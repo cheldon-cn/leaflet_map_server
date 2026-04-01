@@ -3,10 +3,12 @@
 
 #include "ogc/draw/engine_type.h"
 #include "ogc/draw/draw_result.h"
-#include "ogc/draw/draw_types.h"
 #include "ogc/draw/draw_style.h"
 #include "ogc/draw/transform_matrix.h"
 #include "ogc/draw/geometry.h"
+#include "ogc/draw/image.h"
+#include "ogc/draw/text_metrics.h"
+#include "ogc/draw/region.h"
 #include <string>
 #include <memory>
 #include <vector>
@@ -16,86 +18,6 @@ namespace ogc {
 namespace draw {
 
 class DrawDevice;
-
-struct Image {
-    int width;
-    int height;
-    int channels;
-    std::vector<uint8_t> data;
-
-    Image() : width(0), height(0), channels(0) {}
-    
-    Image(int w, int h, int c)
-        : width(w), height(h), channels(c) {
-        data.resize(static_cast<size_t>(w) * h * c);
-    }
-
-    bool IsValid() const {
-        return width > 0 && height > 0 && channels > 0 && !data.empty();
-    }
-
-    size_t GetDataSize() const {
-        return data.size();
-    }
-
-    uint8_t* GetData() { return data.empty() ? nullptr : data.data(); }
-    const uint8_t* GetData() const { return data.empty() ? nullptr : data.data(); }
-};
-
-struct TextMetrics {
-    double width;
-    double height;
-    double ascent;
-    double descent;
-    double lineHeight;
-
-    TextMetrics() : width(0), height(0), ascent(0), descent(0), lineHeight(0) {}
-};
-
-struct Region {
-    std::vector<Rect> rects;
-
-    Region() {}
-
-    explicit Region(const Rect& rect) {
-        rects.push_back(rect);
-    }
-
-    bool IsEmpty() const {
-        return rects.empty();
-    }
-
-    void AddRect(const Rect& rect) {
-        if (!rect.IsEmpty()) {
-            rects.push_back(rect);
-        }
-    }
-
-    void Clear() {
-        rects.clear();
-    }
-
-    Rect GetBounds() const {
-        if (rects.empty()) {
-            return Rect();
-        }
-
-        Rect result = rects[0];
-        for (size_t i = 1; i < rects.size(); ++i) {
-            result = result.Union(rects[i]);
-        }
-        return result;
-    }
-
-    bool Contains(const Point& pt) const {
-        for (const auto& rect : rects) {
-            if (rect.Contains(pt)) {
-                return true;
-            }
-        }
-        return false;
-    }
-};
 
 enum class StateFlag : uint32_t {
     kNone = 0,

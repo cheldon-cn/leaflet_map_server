@@ -1,12 +1,12 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/multi_level_tile_cache.h"
 #include "ogc/draw/memory_tile_cache.h"
 #include "ogc/draw/disk_tile_cache.h"
 #include "ogc/draw/tile_key.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -179,8 +179,8 @@ TEST_F(IntegrationMultiLevelCacheTest, CacheWithDevice) {
     device->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Magenta().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Magenta().GetRGBA();
+    style.pen.width = 2.0;
     
     device->DrawRect(10, 10, 236, 236, style);
     device->EndDraw();
@@ -280,3 +280,4 @@ TEST_F(IntegrationMultiLevelCacheTest, AddCache) {
     
     EXPECT_EQ(multiCache->GetCacheCount(), 3);
 }
+

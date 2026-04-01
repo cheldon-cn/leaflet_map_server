@@ -69,10 +69,10 @@ void CairoEngine::End() {
 
 void CairoEngine::SetSourceColor(const Color& color) {
     cairo_set_source_rgba(m_cr, 
-                          color.r / 255.0, 
-                          color.g / 255.0, 
-                          color.b / 255.0, 
-                          color.a / 255.0);
+                          color.GetRed() / 255.0, 
+                          color.GetGreen() / 255.0, 
+                          color.GetBlue() / 255.0, 
+                          color.GetAlpha() / 255.0);
 }
 
 void CairoEngine::ApplyPen(const Pen& pen) {
@@ -226,16 +226,20 @@ DrawResult CairoEngine::DrawText(double x, double y, const std::string& text, co
 }
 
 DrawResult CairoEngine::DrawImage(double x, double y, const Image& image, double scaleX, double scaleY) {
-    if (!m_cr || image.data.empty()) {
+    if (!m_cr || image.IsEmpty()) {
         return DrawResult::InvalidParameter;
     }
     
+    int imgWidth = image.GetWidth();
+    int imgHeight = image.GetHeight();
+    const uint8_t* imgData = image.GetData();
+    
     cairo_surface_t* imgSurface = cairo_image_surface_create_for_data(
-        const_cast<uint8_t*>(image.data.data()),
+        const_cast<uint8_t*>(imgData),
         CAIRO_FORMAT_ARGB32,
-        image.width,
-        image.height,
-        image.width * 4
+        imgWidth,
+        imgHeight,
+        imgWidth * 4
     );
     
     if (cairo_surface_status(imgSurface) != CAIRO_STATUS_SUCCESS) {

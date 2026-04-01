@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/disk_tile_cache.h"
 #include "ogc/draw/tile_key.h"
-#include "ogc/draw/tile_device.h"
-#include "ogc/draw/raster_image_device.h"
+#include <ogc/draw/tile_device.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 
@@ -171,8 +171,8 @@ TEST_F(IntegrationDiskCacheTest, CacheWithDevice) {
     tileDevice->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 2.0;
     
     tileDevice->DrawRect(10, 10, 236, 236, style);
     tileDevice->EndDraw();
@@ -248,3 +248,4 @@ TEST_F(IntegrationDiskCacheTest, Cleanup) {
     
     cache->Cleanup();
 }
+

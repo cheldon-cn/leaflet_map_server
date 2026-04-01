@@ -179,10 +179,10 @@ void WebGLEngine::ApplyTransform() {
 void WebGLEngine::ApplyStyle(const DrawStyle& style) {
     GLint colorLoc = glGetUniformLocation(m_shaderProgram, "u_color");
     
-    float r = style.pen.color.r / 255.0f;
-    float g = style.pen.color.g / 255.0f;
-    float b = style.pen.color.b / 255.0f;
-    float a = style.pen.color.a / 255.0f;
+    float r = style.pen.color.GetRed() / 255.0f;
+    float g = style.pen.color.GetGreen() / 255.0f;
+    float b = style.pen.color.GetBlue() / 255.0f;
+    float a = style.pen.color.GetAlpha() / 255.0f;
     
     glUniform4f(colorLoc, r, g, b, a);
 }
@@ -270,10 +270,10 @@ DrawResult WebGLEngine::DrawPolygon(const double* x, const double* y, int count,
     
     if (fill && style.brush.style != BrushStyle::Null) {
         GLint colorLoc = glGetUniformLocation(m_shaderProgram, "u_color");
-        float r = style.brush.color.r / 255.0f;
-        float g = style.brush.color.g / 255.0f;
-        float b = style.brush.color.b / 255.0f;
-        float a = style.brush.color.a / 255.0f;
+        float r = style.brush.color.GetRed() / 255.0f;
+        float g = style.brush.color.GetGreen() / 255.0f;
+        float b = style.brush.color.GetBlue() / 255.0f;
+        float a = style.brush.color.GetAlpha() / 255.0f;
         glUniform4f(colorLoc, r, g, b, a);
         
         glDrawArrays(GL_TRIANGLE_FAN, 0, count);

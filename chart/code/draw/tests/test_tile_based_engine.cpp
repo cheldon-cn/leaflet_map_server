@@ -3,6 +3,7 @@
 #include "ogc/draw/tile_device.h"
 #include "ogc/draw/geometry.h"
 #include <cmath>
+#include <cstring>
 
 using namespace ogc::draw;
 
@@ -228,38 +229,46 @@ TEST_F(TileBasedEngineTest, ProgressCallback) {
 TEST_F(TileBasedEngineTest, DrawGeometryPoint) {
     engine->Begin();
     
-    PointGeometry pt(500, 500);
+    auto pt = ogc::Point::Create(500.0, 500.0);
     DrawStyle style;
     style.pen.color = Color::Red();
     style.pen.width = 5;
     
-    DrawResult result = engine->DrawGeometry(&pt, style);
+    DrawResult result = engine->DrawGeometry(pt.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
 TEST_F(TileBasedEngineTest, DrawGeometryLine) {
     engine->Begin();
     
-    LineGeometry line(100, 100, 900, 900);
+    ogc::CoordinateList coords;
+    coords.emplace_back(100.0, 100.0);
+    coords.emplace_back(900.0, 900.0);
+    auto line = ogc::LineString::Create(coords);
+    
     DrawStyle style;
     style.pen.color = Color::Green();
     
-    DrawResult result = engine->DrawGeometry(&line, style);
+    DrawResult result = engine->DrawGeometry(line.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
 TEST_F(TileBasedEngineTest, DrawGeometryPolygon) {
     engine->Begin();
     
-    std::vector<Point> points = {
-        Point(500, 100), Point(900, 500), Point(500, 900), Point(100, 500)
-    };
-    PolygonGeometry poly(points);
+    ogc::CoordinateList coords;
+    coords.emplace_back(500.0, 100.0);
+    coords.emplace_back(900.0, 500.0);
+    coords.emplace_back(500.0, 900.0);
+    coords.emplace_back(100.0, 500.0);
+    coords.emplace_back(500.0, 100.0);
+    auto ring = ogc::LinearRing::Create(coords);
+    auto poly = ogc::Polygon::Create(std::move(ring));
     
     DrawStyle style;
     style.brush.color = Color::Blue();
     
-    DrawResult result = engine->DrawGeometry(&poly, style);
+    DrawResult result = engine->DrawGeometry(poly.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
@@ -296,11 +305,11 @@ TEST_F(TileBasedEngineTest, MeasureText) {
 TEST_F(TileBasedEngineTest, DrawImage) {
     engine->Begin();
     
-    Image image;
-    image.width = 10;
-    image.height = 10;
-    image.channels = 4;
-    image.data.resize(10 * 10 * 4, 255);
+    Image image(10, 10, 4);
+    uint8_t* data = image.GetData();
+    if (data) {
+        memset(data, 255, 10 * 10 * 4);
+    }
     
     DrawResult result = engine->DrawImage(100, 100, image);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -309,11 +318,11 @@ TEST_F(TileBasedEngineTest, DrawImage) {
 TEST_F(TileBasedEngineTest, DrawImageRect) {
     engine->Begin();
     
-    Image image;
-    image.width = 10;
-    image.height = 10;
-    image.channels = 4;
-    image.data.resize(10 * 10 * 4, 255);
+    Image image(10, 10, 4);
+    uint8_t* data = image.GetData();
+    if (data) {
+        memset(data, 255, 10 * 10 * 4);
+    }
     
     DrawResult result = engine->DrawImageRect(100, 100, 50, 50, image);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -337,3 +346,4 @@ TEST_F(TileBasedEngineTest, InvalidParameters) {
     EXPECT_EQ(engine->DrawCircle(500, 500, -1, style, true), DrawResult::kInvalidParameter);
     EXPECT_EQ(engine->DrawEllipse(500, 500, -1, 10, style, false), DrawResult::kInvalidParameter);
 }
+

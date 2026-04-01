@@ -1,8 +1,9 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/simple2d_engine.h"
 #include "ogc/draw/raster_image_device.h"
 #include "ogc/draw/geometry.h"
 #include <cmath>
+#include <cstring>
 
 using namespace ogc::draw;
 
@@ -51,7 +52,7 @@ TEST_F(Simple2DEngineTest, DrawPoints) {
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     Color centerPixel = device->GetPixel(50, 50);
-    EXPECT_GT(centerPixel.r, 0);
+    EXPECT_GT(centerPixel.GetRed(), 0);
 }
 
 TEST_F(Simple2DEngineTest, DrawLines) {
@@ -98,7 +99,7 @@ TEST_F(Simple2DEngineTest, DrawPolygon) {
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     Color centerPixel = device->GetPixel(50, 50);
-    EXPECT_GT(centerPixel.r, 0);
+    EXPECT_GT(centerPixel.GetRed(), 0);
 }
 
 TEST_F(Simple2DEngineTest, DrawRect) {
@@ -112,7 +113,7 @@ TEST_F(Simple2DEngineTest, DrawRect) {
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     Color centerPixel = device->GetPixel(50, 50);
-    EXPECT_GT(centerPixel.b, 0);
+    EXPECT_GT(centerPixel.GetBlue(), 0);
 }
 
 TEST_F(Simple2DEngineTest, DrawCircle) {
@@ -126,7 +127,7 @@ TEST_F(Simple2DEngineTest, DrawCircle) {
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     Color centerPixel = device->GetPixel(50, 50);
-    EXPECT_GT(centerPixel.g, 0);
+    EXPECT_GT(centerPixel.GetGreen(), 0);
 }
 
 TEST_F(Simple2DEngineTest, DrawEllipse) {
@@ -166,7 +167,7 @@ TEST_F(Simple2DEngineTest, TransformPoint) {
     engine->DrawPoints(x, y, 1, style);
     
     Color pixel = device->GetPixel(10, 20);
-    EXPECT_GT(pixel.r, 0);
+    EXPECT_GT(pixel.GetRed(), 0);
 }
 
 TEST_F(Simple2DEngineTest, ResetTransform) {
@@ -190,10 +191,10 @@ TEST_F(Simple2DEngineTest, ClipRect) {
     engine->DrawRect(0, 0, 100, 100, style, true);
     
     Color outsidePixel = device->GetPixel(10, 10);
-    EXPECT_EQ(outsidePixel.a, 0);
+    EXPECT_EQ(outsidePixel.GetAlpha(), 0);
     
     Color insidePixel = device->GetPixel(50, 50);
-    EXPECT_GT(insidePixel.r, 0);
+    EXPECT_GT(insidePixel.GetRed(), 0);
 }
 
 TEST_F(Simple2DEngineTest, ResetClip) {
@@ -259,44 +260,52 @@ TEST_F(Simple2DEngineTest, Clear) {
     engine->Clear(Color::Blue());
     
     Color pixel = device->GetPixel(50, 50);
-    EXPECT_GT(pixel.b, 0);
+    EXPECT_GT(pixel.GetBlue(), 0);
 }
 
 TEST_F(Simple2DEngineTest, DrawGeometryPoint) {
     engine->Begin();
     
-    PointGeometry pt(50, 50);
+    auto pt = ogc::Point::Create(50.0, 50.0);
     DrawStyle style;
     style.pen.color = Color::Red();
     style.pen.width = 3;
     
-    DrawResult result = engine->DrawGeometry(&pt, style);
+    DrawResult result = engine->DrawGeometry(pt.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
 TEST_F(Simple2DEngineTest, DrawGeometryLine) {
     engine->Begin();
     
-    LineGeometry line(10, 10, 90, 90);
+    ogc::CoordinateList coords;
+    coords.emplace_back(10.0, 10.0);
+    coords.emplace_back(90.0, 90.0);
+    auto line = ogc::LineString::Create(coords);
+    
     DrawStyle style;
     style.pen.color = Color::Green();
     
-    DrawResult result = engine->DrawGeometry(&line, style);
+    DrawResult result = engine->DrawGeometry(line.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
 TEST_F(Simple2DEngineTest, DrawGeometryPolygon) {
     engine->Begin();
     
-    std::vector<Point> points = {
-        Point(50, 10), Point(90, 50), Point(50, 90), Point(10, 50)
-    };
-    PolygonGeometry poly(points);
+    ogc::CoordinateList coords;
+    coords.emplace_back(50.0, 10.0);
+    coords.emplace_back(90.0, 50.0);
+    coords.emplace_back(50.0, 90.0);
+    coords.emplace_back(10.0, 50.0);
+    coords.emplace_back(50.0, 10.0);
+    auto ring = ogc::LinearRing::Create(coords);
+    auto poly = ogc::Polygon::Create(std::move(ring));
     
     DrawStyle style;
     style.brush.color = Color::Blue();
     
-    DrawResult result = engine->DrawGeometry(&poly, style);
+    DrawResult result = engine->DrawGeometry(poly.get(), style);
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
@@ -333,11 +342,11 @@ TEST_F(Simple2DEngineTest, MeasureText) {
 TEST_F(Simple2DEngineTest, DrawImage) {
     engine->Begin();
     
-    Image image;
-    image.width = 10;
-    image.height = 10;
-    image.channels = 4;
-    image.data.resize(10 * 10 * 4, 255);
+    Image image(10, 10, 4);
+    uint8_t* data = image.GetData();
+    if (data) {
+        memset(data, 255, 10 * 10 * 4);
+    }
     
     DrawResult result = engine->DrawImage(10, 10, image);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -346,11 +355,11 @@ TEST_F(Simple2DEngineTest, DrawImage) {
 TEST_F(Simple2DEngineTest, DrawImageRect) {
     engine->Begin();
     
-    Image image;
-    image.width = 10;
-    image.height = 10;
-    image.channels = 4;
-    image.data.resize(10 * 10 * 4, 255);
+    Image image(10, 10, 4);
+    uint8_t* data = image.GetData();
+    if (data) {
+        memset(data, 255, 10 * 10 * 4);
+    }
     
     DrawResult result = engine->DrawImageRect(10, 10, 20, 20, image);
     EXPECT_EQ(result, DrawResult::kSuccess);
@@ -374,3 +383,4 @@ TEST_F(Simple2DEngineTest, InvalidParameters) {
     EXPECT_EQ(engine->DrawCircle(50, 50, -1, style, true), DrawResult::kInvalidParameter);
     EXPECT_EQ(engine->DrawEllipse(50, 50, -1, 10, style, false), DrawResult::kInvalidParameter);
 }
+

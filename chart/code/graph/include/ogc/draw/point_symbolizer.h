@@ -2,7 +2,8 @@
 #define OGC_DRAW_POINT_SYMBOLIZER_H
 
 #include "ogc/draw/symbolizer.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/color.h>
+#include <ogc/draw/draw_types.h>
 #include <string>
 
 namespace ogc {
@@ -16,6 +17,9 @@ enum class PointSymbolType {
     kCross,
     kDiamond
 };
+
+class PointSymbolizer;
+using PointSymbolizerPtr = std::shared_ptr<PointSymbolizer>;
 
 class OGC_GRAPH_API PointSymbolizer : public Symbolizer {
 public:

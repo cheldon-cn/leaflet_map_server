@@ -190,9 +190,9 @@ TEST_F(Direct2DEngineTest, DrawText) {
     ASSERT_EQ(engine.Begin(), DrawResult::kSuccess);
     
     Font font;
-    font.family = "Arial";
-    font.size = 14;
-    font.weight = FontWeight::kNormal;
+    font.SetFamily("Arial");
+    font.SetSize(14);
+    font.SetWeight(FontWeight::kNormal);
     
     Color color(0, 0, 0, 255);
     
@@ -209,9 +209,9 @@ TEST_F(Direct2DEngineTest, DrawTextWithBold) {
     ASSERT_EQ(engine.Begin(), DrawResult::kSuccess);
     
     Font font;
-    font.family = "Arial";
-    font.size = 16;
-    font.weight = FontWeight::kBold;
+    font.SetFamily("Arial");
+    font.SetSize(16);
+    font.SetWeight(FontWeight::kBold);
     
     Color color(255, 0, 0, 255);
     

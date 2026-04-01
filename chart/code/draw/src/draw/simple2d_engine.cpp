@@ -53,15 +53,15 @@ void Simple2DEngine::BlendPixel(int x, int y, const Color& color) {
     }
     
     Color existing = m_device->GetPixel(x, y);
-    double alpha = (color.a / 255.0) * m_opacity;
+    double alpha = (color.GetAlpha() / 255.0) * m_opacity;
     
     if (alpha >= 1.0) {
         m_device->SetPixel(x, y, color);
     } else if (alpha > 0.0) {
-        uint8_t r = static_cast<uint8_t>(existing.r * (1.0 - alpha) + color.r * alpha);
-        uint8_t g = static_cast<uint8_t>(existing.g * (1.0 - alpha) + color.g * alpha);
-        uint8_t b = static_cast<uint8_t>(existing.b * (1.0 - alpha) + color.b * alpha);
-        uint8_t a = static_cast<uint8_t>(std::min(255.0, existing.a + color.a * alpha));
+        uint8_t r = static_cast<uint8_t>(existing.GetRed() * (1.0 - alpha) + color.GetRed() * alpha);
+        uint8_t g = static_cast<uint8_t>(existing.GetGreen() * (1.0 - alpha) + color.GetGreen() * alpha);
+        uint8_t b = static_cast<uint8_t>(existing.GetBlue() * (1.0 - alpha) + color.GetBlue() * alpha);
+        uint8_t a = static_cast<uint8_t>(std::min(255.0, static_cast<double>(existing.GetAlpha()) + color.GetAlpha() * alpha));
         m_device->SetPixel(x, y, Color(r, g, b, a));
     }
 }
@@ -342,14 +342,19 @@ DrawResult Simple2DEngine::DrawImage(double x, double y, const Image& image,
     int startX = static_cast<int>(pt.x);
     int startY = static_cast<int>(pt.y);
     
-    for (int iy = 0; iy < image.height; ++iy) {
-        for (int ix = 0; ix < image.width; ++ix) {
-            size_t idx = (iy * image.width + ix) * image.channels;
+    int imgWidth = image.GetWidth();
+    int imgHeight = image.GetHeight();
+    int imgChannels = image.GetChannels();
+    const uint8_t* imgData = image.GetData();
+    
+    for (int iy = 0; iy < imgHeight; ++iy) {
+        for (int ix = 0; ix < imgWidth; ++ix) {
+            size_t idx = (iy * imgWidth + ix) * imgChannels;
             
-            uint8_t r = image.data[idx];
-            uint8_t g = image.channels > 1 ? image.data[idx + 1] : r;
-            uint8_t b = image.channels > 2 ? image.data[idx + 2] : r;
-            uint8_t a = image.channels > 3 ? image.data[idx + 3] : 255;
+            uint8_t r = imgData[idx];
+            uint8_t g = imgChannels > 1 ? imgData[idx + 1] : r;
+            uint8_t b = imgChannels > 2 ? imgData[idx + 2] : r;
+            uint8_t a = imgChannels > 3 ? imgData[idx + 3] : 255;
             
             int destX = static_cast<int>(startX + ix * scaleX);
             int destY = static_cast<int>(startY + iy * scaleY);
@@ -366,8 +371,8 @@ DrawResult Simple2DEngine::DrawImageRect(double x, double y, double w, double h,
     if (!m_active) return DrawResult::kInvalidState;
     if (!image.IsValid()) return DrawResult::kInvalidParameter;
     
-    double scaleX = w / image.width;
-    double scaleY = h / image.height;
+    double scaleX = w / image.GetWidth();
+    double scaleY = h / image.GetHeight();
     
     return DrawImage(x, y, image, scaleX, scaleY);
 }
@@ -502,11 +507,12 @@ void Simple2DEngine::SetOpacity(double opacity) {
 TextMetrics Simple2DEngine::MeasureText(const std::string& text, const Font& font) {
     (void)text;
     TextMetrics metrics;
-    metrics.width = text.length() * font.size * 0.6;
-    metrics.height = font.size;
-    metrics.ascent = font.size * 0.8;
-    metrics.descent = font.size * 0.2;
-    metrics.lineHeight = font.size * 1.2;
+    double fontSize = font.GetSize();
+    metrics.width = text.length() * fontSize * 0.6;
+    metrics.height = fontSize;
+    metrics.ascent = fontSize * 0.8;
+    metrics.descent = fontSize * 0.2;
+    metrics.lineHeight = fontSize * 1.2;
     return metrics;
 }
 

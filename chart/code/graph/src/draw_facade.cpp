@@ -1,9 +1,15 @@
 #include "ogc/draw/draw_facade.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/driver_manager.h"
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_context.h>
+#include <unordered_map>
 
 namespace ogc {
 namespace draw {
+
+namespace {
+    std::unordered_map<std::string, DrawDevicePtr> g_devices;
+    std::unordered_map<std::string, DrawEnginePtr> g_engines;
+}
 
 DrawFacade& DrawFacade::Instance() {
     static DrawFacade instance;
@@ -31,7 +37,8 @@ DrawResult DrawFacade::Finalize() {
     if (!m_initialized) {
         return DrawResult::kSuccess;
     }
-    DriverManager::Instance().Clear();
+    g_devices.clear();
+    g_engines.clear();
     m_initialized = false;
     return DrawResult::kSuccess;
 }
@@ -45,52 +52,46 @@ DrawContextPtr DrawFacade::CreateContext() {
 }
 
 DrawContextPtr DrawFacade::CreateContext(DrawDevicePtr device) {
-    return DrawContext::Create(device);
+    return DrawContext::Create(device.get());
 }
 
 DrawContextPtr DrawFacade::CreateContext(DrawDevicePtr device, DrawEnginePtr engine) {
-    return DrawContext::Create(device, engine);
+    (void)engine;
+    return DrawContext::Create(device.get());
 }
 
 DrawDevicePtr DrawFacade::CreateDevice(DeviceType type, int width, int height) {
     switch (type) {
         case DeviceType::kRasterImage:
-            return RasterImageDevice::Create(width, height, 4);
+            return std::make_shared<RasterImageDevice>(width, height, PixelFormat::kRGBA8888);
         default:
             return nullptr;
     }
 }
 
 DrawEnginePtr DrawFacade::CreateEngine(EngineType type) {
-    return DrawEngine::Create(type);
-}
-
-DrawDriverPtr DrawFacade::CreateDriver(const std::string& name) {
-    return DrawDriver::Create(name);
+    (void)type;
+    return nullptr;
 }
 
 DrawResult DrawFacade::RegisterDevice(const std::string& name, DrawDevicePtr device) {
-    return DriverManager::Instance().RegisterDevice(name, device);
+    g_devices[name] = device;
+    return DrawResult::kSuccess;
 }
 
 DrawResult DrawFacade::RegisterEngine(const std::string& name, DrawEnginePtr engine) {
-    return DriverManager::Instance().RegisterEngine(name, engine);
-}
-
-DrawResult DrawFacade::RegisterDriver(const std::string& name, DrawDriverPtr driver) {
-    return DriverManager::Instance().RegisterDriver(name, driver);
+    g_engines[name] = engine;
+    return DrawResult::kSuccess;
 }
 
 DrawDevicePtr DrawFacade::GetDevice(const std::string& name) {
-    return DriverManager::Instance().GetDevice(name);
+    auto it = g_devices.find(name);
+    return it != g_devices.end() ? it->second : nullptr;
 }
 
 DrawEnginePtr DrawFacade::GetEngine(const std::string& name) {
-    return DriverManager::Instance().GetEngine(name);
-}
-
-DrawDriverPtr DrawFacade::GetDriver(const std::string& name) {
-    return DriverManager::Instance().GetDriver(name);
+    auto it = g_engines.find(name);
+    return it != g_engines.end() ? it->second : nullptr;
 }
 
 void DrawFacade::SetDefaultDrawStyle(const DrawStyle& style) {
@@ -135,28 +136,24 @@ Color DrawFacade::GetDefaultBackground() const {
 
 DrawStyle DrawFacade::CreateStrokeStyle(uint32_t color, double width) {
     DrawStyle style;
-    style.stroke.color = color;
-    style.stroke.width = width;
-    style.stroke.visible = true;
-    style.fill.visible = false;
+    style.pen.color = Color::FromHexWithAlpha(color);
+    style.pen.width = width;
+    style.brush = Brush::NoBrush();
     return style;
 }
 
 DrawStyle DrawFacade::CreateFillStyle(uint32_t color) {
     DrawStyle style;
-    style.fill.color = color;
-    style.fill.visible = true;
-    style.stroke.visible = false;
+    style.pen = Pen::NoPen();
+    style.brush.color = Color::FromHexWithAlpha(color);
     return style;
 }
 
 DrawStyle DrawFacade::CreateStrokeFillStyle(uint32_t strokeColor, double strokeWidth, uint32_t fillColor) {
     DrawStyle style;
-    style.stroke.color = strokeColor;
-    style.stroke.width = strokeWidth;
-    style.stroke.visible = true;
-    style.fill.color = fillColor;
-    style.fill.visible = true;
+    style.pen.color = Color::FromHexWithAlpha(strokeColor);
+    style.pen.width = strokeWidth;
+    style.brush.color = Color::FromHexWithAlpha(fillColor);
     return style;
 }
 

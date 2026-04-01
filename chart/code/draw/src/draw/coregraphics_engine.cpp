@@ -93,18 +93,18 @@ void CoreGraphicsEngine::SetContext(CGContextRef context) {
 
 void CoreGraphicsEngine::SetStrokeColor(const Color& color) {
     CGContextSetRGBStrokeColor(m_context, 
-                               color.r / 255.0, 
-                               color.g / 255.0, 
-                               color.b / 255.0, 
-                               color.a / 255.0);
+                               color.GetRed() / 255.0, 
+                               color.GetGreen() / 255.0, 
+                               color.GetBlue() / 255.0, 
+                               color.GetAlpha() / 255.0);
 }
 
 void CoreGraphicsEngine::SetFillColor(const Color& color) {
     CGContextSetRGBFillColor(m_context, 
-                            color.r / 255.0, 
-                            color.g / 255.0, 
-                            color.b / 255.0, 
-                            color.a / 255.0);
+                            color.GetRed() / 255.0, 
+                            color.GetGreen() / 255.0, 
+                            color.GetBlue() / 255.0, 
+                            color.GetAlpha() / 255.0);
 }
 
 void CoreGraphicsEngine::ApplyPen(const Pen& pen) {
@@ -302,25 +302,30 @@ DrawResult CoreGraphicsEngine::DrawText(double x, double y, const std::string& t
 }
 
 DrawResult CoreGraphicsEngine::DrawImage(double x, double y, const Image& image, double scaleX, double scaleY) {
-    if (!m_context || image.data.empty()) {
+    if (!m_context || image.IsEmpty()) {
         return DrawResult::InvalidParameter;
     }
+    
+    int imgWidth = image.GetWidth();
+    int imgHeight = image.GetHeight();
+    const uint8_t* imgData = image.GetData();
+    size_t dataSize = image.GetDataSize();
     
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     
     CGDataProviderRef provider = CGDataProviderCreateWithData(
         nullptr,
-        image.data.data(),
-        image.data.size(),
+        imgData,
+        dataSize,
         nullptr
     );
     
     CGImageRef cgImage = CGImageCreate(
-        image.width,
-        image.height,
+        imgWidth,
+        imgHeight,
         8,
         32,
-        image.width * 4,
+        imgWidth * 4,
         colorSpace,
         kCGImageAlphaPremultipliedLast,
         provider,
@@ -341,7 +346,7 @@ DrawResult CoreGraphicsEngine::DrawImage(double x, double y, const Image& image,
     CGContextTranslateCTM(m_context, x, y);
     CGContextScaleCTM(m_context, scaleX, scaleY);
     
-    CGRect rect = CGRectMake(0, 0, image.width, image.height);
+    CGRect rect = CGRectMake(0, 0, imgWidth, imgHeight);
     CGContextDrawImage(m_context, rect, cgImage);
     
     CGContextRestoreGState(m_context);

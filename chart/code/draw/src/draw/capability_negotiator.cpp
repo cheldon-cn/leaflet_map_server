@@ -151,11 +151,11 @@ void CapabilityNegotiator::DowngradeTransparency(DrawStyle& style) const {
     }
     
     if (!m_capabilities.supportsAlpha) {
-        if (style.pen.color.a < 255) {
-            style.pen.color.a = 255;
+        if (style.pen.color.GetAlpha() < 255) {
+            style.pen.color.SetAlpha(255);
         }
-        if (style.brush.color.a < 255) {
-            style.brush.color.a = 255;
+        if (style.brush.color.GetAlpha() < 255) {
+            style.brush.color.SetAlpha(255);
         }
     }
 }

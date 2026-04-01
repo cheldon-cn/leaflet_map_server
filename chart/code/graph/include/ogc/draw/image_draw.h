@@ -2,8 +2,8 @@
 #define OGC_DRAW_IMAGE_DRAW_H
 
 #include "ogc/draw/export.h"
-#include "ogc/draw/draw_result.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_result.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <string>
 #include <vector>

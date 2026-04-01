@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include "ogc/draw/async_renderer.h"
 #include "ogc/draw/render_queue.h"
 #include "ogc/draw/basic_render_task.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_style.h"
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_style.h>
 #include "ogc/envelope.h"
 #include <memory>
 #include <chrono>
@@ -51,8 +51,8 @@ TEST_F(AsyncRenderITTest, BasicAsyncRender) {
     task->SetId("basic_async_task");
     task->SetRenderFunction([this](RenderTaskPtr, DrawContext& ctx) {
         DrawStyle style;
-        style.stroke.color = 0xFF0000;
-        style.stroke.width = 2.0;
+        style.pen.color = 0xFF0000;
+        style.pen.width = 2.0;
         ctx.DrawLine(0, 0, 256, 256);
         return true;
     });
@@ -250,3 +250,4 @@ TEST_F(AsyncRenderITTest, AsyncRenderErrorHandling) {
     std::string renderId = renderer->StartAsync(task);
     renderer->WaitForCompletion(renderId, 5000);
 }
+

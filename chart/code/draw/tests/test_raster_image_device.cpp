@@ -34,10 +34,10 @@ TEST(RasterImageDeviceTest, GetSetPixelRGBA) {
     device.SetPixel(5, 5, Color(255, 0, 0, 255));
     Color c = device.GetPixel(5, 5);
     
-    EXPECT_EQ(c.r, 255);
-    EXPECT_EQ(c.g, 0);
-    EXPECT_EQ(c.b, 0);
-    EXPECT_EQ(c.a, 255);
+    EXPECT_EQ(c.GetRed(), 255);
+    EXPECT_EQ(c.GetGreen(), 0);
+    EXPECT_EQ(c.GetBlue(), 0);
+    EXPECT_EQ(c.GetAlpha(), 255);
 }
 
 TEST(RasterImageDeviceTest, GetSetPixelRGB) {
@@ -46,9 +46,9 @@ TEST(RasterImageDeviceTest, GetSetPixelRGB) {
     device.SetPixel(3, 7, Color(0, 255, 128, 255));
     Color c = device.GetPixel(3, 7);
     
-    EXPECT_EQ(c.r, 0);
-    EXPECT_EQ(c.g, 255);
-    EXPECT_EQ(c.b, 128);
+    EXPECT_EQ(c.GetRed(), 0);
+    EXPECT_EQ(c.GetGreen(), 255);
+    EXPECT_EQ(c.GetBlue(), 128);
 }
 
 TEST(RasterImageDeviceTest, GetSetPixelGray) {
@@ -57,8 +57,8 @@ TEST(RasterImageDeviceTest, GetSetPixelGray) {
     device.SetPixel(2, 3, Color(128, 128, 128, 255));
     Color c = device.GetPixel(2, 3);
     
-    EXPECT_EQ(c.r, c.g);
-    EXPECT_EQ(c.g, c.b);
+    EXPECT_EQ(c.GetRed(), c.GetGreen());
+    EXPECT_EQ(c.GetGreen(), c.GetBlue());
 }
 
 TEST(RasterImageDeviceTest, Clear) {
@@ -69,9 +69,9 @@ TEST(RasterImageDeviceTest, Clear) {
     for (int y = 0; y < 10; ++y) {
         for (int x = 0; x < 10; ++x) {
             Color c = device.GetPixel(x, y);
-            EXPECT_EQ(c.r, 100);
-            EXPECT_EQ(c.g, 150);
-            EXPECT_EQ(c.b, 200);
+            EXPECT_EQ(c.GetRed(), 100);
+            EXPECT_EQ(c.GetGreen(), 150);
+            EXPECT_EQ(c.GetBlue(), 200);
         }
     }
 }
@@ -123,7 +123,7 @@ TEST(RasterImageDeviceTest, SaveToBMP) {
     device.SetPixel(5, 5, Color::Blue());
     
     const char* filename = "test_output.bmp";
-    bool result = device.SaveToFile(filename, ImageFormat::kBMP);
+    bool result = device.SaveToFile(filename, OutputFormat::kBMP);
     EXPECT_TRUE(result);
     
     std::remove(filename);
@@ -135,7 +135,7 @@ TEST(RasterImageDeviceTest, SaveToPNG) {
     device.Clear(Color::Green());
     
     const char* filename = "test_output.png";
-    bool result = device.SaveToFile(filename, ImageFormat::kPNG);
+    bool result = device.SaveToFile(filename, OutputFormat::kPNG);
     EXPECT_TRUE(result);
     
     std::remove(filename);
@@ -159,10 +159,10 @@ TEST(RasterImageDeviceTest, BGRAFormat) {
     device.SetPixel(5, 5, Color(255, 128, 64, 255));
     Color c = device.GetPixel(5, 5);
     
-    EXPECT_EQ(c.r, 255);
-    EXPECT_EQ(c.g, 128);
-    EXPECT_EQ(c.b, 64);
-    EXPECT_EQ(c.a, 255);
+    EXPECT_EQ(c.GetRed(), 255);
+    EXPECT_EQ(c.GetGreen(), 128);
+    EXPECT_EQ(c.GetBlue(), 64);
+    EXPECT_EQ(c.GetAlpha(), 255);
 }
 
 TEST(RasterImageDeviceTest, InvalidDimensions) {

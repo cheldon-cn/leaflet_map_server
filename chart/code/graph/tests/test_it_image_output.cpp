@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
-#include "ogc/draw/raster_image_device.h"
+﻿#include <gtest/gtest.h>
+#include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/envelope.h"
 #include <memory>
 #include <cstdio>
@@ -101,8 +101,8 @@ TEST_F(IntegrationImageOutputTest, DrawLineAndVerifyPixels) {
     device->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Black().GetRGBA();
-    style.stroke.width = 1.0;
+    style.pen.color = Color::Black().GetRGBA();
+    style.pen.width = 1.0;
     
     device->DrawLine(0, 0, 255, 255, style);
     device->EndDraw();
@@ -122,10 +122,10 @@ TEST_F(IntegrationImageOutputTest, DrawRectAndVerifyPixels) {
     device->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Blue().GetRGBA();
-    style.stroke.width = 2.0;
-    style.fill.color = Color::Yellow().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Blue().GetRGBA();
+    style.pen.width = 2.0;
+    style.brush.color = Color::Yellow().GetRGBA();
+    style.brush.visible = true;
     
     device->DrawRect(50, 50, 100, 100, style);
     device->EndDraw();
@@ -145,10 +145,10 @@ TEST_F(IntegrationImageOutputTest, DrawCircleAndVerifyPixels) {
     device->Clear(Color::White());
     
     DrawStyle style;
-    style.stroke.color = Color::Green().GetRGBA();
-    style.stroke.width = 1.0;
-    style.fill.color = Color::Green().GetRGBA();
-    style.fill.visible = true;
+    style.pen.color = Color::Green().GetRGBA();
+    style.pen.width = 1.0;
+    style.brush.color = Color::Green().GetRGBA();
+    style.brush.visible = true;
     
     device->DrawCircle(128, 128, 50, style);
     device->EndDraw();
@@ -166,8 +166,8 @@ TEST_F(IntegrationImageOutputTest, SaveToFile) {
     device->Clear(Color::Blue());
     
     DrawStyle style;
-    style.stroke.color = Color::White().GetRGBA();
-    style.stroke.width = 2.0;
+    style.pen.color = Color::White().GetRGBA();
+    style.pen.width = 2.0;
     
     device->DrawLine(0, 0, 255, 255, style);
     device->DrawLine(0, 255, 255, 0, style);
@@ -191,16 +191,16 @@ TEST_F(IntegrationImageOutputTest, MultipleDrawOperations) {
     device->Clear(Color::White());
     
     DrawStyle redStyle;
-    redStyle.stroke.color = Color::Red().GetRGBA();
-    redStyle.stroke.width = 2.0;
+    redStyle.pen.color = Color::Red().GetRGBA();
+    redStyle.pen.width = 2.0;
     
     DrawStyle blueStyle;
-    blueStyle.stroke.color = Color::Blue().GetRGBA();
-    blueStyle.stroke.width = 2.0;
+    blueStyle.pen.color = Color::Blue().GetRGBA();
+    blueStyle.pen.width = 2.0;
     
     DrawStyle greenStyle;
-    greenStyle.stroke.color = Color::Green().GetRGBA();
-    greenStyle.stroke.width = 2.0;
+    greenStyle.pen.color = Color::Green().GetRGBA();
+    greenStyle.pen.width = 2.0;
     
     device->DrawLine(0, 0, 255, 0, redStyle);
     device->DrawLine(0, 128, 255, 128, blueStyle);
@@ -263,3 +263,4 @@ TEST_F(IntegrationImageOutputTest, OpacitySetting) {
     double opacity = device->GetOpacity();
     EXPECT_DOUBLE_EQ(opacity, 0.5);
 }
+

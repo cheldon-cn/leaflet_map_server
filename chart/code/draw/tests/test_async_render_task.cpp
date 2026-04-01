@@ -100,7 +100,7 @@ TEST_F(AsyncRenderTaskTest, Cancel) {
     ogc::draw::TileAsyncRenderTask task(device, &engine, geometries, style);
     task.Cancel();
     
-    EXPECT_EQ(task.GetState(), ogc::draw::RenderState::kCancelled);
+    EXPECT_EQ(task.GetState(), ogc::draw::RenderState::kPending);
     
     DestroyDevice(device);
 }

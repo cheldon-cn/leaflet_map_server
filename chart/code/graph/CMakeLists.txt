@@ -33,6 +33,9 @@ endif()
 if(NOT LAYER_SOURCE_DIR)
     set(LAYER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../layer" CACHE PATH "Layer library source directory")
 endif()
+if(NOT DRAW_SOURCE_DIR)
+    set(DRAW_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../draw" CACHE PATH "Draw library source directory")
+endif()
 
 if(NOT PROJ_ROOT)
     set(PROJ_ROOT "E:/xspace/3rd/PROJ" CACHE PATH "PROJ library root directory")
@@ -49,22 +52,8 @@ if(MSVC)
 endif()
 
 set(OGC_GRAPH_SOURCES
-    src/draw_result.cpp
-    src/device_type.cpp
-    src/engine_type.cpp
     src/draw_params.cpp
-    src/draw_style.cpp
-    src/color.cpp
-    src/font.cpp
     src/log.cpp
-    src/transform_matrix.cpp
-    src/draw_error.cpp
-    src/draw_device.cpp
-    src/raster_image_device.cpp
-    src/draw_engine.cpp
-    src/draw_driver.cpp
-    src/driver_manager.cpp
-    src/draw_context.cpp
     src/draw_facade.cpp
     src/symbolizer.cpp
     src/point_symbolizer.cpp
@@ -106,9 +95,6 @@ set(OGC_GRAPH_SOURCES
     src/layer_manager.cpp
     src/image_draw.cpp
     src/sld_parser.cpp
-    src/pdf_device.cpp
-    src/tile_device.cpp
-    src/display_device.cpp
     src/mapbox_style_parser.cpp
 )
 
@@ -139,6 +125,7 @@ target_include_directories(ogc_graph
         ${GEOM_SOURCE_DIR}/include
         ${FEATURE_SOURCE_DIR}/include
         ${LAYER_SOURCE_DIR}/include
+        ${DRAW_SOURCE_DIR}/include
         ${PROJ_ROOT}/include
 )
 
@@ -147,12 +134,13 @@ target_link_libraries(ogc_graph
         ogc_geometry
         ogc_feature
         ogc_layer
+        ogc_draw
     PRIVATE
         ${PROJ_ROOT}/lib/proj.lib
 )
 
 target_compile_definitions(ogc_graph
-    PUBLIC
+    PRIVATE
         OGC_GRAPH_EXPORTS
 )
 
