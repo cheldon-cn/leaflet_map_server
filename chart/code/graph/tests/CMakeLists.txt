@@ -87,6 +87,8 @@ set(TEST_SOURCES
     test_pan_zoom_handler.cpp
     test_selection_handler.cpp
     test_location_display_handler.cpp
+    test_track_recorder.cpp
+    test_layer_control_panel.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)

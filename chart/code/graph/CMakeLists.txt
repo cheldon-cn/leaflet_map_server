@@ -96,6 +96,7 @@ set(OGC_GRAPH_SOURCES
     src/s52_symbol_renderer.cpp
     src/thread_safe.cpp
     src/layer_manager.cpp
+    src/layer_control_panel.cpp
     src/image_draw.cpp
     src/sld_parser.cpp
     src/mapbox_style_parser.cpp
@@ -105,6 +106,7 @@ set(OGC_GRAPH_SOURCES
     src/pan_zoom_handler.cpp
     src/selection_handler.cpp
     src/location_display_handler.cpp
+    src/track_recorder.cpp
 )
 
 add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
