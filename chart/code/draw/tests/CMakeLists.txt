@@ -78,6 +78,7 @@ set(TEST_SOURCES
     test_library_compatibility.cpp
     test_qt_engine.cpp
     test_qt_display_device.cpp
+    test_qt_platform.cpp
     test_gdiplus_engine.cpp
     test_direct2d_engine.cpp
     test_windows_platform.cpp

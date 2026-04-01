@@ -91,11 +91,20 @@ set(OGC_GRAPH_SOURCES
     src/performance_metrics.cpp
     src/performance_monitor.cpp
     src/proj_transformer.cpp
+    src/coord_system_preset.cpp
+    src/s52_style_manager.cpp
+    src/s52_symbol_renderer.cpp
     src/thread_safe.cpp
     src/layer_manager.cpp
     src/image_draw.cpp
     src/sld_parser.cpp
     src/mapbox_style_parser.cpp
+    src/interaction_handler.cpp
+    src/hit_test.cpp
+    src/interaction_feedback.cpp
+    src/pan_zoom_handler.cpp
+    src/selection_handler.cpp
+    src/location_display_handler.cpp
 )
 
 add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
@@ -142,6 +151,7 @@ target_link_libraries(ogc_graph
 target_compile_definitions(ogc_graph
     PRIVATE
         OGC_GRAPH_EXPORTS
+        OGC_USE_PROJ
 )
 
 install(TARGETS ogc_graph

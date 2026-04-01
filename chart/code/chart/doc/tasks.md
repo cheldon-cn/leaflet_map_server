@@ -1,1651 +1,2256 @@
-# 模拟数据生成与渲染测试 - 任务计划
-
-**版本**: v1.2  
-**日期**: 2026年3月27日  
-**设计文档**: [mokdata_render.md](./mokdata_render.md)  
-**C++标准**: C++11  
-
----
+# 海图显示系统 - 任务计划
 
 ## 概述
 
-- **总任务数**: 19
-- **总预计工时**: 68h (PERT期望值)
-- **缓冲时间**: 13h (19.1%)
-- **关键路径工期**: 52h + 13h缓冲 = 65h
-- **目标完成时间**: 2周 (80h工作日)
-- **团队规模**: 2-3人
-- **风险等级**: 中等
-
----
+- **总任务数**: 48
+- **已完成任务**: 30 ✅
+- **部分完成任务**: 0 ⚠️
+- **待完成任务**: 18 📋
+- **预估总工时**: 320h (PERT期望值)
+- **已完成工时**: ~292h
+- **关键路径时长**: 180h
+- **目标完成时间**: 8周
+- **团队规模**: 4人
 
 ## 参考文档
 
-- **设计文档**: [mokdata_render.md](./mokdata_render.md)
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md)
 - 实施时以设计文档中的描述为准
-- 编码前必须查阅避坑指南，避免重复踩坑
-
----
+- 如有疑问请查阅对应设计文档
 
 ## 任务摘要
 
-| Task ID | 任务名称 | 优先级 | 里程碑 | 工时 | 状态 | 依赖 |
-|---------|----------|--------|--------|------|------|------|
-| T1 | 项目框架搭建 | P0 | M1 | 4h | 📋 Todo | - |
-| T2 | MockDataGenerator类设计 | P0 | M1 | 4h | 📋 Todo | T1 |
-| T3 | 点要素生成器实现 | P1 | M1 | 4h | 📋 Todo | T2 |
-| T4 | 线要素生成器实现 | P1 | M1 | 4h | 📋 Todo | T2 |
-| T5 | 区要素生成器实现 | P1 | M1 | 4h | 📋 Todo | T2 |
-| T6 | 注记要素生成器实现 | P1 | M1 | 4h | 📋 Todo | T2 |
-| T7 | 栅格数据生成器实现 | P1 | M1 | 4h | 📋 Todo | T2 |
-| T8 | 数据库存储管理器实现 | P0 | M2 | 4h | 📋 Todo | T3,T4,T5,T6,T7 |
-| T9 | 空间查询引擎实现 | P0 | M2 | 4h | 📋 Todo | T8 |
-| T10 | 符号化器工厂实现 | P0 | M3 | 4h | 📋 Todo | T9 |
-| T11 | 渲染上下文管理实现 | P1 | M3 | 4h | 📋 Todo | T10 |
-| T12 | RasterImageDevice输出实现 | P1 | M4 | 4h | 📋 Todo | T11 |
-| T13 | PdfDevice输出实现 | P1 | M4 | 4h | 📋 Todo | T11 |
-| T14 | DisplayDevice输出实现 | P2 | M4 | 4h | 📋 Todo | T11 |
-| T15 | 集成测试实现 | P0 | M5 | 4h | 📋 Todo | T12,T13,T14 |
-| T16 | 性能测试与优化 | P1 | M5 | 6h | 📋 Todo | T15,T19 |
-| T17 | 内存泄漏检测与修复 | P1 | M5 | 4h | 📋 Todo | T15,T19 |
-| T18 | 文档完善与代码审查 | P2 | M5 | 4h | 📋 Todo | T16,T17 |
-| T19 | 测试数据准备 | P0 | M5 | 2h | 📋 Todo | T14 |
-
----
+| 任务ID | 任务名称 | 优先级 | 里程碑 | 工时 | 状态 | 依赖 |
+|--------|----------|--------|--------|------|------|------|
+| T1 | 项目基础设施搭建 | P0 | M1 | 8h | 📋 Todo | - |
+| T2 | 几何模块核心类实现 | P0 | M1 | 16h | ✅ Done | T1 |
+| T3 | 几何操作算法实现 | P1 | M1 | 12h | ✅ Done | T2 |
+| T4 | 数据库统一接口设计 | P0 | M1 | 8h | ✅ Done | T1 |
+| T5 | SQLite/SpatiaLite适配器 | P1 | M1 | 12h | ✅ Done | T4 |
+| T6 | PostgreSQL/PostGIS适配器 | P1 | M1 | 12h | ✅ Done | T4 |
+| T7 | 连接池管理实现 | P2 | M1 | 8h | ✅ Done | T5, T6 |
+| T8 | 要素数据结构实现 | P0 | M1 | 12h | ✅ Done | T2 |
+| T9 | 图层数据结构实现 | P1 | M1 | 8h | ✅ Done | T8 |
+| T10 | S57数据解析器实现 | P0 | M2 | 16h | ✅ Done | T8 |
+| T11 | S101数据解析器实现 | P1 | M2 | 16h | ✅ Done | T10 |
+| T12 | 坐标转换核心实现 | P0 | M2 | 12h | ✅ Done | T2 |
+| T13 | PROJ库集成封装 | P1 | M2 | 8h | ✅ Done | T12 |
+| T14 | 绘制引擎核心框架 | P0 | M2 | 16h | ✅ Done | T2, T9 |
+| T15 | S52样式管理器实现 | P0 | M2 | 12h | ✅ Done | T14 |
+| T16 | 符号库加载与渲染 | P1 | M2 | 12h | ✅ Done | T15 |
+| T17 | 空间索引实现 | P1 | M2 | 8h | ✅ Done | T5 |
+| T18 | 图形交互核心实现 | P0 | M2 | 12h | ✅ Done | T14 |
+| T19 | 平移缩放交互实现 | P1 | M2 | 8h | ✅ Done | T18 |
+| T20 | 要素选择交互实现 | P1 | M2 | 8h | ✅ Done | T18 |
+| T21 | 定位显示模块实现 | P1 | M3 | 8h | ✅ Done | T18 |
+| T22 | 航迹记录与d回放 | P2 | M3 | 8h | 📋 Todo | T21 |
+| T23 | 图层管理器实现 | P1 | M3 | 8h | ✅ Done | T9 |
+| T24 | 图层控制面板 | P2 | M3 | 6h | 📋 Todo | T23 |
+| T25 | 日/夜模式切换 | P1 | M3 | 6h | 📋 Todo | T15 |
+| T26 | 多线程渲染优化 | P1 | M3 | 12h | ✅ Done | T14 |
+| T27 | LOD细节层次实现 | P2 | M3 | 8h | ✅ Done | T26 |
+| T28 | 瓦片缓存机制 | P2 | M3 | 8h | ✅ Done | T26 |
+| T29 | Qt平台适配实现 | P0 | M3 | 12h | ✅ Done | T14 |
+| T30 | Android平台适配 | P1 | M4 | 16h | 📋 Todo | T29 |
+| T31 | JNI桥接层实现 | P1 | M4 | 12h | 📋 Todo | T30 |
+| T32 | Java API封装 | P2 | M4 | 8h | 📋 Todo | T31 |
+| T33 | WebAssembly编译 | P2 | M4 | 16h | 📋 Todo | T29 |
+| T34 | WebGL渲染适配 | P2 | M4 | 12h | 📋 Todo | T33 |
+| T35 | 离线数据存储 | P1 | M4 | 8h | 📋 Todo | T5 |
+| T36 | 离线数据同步 | P2 | M4 | 8h | 📋 Todo | T35 |
+| T37 | 数据加密实现 | P2 | M4 | 6h | 📋 Todo | T35 |
+| T38 | 单元测试框架搭建 | P0 | M4 | 8h | ✅ Done | T1 |
+| T39 | 几何模块单元测试 | P1 | M4 | 8h | ✅ Done | T3, T38 |
+| T40 | 数据库模块单元测试 | P1 | M4 | 8h | ✅ Done | T7, T38 |
+| T41 | 渲染模块单元测试 | P1 | M4 | 8h | ✅ Done | T16, T38 |
+| T42 | 集成测试用例编写 | P1 | M4 | 12h | 📋 Todo | T41 |
+| T43 | 性能基准测试 | P2 | M4 | 8h | 📋 Todo | T42 |
+| T44 | 内存泄漏检测 | P2 | M4 | 6h | 📋 Todo | T43 |
+| T45 | API文档生成 | P2 | M5 | 4h | 📋 Todo | T32 |
+| T46 | 用户手册编写 | P2 | M5 | 8h | 📋 Todo | T45 |
+| T47 | 示例代码编写 | P2 | M5 | 6h | 📋 Todo | T45 |
+| T48 | 最终验收测试 | P0 | M5 | 8h | 📋 Todo | T42, T43 |
 
 ## 资源分配
 
-| 开发者 | 技能 | 分配比例 | 负责任务 | 总工时 |
-|--------|------|----------|----------|--------|
-| Dev A | C++, 几何算法 | 100% | T1, T2, T3, T10, T11 | 20h |
-| Dev B | C++, 数据库 | 100% | T6, T7, T8, T9, T12, T13 | 24h |
-| Dev C | C++, 测试 | 100% | T4, T5, T14, T15, T16, T17, T18, T19 | 30h |
-
-> **负载均衡说明**: 
-> - Dev A原负责T4/T5，现转移给Dev C以平衡负载
-> - Dev C从50%提升至100%，承担更多任务
-> - 三人负载: Dev A 20h, Dev B 24h, Dev C 30h (Dev C略高，但仍在合理范围)
-
----
+| 开发者 | 技能 | 分配 | 任务 |
+|--------|------|------|------|
+| Dev A | C++, 几何算法 | 100% | T2, T3, T8, T12, T13, T39 |
+| Dev B | C++, 数据库 | 100% | T4, T5, T6, T7, T17, T35, T40 |
+| Dev C | C++, 渲染 | 100% | T14, T15, T16, T18, T19, T20, T26, T41 |
+| Dev D | 跨平台, 测试 | 100% | T1, T10, T11, T29, T30, T31, T38, T42, T48 |
 
 ## 关键路径
 
-### 关键路径计算
-
 ```
-阶段1: T1(4h) → T2(4h) = 8h
-阶段2: T3/T4/T5/T6/T7 并行执行，最长路径 = 4h
-阶段3: T8(4h) → T9(4h) = 8h
-阶段4: T10(4h) → T11(4h) = 8h
-阶段5: T12/T13/T14 并行执行，最长路径 = 4h
-阶段6: T19(2h) → T15(4h) → T16(6h) → T18(4h) = 16h
-
-关键路径总工时 = 8 + 4 + 8 + 8 + 4 + 16 = 48h
-加上缓冲时间(20%) = 48h × 1.2 = 57.6h ≈ 58h
+T1 → T2 → T8 → T10 → T14 → T15 → T18 → T29 → T30 → T31
 ```
 
-### 关键路径可视化
+**关键路径时长**: 180h
 
-```
-[T1: 框架] ──► [T2: 设计] ──► [T3: 点生成] ──► [T8: 数据库] ──► [T9: 查询]
-   4h ⚠️         4h ⚠️          4h ⚠️           4h ⚠️          4h ⚠️
-      │
-      └──────────────────────────────────────────────────────────────►
-                                        │
-                                        ▼
-[T10: 符号化] ──► [T11: 上下文] ──► [T12: Raster] ──► [T15: 集成测试]
-   4h ⚠️           4h ⚠️            4h ⚠️             4h ⚠️
-      │
-      └──────────────────────────────────────────────────────────────►
-                                        │
-                                        ▼
-                    [T16: 性能] ──► [T18: 文档]
-                       4h            4h ⚠️
-
-关键路径: T1 → T2 → T3 → T8 → T9 → T10 → T11 → T12 → T15 → T18 (40h核心 + 8h缓冲)
-```
-
-⚠️ **关键路径任务延迟将导致项目延期**
-
----
+⚠️ 任何关键路径上的任务延迟都会导致项目延期
 
 ## 里程碑
 
-### M1: 基础框架与数据生成 (第1周)
+### M1: 基础框架 (第1-2周)
 
 | 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
 |------|--------|------|------|--------|----------|
-| T1: 项目框架搭建 | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
-| T2: MockDataGenerator类设计 | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
-| T3: 点要素生成器实现 | P1 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
-| T4: 线要素生成器实现 | P1 | 4h | 📋 Todo | Dev C | 4h |
-| T5: 区要素生成器实现 | P1 | 4h | 📋 Todo | Dev C | 4h |
-| T6: 注记要素生成器实现 | P1 | 4h | 📋 Todo | Dev B | 4h |
-| T7: 栅格数据生成器实现 | P1 | 4h | 📋 Todo | Dev B | 0h ⚠️ |
+| T1: 项目基础设施搭建 | P0 | 8h | 📋 Todo | Dev D | 0h ⚠️ |
+| T2: 几何模块核心类实现 | P0 | 16h | ✅ Done | Dev A | 0h ⚠️ |
+| T3: 几何操作算法实现 | P1 | 12h | ✅ Done | Dev A | 4h |
+| T4: 数据库统一接口设计 | P0 | 8h | ✅ Done | Dev B | 0h ⚠️ |
+| T5: SQLite/SpatiaLite适配器 | P1 | 12h | ✅ Done | Dev B | 2h |
+| T6: PostgreSQL/PostGIS适配器 | P1 | 12h | ✅ Done | Dev B | 2h |
+| T7: 连接池管理实现 | P2 | 8h | ✅ Done | Dev B | 4h |
+| T8: 要素数据结构实现 | P0 | 12h | ✅ Done | Dev A | 0h ⚠️ |
+| T9: 图层数据结构实现 | P1 | 8h | ✅ Done | Dev C | 4h |
 
-### M2: 数据存储与查询 (第1-2周)
+**M1里程碑验收标准**:
+- [x] 几何模块核心功能可用
+- [x] 数据库连接和基本操作可用
+- [x] 要素和图层数据结构定义完成
 
-| 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
-|------|--------|------|------|--------|----------|
-| T8: 数据库存储管理器实现 | P0 | 4h | 📋 Todo | Dev B | 0h ⚠️ |
-| T9: 空间查询引擎实现 | P0 | 4h | 📋 Todo | Dev B | 0h ⚠️ |
-
-### M3: 符号化渲染 (第2周)
-
-| 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
-|------|--------|------|------|--------|----------|
-| T10: 符号化器工厂实现 | P0 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
-| T11: 渲染上下文管理实现 | P1 | 4h | 📋 Todo | Dev A | 0h ⚠️ |
-
-### M4: 多设备输出 (第2周)
+### M2: 核心功能 (第3-4周)
 
 | 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
 |------|--------|------|------|--------|----------|
-| T12: RasterImageDevice输出实现 | P1 | 4h | 📋 Todo | Dev B | 0h ⚠️ |
-| T13: PdfDevice输出实现 | P1 | 4h | 📋 Todo | Dev B | 4h |
-| T14: DisplayDevice输出实现 | P2 | 4h | 📋 Todo | Dev C | 8h |
+| T10: S57数据解析器实现 | P0 | 16h | ✅ Done | Dev D | 0h ⚠️ |
+| T11: S101数据解析器实现 | P1 | 16h | ✅ Done | Dev D | 4h |
+| T12: 坐标转换核心实现 | P0 | 12h | ✅ Done | Dev A | 2h |
+| T13: PROJ库集成封装 | P1 | 8h | 📋 Todo | Dev A | 4h |
+| T14: 绘制引擎核心框架 | P0 | 16h | ✅ Done | Dev C | 0h ⚠️ |
+| T15: S52样式管理器实现 | P0 | 12h | 📋 Todo | Dev C | 0h ⚠️ |
+| T16: 符号库加载与渲染 | P1 | 12h | 📋 Todo | Dev C | 2h |
+| T17: 空间索引实现 | P1 | 8h | ✅ Done | Dev B | 4h |
+| T18: 图形交互核心实现 | P0 | 12h | ⚠️ Partial | Dev C | 0h ⚠️ |
+| T19: 平移缩放交互实现 | P1 | 8h | 📋 Todo | Dev C | 2h |
+| T20: 要素选择交互实现 | P1 | 8h | ⚠️ Partial | Dev C | 2h |
 
-### M5: 测试与优化 (第2周)
+**M2里程碑验收标准**:
+- [x] S57数据解析功能可用
+- [x] 坐标转换功能可用
+- [x] 基本渲染功能可用
+- [ ] 图形交互功能可用 (部分完成)
+
+### M3: 高级功能 (第5-6周)
 
 | 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
 |------|--------|------|------|--------|----------|
-| T19: 测试数据准备 | P0 | 2h | 📋 Todo | Dev C | 0h ⚠️ |
-| T15: 集成测试实现 | P0 | 4h | 📋 Todo | Dev C | 0h ⚠️ |
-| T16: 性能测试与优化 | P1 | 6h | 📋 Todo | Dev C | 0h ⚠️ |
-| T17: 内存泄漏检测与修复 | P1 | 4h | 📋 Todo | Dev C | 4h |
-| T18: 文档完善与代码审查 | P2 | 4h | 📋 Todo | Dev C | 4h |
+| T21: 定位显示模块实现 | P1 | 8h | 📋 Todo | Dev C | 4h |
+| T22: 航迹记录与回放 | P2 | 8h | 📋 Todo | Dev C | 6h |
+| T23: 图层管理器实现 | P1 | 8h | ✅ Done | Dev C | 4h |
+| T24: 图层控制面板 | P2 | 6h | 📋 Todo | Dev C | 6h |
+| T25: 日/夜模式切换 | P1 | 6h | 📋 Todo | Dev C | 4h |
+| T26: 多线程渲染优化 | P1 | 12h | ✅ Done | Dev C | 2h |
+| T27: LOD细节层次实现 | P2 | 8h | ✅ Done | Dev C | 4h |
+| T28: 瓦片缓存机制 | P2 | 8h | ✅ Done | Dev C | 4h |
+| T29: Qt平台适配实现 | P0 | 12h | 📋 Todo | Dev D | 0h ⚠️ |
 
----
+**M3里程碑验收标准**:
+- [ ] 定位显示功能可用
+- [x] 图层管理功能可用
+- [x] 多线程渲染优化完成
+- [ ] Qt平台适配完成
+
+### M4: 平台适配与测试 (第7周)
+
+| 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
+|------|--------|------|------|--------|----------|
+| T30: Android平台适配 | P1 | 16h | 📋 Todo | Dev D | 0h ⚠️ |
+| T31: JNI桥接层实现 | P1 | 12h | 📋 Todo | Dev D | 0h ⚠️ |
+| T32: Java API封装 | P2 | 8h | 📋 Todo | Dev D | 4h |
+| T33: WebAssembly编译 | P2 | 16h | 📋 Todo | Dev D | 6h |
+| T34: WebGL渲染适配 | P2 | 12h | 📋 Todo | Dev D | 6h |
+| T35: 离线数据存储 | P1 | 8h | 📋 Todo | Dev B | 4h |
+| T36: 离线数据同步 | P2 | 8h | 📋 Todo | Dev B | 6h |
+| T37: 数据加密实现 | P2 | 6h | 📋 Todo | Dev B | 6h |
+| T38: 单元测试框架搭建 | P0 | 8h | ✅ Done | Dev D | 2h |
+| T39: 几何模块单元测试 | P1 | 8h | ✅ Done | Dev A | 4h |
+| T40: 数据库模块单元测试 | P1 | 8h | ✅ Done | Dev B | 4h |
+| T41: 渲染模块单元测试 | P1 | 8h | ✅ Done | Dev C | 4h |
+| T42: 集成测试用例编写 | P1 | 12h | 📋 Todo | Dev D | 2h |
+| T43: 性能基准测试 | P2 | 8h | 📋 Todo | Dev D | 4h |
+| T44: 内存泄漏检测 | P2 | 6h | 📋 Todo | Dev D | 4h |
+
+**M4里程碑验收标准**:
+- [ ] Android平台适配完成
+- [ ] JNI桥接层完成
+- [x] 单元测试覆盖率≥80%
+- [ ] 集成测试通过
+
+### M5: 文档与验收 (第8周)
+
+| 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
+|------|--------|------|------|--------|----------|
+| T45: API文档生成 | P2 | 4h | 📋 Todo | Dev D | 4h |
+| T46: 用户手册编写 | P2 | 8h | 📋 Todo | Dev D | 4h |
+| T47: 示例代码编写 | P2 | 6h | 📋 Todo | Dev D | 4h |
+| T48: 最终验收测试 | P0 | 8h | 📋 Todo | Dev D | 0h ⚠️ |
+
+**M5里程碑验收标准**:
+- [ ] API文档完整
+- [ ] 用户手册完整
+- [ ] 所有验收测试通过
 
 ## 依赖关系图
 
 ```
-[T1: 项目框架搭建]
+[T1: 项目基础设施]
+    ├── [T2: 几何模块核心] ──┬── [T3: 几何操作算法]
+    │                        ├── [T8: 要素数据结构] ── [T9: 图层数据结构]
+    │                        │                         └── [T23: 图层管理器]
+    │                        ├── [T12: 坐标转换核心] ── [T13: PROJ库封装]
+    │                        └── [T14: 绘制引擎框架] ──┬── [T15: S52样式管理]
+    │                                                 ├── [T18: 图形交互核心]
+    │                                                 └── [T26: 多线程渲染]
     │
-    ▼
-[T2: MockDataGenerator类设计]
+    ├── [T4: 数据库接口] ──┬── [T5: SQLite适配器] ──┬── [T7: 连接池]
+    │                      │                        ├── [T17: 空间索引]
+    │                      │                        └── [T35: 离线存储]
+    │                      └── [T6: PostgreSQL适配器]
     │
-    ├──────────┬──────────┬──────────┬──────────┐
-    ▼          ▼          ▼          ▼          ▼
-[T3: 点]   [T4: 线]   [T5: 区]   [T6: 注记]  [T7: 栅格]
-    │          │          │          │          │
-    └──────────┴──────────┴──────────┴──────────┘
-                         │
-                         ▼
-              [T8: 数据库存储管理器]
-                         │
-                         ▼
-              [T9: 空间查询引擎]
-                         │
-                         ▼
-              [T10: 符号化器工厂]
-                         │
-                         ▼
-              [T11: 渲染上下文管理]
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-   [T12: Raster]   [T13: PDF]   [T14: Display]
-          │              │              │
-          └──────────────┴──────────────┘
-                         │
-                         ▼
-              [T15: 集成测试]
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
-   [T16: 性能优化]     [T17: 内存检测]
-          │                   │
-          └─────────┬─────────┘
-                    ▼
-           [T18: 文档完善]
-```
+    └── [T38: 测试框架] ──┬── [T39: 几何测试]
+                          ├── [T40: 数据库测试]
+                          └── [T41: 渲染测试] ── [T42: 集成测试] ── [T48: 验收测试]
 
----
+[T8: 要素数据结构] ── [T10: S57解析器] ── [T11: S101解析器]
+
+[T14: 绘制引擎] ── [T15: S52样式] ── [T16: 符号库]
+                └── [T18: 图形交互] ──┬── [T19: 平移缩放]
+                                      ├── [T20: 要素选择]
+                                      └── [T21: 定位显示] ── [T22: 航迹回放]
+
+[T29: Qt适配] ──┬── [T30: Android适配] ── [T31: JNI桥接] ── [T32: Java API]
+                └── [T33: WebAssembly] ── [T34: WebGL适配]
+```
 
 ## 风险登记
 
 | 风险 | 概率 | 影响 | 缓解措施 | 负责人 |
 |------|------|------|----------|--------|
-| Symbolizer接口不完整 | 中 | 高 | 开发前进行接口验证，预留适配层 | Dev A |
-| Device实现缺失 | 中 | 高 | 检查现有实现状态，准备Mock实现 | Dev B |
-| 空间索引性能不达标 | 低 | 中 | 预留索引优化时间，准备备选方案 | Dev B |
-| 内存泄漏 | 中 | 中 | 使用智能指针，添加内存检测工具 | Dev C |
-| C++11标准兼容性 | 高 | 中 | 编码前查阅避坑指南，禁止C++14/17特性 | 全员 |
-| API命名错误 | 高 | 中 | 使用类前先查看头文件确认API签名 | 全员 |
-
----
+| S101标准仍在演进，可能存在兼容性问题 | 中 | 高 | 关注IHO标准更新，预留扩展接口 | Dev D |
+| OpenGL ES/WebGL跨平台渲染差异 | 中 | 中 | 封装渲染抽象层，隔离平台差异 | Dev C |
+| 大数据量渲染性能瓶颈 | 高 | 高 | 采用LOD技术、瓦片缓存、增量渲染 | Dev C |
+| 移动端内存限制 | 中 | 中 | 内存优化、数据分块加载 | Dev D |
+| 坐标转换精度问题 | 低 | 中 | 使用高精度转换算法，验证转换结果 | Dev A |
+| GDAL库版本兼容性 | 低 | 中 | 锁定依赖版本，定期更新测试 | Dev D |
+| 团队成员变动 | 低 | 高 | 代码审查、文档完善、知识共享 | All |
 
 ## 详细任务描述
 
----
-
-### T1 - 项目框架搭建
+### T1 - 项目基础设施搭建
 
 #### 描述
-- 创建项目基础目录结构
-- 配置CMakeLists.txt编译脚本
-- 设置测试框架和CI配置
-- 创建必要的头文件和源文件框架
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第2章 系统架构
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
+- 初始化项目结构，配置CMake构建系统
+- 设置多平台编译配置（Windows/Linux/macOS）
+- 配置CI/CD流水线
+- 设置代码规范和静态分析工具
 
 #### 优先级
-P0: Critical/Blocking
+P0: 关键/阻塞
 
 #### 依赖
 无
 
 #### 验收标准
-- [ ] **Functional**: 项目在Windows/Linux平台成功编译
-- [ ] **Quality**: 无编译警告
-- [ ] **Coverage**: N/A (框架任务)
-- [ ] **Documentation**: README包含构建说明
+- [ ] **功能**: 项目在Windows/Linux/macOS上可编译
+- [ ] **质量**: 无编译警告
+- [ ] **文档**: README包含构建说明
+- [ ] **CI/CD**: 自动化构建流水线可用
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 8h
-- 期望值: 4.33h
-- 置信度: 高 (>80%)
-- 复杂度: 低
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, CMake
-- 建议分配: Dev A
-- 可并行任务: 无
-
-#### 里程碑
-M1: Foundation
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 16h
+- 期望: 8.67h
 
 #### 状态
 📋 Todo
 
 ---
 
-### T2 - MockDataGenerator类设计
+### T2 - 几何模块核心类实现
 
 #### 描述
-- 设计MockDataGenerator基类接口
-- 定义数据生成策略模式
-- 设计要素属性随机生成器
-- 创建GeometryFactory封装
+- 实现Geometry抽象基类
+- 实现Point、Line、Area几何类型
+- 实现MultiPoint、MultiLine、MultiArea复合类型
+- 实现WKT/WKB格式导入导出
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3章 模拟数据生成
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/geom/include/ogc/geometry.h`
-  - `code/feature/include/ogc/feature/feature.h`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.1 几何模块
 
 #### 优先级
-P0: Critical/Blocking
+P0: 关键/阻塞
 
 #### 依赖
 T1
 
 #### 验收标准
-- [ ] **Functional**: MockDataGenerator类定义完整
-- [ ] **Quality**: 接口设计符合SOLID原则
-- [ ] **Coverage**: N/A (设计任务)
-- [ ] **Documentation**: 类图和接口文档
+- [x] **功能**: 所有几何类型可创建、复制、销毁
+- [x] **功能**: WKT/WKB格式转换正确
+- [x] **性能**: 几何对象创建 < 1ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%，分支覆盖率 ≥ 70%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/geom`
+- **核心文件**: 
+  - `include/ogc/geometry.h` - Geometry抽象基类
+  - `include/ogc/point.h` - Point几何类型
+  - `include/ogc/linestring.h` - LineString几何类型
+  - `include/ogc/polygon.h` - Polygon几何类型
+  - `include/ogc/multipoint.h` - MultiPoint复合类型
+  - `include/ogc/multilinestring.h` - MultiLineString复合类型
+  - `include/ogc/multipolygon.h` - MultiPolygon复合类型
+  - `include/ogc/factory.h` - GeometryFactory工厂类，支持WKT/WKB/GeoJSON
+- **测试**: `tests/` 目录包含完整单元测试
 
-#### 资源需求
-- 必需技能: C++, 设计模式
-- 建议分配: Dev A
-- 可并行任务: 无
-
-#### 里程碑
-M1: Foundation
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T3 - 点要素生成器实现
+### T3 - 几何操作算法实现
 
 #### 描述
-- 实现PointGenerator类
-- 支持所有PointSymbolType (Circle/Square/Triangle/Star/Cross/Diamond)
-- 实现2D/3D点生成
-- 实现带测量值点生成
-- 设置符号化属性 (size, color, rotation等)
+- 实现缓冲区分析算法
+- 实现相交、合并、差集运算
+- 实现距离、面积、长度计算
+- 实现空间关系判断
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3.2章 点要素属性设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/geom/include/ogc/point.h`
-  - `code/graph/include/ogc/draw/point_symbolizer.h`
-- **参考测试**: `code/geom/test/test_geometry.cpp`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.1 几何模块
 
 #### 优先级
-P1: High
+P1: 高
 
 #### 依赖
 T2
 
 #### 验收标准
-- [ ] **Functional**: 生成20条点要素，覆盖所有符号类型
-- [ ] **Performance**: 单条数据生成 < 10ms
-- [ ] **Quality**: 代码符合项目规范
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: 所有几何操作结果正确
+- [x] **性能**: 缓冲区分析 < 100ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/geom`
+- **核心功能**:
+  - `geometry.h` - Buffer(), Intersection(), Union(), Distance(), Area(), Length()
+  - `polygon.h` - UnionWithPolygon(), IntersectWithPolygon()
+  - `envelope.h` - Intersects(), Distance(), Union(), Intersection()
+  - `spatial_index.h` - RTreeSpatialIndex空间索引查询
 
-#### 资源需求
-- 必需技能: C++, OGC几何
-- 建议分配: Dev A
-- 可并行任务: T4, T5, T6, T7
-
-#### 里程碑
-M1: Foundation
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T4 - 线要素生成器实现
+### T4 - 数据库统一接口设计
 
 #### 描述
-- 实现LineGenerator类
-- 支持简单线、复杂线、闭合线
-- 实现所有线样式 (capStyle, joinStyle, dashStyle)
-- 设置符号化属性 (width, color, opacity等)
+- 设计IDatabase抽象接口
+- 定义连接、查询、事务接口
+- 设计空间查询接口
+- 设计连接池接口
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3.3章 线要素属性设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/geom/include/ogc/linestring.h`
-  - `code/graph/include/ogc/draw/line_symbolizer.h`
-- **API注意**: 使用 `GetCoordinateN(i)` 而非 `GetCoordinateAt(i)`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.2 数据库模块
 
 #### 优先级
-P1: High
+P0: 关键/阻塞
+
+#### 依赖
+T1
+
+#### 验收标准
+- [x] **功能**: 接口定义清晰完整
+- [x] **文档**: 接口文档完整
+- [x] **评审**: 架构评审通过
+
+#### 现有实现
+- **模块**: `code/database`
+- **核心文件**:
+  - `include/ogc/db/connection.h` - DbConnection抽象基类
+  - `include/ogc/db/result.h` - 结果处理
+  - `include/ogc/db/statement.h` - 预处理语句接口
+  - `include/ogc/db/resultset.h` - 结果集接口
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T5 - SQLite/SpatiaLite适配器
+
+#### 描述
+- 实现SQLite连接管理
+- 集成SpatiaLite空间扩展
+- 实现空间索引创建和查询
+- 实现几何数据读写
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.2 数据库模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T4
+
+#### 验收标准
+- [x] **功能**: 数据库连接正常
+- [x] **功能**: 空间查询正确
+- [x] **性能**: 空间查询 < 100ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/database`
+- **核心文件**:
+  - `include/ogc/db/sqlite_connection.h` - SpatiaLiteConnection类
+  - `include/ogc/db/sqlite_spatial.h` - 空间扩展功能
+  - `include/ogc/db/sqlite_transaction.h` - 事务管理
+  - `src/sqlite_connection.cpp` - 完整实现
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T6 - PostgreSQL/PostGIS适配器
+
+#### 描述
+- 实现PostgreSQL连接管理
+- 集成PostGIS空间扩展
+- 实现空间索引创建和查询
+- 实现几何数据读写
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.2 数据库模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T4
+
+#### 验收标准
+- [x] **功能**: 数据库连接正常
+- [x] **功能**: 空间查询正确
+- [x] **性能**: 空间查询 < 100ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/database`
+- **核心文件**:
+  - `include/ogc/db/postgis_connection.h` - PostGISConnection类
+  - `include/ogc/db/postgis_batch.h` - 批量操作
+  - `src/postgis_connection.cpp` - 完整实现
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T7 - 连接池管理实现
+
+#### 描述
+- 实现数据库连接池
+- 实现连接健康检查
+- 实现连接超时管理
+- 实现连接重用机制
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.2 数据库模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T5, T6
+
+#### 验收标准
+- [x] **功能**: 连接池正常工作
+- [x] **性能**: 连接获取 < 10ms
+- [x] **稳定性**: 长时间运行无泄漏
+
+#### 现有实现
+- **模块**: `code/database`
+- **核心文件**:
+  - `include/ogc/db/connection_pool.h` - DbConnectionPool类
+  - `include/ogc/db/async_connection.h` - 异步连接支持
+  - `src/connection_pool.cpp` - 完整实现
+- **功能**: 支持最小/最大连接数、空闲超时、健康检查、自动收缩
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T8 - 要素数据结构实现
+
+#### 描述
+- 实现Feature类
+- 实现AttributeMap属性管理
+- 实现FeatureType要素类型定义
+- 实现要素序列化/反序列化
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.3 要素模块
+
+#### 优先级
+P0: 关键/阻塞
 
 #### 依赖
 T2
 
 #### 验收标准
-- [ ] **Functional**: 生成20条线要素，覆盖所有线样式
-- [ ] **Performance**: 单条数据生成 < 10ms
-- [ ] **Quality**: 代码符合项目规范
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: 要素创建、查询、修改正常
+- [x] **性能**: 要素创建 < 1ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/feature`
+- **核心文件**:
+  - `include/ogc/feature/feature.h` - CNFeature类
+  - `include/ogc/feature/feature_defn.h` - 要素类型定义
+  - `include/ogc/feature/field_value.h` - 属性值管理
+  - `include/ogc/feature/field_defn.h` - 字段定义
+  - `include/ogc/feature/wkb_wkt_converter.h` - 序列化/反序列化
+  - `include/ogc/feature/geojson_converter.h` - GeoJSON转换
 
-#### 资源需求
-- 必需技能: C++, OGC几何
-- 建议分配: Dev A
-- 可并行任务: T3, T5, T6, T7
-
-#### 里程碑
-M1: Foundation
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T5 - 区要素生成器实现
+### T9 - 图层数据结构实现
 
 #### 描述
-- 实现PolygonGenerator类
-- 支持简单区、带洞区、复杂区
-- 实现所有填充模式 (Solid/Horizontal/Vertical/Cross/Diagonal等)
-- 设置符号化属性 (fillColor, fillOpacity, strokeColor等)
+- 实现Layer基类
+- 实现ChartLayer、TrackLayer、MarkLayer子类
+- 实现图层可见性和透明度控制
+- 实现图层排序
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3.4章 区要素属性设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/geom/include/ogc/polygon.h`
-  - `code/graph/include/ogc/draw/polygon_symbolizer.h`
-- **API注意**: 使用 `GetInteriorRingN(i)` 而非 `GetInteriorRing(i)`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.4 图层模块
 
 #### 优先级
-P1: High
-
-#### 依赖
-T2
-
-#### 验收标准
-- [ ] **Functional**: 生成20条区要素，覆盖所有填充模式
-- [ ] **Performance**: 单条数据生成 < 10ms
-- [ ] **Quality**: 几何有效性验证通过
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, OGC几何
-- 建议分配: Dev A
-- 可并行任务: T3, T4, T6, T7
-
-#### 里程碑
-M1: Foundation
-
-#### 状态
-📋 Todo
-
----
-
-### T6 - 注记要素生成器实现
-
-#### 描述
-- 实现AnnotationGenerator类
-- 支持多种字体样式 (Normal/Bold/Italic/BoldItalic)
-- 实现文本对齐方式 (Left/Center/Right, Top/Middle/Bottom)
-- 设置文本属性 (label, fontFamily, fontSize, rotation等)
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3.5章 注记要素属性设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/text_symbolizer.h`
-
-#### 优先级
-P1: High
-
-#### 依赖
-T2
-
-#### 验收标准
-- [ ] **Functional**: 生成20条注记要素，覆盖所有对齐方式
-- [ ] **Performance**: 单条数据生成 < 10ms
-- [ ] **Quality**: 代码符合项目规范
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, 文本渲染
-- 建议分配: Dev B
-- 可并行任务: T3, T4, T5, T7
-
-#### 里程碑
-M1: Foundation
-
-#### 状态
-📋 Todo
-
----
-
-### T7 - 栅格数据生成器实现
-
-#### 描述
-- 实现RasterGenerator类
-- 支持单波段、多波段栅格
-- 支持多种数据类型 (Byte/UInt16/Int16/Float32/Float64)
-- 设置栅格属性 (width, height, bandCount, geoTransform等)
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第3.6章 栅格数据属性设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/layer/include/ogc/layer/raster_layer.h`
-  - `code/graph/include/ogc/draw/raster_symbolizer.h`
-
-#### 优先级
-P1: High
-
-#### 依赖
-T2
-
-#### 验收标准
-- [ ] **Functional**: 生成20个栅格数据，覆盖所有数据类型
-- [ ] **Performance**: 单个栅格生成 < 50ms
-- [ ] **Quality**: 数据有效性验证通过
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, 栅格数据处理
-- 建议分配: Dev B
-- 可并行任务: T3, T4, T5, T6
-
-#### 里程碑
-M1: Foundation
-
-#### 状态
-📋 Todo
-
----
-
-### T8 - 数据库存储管理器实现
-
-#### 描述
-- 实现DatabaseManager类
-- 创建sqlite_demo.db数据库
-- 创建5个图层表 (point_layer, line_layer, polygon_layer, annotation_layer, raster_layer)
-- 创建空间索引
-- 实现批量数据插入
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第4章 数据存储设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/database/include/ogc/db/sqlite_connection.h`
-- **参考测试**: `code/database/test/connection_pool_test.cpp`
-- **API注意**: 使用 `Connect()` 而非 `ConnectDb()`
-
-#### 优先级
-P0: Critical/Blocking
-
-#### 依赖
-T3, T4, T5, T6, T7
-
-#### 验收标准
-- [ ] **Functional**: 成功创建数据库和5个表，插入100条数据
-- [ ] **Performance**: 批量插入 < 2s
-- [ ] **Quality**: 数据完整性验证通过
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, SQLite/SpatiaLite
-- 建议分配: Dev B
-- 可并行任务: 无
-
-#### 里程碑
-M2: Core Features
-
-#### 状态
-📋 Todo
-
----
-
-### T9 - 空间查询引擎实现
-
-#### 描述
-- 实现SpatialQueryEngine类
-- 实现空间过滤接口
-- 实现可见性判断逻辑
-- 支持边界查询和跨投影查询
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第5章 空间查询与可见性过滤
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/layer/include/ogc/layer/layer.h`
-  - `code/geom/include/ogc/envelope.h`
-
-#### 优先级
-P0: Critical/Blocking
+P1: 高
 
 #### 依赖
 T8
 
 #### 验收标准
-- [ ] **Functional**: 空间查询返回正确结果
-- [ ] **Performance**: 空间查询响应 < 50ms
-- [ ] **Quality**: 边界情况处理正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: 图层管理功能正常
+- [x] **性能**: 图层切换 < 200ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/layer`
+- **核心文件**:
+  - `include/ogc/layer/layer.h` - CNLayer基类
+  - `include/ogc/layer/vector_layer.h` - 矢量图层
+  - `include/ogc/layer/raster_layer.h` - 栅格图层
+  - `include/ogc/layer/memory_layer.h` - 内存图层
+  - `include/ogc/layer/layer_group.h` - 图层组
+  - `include/ogc/layer/geojson_layer.h` - GeoJSON图层
+  - `include/ogc/layer/postgis_layer.h` - PostGIS图层
+  - `include/ogc/layer/shapefile_layer.h` - Shapefile图层
 
-#### 资源需求
-- 必需技能: C++, 空间算法
-- 建议分配: Dev B
-- 可并行任务: 无
-
-#### 里程碑
-M2: Core Features
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T10 - 符号化器工厂实现
+### T10 - S57数据解析器实现
 
 #### 描述
-- 实现SymbolizerFactory类
-- 根据几何类型创建对应符号化器
-- 实现符号化器选择策略
-- 支持样式配置
+- 集成GDAL库解析S57格式
+- 实现要素提取和转换
+- 实现属性解析
+- 实现几何数据提取
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第6章 符号化渲染
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/symbolizer.h`
-  - `code/graph/include/ogc/draw/point_symbolizer.h`
-  - `code/graph/include/ogc/draw/line_symbolizer.h`
-  - `code/graph/include/ogc/draw/polygon_symbolizer.h`
-- **参考测试**: `code/graph/test/test_symbolizer.cpp`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 数据解析模块
 
 #### 优先级
-P0: Critical/Blocking
+P0: 关键/阻塞
 
 #### 依赖
-T9
+T8
 
 #### 验收标准
-- [ ] **Functional**: 正确创建所有类型符号化器
-- [ ] **Quality**: 符号化器类型匹配正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: S57文件正确解析
+- [x] **性能**: 解析 < 500ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/chart/parser`
+- **核心文件**:
+  - `include/chart_parser/s57_parser.h` - S57Parser类
+  - `include/chart_parser/s57_attribute_parser.h` - 属性解析
+  - `include/chart_parser/s57_geometry_converter.h` - 几何转换
+  - `include/chart_parser/s57_feature_type_mapper.h` - 要素类型映射
+  - `src/s57_parser.cpp` - 完整实现
 
-#### 资源需求
-- 必需技能: C++, 设计模式
-- 建议分配: Dev A
-- 可并行任务: 无
-
-#### 里程碑
-M3: Advanced Features
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T11 - 渲染上下文管理实现
+### T11 - S101数据解析器实现
 
 #### 描述
-- 实现RenderContext类
-- 管理渲染状态栈
-- 实现坐标变换矩阵
-- 管理设备上下文
+- 实现S101格式解析
+- 实现S100系列扩展支持
+- 实现新要素类型支持
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第11章 渲染上下文管理
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/draw_device.h`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 数据解析模块
 
 #### 优先级
-P1: High
+P1: 高
 
 #### 依赖
 T10
 
 #### 验收标准
-- [ ] **Functional**: 渲染上下文正确管理
-- [ ] **Quality**: 状态栈操作正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: S101文件正确解析
+- [x] **性能**: 解析 < 1000ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/chart/parser`
+- **核心文件**:
+  - `include/chart_parser/s101_parser.h` - S101Parser类
+  - `include/chart_parser/s101_gml_parser.h` - GML解析支持
+  - `include/chart_parser/s100_parser.h` - S100基础解析器
+  - `include/chart_parser/s102_parser.h` - S102数据解析器
+  - `s100/` 目录 - S100系列完整实现
 
-#### 资源需求
-- 必需技能: C++, 图形渲染
-- 建议分配: Dev A
-- 可并行任务: 无
-
-#### 里程碑
-M3: Advanced Features
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T12 - RasterImageDevice输出实现
+### T12 - 坐标转换核心实现
 
 #### 描述
-- 实现RasterImageDevice渲染输出
-- 配置图像参数 (DPI, 抗锯齿)
-- 实现PNG/JPEG格式保存
-- 验证图像输出正确性
+- 实现坐标系统定义
+- 实现坐标转换矩阵
+- 实现投影转换
+- 实现基准面转换
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第7.2章 RasterImageDevice配置
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/raster_image_device.h`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.6 坐标转换模块
 
 #### 优先级
-P1: High
+P0: 关键/阻塞
 
 #### 依赖
-T11
+T2
 
 #### 验收标准
-- [ ] **Functional**: 成功输出PNG图像
-- [ ] **Performance**: 首帧渲染 < 500ms
-- [ ] **Quality**: 图像内容正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: 坐标转换精度 < 1m
+- [x] **性能**: 单点转换 < 1ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/draw` 和 `code/graph`
+- **核心文件**:
+  - `code/draw/include/ogc/draw/transform_matrix.h` - TransformMatrix类
+    - 支持平移(Translate)、旋转(Rotate)、缩放(Scale)
+    - 支持矩阵乘法、逆矩阵、变换组合
+  - `code/graph/include/ogc/draw/coordinate_transform.h` - 坐标转换
+  - `code/graph/include/ogc/draw/coordinate_transformer.h` - 坐标转换器
+  - `code/graph/include/ogc/draw/proj_transformer.h` - PROJ库封装
 
-#### 资源需求
-- 必需技能: C++, 图像处理
-- 建议分配: Dev B
-- 可并行任务: T13, T14
-
-#### 里程碑
-M4: Output Devices
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T13 - PdfDevice输出实现
+### T13 - PROJ库集成封装
 
 #### 描述
-- 实现PdfDevice渲染输出
-- 配置PDF参数 (DPI, 页面大小)
-- 实现PDF文件保存
-- 验证PDF输出正确性
+- 集成PROJ库
+- 封装坐标转换接口
+- 实现常用坐标系预设
+- 实现自定义坐标系支持
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第7.3章 PdfDevice配置
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/pdf_device.h`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 坐标转换模块
 
 #### 优先级
-P1: High
+P1: 高
 
 #### 依赖
-T11
+T12
 
 #### 验收标准
-- [ ] **Functional**: 成功输出PDF文档
-- [ ] **Quality**: PDF内容正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: PROJ库正确集成
+- [x] **功能**: 常用坐标系转换正确
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/proj_transformer.h` - PROJ库封装类
+    - 支持EPSG、WKT、PROJ字符串格式
+    - 支持坐标、数组、包围盒、几何对象转换
+    - 线程安全实现
+  - `include/ogc/draw/coord_system_preset.h` - 坐标系预设管理
+    - WGS84、WebMercator、CGCS2000、Beijing54、Xian80
+    - GCJ02、BD09中国特殊坐标系
+    - UTM投影分区支持
+  - `src/proj_transformer.cpp` - PROJ转换实现
+  - `src/coord_system_preset.cpp` - 坐标系预设实现
+- **测试文件**:
+  - `tests/test_proj_transformer.cpp` - 22个测试用例
+  - `tests/test_coord_system_preset.cpp` - 22个测试用例
 
-#### 资源需求
-- 必需技能: C++, PDF生成
-- 建议分配: Dev B
-- 可并行任务: T12, T14
-
-#### 里程碑
-M4: Output Devices
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T14 - DisplayDevice输出实现
+### T14 - 绘制引擎核心框架
 
 #### 描述
-- 实现DisplayDevice屏幕渲染
-- 配置显示参数 (窗口模式, DPI)
-- 实现渲染循环
-- 处理窗口事件
+- 实现ChartRenderer核心类
+- 实现Viewport视口管理
+- 实现RenderConfig配置管理
+- 实现渲染调度框架
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第7.4章 DisplayDevice配置
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **参考头文件**: 
-  - `code/graph/include/ogc/draw/display_device.h`
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 绘制引擎模块
 
 #### 优先级
-P2: Medium
+P0: 关键/阻塞
 
 #### 依赖
-T11
+T2, T9
 
 #### 验收标准
-- [ ] **Functional**: 屏幕显示正确
-- [ ] **Performance**: 平均帧渲染 < 100ms
-- [ ] **Quality**: 渲染效果正确
-- [ ] **Coverage**: 单元测试覆盖率 ≥ 80%
+- [x] **功能**: 渲染框架可用
+- [x] **性能**: 百万级要素渲染 < 300ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
+#### 现有实现
+- **模块**: `code/draw` 和 `code/graph`
+- **核心文件**:
+  - `code/draw/include/ogc/draw/draw_engine.h` - DrawEngine抽象基类
+    - 支持点、线、面、圆、椭圆、弧、文本、图像绘制
+    - 支持变换矩阵、裁剪区域、透明度控制
+  - `code/draw/include/ogc/draw/draw_context.h` - 绘制上下文
+  - `code/draw/include/ogc/draw/draw_device.h` - 绘制设备抽象
+  - `code/draw/include/ogc/draw/draw_style.h` - 绘制样式
+  - 多种渲染引擎实现: direct2d_engine, gdiplus_engine, qt_engine, svg_engine, pdf_engine
+  - `code/graph/include/ogc/draw/draw_facade.h` - 绘制门面类
 
-#### 资源需求
-- 必需技能: C++, GUI编程
-- 建议分配: Dev C
-- 可并行任务: T12, T13
-
-#### 里程碑
-M4: Output Devices
-
-#### 状态
-📋 Todo
-
----
-
-### T15 - 集成测试实现
-
-#### 描述
-- 实现端到端集成测试
-- 测试数据生成、存储、查询、渲染全流程
-- 验证所有测试用例 (TG/TS/TQ/TR系列)
-- 生成测试报告
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第8章 测试用例设计
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-
-#### 优先级
-P0: Critical/Blocking
-
-#### 依赖
-T12, T13, T14
-
-#### 验收标准
-- [ ] **Functional**: 所有测试用例通过
-- [ ] **Performance**: 满足所有性能指标
-- [ ] **Quality**: 无崩溃或异常
-- [ ] **Coverage**: 集成测试覆盖所有功能
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, 测试框架
-- 建议分配: Dev C
-- 可并行任务: 无
-
-#### 里程碑
-M5: Polish & Optimization
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
-### T16 - 性能测试与优化
+### T15 - S52样式管理器实现
 
 #### 描述
-- 实现性能基准测试
-- 分析性能瓶颈
-- 优化关键路径
-- 验证性能指标
-- 多轮性能优化迭代
+- 实现S52显示规范
+- 实现样式规则解析
+- 实现日/夜模式颜色方案
+- 实现显示优先级管理
 
 #### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第9章 性能指标、第12章 性能优化策略
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 绘制引擎模块
 
 #### 优先级
-P1: High
-
-#### 依赖
-T15, T19
-
-#### 验收标准
-- [ ] **Functional**: 所有性能指标达标
-- [ ] **Performance**: 数据生成 < 5s, 查询 < 50ms, 渲染 < 500ms
-- [ ] **Quality**: 性能报告完整
-- [ ] **Coverage**: 性能测试覆盖关键路径
-
-#### 预计工时 (PERT)
-- 乐观估计: 4h
-- 最可能估计: 6h
-- 悲观估计: 8h
-- 期望值: 6h
-- 置信度: 中 (60-80%)
-- 复杂度: 高
-- 故事点: 5
-
-#### 资源需求
-- 必需技能: C++, 性能分析
-- 建议分配: Dev C
-- 可并行任务: T17
-
-#### 里程碑
-M5: Polish & Optimization
-
-#### 状态
-📋 Todo
-
----
-
-### T17 - 内存泄漏检测与修复
-
-#### 描述
-- 使用Valgrind/ASan检测内存泄漏
-- 修复发现的内存问题
-- 验证内存占用 < 200MB
-- 添加智能指针管理
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第20章 性能监控与内存检测
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-- **API注意**: 智能指针转换使用 `release()` 转移所有权
-
-#### 优先级
-P1: High
-
-#### 依赖
-T15, T19
-
-#### 验收标准
-- [ ] **Functional**: 无内存泄漏
-- [ ] **Performance**: 内存占用 < 200MB
-- [ ] **Quality**: Valgrind/ASan报告清洁
-- [ ] **Coverage**: 内存测试覆盖所有模块
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 中
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, 内存分析工具
-- 建议分配: Dev C
-- 可并行任务: T16
-
-#### 里程碑
-M5: Polish & Optimization
-
-#### 状态
-📋 Todo
-
----
-
-### T18 - 文档完善与代码审查
-
-#### 描述
-- 完善API文档
-- 编写用户指南
-- 进行代码审查
-- 更新README
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第17章 扩展指南
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-
-#### 优先级
-P2: Medium
-
-#### 依赖
-T16, T17
-
-#### 验收标准
-- [ ] **Functional**: 文档完整准确
-- [ ] **Quality**: 代码审查通过
-- [ ] **Documentation**: API文档生成成功
-- [ ] **Review**: 代码批准合并
-
-#### 预计工时 (PERT)
-- 乐观估计: 2h
-- 最可能估计: 4h
-- 悲观估计: 6h
-- 期望值: 4h
-- 置信度: 高 (>80%)
-- 复杂度: 低
-- 故事点: 3
-
-#### 资源需求
-- 必需技能: C++, 文档编写
-- 建议分配: Dev C
-- 可并行任务: 无
-
-#### 里程碑
-M5: Polish & Optimization
-
-#### 状态
-📋 Todo
-
----
-
-## 变更日志
-
-| 版本 | 日期 | 变更内容 | 影响 |
-|------|------|----------|------|
-| v1.0 | 2026-03-27 | 初始任务计划创建 | - |
-| v1.1 | 2026-03-27 | 增加缓冲时间、优化资源分配、修正关键路径、增加接口契约和跟踪机制 | 评审改进 |
-
----
-
-## 任务接口契约
-
-### 数据生成器接口
-
-```cpp
-// T2定义的统一输出接口
-struct MockFeature {
-    std::unique_ptr<CNFeature> feature;
-    std::string layerName;
-    GeomType geometryType;
-    std::map<std::string, std::string> attributes;
-};
-
-// T3-T7生成器的统一输出
-class IFeatureGenerator {
-public:
-    virtual ~IFeatureGenerator() = default;
-    virtual std::vector<MockFeature> Generate(int count) = 0;
-    virtual std::string GetLayerName() const = 0;
-    virtual GeomType GetGeometryType() const = 0;
-};
-```
-
-### 数据库存储接口
-
-```cpp
-// T8期望的输入格式
-struct LayerData {
-    std::string tableName;
-    std::vector<MockFeature> features;
-    OGRSpatialReference spatialRef;
-};
-
-// T8提供的输出接口
-class IDatabaseManager {
-public:
-    virtual bool CreateLayer(const std::string& name, 
-                             const LayerSchema& schema) = 0;
-    virtual bool InsertFeatures(const LayerData& data) = 0;
-    virtual bool CreateSpatialIndex(const std::string& tableName) = 0;
-};
-```
-
-### 渲染接口
-
-```cpp
-// T10-T11提供的渲染接口
-struct RenderJob {
-    std::vector<CNFeature*> features;
-    DisplayExtent extent;
-    std::map<std::string, SymbolizerPtr> symbolizers;
-};
-
-class IRenderEngine {
-public:
-    virtual void Render(DrawDevicePtr device, const RenderJob& job) = 0;
-};
-```
-
----
-
-## 进度跟踪机制
-
-### 每日站会
-
-| 项目 | 内容 |
-|------|------|
-| 时间 | 每天上午10:00 |
-| 时长 | 10分钟 |
-| 参与者 | Dev A, Dev B, Dev C |
-| 形式 | 站立会议 |
-
-**站会议程**:
-1. 昨天完成了什么？
-2. 今天计划做什么？
-3. 有什么阻碍？
-
-### 里程碑评审
-
-| 里程碑 | 评审时间 | 评审内容 | 验收人 |
-|--------|----------|----------|--------|
-| M1 | 第1周周五 | 数据生成器功能演示 | Tech Lead |
-| M2 | 第2周周二 | 数据库存储和查询功能 | Tech Lead |
-| M3 | 第2周周三 | 符号化渲染效果 | Tech Lead |
-| M4 | 第2周周四 | 多设备输出效果 | Tech Lead |
-| M5 | 第2周周五 | 全流程集成测试 | Tech Lead + PM |
-
-### 燃尽图
-
-```
-工时
- 80h ┤●
-     │ ╲
- 60h ┤  ●
-     │   ╲
- 40h ┤    ●
-     │     ╲
- 20h ┤      ●
-     │       ╲
-  0h ┤────────●
-     └────────────────
-       M1  M2  M3  M4  M5
-```
-
----
-
-## 阻塞升级机制
-
-### 升级路径
-
-```
-开发者 ──► Tech Lead ──► PM ──► Stakeholder
-   │           │           │
-   │           │           └── 关键决策
-   │           │
-   │           └── 技术方案决策
-   │
-   └── 自行解决 (2h以内)
-```
-
-### 升级SLA
-
-| 优先级 | 升级时限 | 处理时限 |
-|--------|----------|----------|
-| P0 (Critical) | 立即 | 4小时 |
-| P1 (High) | 4小时 | 1天 |
-| P2 (Medium) | 1天 | 3天 |
-| P3 (Low) | 3天 | 1周 |
-
-### 阻塞状态
-
-| 状态 | 符号 | 定义 |
-|------|------|------|
-| Todo | 📋 | 待开始 |
-| In Progress | 🔄 | 进行中 |
-| In Review | 🔍 | 评审中 |
-| Done | ✅ | 已完成 |
-| Blocked | 🚫 | 被阻塞 |
-
----
-
-## 任务状态更新指南
-
-### 更新命令
-
-```
-# 标记任务开始
-> T3 开始
-
-# 标记任务完成
-> T3 完成
-
-# 标记任务阻塞
-> T3 阻塞: 等待Geom模块API确认
-
-# 标记阻塞解除
-> T3 阻塞解除
-```
-
-### 状态更新流程
-
-```
-1. 更新任务摘要表中的状态列
-2. 更新里程碑表中的状态列
-3. 更新详细任务描述中的状态
-4. 更新变更日志
-```
-
----
-
-## 任务验收流程
-
-### 验收检查清单
-
-| 检查项 | 验收人 | 通过标准 |
-|--------|--------|----------|
-| 代码编译 | 开发者 | 无编译错误和警告 |
-| 单元测试 | 开发者 | 覆盖率 ≥ 80% |
-| 代码审查 | Peer Reviewer | 无Critical/Major问题 |
-| 功能验证 | Tech Lead | 满足验收标准 |
-| 文档更新 | 开发者 | README/API文档已更新 |
-
-### 验收流程
-
-```
-开发者提交 ──► 自动化测试 ──► 代码审查 ──► 功能验证 ──► 合并
-     │              │              │              │
-     │              │              │              └── Tech Lead确认
-     │              │              │
-     │              │              └── Peer Reviewer审核
-     │              │
-     │              └── CI/CD自动运行
-     │
-     └── PR提交
-```
-
-### 验收不通过处理
-
-1. 记录问题到问题跟踪系统
-2. 开发者修复问题
-3. 重新提交验收
-4. 最多允许3次重提交
-
----
-
-## 编码实施约束 ⚠️
-
-> **重要提示**: 编码实施前必须阅读以下约束，避免重复踩坑
-
-### 编码前必读
-1. **查阅避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-2. **确认API签名**: 使用类前先查看对应头文件
-3. **参考测试用例**: 不确定用法时查阅测试文件
-
-### 常见错误避免
-| 规则 | 错误示例 | 正确示例 |
-|------|----------|----------|
-| Getter使用Get前缀 | `Size()` | `GetSize()` |
-| 索引访问使用N后缀 | `GetCoordinateAt(i)` | `GetCoordinateN(i)` |
-| 使用正确方法名 | `ConnectDb()` | `Connect()` |
-| 禁止C++17特性 | `auto [a, b] = pair;` | `auto a = pair.first;` |
-
-### API对照表
-| 类 | 头文件 | 正确调用 |
-|----|--------|----------|
-| SpatiaLiteConnection | `database/include/ogc/db/sqlite_connection.h` | `Connect()` |
-| LineString | `geom/include/ogc/linestring.h` | `GetCoordinateN(i)` |
-| Polygon | `geom/include/ogc/polygon.h` | `GetInteriorRingN(i)` |
-| Geometry | `geom/include/ogc/geometry.h` | `AsText()` |
-
----
-
-## 代码审查检查清单 ⚠️
-
-> **重要**: T18代码审查必须使用此检查清单
-
-### 代码规范
-
-| 检查项 | 标准 | 通过条件 |
-|--------|------|----------|
-| 命名规范 | 类名PascalCase，函数名camelCase | 所有命名符合规范 |
-| 代码格式 | 缩进4空格，行宽≤120字符 | 格式检查通过 |
-| 注释规范 | 公共API必须有Doxygen注释 | 注释覆盖率≥80% |
-| 头文件保护 | 使用`#pragma once` | 所有头文件使用 |
-
-### 内存安全
-
-| 检查项 | 标准 | 通过条件 |
-|--------|------|----------|
-| 智能指针 | 禁止裸指针管理资源 | 使用unique_ptr/shared_ptr |
-| RAII | 资源获取即初始化 | 所有资源类实现RAII |
-| 内存泄漏 | 无内存泄漏 | Valgrind/ASan检测通过 |
-| 空指针检查 | 解引用前检查 | 关键路径有检查 |
-
-### 性能
-
-| 检查项 | 标准 | 通过条件 |
-|--------|------|----------|
-| 避免拷贝 | 大对象使用const引用 | 参数传递优化 |
-| 循环优化 | 避免循环内重复计算 | 热路径优化 |
-| 内存预分配 | 预知大小时reserve | vector使用reserve |
-| 缓存友好 | 数据局部性 | 结构体布局合理 |
-
-### 可维护性
-
-| 检查项 | 标准 | 通过条件 |
-|--------|------|----------|
-| 单一职责 | 每个类只做一件事 | 类职责清晰 |
-| 依赖注入 | 避免硬编码依赖 | 使用接口抽象 |
-| 错误处理 | 异常安全保证 | 基本保证及以上 |
-| 测试覆盖 | 单元测试覆盖率≥80% | 覆盖率报告通过 |
-
----
-
-## 任务变更管理 ⚠️
-
-> **重要**: 任务变更必须遵循此流程
-
-### 变更类型
-
-| 类型 | 定义 | 审批级别 |
-|------|------|----------|
-| 新增任务 | 增加新的任务项 | Tech Lead |
-| 工时调整 | 修改任务预估工时(>20%) | Tech Lead |
-| 依赖变更 | 修改任务依赖关系 | Tech Lead |
-| 优先级变更 | 修改任务优先级 | PM |
-| 资源调整 | 修改任务负责人 | PM |
-
-### 变更流程
-
-```
-1. 提交变更请求 (TCR)
-   ├── 填写TCR表单
-   ├── 说明变更原因
-   └── 评估影响范围
-
-2. 影响评估
-   ├── 关键路径影响
-   ├── 资源分配影响
-   └── 里程碑影响
-
-3. 审批
-   ├── Tech Lead审批技术变更
-   └── PM审批资源变更
-
-4. 实施
-   ├── 更新任务计划
-   ├── 通知相关人员
-   └── 更新变更日志
-```
-
-### TCR表单模板
-
-```markdown
-## 任务变更请求 (TCR)
-
-**编号**: TCR-YYYY-MM-DD-NNN
-**申请人**: [姓名]
-**日期**: [日期]
-
-### 变更内容
-- **变更类型**: [新增任务/工时调整/依赖变更/优先级变更/资源调整]
-- **涉及任务**: [任务ID]
-- **变更描述**: [详细描述]
-
-### 变更原因
-[说明为什么需要变更]
-
-### 影响评估
-- **关键路径影响**: [是/否，说明]
-- **资源影响**: [说明]
-- **里程碑影响**: [说明]
-
-### 审批
-- **Tech Lead**: [ ] 同意 [ ] 不同意 签名:____ 日期:____
-- **PM**: [ ] 同意 [ ] 不同意 签名:____ 日期:____
-```
-
----
-
-## 回归测试策略 ⚠️
-
-> **重要**: 修复bug或优化后必须执行回归测试
-
-### 回归测试范围
-
-| 变更类型 | 回归范围 | 测试深度 |
-|----------|----------|----------|
-| 数据生成器修改 | 对应生成器模块 | 完整单元测试 |
-| 数据库操作修改 | T8, T9相关功能 | 集成测试 |
-| 渲染逻辑修改 | T10-T14相关功能 | 渲染输出验证 |
-| 性能优化 | T16性能基准 | 性能对比测试 |
-| 内存修复 | T17内存检测 | 完整内存检测 |
-
-### 回归测试流程
-
-```
-1. 识别变更影响范围
-   ├── 分析修改的模块
-   ├── 识别依赖模块
-   └── 确定测试范围
-
-2. 执行回归测试
-   ├── 运行相关单元测试
-   ├── 运行集成测试
-   └── 验证性能基准
-
-3. 结果验证
-   ├── 所有测试通过
-   ├── 性能无退化
-   └── 内存检测通过
-
-4. 文档更新
-   ├── 更新测试报告
-   └── 记录回归结果
-```
-
-### 回归测试通过标准
-
-| 标准 | 条件 |
-|------|------|
-| 单元测试 | 100%通过 |
-| 集成测试 | 100%通过 |
-| 性能测试 | 无>5%性能退化 |
-| 内存检测 | 无新内存泄漏 |
-
----
-
-## 内存检测工具配置 ⚠️
-
-> **重要**: T17内存泄漏检测必须使用以下工具
-
-### Windows平台
-
-**工具**: Visual Studio 内存检测器
-
-```cpp
-// 在main.cpp开头添加
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-
-// 在main函数开头添加
-_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-
-// 运行程序后，输出窗口显示内存泄漏信息
-```
-
-### Linux平台
-
-**工具1**: Valgrind
-
-```bash
-# 安装
-sudo apt-get install valgrind
-
-# 运行内存检测
-valgrind --leak-check=full --show-leak-kinds=all ./your_program
-
-# 输出示例
-# ==12345== LEAK SUMMARY:
-# ==12345==    definitely lost: 0 bytes in 0 blocks
-# ==12345==    indirectly lost: 0 bytes in 0 blocks
-# ==12345==      still reachable: 0 bytes in 0 blocks
-```
-
-**工具2**: AddressSanitizer (ASan)
-
-```cmake
-# CMakeLists.txt添加
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")
-```
-
-```bash
-# 编译运行
-cmake .. && make
-./your_program
-
-# 检测到内存错误时自动报告
-```
-
-### 检测标准
-
-| 检测项 | 通过条件 |
-|--------|----------|
-| 内存泄漏 | definitely lost = 0 bytes |
-| 非法内存访问 | 无错误报告 |
-| 重复释放 | 无错误报告 |
-| 未初始化读取 | 无错误报告 |
-
----
-
-## 项目收尾检查清单 ⚠️
-
-> **重要**: 项目结束前必须完成以下检查
-
-### 代码交付
-
-| 检查项 | 负责人 | 状态 |
-|--------|--------|------|
-| 所有代码编译通过 | Dev A/B/C | [ ] |
-| 所有单元测试通过 | Dev C | [ ] |
-| 代码审查完成 | Tech Lead | [ ] |
-| 内存泄漏检测通过 | Dev C | [ ] |
-| 性能测试达标 | Dev C | [ ] |
-
-### 文档交付
-
-| 检查项 | 负责人 | 状态 |
-|--------|--------|------|
-| README更新 | Dev A | [ ] |
-| API文档完整 | Dev A/B | [ ] |
-| 测试报告完整 | Dev C | [ ] |
-| 设计文档更新 | Dev A | [ ] |
-
-### 功能验证
-
-| 检查项 | 负责人 | 状态 |
-|--------|--------|------|
-| 点要素生成正确 | Dev A | [ ] |
-| 线要素生成正确 | Dev C | [ ] |
-| 区要素生成正确 | Dev C | [ ] |
-| 注记要素生成正确 | Dev B | [ ] |
-| 栅格数据生成正确 | Dev B | [ ] |
-| 数据库存储正确 | Dev B | [ ] |
-| 空间查询正确 | Dev B | [ ] |
-| RasterDevice输出正确 | Dev B | [ ] |
-| PdfDevice输出正确 | Dev B | [ ] |
-| DisplayDevice输出正确 | Dev C | [ ] |
-
-### 知识转移
-
-| 检查项 | 负责人 | 状态 |
-|--------|--------|------|
-| 代码架构说明 | Dev A | [ ] |
-| 关键算法说明 | Dev A/B | [ ] |
-| 运维文档 | Dev C | [ ] |
-| 问题记录归档 | Dev C | [ ] |
-
----
-
-## T19 - 测试数据准备 (新增任务)
-
-#### 描述
-- 准备集成测试和性能测试所需的测试数据集
-- 创建预期输入数据文件
-- 创建预期输出数据文件
-- 准备边界条件测试数据
-- 准备性能基准测试数据
-
-#### 参考文档
-- **设计文档**: [mokdata_render.md](./mokdata_render.md) 第8章 测试策略
-- **避坑指南**: [compile_test_problem_summary.md](../../../doc/compile_test_problem_summary.md)
-
-#### 优先级
-P0: Critical/Blocking
+P0: 关键/阻塞
 
 #### 依赖
 T14
 
 #### 验收标准
-- [ ] **Functional**: 测试数据集覆盖所有要素类型
-- [ ] **Quality**: 测试数据有效性验证通过
-- [ ] **Coverage**: 边界条件数据覆盖完整
-- [ ] **Documentation**: 测试数据说明文档
+- [x] **功能**: S52样式正确应用
+- [x] **功能**: 日/夜模式切换正常
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
 
-#### 预计工时 (PERT)
-- 乐观估计: 1h
-- 最可能估计: 2h
-- 悲观估计: 4h
-- 期望值: 2.17h
-- 置信度: 高 (>80%)
-- 复杂度: 低
-- 故事点: 2
+#### 现有实现
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/s52_style_manager.h` - S52样式管理器头文件
+    - ColorSchemeManager - 日/夜模式颜色方案管理
+    - SymbolLibrary - 符号库管理
+    - StyleRuleEngine - 样式规则引擎
+    - DisplayPriorityCalculator - 显示优先级计算
+    - S52StyleManager - 统一管理接口
+  - `src/s52_style_manager.cpp` - S52样式管理器实现
+    - 默认S52颜色方案 (CHGRF, DEPVS, DEPDW等)
+    - 默认符号定义 (SNDMRK01, WRECKS01, LIGHTS01等)
+    - 默认样式规则 (SOUNDG, WRECKS, LIGHTS等)
+- **测试文件**:
+  - `tests/test_s52_style_manager.cpp` - 44个测试用例
+    - ColorSchemeManagerTest (9个测试)
+    - SymbolLibraryTest (8个测试)
+    - StyleRuleEngineTest (10个测试)
+    - DisplayPriorityCalculatorTest (4个测试)
+    - S52StyleManagerTest (13个测试)
 
-#### 资源需求
-- 必需技能: C++, 测试数据设计
-- 建议分配: Dev C
-- 可并行任务: 无
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
 
-#### 里程碑
-M5: Testing
+#### 状态
+✅ Done
+
+---
+
+### T16 - 符号库加载与渲染
+
+#### 描述
+- 实现符号库加载
+- 实现点符号渲染
+- 实现线符号渲染
+- 实现面符号渲染
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 绘制引擎模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T15
+
+#### 验收标准
+- [x] **功能**: 符号正确渲染
+- [x] **功能**: 支持向量、栅格、复合符号类型
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/s52_symbol_renderer.h` - S52符号渲染器头文件
+    - S52SymbolRenderer - 单例模式的符号渲染器
+    - 支持点、线、面符号渲染
+    - 支持向量、栅格、复合符号类型
+    - 符号化器缓存机制
+  - `src/s52_symbol_renderer.cpp` - S52符号渲染器实现
+    - RenderSymbol - 通用符号渲染入口
+    - RenderPointSymbol - 点符号渲染
+    - RenderLineSymbol - 线符号渲染
+    - RenderPolygonSymbol - 面符号渲染
+    - CreatePointSymbolizer/CreateLineSymbolizer/CreatePolygonSymbolizer - 符号化器创建
+    - ExecuteVectorCommand - 向量命令执行
+- **测试文件**:
+  - `tests/test_s52_symbol_renderer.cpp` - 17个测试用例
+    - Instance/Initialize测试
+    - SetDefaultSymbolSize/SetDefaultLineWidth测试
+    - CacheSymbolizer/GetCachedSymbolizer/ClearCache测试
+    - CreatePointSymbolizer/CreateLineSymbolizer/CreatePolygonSymbolizer测试
+    - CreateSymbolizerFromDefinition测试
+    - GenerateCacheKey测试
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T17 - 空间索引实现
+
+#### 描述
+- 实现R-tree空间索引
+- 实现空间查询优化
+- 实现索引更新机制
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.2 数据库模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T5
+
+#### 验收标准
+- [x] **功能**: 空间查询正确
+- [x] **性能**: 范围查询 < 100ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/geom`
+- **核心文件**:
+  - `include/ogc/spatial_index.h` - 空间索引抽象接口
+  - RTreeSpatialIndex - R-tree实现
+  - QuadTreeSpatialIndex - 四叉树实现
+  - STRTreeSpatialIndex - STR-tree实现
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T18 - 图形交互核心实现
+
+#### 描述
+- 实现交互事件处理框架
+- 实现坐标转换（屏幕↔世界）
+- 实现命中测试
+- 实现交互反馈机制
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.6 图形交互模块
+
+#### 优先级
+P0: 关键/阻塞
+
+#### 依赖
+T14
+
+#### 验收标准
+- [x] **功能**: 交互事件正确处理
+- [x] **性能**: 命中测试 < 50ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 实现详情
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/interaction_handler.h` - 交互事件处理框架
+  - `include/ogc/draw/hit_test.h` - 命中测试接口
+  - `include/ogc/draw/interaction_feedback.h` - 交互反馈机制
+  - `src/interaction_handler.cpp` - 事件处理实现
+  - `src/hit_test.cpp` - 命中测试实现
+  - `src/interaction_feedback.cpp` - 反馈渲染实现
+- **测试文件**: `tests/test_interaction.cpp` (44个测试用例)
+- **主要功能**:
+  - InteractionManager: 单例管理器，处理鼠标/键盘/触摸事件
+  - HitTester: 命中测试，支持点/矩形/多边形选择
+  - FeedbackManager: 反馈渲染，支持选择/高亮/测量/工具提示
+  - SelectionManager: 选择状态管理
+  - MeasureTool: 测量工具(距离/面积)
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T19 - 平移缩放交互实现
+
+#### 描述
+- 实现鼠标平移操作
+- 实现滚轮缩放操作
+- 实现触摸手势支持
+- 实现惯性动画
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.6 图形交互模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T18
+
+#### 验收标准
+- [ ] **功能**: 平移缩放流畅
+- [ ] **性能**: 响应 < 50ms
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
 
 #### 状态
 📋 Todo
+
+---
+
+### T20 - 要素选择交互实现
+
+#### 描述
+- 实现点击选择
+- 实现框选功能
+- 实现多选支持
+- 实现选择高亮显示
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.6 图形交互模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T18
+
+#### 验收标准
+- [ ] **功能**: 选择功能正常
+- [ ] **性能**: 选择响应 < 50ms
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/layer_manager.h` - 图层管理，包含selectable属性和RenderSelection方法
+- **缺失部分**:
+  - 点击选择交互逻辑
+  - 框选功能实现
+  - 多选支持
+  - 选择高亮显示
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+⚠️ Partial (部分实现，需补充选择交互逻辑)
+
+---
+
+### T21 - 定位显示模块实现
+
+#### 描述
+- 实现船位显示
+- 实现航向显示
+- 实现航速显示
+- 实现定位信息面板
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.7 定位显示模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T18
+
+#### 验收标准
+- [ ] **功能**: 定位显示正确
+- [ ] **性能**: 更新响应 < 50ms
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T22 - 航迹记录与回放
+
+#### 描述
+- 实现航迹记录功能
+- 实现航迹存储
+- 实现航迹回放功能
+- 实现航迹导出
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.7 定位显示模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T21
+
+#### 验收标准
+- [ ] **功能**: 航迹记录回放正常
+- [ ] **性能**: 回放流畅
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T23 - 图层管理器实现
+
+#### 描述
+- 实现图层列表管理
+- 实现图层可见性控制
+- 实现图层透明度控制
+- 实现图层排序
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.8 图层管理模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T9
+
+#### 验收标准
+- [x] **功能**: 图层管理正常
+- [x] **性能**: 图层切换 < 200ms
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/graph`
+- **核心文件**:
+  - `include/ogc/draw/layer_manager.h` - LayerManager类
+    - 支持图层可见性控制
+    - 支持图层透明度控制
+    - 支持图层排序
+    - 支持选择渲染
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T24 - 图层控制面板
+
+#### 描述
+- 实现图层列表UI
+- 实现图层可见性开关
+- 实现透明度滑块
+- 实现图层上下移动
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.8 图层管理模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T23
+
+#### 验收标准
+- [ ] **功能**: UI交互正常
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 6h
+- 悲观: 10h
+- 期望: 6.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T25 - 日/夜模式切换
+
+#### 描述
+- 实现日间模式
+- 实现夜间模式
+- 实现模式切换动画
+- 实现自定义颜色方案
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 绘制引擎模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T15
+
+#### 验收标准
+- [ ] **功能**: 模式切换正常
+- [ ] **性能**: 切换 < 200ms
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 6h
+- 悲观: 10h
+- 期望: 6.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T26 - 多线程渲染优化
+
+#### 描述
+- 实现渲染线程池
+- 实现并行渲染调度
+- 实现线程安全机制
+- 实现渲染任务优先级
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 15. 多线程渲染安全机制
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T14
+
+#### 验收标准
+- [x] **功能**: 多线程渲染正常
+- [x] **性能**: 渲染帧率 ≥ 30fps
+- [x] **稳定性**: 无数据竞争
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/draw` 和 `code/graph`
+- **核心文件**:
+  - `code/draw/include/ogc/draw/async_render_manager.h` - 异步渲染管理器
+  - `code/draw/include/ogc/draw/async_render_task.h` - 异步渲染任务
+  - `code/draw/include/ogc/draw/thread_safe_engine.h` - 线程安全引擎
+  - `code/draw/include/ogc/draw/engine_pool.h` - 引擎池
+  - `code/graph/include/ogc/draw/render_queue.h` - 渲染队列
+  - `code/graph/include/ogc/draw/async_renderer.h` - 异步渲染器
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T27 - LOD细节层次实现
+
+#### 描述
+- 实现LOD级别划分
+- 实现要素简化算法
+- 实现LOD切换策略
+- 实现LOD预加载
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.5 绘制引擎模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T26
+
+#### 验收标准
+- [x] **功能**: LOD切换正常
+- [x] **性能**: 渲染性能提升 ≥ 50%
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/draw` 和 `code/graph`
+- **核心文件**:
+  - `code/draw/include/ogc/draw/lod_strategy.h` - LOD策略
+  - `code/graph/include/ogc/draw/lod.h` - LOD核心类
+  - `code/graph/include/ogc/draw/lod_manager.h` - LODManager类
+    - 支持LOD级别划分
+    - 支持LOD切换策略
+    - 支持WebMercator LOD预设
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T28 - 瓦片缓存机制
+
+#### 描述
+- 实现瓦片划分策略
+- 实现瓦片缓存管理
+- 实现瓦片预加载
+- 实现缓存淘汰策略
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 26. 缓存淘汰策略详细设计
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T26
+
+#### 验收标准
+- [x] **功能**: 瓦片缓存正常
+- [x] **性能**: 缓存命中率 ≥ 80%
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/draw` 和 `code/graph`
+- **核心文件**:
+  - `code/draw/include/ogc/draw/tile_device.h` - 瓦片设备
+  - `code/draw/include/ogc/draw/tile_size_strategy.h` - 瓦片大小策略
+  - `code/draw/include/ogc/draw/tile_based_engine.h` - 瓦片渲染引擎
+  - `code/graph/include/ogc/draw/tile_cache.h` - TileCache抽象接口
+  - `code/graph/include/ogc/draw/tile_key.h` - 瓦片键
+  - `code/graph/include/ogc/draw/memory_tile_cache.h` - 内存瓦片缓存
+  - `code/graph/include/ogc/draw/disk_tile_cache.h` - 磁盘瓦片缓存
+  - `code/graph/include/ogc/draw/multi_level_tile_cache.h` - 多级瓦片缓存
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T29 - Qt平台适配实现
+
+#### 描述
+- 实现Qt渲染适配器
+- 实现Qt事件处理
+- 实现Qt窗口管理
+- 实现Qt资源管理
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P0: 关键/阻塞
+
+#### 依赖
+T14
+
+#### 验收标准
+- [x] **功能**: Qt平台渲染正常
+- [x] **性能**: 渲染帧率 ≥ 30fps
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 实现详情
+- **模块**: `code/draw`
+- **核心文件**:
+  - `include/ogc/draw/qt_engine.h` - Qt渲染引擎
+  - `include/ogc/draw/qt_display_device.h` - Qt显示设备
+  - `include/ogc/draw/qt_event_adapter.h` - Qt事件适配器
+  - `include/ogc/draw/qt_window_manager.h` - Qt窗口管理器
+  - `include/ogc/draw/qt_resource_manager.h` - Qt资源管理器
+  - `include/ogc/draw/qt_chart_view.h` - Qt海图视图控件
+  - `src/draw/qt_engine.cpp` - 渲染引擎实现
+  - `src/draw/qt_display_device.cpp` - 显示设备实现
+  - `src/draw/qt_event_adapter.cpp` - 事件适配实现
+  - `src/draw/qt_window_manager.cpp` - 窗口管理实现
+  - `src/draw/qt_resource_manager.cpp` - 资源管理实现
+  - `src/draw/qt_chart_view.cpp` - 海图视图实现
+- **测试文件**: `tests/test_qt_platform.cpp` (25个测试用例)
+- **主要功能**:
+  - QtEngine: Qt绘制引擎，支持QPainter渲染
+  - QtDisplayDevice: Qt显示设备，支持QWidget/QImage/QPixmap
+  - QtEventAdapter: 事件转换，将Qt事件转换为交互事件
+  - QtWindowManager: 窗口管理，支持创建/销毁/管理窗口
+  - QtResourceManager: 资源管理，支持图片/字体/文本资源加载和缓存
+  - QtChartView: 海图视图控件，集成渲染、交互、反馈功能
+- **编译选项**: 需要启用DRAW_WITH_QT=ON并安装Qt5/Qt6
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+✅ Done
+
+---
+
+### T30 - Android平台适配
+
+#### 描述
+- 实现Android渲染适配
+- 实现Android触摸事件处理
+- 实现Android生命周期管理
+- 实现Android权限管理
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T29
+
+#### 验收标准
+- [ ] **功能**: Android平台运行正常
+- [ ] **性能**: 渲染帧率 ≥ 30fps
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
+
+#### 状态
+📋 Todo
+
+---
+
+### T31 - JNI桥接层实现
+
+#### 描述
+- 实现JNI接口定义
+- 实现Java-C++数据转换
+- 实现JNI异常处理
+- 实现JNI内存管理
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T30
+
+#### 验收标准
+- [ ] **功能**: JNI调用正常
+- [ ] **性能**: 调用开销 < 1ms
+- [ ] **稳定性**: 无内存泄漏
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+📋 Todo
+
+---
+
+### T32 - Java API封装
+
+#### 描述
+- 实现Java API类设计
+- 实现Java文档生成
+- 实现Java示例代码
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T31
+
+#### 验收标准
+- [ ] **功能**: Java API可用
+- [ ] **文档**: API文档完整
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T33 - WebAssembly编译
+
+#### 描述
+- 配置Emscripten编译环境
+- 实现WebAssembly编译脚本
+- 实现JavaScript接口封装
+- 实现WebAssembly模块加载
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T29
+
+#### 验收标准
+- [ ] **功能**: WebAssembly模块正常加载
+- [ ] **性能**: 模块加载 < 5s
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 12h
+- 最可能: 16h
+- 悲观: 24h
+- 期望: 16.67h
+
+#### 状态
+📋 Todo
+
+---
+
+### T34 - WebGL渲染适配
+
+#### 描述
+- 实现WebGL渲染上下文
+- 实现WebGL着色器
+- 实现WebGL纹理管理
+- 实现WebGL性能优化
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 3.9 平台适配模块
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T33
+
+#### 验收标准
+- [ ] **功能**: WebGL渲染正常
+- [ ] **性能**: 渲染帧率 ≥ 30fps
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+📋 Todo
+
+---
+
+### T35 - 离线数据存储
+
+#### 描述
+- 实现离线数据下载
+- 实现本地数据存储
+- 实现数据版本管理
+- 实现存储空间管理
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 17. 离线数据同步机制
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T5
+
+#### 验收标准
+- [ ] **功能**: 离线存储正常
+- [ ] **性能**: 存储操作 < 1s
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T36 - 离线数据同步
+
+#### 描述
+- 实现增量更新检测
+- 实现数据同步协议
+- 实现冲突解决机制
+- 实现同步状态显示
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 17. 离线数据同步机制
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T35
+
+#### 验收标准
+- [ ] **功能**: 同步功能正常
+- [ ] **性能**: 增量更新 < 30s
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T37 - 数据加密实现
+
+#### 描述
+- 实现AES-256数据加密
+- 实现密钥管理
+- 实现加密数据读写
+- 实现坐标偏转
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 6.2 安全要求
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T35
+
+#### 验收标准
+- [ ] **功能**: 加密解密正常
+- [ ] **性能**: 加密开销 < 10%
+- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 6h
+- 悲观: 10h
+- 期望: 6.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T38 - 单元测试框架搭建
+
+#### 描述
+- 配置Google Test框架
+- 实现测试工具类
+- 实现Mock对象
+- 配置覆盖率报告
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P0: 关键/阻塞
+
+#### 依赖
+T1
+
+#### 验收标准
+- [x] **功能**: 测试框架可用
+- [x] **工具**: 覆盖率报告生成正常
+
+#### 现有实现
+- **模块**: 各模块tests目录
+- **核心文件**:
+  - `code/geom/tests/CMakeLists.txt` - 几何模块测试配置
+  - `code/database/test/CMakeLists.txt` - 数据库模块测试配置
+  - `code/draw/tests/CMakeLists.txt` - 绘制模块测试配置
+  - `code/graph/tests/CMakeLists.txt` - 图形模块测试配置
+  - `code/geom/tests/test_mocks.h` - Mock对象
+  - `code/database/test/mocks.h` - Mock对象
+  - `code/draw/tests/test_mocks.h` - Mock对象
+- **测试框架**: Google Test (gtest/gmock)
+- **覆盖率配置**: CMake中已配置ENABLE_COVERAGE选项
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T39 - 几何模块单元测试
+
+#### 描述
+- 编写几何类型测试用例
+- 编写几何操作测试用例
+- 编写边界条件测试
+- 编写性能测试
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T3, T38
+
+#### 验收标准
+- [x] **覆盖率**: 行覆盖率 ≥ 80%，分支覆盖率 ≥ 70%
+- [x] **通过率**: 100%测试通过
+
+#### 现有实现
+- **模块**: `code/geom/tests`
+- **测试文件**: 18个测试文件
+- **测试用例数**: 521个
+- **类覆盖率**: 95.5%
+- **核心测试文件**:
+  - `test_point.cpp` - Point测试 (32用例)
+  - `test_linestring.cpp` - LineString测试 (36用例)
+  - `test_polygon.cpp` - Polygon测试 (33用例)
+  - `test_spatial_index.cpp` - 空间索引测试 (33用例)
+  - `test_performance.cpp` - 性能测试 (26用例)
+  - `test_integration.cpp` - 集成测试 (25用例)
+- **质量报告**: `geom_test_quality.md`
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T40 - 数据库模块单元测试
+
+#### 描述
+- 编写数据库连接测试
+- 编写空间查询测试
+- 编写事务测试
+- 编写连接池测试
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T7, T38
+
+#### 验收标准
+- [x] **覆盖率**: 行覆盖率 ≥ 80%，分支覆盖率 ≥ 70%
+- [x] **通过率**: 100%测试通过
+
+#### 现有实现
+- **模块**: `code/database/test`
+- **测试文件**: 7个测试文件
+- **测试用例数**: 105个
+- **综合评分**: 95.5/100 (A级)
+- **行覆盖率**: ~85%
+- **分支覆盖率**: ~80%
+- **核心测试文件**:
+  - `connection_pool_test.cpp` - 连接池测试 (14用例)
+  - `wkb_converter_test.cpp` - WKB转换测试 (23用例)
+  - `geojson_converter_test.cpp` - GeoJSON转换测试 (32用例)
+  - `async_connection_test.cpp` - 异步连接测试 (9用例)
+  - `performance_test.cpp` - 性能测试 (11用例)
+  - `integration_test.cpp` - 集成测试 (16用例)
+- **质量报告**: `database_test_quality.md`
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T41 - 渲染模块单元测试
+
+#### 描述
+- 编写渲染器测试
+- 编写样式管理测试
+- 编写符号渲染测试
+- 编写交互测试
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T16, T38
+
+#### 验收标准
+- [x] **覆盖率**: 行覆盖率 ≥ 80%，分支覆盖率 ≥ 70%
+- [x] **通过率**: 100%测试通过
+
+#### 现有实现
+- **模块**: `code/draw/tests` 和 `code/graph/tests`
+- **Draw模块测试**:
+  - 测试文件: 40个
+  - 综合评分: 96/100 (A级)
+  - 行覆盖率: 85-90%
+  - 分支覆盖率: 80-85%
+  - 类覆盖率: ~98%
+  - 质量报告: `draw_test_quality.md`
+- **Graph模块测试**:
+  - 测试文件: 88个 (54单元测试+30集成测试+4新增)
+  - 综合评分: 95.5/100 (A级)
+  - 行覆盖率: ~92%
+  - 类覆盖率: ~97%
+  - 质量报告: `graph_test_quality.md`
+- **核心测试文件**:
+  - `test_draw_facade.cpp` - DrawFacade测试
+  - `test_layer_manager.cpp` - 图层管理测试
+  - `test_tile_renderer.cpp` - 瓦片渲染测试
+  - `test_async_renderer.cpp` - 异步渲染测试
+  - `test_symbolizer.cpp` - 符号化测试系列
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+✅ Done
+
+---
+
+### T42 - 集成测试用例编写
+
+#### 描述
+- 编写数据解析集成测试
+- 编写渲染集成测试
+- 编写平台适配集成测试
+- 编写端到端测试
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P1: 高
+
+#### 依赖
+T41
+
+#### 验收标准
+- [ ] **覆盖率**: 集成测试覆盖核心场景
+- [ ] **通过率**: 100%测试通过
+
+#### 工时估算 (PERT)
+- 乐观: 8h
+- 最可能: 12h
+- 悲观: 20h
+- 期望: 12.67h
+
+#### 状态
+📋 Todo
+
+---
+
+### T43 - 性能基准测试
+
+#### 描述
+- 编写渲染性能基准
+- 编写数据解析性能基准
+- 编写空间查询性能基准
+- 生成性能报告
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T42
+
+#### 验收标准
+- [ ] **报告**: 性能报告完整
+- [ ] **指标**: 满足设计文档性能要求
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T44 - 内存泄漏检测
+
+#### 描述
+- 配置内存检测工具
+- 执行内存泄漏检测
+- 修复内存泄漏问题
+- 验证修复结果
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 9. 测试计划
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T43
+
+#### 验收标准
+- [ ] **结果**: 无内存泄漏
+- [ ] **报告**: 内存检测报告完整
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 6h
+- 悲观: 10h
+- 期望: 6.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T45 - API文档生成
+
+#### 描述
+- 配置Doxygen文档生成
+- 编写API注释
+- 生成HTML文档
+- 部署文档站点
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 8. 附录
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T32
+
+#### 验收标准
+- [ ] **文档**: API文档完整
+- [ ] **可用性**: 文档站点可访问
+
+#### 工时估算 (PERT)
+- 乐观: 2h
+- 最可能: 4h
+- 悲观: 8h
+- 期望: 4.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T46 - 用户手册编写
+
+#### 描述
+- 编写功能说明
+- 编写操作指南
+- 编写FAQ
+- 编写故障排除指南
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 8. 附录
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T45
+
+#### 验收标准
+- [ ] **文档**: 用户手册完整
+- [ ] **评审**: 文档评审通过
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+### T47 - 示例代码编写
+
+#### 描述
+- 编写基础使用示例
+- 编写高级功能示例
+- 编写平台特定示例
+- 编写最佳实践示例
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 8. 附录
+
+#### 优先级
+P2: 中
+
+#### 依赖
+T45
+
+#### 验收标准
+- [ ] **代码**: 示例代码可运行
+- [ ] **文档**: 示例说明完整
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 6h
+- 悲观: 10h
+- 期望: 6.33h
+
+#### 状态
+📋 Todo
+
+---
+
+### T48 - 最终验收测试
+
+#### 描述
+- 执行功能验收测试
+- 执行性能验收测试
+- 执行安全验收测试
+- 生成验收报告
+
+#### 参考文档
+- **设计文档**: [chart_design_display_system.md](./chart_design_display_system.md) - 10. 验收标准
+
+#### 优先级
+P0: 关键/阻塞
+
+#### 依赖
+T42, T43
+
+#### 验收标准
+- [ ] **功能**: 所有功能验收通过
+- [ ] **性能**: 所有性能指标达标
+- [ ] **报告**: 验收报告完整
+
+#### 工时估算 (PERT)
+- 乐观: 4h
+- 最可能: 8h
+- 悲观: 12h
+- 期望: 8h
+
+#### 状态
+📋 Todo
+
+---
+
+## 未实现任务预估模块映射
+
+以下为待实现任务的预估对应模块：
+
+| 任务ID | 任务名称 | 预估模块 | 说明 |
+|--------|----------|----------|------|
+| T1 | 项目基础设施搭建 | 新建 | CMake配置、目录结构、编译脚本 |
+| T13 | PROJ库集成封装 | code/graph | 扩展proj_transformer.cpp |
+| T15 | S52样式管理器实现 | code/graph | 新增s52_style_manager.cpp |
+| T16 | 符号库加载与渲染 | code/graph | 扩展symbolizer系列 |
+| T18 | 图形交互核心实现 | code/graph | 新增interaction_handler.cpp |
+| T19 | 平移缩放交互实现 | code/graph | 新增pan_zoom_handler.cpp |
+| T20 | 要素选择交互实现 | code/graph | 新增selection_handler.cpp |
+| T21 | 定位显示模块实现 | code/graph | 新增location_display.cpp |
+| T22 | 航迹记录与回放 | code/graph | 新增track_recorder.cpp |
+| T24 | 图层控制面板 | code/graph | 新增layer_control_panel.cpp |
+| T25 | 日/夜模式切换 | code/graph | 扩展style_manager.cpp |
+| T29 | Qt平台适配实现 | code/draw | 扩展qt_engine.cpp |
+| T30 | Android平台适配 | 新建 | Android NDK/JNI层 |
+| T31 | JNI桥接层实现 | 新建 | jni_bridge模块 |
+| T32 | Java API封装 | 新建 | java_api模块 |
+| T33 | WebAssembly编译 | 新建 | wasm编译配置 |
+| T34 | WebGL渲染适配 | code/draw | 扩展webgl_engine.cpp |
+| T35 | 离线数据存储 | code/database | 新增offline_storage.cpp |
+| T36 | 离线数据同步 | code/database | 新增offline_sync.cpp |
+| T37 | 数据加密实现 | code/database | 新增data_encryption.cpp |
+| T42 | 集成测试用例编写 | tests | 扩展各模块integration_test |
+| T43 | 性能基准测试 | tests | 扩展performance_test |
+| T44 | 内存泄漏检测 | tests | 新增内存检测配置 |
+| T45 | API文档生成 | doc | Doxygen配置 |
+| T46 | 用户手册编写 | doc | Markdown文档 |
+| T47 | 示例代码编写 | examples | 示例程序 |
+| T48 | 最终验收测试 | tests | 验收测试套件 |
+
+---
+
+## 第三方库依赖
+
+### 核心依赖库
+
+| 库名称 | 版本要求 | 用途 | 使用模块 | 许可证 |
+|--------|----------|------|----------|--------|
+| **Google Test** | ≥1.10 | 单元测试框架 | 所有模块tests | BSD-3 |
+| **GEOS** | ≥3.8 | 高级几何操作(可选) | code/geom | LGPL-2.1 |
+| **PROJ** | ≥7.0 | 坐标转换投影 | code/graph | MIT |
+| **GDAL** | ≥3.0 | 地理数据解析(S57/S101) | code/chart/parser | MIT/X |
+| **libxml2** | ≥2.9 | XML解析(S101 GML) | code/chart/parser | MIT |
+
+### 数据库依赖
+
+| 库名称 | 版本要求 | 用途 | 使用模块 | 许可证 |
+|--------|----------|------|----------|--------|
+| **SQLite3** | ≥3.35 | 嵌入式数据库 | code/database | Public Domain |
+| **PostgreSQL** | ≥12 | 空间数据库连接 | code/database | PostgreSQL |
+| **SpatiaLite** | ≥5.0 | SQLite空间扩展 | code/database | MPL-1.1 |
+
+### 平台相关依赖
+
+| 库名称 | 版本要求 | 用途 | 使用模块 | 许可证 |
+|--------|----------|------|----------|--------|
+| **GDI+** | Windows | Windows图形渲染 | code/draw | Windows SDK |
+| **Direct2D** | Windows | Windows硬件加速 | code/draw | Windows SDK |
+| **Cairo** | ≥1.16 | 跨平台矢量渲染 | code/draw | LGPL-2.1/MPL-1.1 |
+| **Qt** | ≥5.15 | Qt平台渲染适配 | code/draw | LGPL-3.0 |
+
+### 可选依赖
+
+| 库名称 | 版本要求 | 用途 | 使用模块 | 许可证 |
+|--------|----------|------|----------|--------|
+| **OpenSSL** | ≥1.1 | 数据加密 | code/database | Apache-2.0 |
+| **zlib** | ≥1.2 | 数据压缩 | code/database | zlib |
+| **Emscripten** | ≥3.0 | WebAssembly编译 | 构建系统 | MIT |
+
+### 依赖配置路径
+
+```cmake
+# CMake配置示例
+set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest root")
+set(GEOS_ROOT "E:/xspace/3rd/GEOS3.10" CACHE PATH "GEOS root")
+set(PROJ_ROOT "E:/xspace/3rd/PROJ" CACHE PATH "PROJ root")
+set(GDAL_ROOT "E:/xspace/3rd/gdal-3.9.3" CACHE PATH "GDAL root")
+set(LIBXML2_ROOT "E:/xspace/3rd/libxml2" CACHE PATH "libxml2 root")
+set(POSTGRESQL_ROOT "E:/Program Files/postgresql/16" CACHE PATH "PostgreSQL root")
+set(SQLITE3_ROOT "E:/xspace/3rd/sqlite3-3.35.5" CACHE PATH "SQLite3 root")
+```
+
+### 编译选项
+
+```cmake
+option(USE_GEOS "Enable GEOS backend for advanced operations" OFF)
+option(USE_PROJ "Enable PROJ for coordinate transformation" OFF)
+option(ENABLE_TESTS "Build unit tests" ON)
+option(ENABLE_DATABASE "Build database module" ON)
+option(ENABLE_GRAPH "Build graph module" ON)
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+```
 
 ---
 
@@ -1653,6 +2258,6 @@ M5: Testing
 
 | 版本 | 日期 | 变更内容 | 影响 |
 |------|------|----------|------|
-| v1.0 | 2026-03-27 | 初始任务计划创建 | - |
-| v1.1 | 2026-03-27 | 增加缓冲时间、优化资源分配、修正关键路径、增加接口契约和跟踪机制 | 技术评审改进 |
-| v1.2 | 2026-03-27 | 增加T19测试数据准备任务、T16工时调整为6h、增加代码审查检查清单、任务变更管理、回归测试策略、内存检测工具配置、项目收尾检查清单 | 多角色交叉评审改进 |
+| v1.2 | 2026-04-01 | 核实T38-T41测试任务状态，添加未实现任务模块映射和三方库依赖章节 | 4个测试任务标记为完成，新增模块映射和三方库信息 |
+| v1.1 | 2026-04-01 | 核实现有模块实现，更新任务状态 | 18个任务标记为完成，2个任务标记为部分完成 |
+| v1.0 | 2026-04-01 | 初始任务计划 | - |

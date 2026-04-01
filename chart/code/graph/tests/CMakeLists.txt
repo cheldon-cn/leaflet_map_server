@@ -47,6 +47,9 @@ set(TEST_SOURCES
     test_basic_render_task.cpp
     test_draw_facade.cpp
     test_proj_transformer.cpp
+    test_coord_system_preset.cpp
+    test_s52_style_manager.cpp
+    test_s52_symbol_renderer.cpp
     test_coordinate_transformer.cpp
     test_thread_safe.cpp
     test_log.cpp
@@ -80,6 +83,10 @@ set(TEST_SOURCES
     test_it_draw_facade.cpp
     test_it_sld_render.cpp
     test_it_mapbox_style_render.cpp
+    test_interaction.cpp
+    test_pan_zoom_handler.cpp
+    test_selection_handler.cpp
+    test_location_display_handler.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
