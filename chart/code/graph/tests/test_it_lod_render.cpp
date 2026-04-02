@@ -15,13 +15,12 @@ using ogc::Envelope;
 class LodRenderITTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
         
         m_lodManager = LODManager::Create();
     }
@@ -32,8 +31,8 @@ protected:
         m_device.reset();
     }
     
-    DrawDevicePtr m_device;
-    DrawContextPtr m_context;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
     LODManagerPtr m_lodManager;
 };
 

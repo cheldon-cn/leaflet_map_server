@@ -17,17 +17,14 @@ using ogc::Envelope;
 class IntegrationLabelConflictTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         
         DrawResult result = m_device->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        
-        result = m_context->Initialize();
-        EXPECT_EQ(result, DrawResult::kSuccess);
         
         m_engine = LabelEngine::Create();
         ASSERT_NE(m_engine, nullptr);
@@ -39,16 +36,14 @@ protected:
     void TearDown() override {
         m_resolver.reset();
         m_engine.reset();
-        if (m_context) {
-            m_context->Finalize();
-        }
+        m_context.reset();
         if (m_device) {
             m_device->Finalize();
         }
     }
     
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
     std::shared_ptr<LabelEngine> m_engine;
     std::shared_ptr<LabelConflictResolver> m_resolver;
 };
@@ -206,18 +201,13 @@ TEST_F(IntegrationLabelConflictTest, RenderLabelsSingle) {
     info.visible = true;
     labels.push_back(info);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawResult result = m_engine->RenderLabels(labels, *m_context);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationLabelConflictTest, RenderLabelsMultiple) {
@@ -235,18 +225,13 @@ TEST_F(IntegrationLabelConflictTest, RenderLabelsMultiple) {
         labels.push_back(info);
     }
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawResult result = m_engine->RenderLabels(labels, *m_context);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationLabelConflictTest, RenderLabelsWithHalo) {
@@ -263,18 +248,13 @@ TEST_F(IntegrationLabelConflictTest, RenderLabelsWithHalo) {
     info.visible = true;
     labels.push_back(info);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::Black());
     
     DrawResult result = m_engine->RenderLabels(labels, *m_context);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationLabelConflictTest, RenderLabelsInvisible) {
@@ -288,18 +268,13 @@ TEST_F(IntegrationLabelConflictTest, RenderLabelsInvisible) {
     info.visible = false;
     labels.push_back(info);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawResult result = m_engine->RenderLabels(labels, *m_context);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationLabelConflictTest, RenderLabelsWithRotation) {
@@ -314,18 +289,13 @@ TEST_F(IntegrationLabelConflictTest, RenderLabelsWithRotation) {
     info.visible = true;
     labels.push_back(info);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawResult result = m_engine->RenderLabels(labels, *m_context);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationLabelConflictTest, GenerateLabelsEmpty) {

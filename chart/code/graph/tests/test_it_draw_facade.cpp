@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/draw_facade.h"
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_engine.h>
@@ -42,7 +42,7 @@ TEST_F(DrawFacadeITTest, CreateEngine) {
 TEST_F(DrawFacadeITTest, RegisterDeviceAndRetrieve) {
     auto& facade = DrawFacade::Instance();
     
-    auto device = RasterImageDevice::Create(256, 256, 4);
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
     auto result = facade.RegisterDevice("test_device_it", device);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
@@ -78,15 +78,15 @@ TEST_F(DrawFacadeITTest, CreateStyles) {
     auto& facade = DrawFacade::Instance();
     
     auto strokeStyle = facade.CreateStrokeStyle(0xFF0000, 2.0);
-    EXPECT_EQ(strokeStyle.pen.color, 0xFF0000);
+    EXPECT_EQ(strokeStyle.pen.color.GetRGBA(), 0xFF0000);
     EXPECT_DOUBLE_EQ(strokeStyle.pen.width, 2.0);
     
     auto fillStyle = facade.CreateFillStyle(0x00FF00);
-    EXPECT_EQ(fillStyle.brush.color, 0x00FF00);
+    EXPECT_EQ(fillStyle.brush.color.GetRGBA(), 0x00FF00);
     
     auto strokeFillStyle = facade.CreateStrokeFillStyle(0xFF0000, 2.0, 0x00FF00);
-    EXPECT_EQ(strokeFillStyle.pen.color, 0xFF0000);
-    EXPECT_EQ(strokeFillStyle.brush.color, 0x00FF00);
+    EXPECT_EQ(strokeFillStyle.pen.color.GetRGBA(), 0xFF0000);
+    EXPECT_EQ(strokeFillStyle.brush.color.GetRGBA(), 0x00FF00);
 }
 
 TEST_F(DrawFacadeITTest, CreateColorAndFont) {
@@ -112,12 +112,11 @@ TEST_F(DrawFacadeITTest, SetDefaultStyles) {
     auto& facade = DrawFacade::Instance();
     
     DrawStyle style;
-    style.pen.color = 0xFF0000;
-    style.pen.width = 2.0;
+    style.pen = Pen(Color(255, 0, 0), 2.0);
     facade.SetDefaultDrawStyle(style);
     
     auto retrievedStyle = facade.GetDefaultDrawStyle();
-    EXPECT_EQ(retrievedStyle.pen.color, 0xFF0000);
+    EXPECT_EQ(retrievedStyle.pen.color.GetRed(), 255);
     
     Font font("Arial", 12);
     facade.SetDefaultFont(font);
@@ -158,10 +157,7 @@ TEST_F(DrawFacadeITTest, FullRenderWorkflow) {
     auto context = facade.CreateContext(device);
     ASSERT_NE(context, nullptr);
     
-    Envelope extent(0, 0, 1000, 1000);
-    auto params = facade.CreateDrawParams(extent, 256, 256, 96.0);
-    
-    auto result = context->BeginDraw(params);
+    auto result = context->Begin();
     EXPECT_TRUE(result == DrawResult::kSuccess || result != DrawResult::kSuccess);
     
     auto strokeStyle = facade.CreateStrokeStyle(0xFF0000, 2.0);
@@ -170,15 +166,14 @@ TEST_F(DrawFacadeITTest, FullRenderWorkflow) {
     auto fillStyle = facade.CreateFillStyle(0x00FF00);
     context->DrawRect(50, 50, 100, 100);
     
-    result = context->EndDraw();
-    EXPECT_TRUE(result == DrawResult::kSuccess || result != DrawResult::kSuccess);
+    context->End();
 }
 
 TEST_F(DrawFacadeITTest, MultipleDevices) {
     auto& facade = DrawFacade::Instance();
     
-    auto device1 = RasterImageDevice::Create(256, 256, 4);
-    auto device2 = RasterImageDevice::Create(512, 512, 4);
+    auto device1 = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
+    auto device2 = std::make_shared<RasterImageDevice>(512, 512, PixelFormat::kRGBA8888);
     
     auto result1 = facade.RegisterDevice("device_256", device1);
     EXPECT_EQ(result1, DrawResult::kSuccess);
@@ -217,11 +212,3 @@ TEST_F(DrawFacadeITTest, InitializeFinalizeCycle) {
     
     DrawFacade::Instance().Initialize();
 }
-
-TEST_F(DrawFacadeITTest, CreateDriver) {
-    auto& facade = DrawFacade::Instance();
-    
-    auto driver = facade.CreateDriver("test_driver");
-    EXPECT_TRUE(driver != nullptr || driver == nullptr);
-}
-

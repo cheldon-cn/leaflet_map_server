@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/raster_symbolizer.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
@@ -16,17 +16,14 @@ using ogc::Envelope;
 class IntegrationRasterSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         
         DrawResult result = m_device->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        
-        result = m_context->Initialize();
-        EXPECT_EQ(result, DrawResult::kSuccess);
         
         m_symbolizer = RasterSymbolizer::Create();
         ASSERT_NE(m_symbolizer, nullptr);
@@ -34,16 +31,14 @@ protected:
     
     void TearDown() override {
         m_symbolizer.reset();
-        if (m_context) {
-            m_context->Finalize();
-        }
+        m_context.reset();
         if (m_device) {
             m_device->Finalize();
         }
     }
     
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
     std::shared_ptr<RasterSymbolizer> m_symbolizer;
 };
 
@@ -220,17 +215,11 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithGrayscale) {
     m_symbolizer->SetChannelSelection(RasterChannelSelection::kGrayscale);
     m_symbolizer->SetGrayChannel(0);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Gray().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Gray());
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -239,7 +228,7 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithGrayscale) {
     DrawResult result = m_context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationRasterSymbolizerTest, RenderWithColorMap) {
@@ -252,17 +241,11 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithColorMap) {
     m_symbolizer->AddColorMapEntry(entry3);
     m_symbolizer->SetColorMapType(RasterChannelSelection::kPseudoColor);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Yellow().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Yellow());
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -271,7 +254,7 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithColorMap) {
     DrawResult result = m_context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationRasterSymbolizerTest, RenderWithContrastEnhancement) {
@@ -280,17 +263,11 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithContrastEnhancement) {
     m_symbolizer->SetBrightnessValue(0.1);
     m_symbolizer->SetGammaValue(2.2);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Gray().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Gray());
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -299,23 +276,17 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithContrastEnhancement) {
     DrawResult result = m_context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationRasterSymbolizerTest, RenderWithOpacity) {
     m_symbolizer->SetOpacity(0.5);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Blue().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Blue());
     m_context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -324,20 +295,14 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderWithOpacity) {
     DrawResult result = m_context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationRasterSymbolizerTest, RenderMultiplePolygons) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
     m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.visible = true;
     m_context->SetStyle(style);
     
     for (int i = 0; i < 3; ++i) {
@@ -345,13 +310,13 @@ TEST_F(IntegrationRasterSymbolizerTest, RenderMultiplePolygons) {
         double x[] = {offset + 10, offset + 60, offset + 60, offset + 10};
         double y[] = {10, 10, 60, 60};
         
-        style.brush.color = Color::Red().GetRGBA();
+        style.brush = Brush(Color::Red());
         m_context->SetStyle(style);
         DrawResult result = m_context->DrawPolygon(x, y, 4);
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationRasterSymbolizerTest, ChannelSelectionRGB) {
@@ -373,4 +338,3 @@ TEST_F(IntegrationRasterSymbolizerTest, ValueRange) {
     EXPECT_DOUBLE_EQ(m_symbolizer->GetMinValue(), 10.0);
     EXPECT_DOUBLE_EQ(m_symbolizer->GetMaxValue(), 200.0);
 }
-

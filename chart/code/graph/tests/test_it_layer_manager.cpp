@@ -36,13 +36,13 @@ public:
 class IntegrationLayerManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         
         DrawResult result = m_device->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
         
         m_manager = std::make_shared<LayerManager>();
@@ -58,7 +58,7 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
     std::shared_ptr<LayerManager> m_manager;
 };
 

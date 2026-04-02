@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/icon_symbolizer.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
@@ -16,17 +16,14 @@ using ogc::Envelope;
 class IntegrationIconSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         
         DrawResult result = m_device->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        
-        result = m_context->Initialize();
-        EXPECT_EQ(result, DrawResult::kSuccess);
         
         m_symbolizer = IconSymbolizer::Create();
         ASSERT_NE(m_symbolizer, nullptr);
@@ -34,16 +31,14 @@ protected:
     
     void TearDown() override {
         m_symbolizer.reset();
-        if (m_context) {
-            m_context->Finalize();
-        }
+        m_context.reset();
         if (m_device) {
             m_device->Finalize();
         }
     }
     
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
     std::shared_ptr<IconSymbolizer> m_symbolizer;
 };
 
@@ -170,13 +165,8 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithIconData) {
     m_symbolizer->SetIconData(data.data(), data.size(), 16, 16, 4);
     m_symbolizer->SetSize(16.0, 16.0);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     double x[] = {128};
     double y[] = {128};
@@ -184,7 +174,7 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithIconData) {
     DrawResult result = m_context->DrawPoint(x[0], y[0]);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationIconSymbolizerTest, SymbolizeMultiplePoints) {
@@ -192,16 +182,11 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeMultiplePoints) {
     m_symbolizer->SetIconData(data.data(), data.size(), 16, 16, 4);
     m_symbolizer->SetSize(16.0, 16.0);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
+    style.pen = Pen(Color::Blue(), 1.0);
     m_context->SetStyle(style);
     
     double x[] = {50, 100, 150, 200};
@@ -212,7 +197,7 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeMultiplePoints) {
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithRotation) {
@@ -221,18 +206,13 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithRotation) {
     m_symbolizer->SetSize(16.0, 16.0);
     m_symbolizer->SetRotation(45.0);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     DrawResult result = m_context->DrawPoint(128, 128);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithOpacity) {
@@ -241,18 +221,13 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithOpacity) {
     m_symbolizer->SetSize(16.0, 16.0);
     m_symbolizer->SetOpacity(0.5);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     DrawResult result = m_context->DrawPoint(128, 128);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithDisplacement) {
@@ -261,18 +236,13 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithDisplacement) {
     m_symbolizer->SetSize(16.0, 16.0);
     m_symbolizer->SetDisplacement(10.0, 10.0);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     DrawResult result = m_context->DrawPoint(128, 128);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithAnchorPoint) {
@@ -281,17 +251,11 @@ TEST_F(IntegrationIconSymbolizerTest, SymbolizeWithAnchorPoint) {
     m_symbolizer->SetSize(16.0, 16.0);
     m_symbolizer->SetAnchorPoint(0.5, 0.5);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    m_context->BeginDraw(params);
-    m_context->Clear(Color::White());
+    m_context->Begin();
+    m_device->Clear(Color::White());
     
     DrawResult result = m_context->DrawPoint(128, 128);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    m_context->EndDraw();
+    m_context->End();
 }
-

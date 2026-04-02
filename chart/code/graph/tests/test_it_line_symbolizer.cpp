@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/line_symbolizer.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
@@ -17,13 +17,12 @@ using ogc::Envelope;
 class IntegrationLineSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
         
-        context = DrawContext::Create(device);
+        context = DrawContext::Create(device.get());
         ASSERT_NE(context, nullptr);
-        context->Initialize();
     }
     
     void TearDown() override {
@@ -34,7 +33,7 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> device;
-    std::shared_ptr<DrawContext> context;
+    std::unique_ptr<DrawContext> context;
 };
 
 TEST_F(IntegrationLineSymbolizerTest, SymbolizerCreation) {
@@ -70,21 +69,21 @@ TEST_F(IntegrationLineSymbolizerTest, SetOpacity) {
 TEST_F(IntegrationLineSymbolizerTest, SetCapStyle) {
     auto symbolizer = LineSymbolizer::Create();
     
-    symbolizer->SetCapStyle(LineCapStyle::kRound);
-    EXPECT_EQ(symbolizer->GetCapStyle(), LineCapStyle::kRound);
+    symbolizer->SetCapStyle(LineCap::kRound);
+    EXPECT_EQ(symbolizer->GetCapStyle(), LineCap::kRound);
     
-    symbolizer->SetCapStyle(LineCapStyle::kSquare);
-    EXPECT_EQ(symbolizer->GetCapStyle(), LineCapStyle::kSquare);
+    symbolizer->SetCapStyle(LineCap::kSquare);
+    EXPECT_EQ(symbolizer->GetCapStyle(), LineCap::kSquare);
 }
 
 TEST_F(IntegrationLineSymbolizerTest, SetJoinStyle) {
     auto symbolizer = LineSymbolizer::Create();
     
-    symbolizer->SetJoinStyle(LineJoinStyle::kRound);
-    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoinStyle::kRound);
+    symbolizer->SetJoinStyle(LineJoin::kRound);
+    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoin::kRound);
     
-    symbolizer->SetJoinStyle(LineJoinStyle::kMiter);
-    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoinStyle::kMiter);
+    symbolizer->SetJoinStyle(LineJoin::kMiter);
+    EXPECT_EQ(symbolizer->GetJoinStyle(), LineJoin::kMiter);
 }
 
 TEST_F(IntegrationLineSymbolizerTest, SetDashStyle) {
@@ -155,93 +154,70 @@ TEST_F(IntegrationLineSymbolizerTest, Clone) {
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderWithContext) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = LineSymbolizer::Create();
     symbolizer->SetWidth(2.0);
     symbolizer->SetColor(Color::Blue().GetRGBA());
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Blue(), 2.0);
     context->SetStyle(style);
     
     double x[] = {10, 100, 200, 246};
     double y[] = {128, 50, 200, 128};
     
-    DrawResult result = context->DrawPolyline(x, y, 4);
+    DrawResult result = context->DrawLineString(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderMultipleLines) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Red(), 2.0);
     context->SetStyle(style);
     
     double x1[] = {0, 256};
     double y1[] = {0, 256};
-    DrawResult result = context->DrawPolyline(x1, y1, 2);
+    DrawResult result = context->DrawLineString(x1, y1, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
     double x2[] = {0, 256};
     double y2[] = {256, 0};
-    result = context->DrawPolyline(x2, y2, 2);
+    result = context->DrawLineString(x2, y2, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderWithTransform) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     TransformMatrix transform = TransformMatrix::CreateTranslation(50, 50);
     context->SetTransform(transform);
     
     DrawStyle style;
-    style.pen.color = Color::Magenta().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Magenta(), 2.0);
     context->SetStyle(style);
     
     double x[] = {0, 100};
     double y[] = {0, 100};
     
-    DrawResult result = context->DrawPolyline(x, y, 2);
+    DrawResult result = context->DrawLineString(x, y, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderDashedLine) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = LineSymbolizer::Create();
     symbolizer->SetWidth(1.0);
@@ -249,44 +225,37 @@ TEST_F(IntegrationLineSymbolizerTest, RenderDashedLine) {
     symbolizer->SetDashStyle(DashStyle::kDash);
     
     DrawStyle style;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Black(), 1.0);
     context->SetStyle(style);
     
     double x[] = {0, 256};
     double y[] = {128, 128};
     
-    DrawResult result = context->DrawPolyline(x, y, 2);
+    DrawResult result = context->DrawLineString(x, y, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderThickLine) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = LineSymbolizer::Create();
     symbolizer->SetWidth(10.0);
     symbolizer->SetColor(Color::Green().GetRGBA());
     
     DrawStyle style;
-    style.pen.color = Color::Green().GetRGBA();
-    style.pen.width = 10.0;
+    style.pen = Pen(Color::Green(), 10.0);
     context->SetStyle(style);
     
     double x[] = {50, 206};
     double y[] = {50, 206};
     
-    DrawResult result = context->DrawPolyline(x, y, 2);
+    DrawResult result = context->DrawLineString(x, y, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, SetGetName) {
@@ -297,48 +266,35 @@ TEST_F(IntegrationLineSymbolizerTest, SetGetName) {
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderVerticalLine) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Cyan().GetRGBA();
-    style.pen.width = 3.0;
+    style.pen = Pen(Color::Cyan(), 3.0);
     context->SetStyle(style);
     
     double x[] = {128, 128};
     double y[] = {0, 256};
     
-    DrawResult result = context->DrawPolyline(x, y, 2);
+    DrawResult result = context->DrawLineString(x, y, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationLineSymbolizerTest, RenderHorizontalLine) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Yellow().GetRGBA();
-    style.pen.width = 3.0;
+    style.pen = Pen(Color::Yellow(), 3.0);
     context->SetStyle(style);
     
     double x[] = {0, 256};
     double y[] = {128, 128};
     
-    DrawResult result = context->DrawPolyline(x, y, 2);
+    DrawResult result = context->DrawLineString(x, y, 2);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
-

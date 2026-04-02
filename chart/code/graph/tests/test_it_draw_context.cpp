@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include "ogc/draw/draw_params.h"
@@ -12,13 +12,12 @@ using namespace ogc::draw;
 class IntegrationDrawContextTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(200, 200, 4);
+        device = std::make_shared<RasterImageDevice>(200, 200, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
         
-        context = DrawContext::Create(device);
+        context = DrawContext::Create(device.get());
         ASSERT_NE(context, nullptr);
-        context->Initialize();
     }
     
     void TearDown() override {
@@ -29,101 +28,80 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> device;
-    std::shared_ptr<DrawContext> context;
+    std::unique_ptr<DrawContext> context;
 };
 
 TEST_F(IntegrationDrawContextTest, ContextCreation) {
     EXPECT_NE(context, nullptr);
-    DrawDevicePtr dev = context->GetDevice();
+    DrawDevice* dev = context->GetDevice();
     EXPECT_NE(dev, nullptr);
 }
 
 TEST_F(IntegrationDrawContextTest, BeginEndDraw) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    DrawResult result = context->BeginDraw(params);
+    DrawResult result = context->Begin();
     EXPECT_EQ(result, DrawResult::kSuccess);
-    EXPECT_TRUE(context->IsDrawing());
+    EXPECT_TRUE(context->IsActive());
     
-    result = context->EndDraw();
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    EXPECT_FALSE(context->IsDrawing());
+    context->End();
+    EXPECT_FALSE(context->IsActive());
 }
 
 TEST_F(IntegrationDrawContextTest, StatePushPopTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
+    context->Begin();
     
-    context->BeginDraw(params);
+    context->Save(StateFlags(StateFlag::kTransform));
     
-    context->PushTransform();
-    
-    TransformMatrix transform = TransformMatrix::CreateTranslation(50, 50);
+    TransformMatrix transform = TransformMatrix::Translate(50, 50);
     context->SetTransform(transform);
     
-    context->PopTransform();
+    context->Restore();
     
     TransformMatrix restored = context->GetTransform();
     EXPECT_NEAR(restored.GetTranslationX(), 0.0, 1e-6);
     EXPECT_NEAR(restored.GetTranslationY(), 0.0, 1e-6);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, MultiplePushPopTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
+    context->Begin();
     
-    context->BeginDraw(params);
-    
-    context->PushTransform();
-    TransformMatrix t1 = TransformMatrix::CreateTranslation(10, 10);
+    context->Save(StateFlags(StateFlag::kTransform));
+    TransformMatrix t1 = TransformMatrix::Translate(10, 10);
     context->SetTransform(t1);
     
-    context->PushTransform();
-    TransformMatrix t2 = TransformMatrix::CreateTranslation(20, 20);
+    context->Save(StateFlags(StateFlag::kTransform));
+    TransformMatrix t2 = TransformMatrix::Translate(20, 20);
     context->SetTransform(t2);
     
-    context->PopTransform();
+    context->Restore();
     TransformMatrix r1 = context->GetTransform();
     EXPECT_NEAR(r1.GetTranslationX(), 10.0, 1e-6);
     
-    context->PopTransform();
+    context->Restore();
     TransformMatrix r2 = context->GetTransform();
     EXPECT_NEAR(r2.GetTranslationX(), 0.0, 1e-6);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, SetTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
+    context->Begin();
     
-    context->BeginDraw(params);
-    
-    TransformMatrix transform = TransformMatrix::CreateTranslation(100, 50);
+    TransformMatrix transform = TransformMatrix::Translate(100, 50);
     context->SetTransform(transform);
     
     TransformMatrix retrieved = context->GetTransform();
     EXPECT_NEAR(retrieved.GetTranslationX(), 100.0, 1e-6);
     EXPECT_NEAR(retrieved.GetTranslationY(), 50.0, 1e-6);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, ResetTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
+    context->Begin();
     
-    context->BeginDraw(params);
-    
-    TransformMatrix transform = TransformMatrix::CreateTranslation(100, 50);
+    TransformMatrix transform = TransformMatrix::Translate(100, 50);
     context->SetTransform(transform);
     
     context->ResetTransform();
@@ -132,67 +110,38 @@ TEST_F(IntegrationDrawContextTest, ResetTransform) {
     EXPECT_NEAR(identity.GetTranslationX(), 0.0, 1e-6);
     EXPECT_NEAR(identity.GetTranslationY(), 0.0, 1e-6);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, PushPopClipRect) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
+    context->Begin();
     
-    context->BeginDraw(params);
+    context->SetClipRect(50, 50, 100, 100);
     
-    context->PushClipRect(50, 50, 100, 100);
+    context->ResetClip();
     
-    context->PopClipRect();
-    
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, DrawWithClipRect) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     context->Clear(Color::White());
     
-    context->PushClipRect(50, 50, 100, 100);
+    context->SetClipRect(50, 50, 100, 100);
     
     DrawResult result = context->DrawLine(0, 0, 200, 200);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->PopClipRect();
-    context->EndDraw();
-}
-
-TEST_F(IntegrationDrawContextTest, SetBackground) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
-    
-    context->SetBackground(Color::Blue());
-    
-    Color bg = context->GetBackground();
-    EXPECT_EQ(bg.GetRed(), 0);
-    EXPECT_EQ(bg.GetGreen(), 0);
-    EXPECT_EQ(bg.GetBlue(), 255);
-    
-    context->EndDraw();
+    context->ResetClip();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, Clear) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     
     EXPECT_NO_THROW(context->Clear(Color::Yellow()));
     
-    context->EndDraw();
+    context->End();
     
     Color pixel = device->GetPixel(100, 100);
     EXPECT_EQ(pixel.GetRed(), 255);
@@ -201,16 +150,11 @@ TEST_F(IntegrationDrawContextTest, Clear) {
 }
 
 TEST_F(IntegrationDrawContextTest, DrawPrimitives) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Black(), 1.0);
     
     context->SetStyle(style);
     
@@ -228,22 +172,16 @@ TEST_F(IntegrationDrawContextTest, DrawPrimitives) {
     result = context->DrawCircle(100, 100, 50);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, DrawPolygon) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     context->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    style.brush.color = Color::Red().GetRGBA();
-    style.brush.visible = true;
+    style.pen = Pen(Color::Black(), 1.0);
+    style.brush = Brush(Color::Red());
     
     context->SetStyle(style);
     
@@ -253,11 +191,11 @@ TEST_F(IntegrationDrawContextTest, DrawPolygon) {
     DrawResult result = context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, DeviceAccess) {
-    DrawDevicePtr dev = context->GetDevice();
+    DrawDevice* dev = context->GetDevice();
     EXPECT_NE(dev, nullptr);
     
     EXPECT_EQ(dev->GetWidth(), 200);
@@ -265,11 +203,7 @@ TEST_F(IntegrationDrawContextTest, DeviceAccess) {
 }
 
 TEST_F(IntegrationDrawContextTest, TranslateRotateScale) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     
     context->Translate(50, 50);
     TransformMatrix t1 = context->GetTransform();
@@ -279,47 +213,39 @@ TEST_F(IntegrationDrawContextTest, TranslateRotateScale) {
     
     context->Scale(2.0, 2.0);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, PushPopStyle) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     
     DrawStyle style1;
-    style1.pen.color = Color::Red().GetRGBA();
+    style1.pen = Pen(Color::Red(), 1.0);
     context->SetStyle(style1);
     
-    context->PushStyle(style1);
+    context->Save(StateFlags(StateFlag::kStyle));
     
     DrawStyle style2;
-    style2.pen.color = Color::Blue().GetRGBA();
+    style2.pen = Pen(Color::Blue(), 1.0);
     context->SetStyle(style2);
     
-    context->PopStyle();
+    context->Restore();
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationDrawContextTest, PushPopOpacity) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    
-    context->BeginDraw(params);
+    context->Begin();
     
     context->SetOpacity(0.5);
     EXPECT_DOUBLE_EQ(context->GetOpacity(), 0.5);
     
-    context->PushOpacity(0.3);
+    context->Save(StateFlags(StateFlag::kOpacity));
+    context->SetOpacity(0.3);
     EXPECT_DOUBLE_EQ(context->GetOpacity(), 0.3);
     
-    context->PopOpacity();
+    context->Restore();
     EXPECT_DOUBLE_EQ(context->GetOpacity(), 0.5);
     
-    context->EndDraw();
+    context->End();
 }
-

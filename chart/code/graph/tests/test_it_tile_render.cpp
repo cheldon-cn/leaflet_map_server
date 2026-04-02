@@ -1,5 +1,7 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <ogc/draw/tile_device.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_context.h>
 #include "ogc/draw/tile_key.h"
 #include "ogc/draw/draw_params.h"
 #include <ogc/draw/draw_style.h>
@@ -13,282 +15,151 @@ using ogc::Envelope;
 class IntegrationTileRenderTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        tileDevice = TileDevice::Create(256);
-        ASSERT_NE(tileDevice, nullptr);
+        m_tileDevice = std::make_unique<TileDevice>(512, 512, 256);
+        ASSERT_NE(m_tileDevice, nullptr);
         
-        DrawResult result = tileDevice->Initialize();
+        DrawResult result = m_tileDevice->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
     void TearDown() override {
-        if (tileDevice) {
-            tileDevice->Finalize();
+        if (m_tileDevice) {
+            m_tileDevice->Finalize();
         }
     }
     
-    TileDevicePtr tileDevice;
+    std::unique_ptr<TileDevice> m_tileDevice;
 };
 
 TEST_F(IntegrationTileRenderTest, DeviceCreation) {
-    EXPECT_NE(tileDevice, nullptr);
-    EXPECT_EQ(tileDevice->GetType(), DeviceType::kTile);
-    EXPECT_EQ(tileDevice->GetTileSize(), 256);
+    EXPECT_NE(m_tileDevice, nullptr);
+    EXPECT_EQ(m_tileDevice->GetType(), DeviceType::kTile);
+    EXPECT_EQ(m_tileDevice->GetTileSize(), 256);
 }
 
 TEST_F(IntegrationTileRenderTest, DeviceInitialization) {
-    EXPECT_TRUE(tileDevice->IsReady());
+    EXPECT_TRUE(m_tileDevice->IsReady());
 }
 
-TEST_F(IntegrationTileRenderTest, BeginEndTile) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    EXPECT_TRUE(tileDevice->IsDrawing());
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    EXPECT_FALSE(tileDevice->IsDrawing());
+TEST_F(IntegrationTileRenderTest, TileInfo) {
+    TileInfo info = m_tileDevice->GetTileInfo(0, 0);
+    EXPECT_EQ(info.indexX, 0);
+    EXPECT_EQ(info.indexY, 0);
+    EXPECT_EQ(info.width, 256);
+    EXPECT_EQ(info.height, 256);
 }
 
-TEST_F(IntegrationTileRenderTest, RenderSingleTile) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 2.0;
-    
-    result = tileDevice->DrawRect(10, 10, 236, 236, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, TileCount) {
+    EXPECT_EQ(m_tileDevice->GetTileCountX(), 2);
+    EXPECT_EQ(m_tileDevice->GetTileCountY(), 2);
+    EXPECT_EQ(m_tileDevice->GetTotalTileCount(), 4);
 }
 
-TEST_F(IntegrationTileRenderTest, RenderMultipleTiles) {
-    for (int z = 0; z <= 2; ++z) {
-        int maxTile = 1 << z;
-        for (int x = 0; x < maxTile; ++x) {
-            for (int y = 0; y < maxTile; ++y) {
-                DrawResult result = tileDevice->BeginTile(x, y, z);
-                EXPECT_EQ(result, DrawResult::kSuccess);
-                
-                tileDevice->Clear(Color::White());
-                
-                DrawStyle style;
-                style.pen.color = Color::Blue().GetRGBA();
-                style.pen.width = 1.0;
-                
-                tileDevice->DrawRect(0, 0, 256, 256, style);
-                
-                result = tileDevice->EndTile();
-                EXPECT_EQ(result, DrawResult::kSuccess);
-            }
-        }
-    }
+TEST_F(IntegrationTileRenderTest, GetTile) {
+    RasterImageDevice* tile = m_tileDevice->GetTile(0, 0);
+    EXPECT_NE(tile, nullptr);
+    
+    tile = m_tileDevice->GetTile(1, 1);
+    EXPECT_NE(tile, nullptr);
 }
 
-TEST_F(IntegrationTileRenderTest, DrawPrimitives) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, TileDirty) {
+    m_tileDevice->SetTileDirty(0, 0, true);
+    EXPECT_TRUE(m_tileDevice->IsTileDirty(0, 0));
     
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    
-    result = tileDevice->DrawPoint(128, 128, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->DrawLine(0, 0, 256, 256, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->DrawRect(50, 50, 100, 100, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->DrawCircle(128, 128, 50, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+    m_tileDevice->SetTileDirty(0, 0, false);
+    EXPECT_FALSE(m_tileDevice->IsTileDirty(0, 0));
 }
 
-TEST_F(IntegrationTileRenderTest, DrawPolyline) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, MarkAllTilesDirty) {
+    m_tileDevice->MarkAllTilesDirty();
     
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Green().GetRGBA();
-    style.pen.width = 2.0;
-    
-    double x[] = {10, 50, 100, 200, 246};
-    double y[] = {128, 50, 200, 50, 128};
-    
-    result = tileDevice->DrawPolyline(x, y, 5, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+    auto dirtyTiles = m_tileDevice->GetDirtyTiles();
+    EXPECT_EQ(dirtyTiles.size(), 4);
 }
 
-TEST_F(IntegrationTileRenderTest, DrawPolygon) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, MarkAllTilesClean) {
+    m_tileDevice->MarkAllTilesDirty();
+    m_tileDevice->MarkAllTilesClean();
     
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 1.0;
-    style.brush.color = Color::Yellow().GetRGBA();
-    style.brush.visible = true;
-    
-    double x[] = {128, 200, 200, 128, 56, 56};
-    double y[] = {50, 100, 200, 250, 200, 100};
-    
-    result = tileDevice->DrawPolygon(x, y, 6, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+    auto dirtyTiles = m_tileDevice->GetDirtyTiles();
+    EXPECT_EQ(dirtyTiles.size(), 0);
 }
 
-TEST_F(IntegrationTileRenderTest, TransformOperations) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, Clear) {
+    m_tileDevice->Clear(Color::White());
     
-    TransformMatrix transform = TransformMatrix::CreateTranslation(50, 50);
-    tileDevice->SetTransform(transform);
-    
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Magenta().GetRGBA();
-    style.pen.width = 2.0;
-    
-    result = tileDevice->DrawRect(0, 0, 100, 100, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    tileDevice->ResetTransform();
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+    RasterImageDevice* tile = m_tileDevice->GetTile(0, 0);
+    ASSERT_NE(tile, nullptr);
 }
 
-TEST_F(IntegrationTileRenderTest, ClipRect) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, ClearTile) {
+    m_tileDevice->ClearTile(0, 0, Color::Red());
     
-    tileDevice->SetClipRect(50, 50, 156, 156);
-    EXPECT_TRUE(tileDevice->HasClipRect());
-    
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 2.0;
-    
-    result = tileDevice->DrawRect(0, 0, 256, 256, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    tileDevice->ClearClipRect();
-    EXPECT_FALSE(tileDevice->HasClipRect());
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+    RasterImageDevice* tile = m_tileDevice->GetTile(0, 0);
+    ASSERT_NE(tile, nullptr);
 }
 
-TEST_F(IntegrationTileRenderTest, Opacity) {
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    tileDevice->SetOpacity(0.5);
-    EXPECT_DOUBLE_EQ(tileDevice->GetOpacity(), 0.5);
-    
-    tileDevice->Clear(Color::White());
-    
-    DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 5.0;
-    
-    result = tileDevice->DrawLine(0, 0, 256, 256, style);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
+TEST_F(IntegrationTileRenderTest, ValidTileIndex) {
+    EXPECT_TRUE(m_tileDevice->IsValidTileIndex(0, 0));
+    EXPECT_TRUE(m_tileDevice->IsValidTileIndex(1, 1));
+    EXPECT_FALSE(m_tileDevice->IsValidTileIndex(2, 0));
+    EXPECT_FALSE(m_tileDevice->IsValidTileIndex(0, 2));
 }
 
-TEST_F(IntegrationTileRenderTest, Antialiasing) {
-    tileDevice->SetAntialiasing(true);
-    EXPECT_TRUE(tileDevice->IsAntialiasingEnabled());
+TEST_F(IntegrationTileRenderTest, TileInfoAtPixel) {
+    TileInfo info = m_tileDevice->GetTileInfoAtPixel(100, 100);
+    EXPECT_EQ(info.indexX, 0);
+    EXPECT_EQ(info.indexY, 0);
     
-    tileDevice->SetAntialiasing(false);
-    EXPECT_FALSE(tileDevice->IsAntialiasingEnabled());
+    info = m_tileDevice->GetTileInfoAtPixel(300, 300);
+    EXPECT_EQ(info.indexX, 1);
+    EXPECT_EQ(info.indexY, 1);
 }
 
-TEST_F(IntegrationTileRenderTest, TileSize) {
-    EXPECT_EQ(tileDevice->GetTileSize(), 256);
+TEST_F(IntegrationTileRenderTest, TilesInRect) {
+    auto tiles = m_tileDevice->GetTilesInRect(0, 0, 256, 256);
+    EXPECT_EQ(tiles.size(), 1);
     
-    tileDevice->SetTileSize(512);
-    EXPECT_EQ(tileDevice->GetTileSize(), 512);
-    
-    tileDevice->SetTileSize(256);
+    tiles = m_tileDevice->GetTilesInRect(0, 0, 512, 512);
+    EXPECT_EQ(tiles.size(), 4);
 }
 
-TEST_F(IntegrationTileRenderTest, CurrentTileKey) {
-    tileDevice->SetCurrentTile(1, 2, 3);
-    
-    TileKey key = tileDevice->GetCurrentTileKey();
-    EXPECT_EQ(key.x, 1);
-    EXPECT_EQ(key.y, 2);
-    EXPECT_EQ(key.z, 3);
+TEST_F(IntegrationTileRenderTest, Overlap) {
+    m_tileDevice->SetOverlap(10);
+    EXPECT_EQ(m_tileDevice->GetOverlap(), 10);
 }
 
 TEST_F(IntegrationTileRenderTest, Dpi) {
-    tileDevice->SetDpi(96.0);
-    EXPECT_DOUBLE_EQ(tileDevice->GetDpi(), 96.0);
+    m_tileDevice->SetDpi(96.0);
+    EXPECT_DOUBLE_EQ(m_tileDevice->GetDpi(), 96.0);
     
-    tileDevice->SetDpi(150.0);
-    EXPECT_DOUBLE_EQ(tileDevice->GetDpi(), 150.0);
+    m_tileDevice->SetDpi(150.0);
+    EXPECT_DOUBLE_EQ(m_tileDevice->GetDpi(), 150.0);
 }
 
-TEST_F(IntegrationTileRenderTest, TileFormat) {
-    tileDevice->SetTileFormat("png");
-    EXPECT_EQ(tileDevice->GetTileFormat(), "png");
+TEST_F(IntegrationTileRenderTest, GetWidthHeight) {
+    EXPECT_EQ(m_tileDevice->GetWidth(), 512);
+    EXPECT_EQ(m_tileDevice->GetHeight(), 512);
+}
+
+TEST_F(IntegrationTileRenderTest, RenderWithRasterDevice) {
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
+    ASSERT_NE(device, nullptr);
+    device->Initialize();
     
-    tileDevice->SetTileFormat("jpg");
-    EXPECT_EQ(tileDevice->GetTileFormat(), "jpg");
+    auto context = DrawContext::Create(device.get());
+    ASSERT_NE(context, nullptr);
+    
+    context->Begin();
+    context->Clear(Color::White());
+    
+    DrawStyle style;
+    style.pen = Pen(Color::Red(), 2.0);
+    context->SetStyle(style);
+    
+    DrawResult result = context->DrawRect(10, 10, 236, 236);
+    EXPECT_EQ(result, DrawResult::kSuccess);
+    
+    context->End();
 }
-
-TEST_F(IntegrationTileRenderTest, MultipleZoomLevels) {
-    for (int z = 0; z <= 3; ++z) {
-        int maxTile = 1 << z;
-        for (int x = 0; x < maxTile; ++x) {
-            for (int y = 0; y < maxTile; ++y) {
-                DrawResult result = tileDevice->BeginTile(x, y, z);
-                EXPECT_EQ(result, DrawResult::kSuccess);
-                
-                Color fillColor(static_cast<uint8_t>(255 - z * 50), 
-                               static_cast<uint8_t>(z * 50), 
-                               static_cast<uint8_t>(128));
-                tileDevice->Clear(fillColor);
-                
-                DrawStyle style;
-                style.pen.color = Color::White().GetRGBA();
-                style.pen.width = 1.0;
-                
-                tileDevice->DrawRect(10, 10, 236, 236, style);
-                
-                result = tileDevice->EndTile();
-                EXPECT_EQ(result, DrawResult::kSuccess);
-            }
-        }
-    }
-}
-

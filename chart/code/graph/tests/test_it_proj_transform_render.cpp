@@ -15,13 +15,12 @@ using ogc::Envelope;
 class ProjTransformRenderITTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(512, 512, 4);
+        m_device = std::make_shared<RasterImageDevice>(512, 512, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
     }
     
     void TearDown() override {
@@ -29,8 +28,8 @@ protected:
         m_device.reset();
     }
     
-    DrawDevicePtr m_device;
-    DrawContextPtr m_context;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(ProjTransformRenderITTest, BasicProjectionTransform) {
@@ -60,18 +59,15 @@ TEST_F(ProjTransformRenderITTest, RenderWithProjection) {
     
     EXPECT_FALSE(webMercatorExtent.IsEmpty());
     
-    DrawParams params;
-    params.SetExtent(webMercatorExtent);
-    params.SetSize(512, 512);
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     Coordinate centerWgs84(116.5, 40.0);
     Coordinate centerWebMercator = transformer->Transform(centerWgs84);
     
     m_context->DrawPoint(256, 256);
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(ProjTransformRenderITTest, CoordinateTransformerBasic) {
@@ -169,12 +165,8 @@ TEST_F(ProjTransformRenderITTest, ProjectionWithDrawContext) {
     Envelope wgs84Extent(116.0, 39.0, 117.0, 40.0);
     Envelope webMercatorExtent = transformer->Transform(wgs84Extent);
     
-    DrawParams params;
-    params.SetExtent(webMercatorExtent);
-    params.SetSize(512, 512);
-    params.dpi = 96.0;
-    
-    m_context->BeginDraw(params);
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     std::vector<Coordinate> points = {
         Coordinate(116.25, 39.25),
@@ -189,7 +181,7 @@ TEST_F(ProjTransformRenderITTest, ProjectionWithDrawContext) {
         m_context->DrawPoint(screenX, screenY);
     }
     
-    m_context->EndDraw();
+    m_context->End();
 }
 
 TEST_F(ProjTransformRenderITTest, ProjectionClone) {

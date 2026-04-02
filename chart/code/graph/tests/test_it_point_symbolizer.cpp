@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/point_symbolizer.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
@@ -17,13 +17,12 @@ using ogc::Envelope;
 class IntegrationPointSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
         
-        context = DrawContext::Create(device);
+        context = DrawContext::Create(device.get());
         ASSERT_NE(context, nullptr);
-        context->Initialize();
     }
     
     void TearDown() override {
@@ -34,7 +33,7 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> device;
-    std::shared_ptr<DrawContext> context;
+    std::unique_ptr<DrawContext> context;
 };
 
 TEST_F(IntegrationPointSymbolizerTest, SymbolizerCreation) {
@@ -152,44 +151,30 @@ TEST_F(IntegrationPointSymbolizerTest, Clone) {
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderWithContext) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PointSymbolizer::Create();
     symbolizer->SetSize(10.0);
     symbolizer->SetColor(Color::Red().GetRGBA());
     
     DrawStyle style;
-    style.brush.color = Color::Red().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Red());
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(128, 128, 10);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderMultiplePoints) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Blue().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Blue());
+    style.pen = Pen(Color::Black(), 1.0);
     context->SetStyle(style);
     
     double px[] = {50, 128, 200, 50, 200};
@@ -200,17 +185,12 @@ TEST_F(IntegrationPointSymbolizerTest, RenderMultiplePoints) {
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderLighthouse) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PointSymbolizer::Create();
     symbolizer->SetSymbolType(PointSymbolType::kStar);
@@ -220,27 +200,19 @@ TEST_F(IntegrationPointSymbolizerTest, RenderLighthouse) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.brush.color = Color::Yellow().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 2.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Yellow());
+    style.pen = Pen(Color::Black(), 2.0);
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(256, 256, 20);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderBuoy) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::Cyan());
+    context->Begin();
+    device->Clear(Color::Cyan());
     
     auto symbolizer = PointSymbolizer::Create();
     symbolizer->SetSymbolType(PointSymbolType::kCircle);
@@ -250,11 +222,8 @@ TEST_F(IntegrationPointSymbolizerTest, RenderBuoy) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.brush.color = Color::Red().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::White().GetRGBA();
-    style.pen.width = 1.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Red());
+    style.pen = Pen(Color::White(), 1.0);
     context->SetStyle(style);
     
     double px[] = {100, 200, 300, 400};
@@ -265,17 +234,12 @@ TEST_F(IntegrationPointSymbolizerTest, RenderBuoy) {
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderBeacon) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PointSymbolizer::Create();
     symbolizer->SetSymbolType(PointSymbolType::kTriangle);
@@ -285,27 +249,19 @@ TEST_F(IntegrationPointSymbolizerTest, RenderBeacon) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.brush.color = Color::Green().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Green());
+    style.pen = Pen(Color::Black(), 1.0);
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(256, 256, 18);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, RenderWithRotation) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PointSymbolizer::Create();
     symbolizer->SetRotation(45.0);
@@ -313,14 +269,13 @@ TEST_F(IntegrationPointSymbolizerTest, RenderWithRotation) {
     symbolizer->SetColor(Color::Magenta().GetRGBA());
     
     DrawStyle style;
-    style.brush.color = Color::Magenta().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Magenta());
     context->SetStyle(style);
     
     DrawResult result = context->DrawCircle(128, 128, 15);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPointSymbolizerTest, GetName) {
@@ -332,4 +287,3 @@ TEST_F(IntegrationPointSymbolizerTest, GetType) {
     auto symbolizer = PointSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kPoint);
 }
-

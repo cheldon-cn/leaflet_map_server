@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/async_renderer.h"
 #include "ogc/draw/render_queue.h"
 #include "ogc/draw/basic_render_task.h"
@@ -25,13 +25,12 @@ public:
 class AsyncRenderITTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
     }
     
     void TearDown() override {
@@ -39,8 +38,8 @@ protected:
         m_device.reset();
     }
     
-    DrawDevicePtr m_device;
-    DrawContextPtr m_context;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(AsyncRenderITTest, BasicAsyncRender) {
@@ -50,9 +49,8 @@ TEST_F(AsyncRenderITTest, BasicAsyncRender) {
     auto task = BasicRenderTask::Create();
     task->SetId("basic_async_task");
     task->SetRenderFunction([this](RenderTaskPtr, DrawContext& ctx) {
-        DrawStyle style;
-        style.pen.color = 0xFF0000;
-        style.pen.width = 2.0;
+        Pen pen(Color::Red(), 2.0);
+        ctx.SetPen(pen);
         ctx.DrawLine(0, 0, 256, 256);
         return true;
     });
@@ -250,4 +248,3 @@ TEST_F(AsyncRenderITTest, AsyncRenderErrorHandling) {
     std::string renderId = renderer->StartAsync(task);
     renderer->WaitForCompletion(renderId, 5000);
 }
-

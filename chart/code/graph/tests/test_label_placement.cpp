@@ -105,7 +105,7 @@ TEST_F(LabelPlacementTest, SetMinPadding) {
 }
 
 TEST_F(LabelPlacementTest, GeneratePointCandidates) {
-    PointPtr point = Point::Create(100, 100);
+    ogc::PointPtr point = ogc::Point::Create(100, 100);
     
     std::vector<PlacementCandidate> candidates = 
         placement->GeneratePointCandidates(point.get(), 50.0, 20.0);
@@ -114,7 +114,7 @@ TEST_F(LabelPlacementTest, GeneratePointCandidates) {
 }
 
 TEST_F(LabelPlacementTest, GetBestCandidate) {
-    PointPtr point = Point::Create(100, 100);
+    ogc::PointPtr point = ogc::Point::Create(100, 100);
     
     PlacementCandidate best = 
         placement->GetBestCandidate(point.get(), "Test", 50.0, 20.0);
@@ -123,7 +123,7 @@ TEST_F(LabelPlacementTest, GetBestCandidate) {
 }
 
 TEST_F(LabelPlacementTest, GenerateCandidatesForPoint) {
-    PointPtr point = Point::Create(50, 50);
+    ogc::PointPtr point = ogc::Point::Create(50, 50);
     
     placement->SetPlacementMode(LabelPlacementMode::kPoint);
     std::vector<PlacementCandidate> candidates = 
@@ -133,12 +133,12 @@ TEST_F(LabelPlacementTest, GenerateCandidatesForPoint) {
 }
 
 TEST_F(LabelPlacementTest, GenerateLineCandidates) {
-    CoordinateList coords;
-    coords.push_back(Coordinate(0, 0));
-    coords.push_back(Coordinate(100, 0));
-    coords.push_back(Coordinate(100, 100));
+    ogc::CoordinateList coords;
+    coords.push_back(ogc::Coordinate(0, 0));
+    coords.push_back(ogc::Coordinate(100, 0));
+    coords.push_back(ogc::Coordinate(100, 100));
     
-    LineStringPtr line = LineString::Create(coords);
+    ogc::LineStringPtr line = ogc::LineString::Create(coords);
     
     std::vector<PlacementCandidate> candidates = 
         placement->GenerateLineCandidates(line.get(), "Test", 50.0, 20.0);
@@ -147,7 +147,7 @@ TEST_F(LabelPlacementTest, GenerateLineCandidates) {
 }
 
 TEST_F(LabelPlacementTest, GeneratePolygonCandidates) {
-    PolygonPtr polygon = Polygon::CreateRectangle(0, 0, 100, 100);
+    ogc::PolygonPtr polygon = ogc::Polygon::CreateRectangle(0, 0, 100, 100);
     
     placement->SetPlacementMode(LabelPlacementMode::kInterior);
     std::vector<PlacementCandidate> candidates = 
@@ -168,7 +168,7 @@ TEST_F(LabelPlacementTest, PlacementCandidateDefaultValues) {
 }
 
 TEST_F(LabelPlacementTest, OffsetAffectsPlacement) {
-    PointPtr point = Point::Create(100, 100);
+    ogc::PointPtr point = ogc::Point::Create(100, 100);
     
     placement->SetOffset(10, 20);
     PlacementCandidate candidate = 
@@ -178,7 +178,7 @@ TEST_F(LabelPlacementTest, OffsetAffectsPlacement) {
 }
 
 TEST_F(LabelPlacementTest, RotationAffectsPlacement) {
-    PointPtr point = Point::Create(100, 100);
+    ogc::PointPtr point = ogc::Point::Create(100, 100);
     
     placement->SetRotation(45.0);
     PlacementCandidate candidate = 

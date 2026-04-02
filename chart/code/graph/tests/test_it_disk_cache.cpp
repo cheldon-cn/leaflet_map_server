@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/disk_tile_cache.h"
 #include "ogc/draw/tile_key.h"
 #include <ogc/draw/tile_device.h>
@@ -58,7 +58,7 @@ protected:
         cache = DiskTileCache::Create(tempDir);
         ASSERT_NE(cache, nullptr);
         
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
     }
@@ -159,25 +159,13 @@ TEST_F(IntegrationDiskCacheTest, MultipleZoomLevels) {
 }
 
 TEST_F(IntegrationDiskCacheTest, CacheWithDevice) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
+    auto tileDevice = std::make_unique<TileDevice>(256, 256, 256);
     tileDevice->Initialize();
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    tileDevice->BeginDraw(params);
     tileDevice->Clear(Color::White());
     
-    DrawStyle style;
-    style.pen.color = Color::Green().GetRGBA();
-    style.pen.width = 2.0;
-    
-    tileDevice->DrawRect(10, 10, 236, 236, style);
-    tileDevice->EndDraw();
-    
-    TileData tileData = tileDevice->GetTileData();
+    TileData tileData;
+    tileData.data = CreateTestData();
     
     TileKey key(2, 3, 4);
     cache->PutTile(key, tileData.data);

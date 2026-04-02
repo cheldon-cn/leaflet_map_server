@@ -25,8 +25,9 @@ protected:
     void SetUp() override {
         m_parser = SldParser::Create();
         m_engine = RuleEngine::Create();
-        m_device = RasterImageDevice::Create(256, 256, 4);
-        m_context = DrawContext::Create(m_device);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
+        m_device->Initialize();
+        m_context = DrawContext::Create(m_device.get());
     }
     
     void TearDown() override {
@@ -39,7 +40,7 @@ protected:
     SldParserPtr m_parser;
     std::shared_ptr<RuleEngine> m_engine;
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(SldRenderITTest, ParseBasicSld) {
@@ -276,9 +277,7 @@ TEST_F(SldRenderITTest, SldRenderWithDrawContext) {
             m_engine->AddRule(rule);
         }
         
-        DrawParams params;
-        params.SetSize(256, 256);
-        m_context->BeginDraw(params);
+        m_context->Begin();
         
         auto& factory = GeometryFactory::GetInstance();
         ogc::CoordinateList coords = {
@@ -291,7 +290,7 @@ TEST_F(SldRenderITTest, SldRenderWithDrawContext) {
         auto geom = factory.CreatePolygon(coords);
         
         auto matchResult = m_engine->Match(geom.get(), 1.0);
-        m_context->EndDraw();
+        m_context->End();
         
         EXPECT_TRUE(true);
     } else {

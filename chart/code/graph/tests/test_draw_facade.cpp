@@ -127,7 +127,7 @@ TEST_F(DrawFacadeTest, CreateStrokeStyle) {
     facade.Initialize();
     
     auto style = facade.CreateStrokeStyle(0xFF0000, 2.0);
-    EXPECT_EQ(style.pen.color, 0xFF0000);
+    EXPECT_EQ(style.pen.color.GetRGBA(), 0xFF0000);
     EXPECT_DOUBLE_EQ(style.pen.width, 2.0);
 }
 
@@ -136,7 +136,7 @@ TEST_F(DrawFacadeTest, CreateFillStyle) {
     facade.Initialize();
     
     auto style = facade.CreateFillStyle(0x00FF00);
-    EXPECT_EQ(style.brush.color, 0x00FF00);
+    EXPECT_EQ(style.brush.color.GetRGBA(), 0x00FF00);
 }
 
 TEST_F(DrawFacadeTest, CreateStrokeFillStyle) {
@@ -144,8 +144,8 @@ TEST_F(DrawFacadeTest, CreateStrokeFillStyle) {
     facade.Initialize();
     
     auto style = facade.CreateStrokeFillStyle(0xFF0000, 2.0, 0x00FF00);
-    EXPECT_EQ(style.pen.color, 0xFF0000);
-    EXPECT_EQ(style.brush.color, 0x00FF00);
+    EXPECT_EQ(style.pen.color.GetRGBA(), 0xFF0000);
+    EXPECT_EQ(style.brush.color.GetRGBA(), 0x00FF00);
 }
 
 TEST_F(DrawFacadeTest, CreateFont) {

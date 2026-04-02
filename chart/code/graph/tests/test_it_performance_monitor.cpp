@@ -15,13 +15,12 @@ using ogc::Envelope;
 class PerformanceMonitorITTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
         
         m_monitor = PerformanceMonitor::Create();
     }
@@ -32,18 +31,26 @@ protected:
         m_device.reset();
     }
     
-    DrawDevicePtr m_device;
-    DrawContextPtr m_context;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
     PerformanceMonitor::Ptr m_monitor;
 };
 
 TEST_F(PerformanceMonitorITTest, BasicMonitoring) {
     m_monitor->BeginFrame();
     
+    m_context->Begin();
+    m_context->Clear(Color::White());
+    
     DrawStyle style;
+    style.pen = Pen(Color::Black(), 1.0);
+    m_context->SetStyle(style);
+    
     m_context->DrawPoint(128, 128);
     m_context->DrawLine(0, 0, 256, 256);
     m_context->DrawRect(50, 50, 100, 100);
+    
+    m_context->End();
     
     m_monitor->EndFrame();
     
@@ -54,10 +61,10 @@ TEST_F(PerformanceMonitorITTest, BasicMonitoring) {
 TEST_F(PerformanceMonitorITTest, FrameTimeMeasurement) {
     m_monitor->BeginFrame();
     
-    DrawParams params;
-    m_context->BeginDraw(params);
+    m_context->Begin();
+    m_context->Clear(Color::White());
     m_context->DrawPoint(128, 128);
-    m_context->EndDraw();
+    m_context->End();
     
     m_monitor->EndFrame();
     
@@ -69,10 +76,10 @@ TEST_F(PerformanceMonitorITTest, MultipleFrames) {
     for (int i = 0; i < 10; i++) {
         m_monitor->BeginFrame();
         
-        DrawParams params;
-        m_context->BeginDraw(params);
+        m_context->Begin();
+        m_context->Clear(Color::White());
         m_context->DrawPoint(i * 25, 128);
-        m_context->EndDraw();
+        m_context->End();
         
         m_monitor->EndFrame();
     }
@@ -84,14 +91,14 @@ TEST_F(PerformanceMonitorITTest, MultipleFrames) {
 TEST_F(PerformanceMonitorITTest, RenderOperationCount) {
     m_monitor->BeginFrame();
     
-    DrawParams params;
-    m_context->BeginDraw(params);
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     for (int i = 0; i < 100; i++) {
         m_context->DrawPoint(i * 2.5, i * 2.5);
     }
     
-    m_context->EndDraw();
+    m_context->End();
     m_monitor->EndFrame();
     
     auto metrics = m_monitor->GetCurrentMetrics();
@@ -116,10 +123,10 @@ TEST_F(PerformanceMonitorITTest, PerformanceAlerts) {
 TEST_F(PerformanceMonitorITTest, MemoryTracking) {
     m_monitor->BeginFrame();
     
-    DrawParams params;
-    m_context->BeginDraw(params);
+    m_context->Begin();
+    m_context->Clear(Color::White());
     m_context->DrawRect(0, 0, 256, 256);
-    m_context->EndDraw();
+    m_context->End();
     
     m_monitor->RecordMemoryAllocation(10.0, "textures");
     
@@ -132,7 +139,12 @@ TEST_F(PerformanceMonitorITTest, MemoryTracking) {
 TEST_F(PerformanceMonitorITTest, FpsMeasurement) {
     for (int i = 0; i < 10; i++) {
         m_monitor->BeginFrame();
+        
+        m_context->Begin();
+        m_context->Clear(Color::White());
         m_context->DrawPoint(128, 128);
+        m_context->End();
+        
         m_monitor->EndFrame();
     }
     
@@ -146,7 +158,12 @@ TEST_F(PerformanceMonitorITTest, FpsMeasurement) {
 TEST_F(PerformanceMonitorITTest, PerformanceReport) {
     for (int i = 0; i < 10; i++) {
         m_monitor->BeginFrame();
+        
+        m_context->Begin();
+        m_context->Clear(Color::White());
         m_context->DrawPoint(128, 128);
+        m_context->End();
+        
         m_monitor->EndFrame();
     }
     
@@ -186,7 +203,12 @@ TEST_F(PerformanceMonitorITTest, HistorySize) {
 
 TEST_F(PerformanceMonitorITTest, PerformanceLevel) {
     m_monitor->BeginFrame();
+    
+    m_context->Begin();
+    m_context->Clear(Color::White());
     m_context->DrawPoint(128, 128);
+    m_context->End();
+    
     m_monitor->EndFrame();
     
     auto level = m_monitor->GetCurrentPerformanceLevel();
@@ -200,6 +222,9 @@ TEST_F(PerformanceMonitorITTest, PerformanceLevel) {
 TEST_F(PerformanceMonitorITTest, RenderPassTracking) {
     m_monitor->BeginFrame();
     
+    m_context->Begin();
+    m_context->Clear(Color::White());
+    
     m_monitor->BeginRenderPass("background");
     m_context->DrawRect(0, 0, 256, 256);
     m_monitor->EndRenderPass();
@@ -207,6 +232,8 @@ TEST_F(PerformanceMonitorITTest, RenderPassTracking) {
     m_monitor->BeginRenderPass("foreground");
     m_context->DrawPoint(128, 128);
     m_monitor->EndRenderPass();
+    
+    m_context->End();
     
     m_monitor->EndFrame();
     

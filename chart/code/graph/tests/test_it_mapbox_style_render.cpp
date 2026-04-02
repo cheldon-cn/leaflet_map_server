@@ -25,8 +25,9 @@ protected:
     void SetUp() override {
         m_parser = MapboxStyleParser::Create();
         m_engine = RuleEngine::Create();
-        m_device = RasterImageDevice::Create(256, 256, 4);
-        m_context = DrawContext::Create(m_device);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
+        m_device->Initialize();
+        m_context = DrawContext::Create(m_device.get());
     }
     
     void TearDown() override {
@@ -39,7 +40,7 @@ protected:
     MapboxStyleParserPtr m_parser;
     std::shared_ptr<RuleEngine> m_engine;
     std::shared_ptr<RasterImageDevice> m_device;
-    std::shared_ptr<DrawContext> m_context;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(MapboxStyleRenderITTest, ParseBasicStyle) {
@@ -266,9 +267,8 @@ TEST_F(MapboxStyleRenderITTest, MapboxStyleRenderWithDrawContext) {
             m_engine->AddRule(rule);
         }
         
-        DrawParams params;
-        params.SetSize(256, 256);
-        m_context->BeginDraw(params);
+        m_context->Begin();
+        m_context->Clear(Color::White());
         
         auto& factory = GeometryFactory::GetInstance();
         ogc::CoordinateList coords = {
@@ -281,7 +281,7 @@ TEST_F(MapboxStyleRenderITTest, MapboxStyleRenderWithDrawContext) {
         auto geom = factory.CreatePolygon(coords);
         
         auto matchResult = m_engine->Match(geom.get(), 1.0);
-        m_context->EndDraw();
+        m_context->End();
         
         EXPECT_TRUE(true);
     } else {

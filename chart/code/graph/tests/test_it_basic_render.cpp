@@ -1,5 +1,6 @@
 ﻿#include <gtest/gtest.h>
 #include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/simple2d_engine.h>
 #include "ogc/draw/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
@@ -13,193 +14,154 @@ using ogc::Envelope;
 class IntegrationBasicRenderTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(100, 100, 4);
+        device = std::make_unique<RasterImageDevice>(100, 100, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         
         DrawResult result = device->Initialize();
         EXPECT_EQ(result, DrawResult::kSuccess);
+        
+        engine = std::make_unique<Simple2DEngine>(device.get());
+        ASSERT_NE(engine, nullptr);
     }
     
     void TearDown() override {
+        engine.reset();
         if (device) {
             device->Finalize();
         }
     }
     
-    std::shared_ptr<RasterImageDevice> device;
+    std::unique_ptr<RasterImageDevice> device;
+    std::unique_ptr<Simple2DEngine> engine;
 };
 
 TEST_F(IntegrationBasicRenderTest, DeviceInitialization) {
     EXPECT_TRUE(device->IsReady());
     EXPECT_EQ(device->GetWidth(), 100);
     EXPECT_EQ(device->GetHeight(), 100);
-    EXPECT_EQ(device->GetChannels(), 4);
+    EXPECT_EQ(device->GetBytesPerPixel(), 4);
 }
 
-TEST_F(IntegrationBasicRenderTest, BeginEndDraw) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    DrawResult beginResult = device->BeginDraw(params);
+TEST_F(IntegrationBasicRenderTest, EngineCreation) {
+    EXPECT_NE(engine, nullptr);
+    EXPECT_EQ(engine->GetType(), EngineType::kSimple2D);
+}
+
+TEST_F(IntegrationBasicRenderTest, BeginEndRender) {
+    DrawResult beginResult = engine->Begin();
     EXPECT_EQ(beginResult, DrawResult::kSuccess);
-    EXPECT_TRUE(device->IsDrawing());
+    EXPECT_TRUE(engine->IsActive());
     
-    DrawResult endResult = device->EndDraw();
-    EXPECT_EQ(endResult, DrawResult::kSuccess);
-    EXPECT_FALSE(device->IsDrawing());
+    engine->End();
+    EXPECT_FALSE(engine->IsActive());
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawPoint) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Red(), 1.0);
     
-    DrawResult result = device->DrawPoint(50, 50, style);
+    double x[] = {50};
+    double y[] = {50};
+    DrawResult result = engine->DrawPoints(x, y, 1, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawLine) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Green().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Green(), 2.0);
     
-    DrawResult result = device->DrawLine(10, 10, 90, 90, style);
+    double x1[] = {10};
+    double y1[] = {10};
+    double x2[] = {90};
+    double y2[] = {90};
+    DrawResult result = engine->DrawLines(x1, y1, x2, y2, 1, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawRect) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 1.0;
-    style.brush.color = Color::Yellow().GetRGBA();
-    style.brush.visible = true;
+    style.pen = Pen(Color::Blue(), 1.0);
+    style.brush = Brush(Color::Yellow());
     
-    DrawResult result = device->DrawRect(20, 20, 60, 60, style);
+    DrawResult result = engine->DrawRect(20, 20, 60, 60, style, true);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawCircle) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Magenta().GetRGBA();
-    style.pen.width = 2.0;
-    style.brush.color = Color::Cyan().GetRGBA();
-    style.brush.visible = true;
+    style.pen = Pen(Color::Magenta(), 2.0);
+    style.brush = Brush(Color::Cyan());
     
-    DrawResult result = device->DrawCircle(50, 50, 25, style);
+    DrawResult result = engine->DrawCircle(50, 50, 25, style, true);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawEllipse) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Red(), 1.0);
+    style.brush = Brush::NoBrush();
     
-    DrawResult result = device->DrawEllipse(50, 50, 30, 20, style);
+    DrawResult result = engine->DrawEllipse(50, 50, 30, 20, style, false);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawPolygon) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    style.brush.color = Color::Gray().GetRGBA();
-    style.brush.visible = true;
+    style.pen = Pen(Color::Black(), 1.0);
+    style.brush = Brush(Color::Gray());
     
     double x[] = {10, 50, 90, 50};
     double y[] = {50, 10, 50, 90};
     
-    DrawResult result = device->DrawPolygon(x, y, 4, style);
+    DrawResult result = engine->DrawPolygon(x, y, 4, style, true);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, DrawPolyline) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
+    engine->Begin();
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Red(), 2.0);
     
     double x[] = {10, 30, 50, 70, 90};
     double y[] = {50, 20, 80, 20, 50};
     
-    DrawResult result = device->DrawPolyline(x, y, 5, style);
+    DrawResult result = engine->DrawLineString(x, y, 5, style);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, ClearAndFill) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
+    engine->Begin();
     
-    device->BeginDraw(params);
+    EXPECT_NO_THROW(engine->Clear(Color::White()));
     
-    EXPECT_NO_THROW(device->Clear(Color::White()));
-    
-    device->EndDraw();
+    engine->End();
     
     Color pixel = device->GetPixel(50, 50);
     EXPECT_EQ(pixel.GetRed(), 255);
@@ -208,17 +170,12 @@ TEST_F(IntegrationBasicRenderTest, ClearAndFill) {
 }
 
 TEST_F(IntegrationBasicRenderTest, SetPixelAndGetPixel) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    engine->Begin();
+    engine->Clear(Color::White());
     
     device->SetPixel(50, 50, Color::Red());
     
-    device->EndDraw();
+    engine->End();
     
     Color pixel = device->GetPixel(50, 50);
     EXPECT_EQ(pixel.GetRed(), 255);
@@ -227,47 +184,36 @@ TEST_F(IntegrationBasicRenderTest, SetPixelAndGetPixel) {
 }
 
 TEST_F(IntegrationBasicRenderTest, ClipRect) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
+    engine->Begin();
     
-    device->BeginDraw(params);
-    
-    device->SetClipRect(20, 20, 60, 60);
-    EXPECT_TRUE(device->HasClipRect());
+    engine->SetClipRect(20, 20, 60, 60);
+    Region clipRegion = engine->GetClipRegion();
+    EXPECT_FALSE(clipRegion.IsEmpty());
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Red(), 1.0);
     
-    DrawResult result = device->DrawRect(0, 0, 100, 100, style);
+    DrawResult result = engine->DrawRect(0, 0, 100, 100, style, false);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->ClearClipRect();
-    EXPECT_FALSE(device->HasClipRect());
+    engine->ResetClip();
+    clipRegion = engine->GetClipRegion();
+    EXPECT_TRUE(clipRegion.IsEmpty());
     
-    device->EndDraw();
+    engine->End();
 }
 
 TEST_F(IntegrationBasicRenderTest, Transform) {
-    DrawParams params;
-    params.pixel_width = 100;
-    params.pixel_height = 100;
-    params.extent = Envelope(0, 0, 100, 100);
+    engine->Begin();
     
-    device->BeginDraw(params);
+    TransformMatrix transform = TransformMatrix::Translate(10, 20);
+    engine->SetTransform(transform);
     
-    TransformMatrix transform;
-    transform = TransformMatrix::CreateTranslation(10, 20);
-    device->SetTransform(transform);
-    
-    TransformMatrix retrieved = device->GetTransform();
+    TransformMatrix retrieved = engine->GetTransform();
     EXPECT_DOUBLE_EQ(retrieved.GetTranslationX(), 10);
     EXPECT_DOUBLE_EQ(retrieved.GetTranslationY(), 20);
     
-    device->ResetTransform();
+    engine->ResetTransform();
     
-    device->EndDraw();
+    engine->End();
 }
-

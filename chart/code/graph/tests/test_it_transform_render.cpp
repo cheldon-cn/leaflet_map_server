@@ -1,5 +1,6 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_context.h>
 #include <ogc/draw/transform_matrix.h>
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
@@ -18,129 +19,107 @@ namespace {
 class IntegrationTransformRenderTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(200, 200, 4);
-        ASSERT_NE(device, nullptr);
-        device->Initialize();
+        m_device = std::make_shared<RasterImageDevice>(200, 200, PixelFormat::kRGBA8888);
+        ASSERT_NE(m_device, nullptr);
+        m_device->Initialize();
+        
+        m_context = DrawContext::Create(m_device.get());
+        ASSERT_NE(m_context, nullptr);
     }
     
     void TearDown() override {
-        if (device) {
-            device->Finalize();
-        }
+        m_context.reset();
+        m_device.reset();
     }
     
-    std::shared_ptr<RasterImageDevice> device;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(IntegrationTransformRenderTest, TranslationTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     TransformMatrix translate = TransformMatrix::CreateTranslation(50, 50);
-    device->SetTransform(translate);
+    m_context->SetTransform(translate);
     
     DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Red(), 2.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawLine(0, 0, 100, 100, style);
+    DrawResult result = m_context->DrawLine(0, 0, 100, 100);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationTransformRenderTest, ScaleTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     TransformMatrix scale = TransformMatrix::CreateScale(2.0, 2.0);
-    device->SetTransform(scale);
+    m_context->SetTransform(scale);
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 1.0;
+    style.pen = Pen(Color::Blue(), 1.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawRect(10, 10, 50, 50, style);
+    DrawResult result = m_context->DrawRect(10, 10, 50, 50);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationTransformRenderTest, RotationTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     TransformMatrix rotate = TransformMatrix::CreateRotation(45.0 * 3.14159265358979323846 / 180.0);
-    device->SetTransform(rotate);
+    m_context->SetTransform(rotate);
     
     DrawStyle style;
-    style.pen.color = Color::Green().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Green(), 2.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawLine(-50, 0, 50, 0, style);
+    DrawResult result = m_context->DrawLine(-50, 0, 50, 0);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationTransformRenderTest, CombinedTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     TransformMatrix translate = TransformMatrix::CreateTranslation(100, 100);
     TransformMatrix rotate = TransformMatrix::CreateRotation(3.14159265358979323846 / 4.0);
     TransformMatrix combined = translate.Multiply(rotate);
     
-    device->SetTransform(combined);
+    m_context->SetTransform(combined);
     
     DrawStyle style;
-    style.pen.color = Color::Magenta().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Magenta(), 2.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawLine(-40, 0, 40, 0, style);
+    DrawResult result = m_context->DrawLine(-40, 0, 40, 0);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationTransformRenderTest, ResetTransform) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
+    m_context->Begin();
     
     TransformMatrix translate = TransformMatrix::CreateTranslation(50, 50);
-    device->SetTransform(translate);
+    m_context->SetTransform(translate);
     
-    device->ResetTransform();
+    m_context->ResetTransform();
     
-    TransformMatrix identity = device->GetTransform();
+    TransformMatrix identity = m_context->GetTransform();
     EXPECT_NEAR(identity.GetTranslationX(), 0.0, EPSILON);
     EXPECT_NEAR(identity.GetTranslationY(), 0.0, EPSILON);
     
-    device->EndDraw();
+    m_context->End();
 }
 
 TEST_F(IntegrationTransformRenderTest, TransformMatrixIdentity) {
@@ -184,27 +163,21 @@ TEST_F(IntegrationTransformRenderTest, TransformPoint) {
 }
 
 TEST_F(IntegrationTransformRenderTest, ScaleAndTranslate) {
-    DrawParams params;
-    params.pixel_width = 200;
-    params.pixel_height = 200;
-    params.extent = Envelope(0, 0, 200, 200);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     TransformMatrix scale = TransformMatrix::CreateScale(0.5, 0.5);
     TransformMatrix translate = TransformMatrix::CreateTranslation(50, 50);
     TransformMatrix combined = translate.Multiply(scale);
     
-    device->SetTransform(combined);
+    m_context->SetTransform(combined);
     
     DrawStyle style;
-    style.pen.color = Color::Cyan().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Cyan(), 2.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawRect(0, 0, 100, 100, style);
+    DrawResult result = m_context->DrawRect(0, 0, 100, 100);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
 }
-

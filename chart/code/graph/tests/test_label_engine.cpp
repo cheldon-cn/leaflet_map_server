@@ -179,9 +179,9 @@ TEST_F(LabelEngineTest, LabelPlacementResultDefaultValues) {
 TEST_F(LabelEngineTest, GenerateLabelsEmpty) {
     std::vector<const CNFeature*> features;
     
-    std::shared_ptr<RasterImageDevice> device = RasterImageDevice::Create(256, 256, 4);
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
     device->Initialize();
-    DrawContextPtr context = DrawContext::Create(device);
+    DrawContextPtr context = DrawContext::Create(device.get());
     
     std::vector<LabelInfo> labels = engine->GenerateLabels(features, *context);
     EXPECT_TRUE(labels.empty());

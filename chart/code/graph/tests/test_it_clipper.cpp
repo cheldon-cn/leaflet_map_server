@@ -252,19 +252,14 @@ TEST_F(IntegrationClipperTest, DifferentClipRegions) {
 }
 
 TEST_F(IntegrationClipperTest, ClipperWithDrawContext) {
-    std::shared_ptr<RasterImageDevice> device = RasterImageDevice::Create(256, 256, 4);
+    auto device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
     ASSERT_NE(device, nullptr);
     device->Initialize();
     
-    std::shared_ptr<DrawContext> context = DrawContext::Create(device);
+    auto context = DrawContext::Create(device.get());
     ASSERT_NE(context, nullptr);
     
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
+    context->Begin();
     context->Clear(Color::White());
     
     Envelope clipRect(50, 50, 200, 200);
@@ -273,7 +268,7 @@ TEST_F(IntegrationClipperTest, ClipperWithDrawContext) {
     ClipResult result = clipper->TestPoint(100, 100);
     EXPECT_EQ(result, ClipResult::kInside);
     
-    context->EndDraw();
+    context->End();
     device->Finalize();
 }
 

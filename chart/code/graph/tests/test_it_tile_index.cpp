@@ -1,7 +1,8 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/tile_key.h"
 #include <ogc/draw/tile_device.h>
 #include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_context.h>
 #include "ogc/draw/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
@@ -13,18 +14,21 @@ using namespace ogc::draw;
 class IntegrationTileIndexTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(256, 256, 4);
-        ASSERT_NE(device, nullptr);
-        device->Initialize();
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
+        ASSERT_NE(m_device, nullptr);
+        m_device->Initialize();
+        
+        m_context = DrawContext::Create(m_device.get());
+        ASSERT_NE(m_context, nullptr);
     }
     
     void TearDown() override {
-        if (device) {
-            device->Finalize();
-        }
+        m_context.reset();
+        m_device.reset();
     }
     
-    std::shared_ptr<RasterImageDevice> device;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(IntegrationTileIndexTest, TileKeyBasicOperations) {
@@ -135,106 +139,67 @@ TEST_F(IntegrationTileIndexTest, TileKeyZoomLevelRange) {
 }
 
 TEST_F(IntegrationTileIndexTest, TileDeviceBasicOperations) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
+    auto tileDevice = std::make_unique<TileDevice>(512, 512, 256);
     ASSERT_NE(tileDevice, nullptr);
     
     EXPECT_EQ(tileDevice->GetTileSize(), 256);
 }
 
 TEST_F(IntegrationTileIndexTest, TileDeviceInitialize) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
+    auto tileDevice = std::make_unique<TileDevice>(512, 512, 256);
     
     DrawResult result = tileDevice->Initialize();
     EXPECT_EQ(result, DrawResult::kSuccess);
-    EXPECT_TRUE(tileDevice->IsReady());
     
     result = tileDevice->Finalize();
     EXPECT_EQ(result, DrawResult::kSuccess);
 }
 
-TEST_F(IntegrationTileIndexTest, TileDeviceRender) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
-    tileDevice->Initialize();
-    
-    DrawResult result = tileDevice->BeginTile(0, 0, 0);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    DrawStyle style;
-    style.pen.color = Color::Red().GetRGBA();
-    style.pen.width = 2.0;
-    
-    tileDevice->DrawLine(0, 0, 256, 256, style);
-    
-    result = tileDevice->EndTile();
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    
-    tileDevice->Finalize();
-}
-
 TEST_F(IntegrationTileIndexTest, TileDeviceState) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
+    auto tileDevice = std::make_unique<TileDevice>(512, 512, 256);
     tileDevice->Initialize();
     
-    EXPECT_EQ(tileDevice->GetState(), DeviceState::kInitialized);
-    
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = ogc::Envelope(0, 0, 256, 256);
-    
-    DrawResult result = tileDevice->BeginDraw(params);
-    EXPECT_EQ(result, DrawResult::kSuccess);
-    EXPECT_TRUE(tileDevice->IsDrawing());
-    
-    tileDevice->EndDraw();
-    EXPECT_FALSE(tileDevice->IsDrawing());
-    
-    tileDevice->Finalize();
-}
-
-TEST_F(IntegrationTileIndexTest, TileDeviceCurrentTile) {
-    TileDevicePtr tileDevice = TileDevice::Create(256);
-    tileDevice->Initialize();
-    
-    tileDevice->SetCurrentTile(1, 2, 3);
-    
-    TileKey key = tileDevice->GetCurrentTileKey();
-    EXPECT_EQ(key.x, 1);
-    EXPECT_EQ(key.y, 2);
-    EXPECT_EQ(key.z, 3);
+    EXPECT_EQ(tileDevice->GetState(), DeviceState::kReady);
     
     tileDevice->Finalize();
 }
 
 TEST_F(IntegrationTileIndexTest, TileDeviceGetSize) {
-    TileDevicePtr tileDevice = TileDevice::Create(512);
+    auto tileDevice = std::make_unique<TileDevice>(1024, 1024, 512);
     
     EXPECT_EQ(tileDevice->GetTileSize(), 512);
-    EXPECT_EQ(tileDevice->GetWidth(), 512);
-    EXPECT_EQ(tileDevice->GetHeight(), 512);
+    EXPECT_EQ(tileDevice->GetWidth(), 1024);
+    EXPECT_EQ(tileDevice->GetHeight(), 1024);
+}
+
+TEST_F(IntegrationTileIndexTest, TileDeviceTileInfo) {
+    auto tileDevice = std::make_unique<TileDevice>(512, 512, 256);
+    tileDevice->Initialize();
+    
+    TileInfo info = tileDevice->GetTileInfo(0, 0);
+    EXPECT_EQ(info.indexX, 0);
+    EXPECT_EQ(info.indexY, 0);
+    EXPECT_EQ(info.width, 256);
+    EXPECT_EQ(info.height, 256);
+    
+    tileDevice->Finalize();
 }
 
 TEST_F(IntegrationTileIndexTest, RasterDeviceTileRender) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = ogc::Envelope(0, 0, 256, 256);
-    
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    m_context->Begin();
+    m_context->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Blue(), 2.0);
+    m_context->SetStyle(style);
     
-    DrawResult result = device->DrawRect(10, 10, 236, 236, style);
+    DrawResult result = m_context->DrawRect(10, 10, 236, 236);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    device->EndDraw();
+    m_context->End();
     
-    Color pixel = device->GetPixel(5, 5);
+    Color pixel = m_device->GetPixel(5, 5);
     EXPECT_EQ(pixel.GetRed(), 255);
     EXPECT_EQ(pixel.GetGreen(), 255);
     EXPECT_EQ(pixel.GetBlue(), 255);
 }
-

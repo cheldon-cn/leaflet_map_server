@@ -1,6 +1,7 @@
 #ifndef OGC_DRAW_MAPBOX_STYLE_PARSER_H
 #define OGC_DRAW_MAPBOX_STYLE_PARSER_H
 
+#include "ogc/draw/export.h"
 #include "ogc/draw/symbolizer_rule.h"
 #include "ogc/draw/symbolizer.h"
 #include "ogc/draw/point_symbolizer.h"
@@ -71,7 +72,7 @@ struct MapboxStyle {
     MapboxStyle() = default;
 };
 
-class MapboxStyleParser {
+class OGC_GRAPH_API MapboxStyleParser {
 public:
     MapboxStyleParser();
     ~MapboxStyleParser() = default;

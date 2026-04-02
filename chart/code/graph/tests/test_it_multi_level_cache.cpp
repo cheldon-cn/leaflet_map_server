@@ -1,9 +1,10 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/multi_level_tile_cache.h"
 #include "ogc/draw/memory_tile_cache.h"
 #include "ogc/draw/disk_tile_cache.h"
 #include "ogc/draw/tile_key.h"
 #include <ogc/draw/raster_image_device.h>
+#include "ogc/draw/draw_context.h"
 #include "ogc/draw/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
@@ -66,7 +67,7 @@ protected:
         multiCache = MultiLevelTileCache::Create(caches);
         ASSERT_NE(multiCache, nullptr);
         
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
     }
@@ -170,22 +171,20 @@ TEST_F(IntegrationMultiLevelCacheTest, MultipleZoomLevels) {
 }
 
 TEST_F(IntegrationMultiLevelCacheTest, CacheWithDevice) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
+    auto context = DrawContext::Create(device.get());
+    ASSERT_NE(context, nullptr);
     
-    device->BeginDraw(params);
-    device->Clear(Color::White());
+    context->Begin();
+    context->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Magenta().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Magenta(), 2.0);
+    context->SetStyle(style);
     
-    device->DrawRect(10, 10, 236, 236, style);
-    device->EndDraw();
+    context->DrawRect(10, 10, 236, 236);
+    context->End();
     
-    const uint8_t* imageData = device->GetData();
+    const uint8_t* imageData = device->GetPixelData();
     size_t dataSize = device->GetDataSize();
     std::vector<uint8_t> imageDataVec(imageData, imageData + dataSize);
     
@@ -280,4 +279,3 @@ TEST_F(IntegrationMultiLevelCacheTest, AddCache) {
     
     EXPECT_EQ(multiCache->GetCacheCount(), 3);
 }
-

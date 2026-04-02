@@ -26,13 +26,12 @@ using ogc::CNFeature;
 class RuleEngineRenderITTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_device = RasterImageDevice::Create(256, 256, 4);
+        m_device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(m_device, nullptr);
         m_device->Initialize();
         
-        m_context = DrawContext::Create(m_device);
+        m_context = DrawContext::Create(m_device.get());
         ASSERT_NE(m_context, nullptr);
-        m_context->Initialize();
     }
     
     void TearDown() override {
@@ -40,8 +39,8 @@ protected:
         m_device.reset();
     }
     
-    DrawDevicePtr m_device;
-    DrawContextPtr m_context;
+    std::shared_ptr<RasterImageDevice> m_device;
+    std::unique_ptr<DrawContext> m_context;
 };
 
 TEST_F(RuleEngineRenderITTest, BasicRuleEngineRender) {
@@ -217,12 +216,11 @@ TEST_F(RuleEngineRenderITTest, RuleEngineRender) {
     auto& factory = GeometryFactory::GetInstance();
     auto geom = factory.CreatePoint(128, 128);
     
-    DrawParams params;
-    m_context->BeginDraw(params);
+    m_context->Begin();
     
     auto result = engine->Render(geom.get(), *m_context, 1.0);
     
-    m_context->EndDraw();
+    m_context->End();
     
     EXPECT_TRUE(result == DrawResult::kSuccess || result != DrawResult::kSuccess);
 }

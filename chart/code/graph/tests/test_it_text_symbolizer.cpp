@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/text_symbolizer.h"
 #include <ogc/draw/font.h>
 #include <ogc/draw/draw_context.h>
@@ -18,13 +18,12 @@ using ogc::Envelope;
 class IntegrationTextSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
         
-        context = DrawContext::Create(device);
+        context = DrawContext::Create(device.get());
         ASSERT_NE(context, nullptr);
-        context->Initialize();
     }
     
     void TearDown() override {
@@ -35,7 +34,7 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> device;
-    std::shared_ptr<DrawContext> context;
+    std::unique_ptr<DrawContext> context;
 };
 
 TEST_F(IntegrationTextSymbolizerTest, SymbolizerCreation) {
@@ -201,13 +200,8 @@ TEST_F(IntegrationTextSymbolizerTest, Clone) {
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderWithContext) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = TextSymbolizer::Create();
     symbolizer->SetLabel("Test Label");
@@ -218,17 +212,12 @@ TEST_F(IntegrationTextSymbolizerTest, RenderWithContext) {
     DrawResult result = context->DrawText(128, 128, "Test Label", font, Color::Black());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderMultipleLabels) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     Font font("Arial", 14);
     
@@ -241,17 +230,12 @@ TEST_F(IntegrationTextSymbolizerTest, RenderMultipleLabels) {
     result = context->DrawText(400, 400, "Location C", font, Color::Blue());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderPlaceName) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = TextSymbolizer::Create();
     symbolizer->SetLabel("Shanghai Port");
@@ -262,17 +246,12 @@ TEST_F(IntegrationTextSymbolizerTest, RenderPlaceName) {
     DrawResult result = context->DrawText(256, 256, "Shanghai Port", font, Color::Black());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderDepthLabel) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::Cyan());
+    context->Begin();
+    device->Clear(Color::Cyan());
     
     auto symbolizer = TextSymbolizer::Create();
     Font font("Arial", 10);
@@ -289,17 +268,12 @@ TEST_F(IntegrationTextSymbolizerTest, RenderDepthLabel) {
         EXPECT_EQ(result, DrawResult::kSuccess);
     }
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderWithHalo) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = TextSymbolizer::Create();
     symbolizer->SetLabel("Halo Text");
@@ -312,17 +286,12 @@ TEST_F(IntegrationTextSymbolizerTest, RenderWithHalo) {
     DrawResult result = context->DrawText(128, 128, "Halo Text", font, Color::Black());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderWithRotation) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = TextSymbolizer::Create();
     symbolizer->SetRotation(45.0);
@@ -333,26 +302,20 @@ TEST_F(IntegrationTextSymbolizerTest, RenderWithRotation) {
     DrawResult result = context->DrawText(128, 128, "Rotated", font, Color::Red());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, RenderChannelName) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 2.0;
+    style.pen = Pen(Color::Blue(), 2.0);
     context->SetStyle(style);
     
     double x[] = {50, 200, 350, 480};
     double y[] = {256, 256, 256, 256};
-    context->DrawPolyline(x, y, 4);
+    context->DrawLineString(x, y, 4);
     
     auto symbolizer = TextSymbolizer::Create();
     symbolizer->SetPlacement(TextPlacement::kLine);
@@ -364,7 +327,7 @@ TEST_F(IntegrationTextSymbolizerTest, RenderChannelName) {
     DrawResult result = context->DrawText(200, 240, "Main Channel", font, Color::Blue());
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationTextSymbolizerTest, GetName) {
@@ -376,4 +339,3 @@ TEST_F(IntegrationTextSymbolizerTest, GetType) {
     auto symbolizer = TextSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kText);
 }
-

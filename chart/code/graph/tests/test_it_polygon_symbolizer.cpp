@@ -1,4 +1,4 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include "ogc/draw/polygon_symbolizer.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
@@ -17,13 +17,12 @@ using ogc::Envelope;
 class IntegrationPolygonSymbolizerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device = RasterImageDevice::Create(256, 256, 4);
+        device = std::make_shared<RasterImageDevice>(256, 256, PixelFormat::kRGBA8888);
         ASSERT_NE(device, nullptr);
         device->Initialize();
         
-        context = DrawContext::Create(device);
+        context = DrawContext::Create(device.get());
         ASSERT_NE(context, nullptr);
-        context->Initialize();
     }
     
     void TearDown() override {
@@ -34,7 +33,7 @@ protected:
     }
     
     std::shared_ptr<RasterImageDevice> device;
-    std::shared_ptr<DrawContext> context;
+    std::unique_ptr<DrawContext> context;
 };
 
 TEST_F(IntegrationPolygonSymbolizerTest, SymbolizerCreation) {
@@ -143,13 +142,8 @@ TEST_F(IntegrationPolygonSymbolizerTest, Clone) {
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderWithContext) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PolygonSymbolizer::Create();
     symbolizer->SetFillColor(Color::Blue().GetRGBA());
@@ -157,11 +151,8 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderWithContext) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.brush.color = Color::Blue().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 2.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Blue());
+    style.pen = Pen(Color::Black(), 2.0);
     context->SetStyle(style);
     
     double x[] = {50, 200, 200, 50};
@@ -170,24 +161,16 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderWithContext) {
     DrawResult result = context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderMultiplePolygons) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Green().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 1.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Green());
+    style.pen = Pen(Color::Black(), 1.0);
     context->SetStyle(style);
     
     double x1[] = {10, 100, 100, 10};
@@ -200,24 +183,16 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderMultiplePolygons) {
     result = context->DrawPolygon(x2, y2, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderTriangle) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     DrawStyle style;
-    style.brush.color = Color::Red().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 2.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Red());
+    style.pen = Pen(Color::Black(), 2.0);
     context->SetStyle(style);
     
     double x[] = {128, 50, 206};
@@ -226,25 +201,19 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderTriangle) {
     DrawResult result = context->DrawPolygon(x, y, 3);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderWithDifferentFillPatterns) {
-    DrawParams params;
-    params.pixel_width = 256;
-    params.pixel_height = 256;
-    params.extent = Envelope(0, 0, 256, 256);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PolygonSymbolizer::Create();
     symbolizer->SetFillPattern(FillPattern::kSolid);
     symbolizer->SetFillColor(Color::Yellow().GetRGBA());
     
     DrawStyle style;
-    style.brush.color = Color::Yellow().GetRGBA();
-    style.brush.visible = true;
+    style.brush = Brush(Color::Yellow());
     context->SetStyle(style);
     
     double x[] = {20, 230, 230, 20};
@@ -253,17 +222,12 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderWithDifferentFillPatterns) {
     DrawResult result = context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderSeaArea) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::White());
+    context->Begin();
+    device->Clear(Color::White());
     
     auto symbolizer = PolygonSymbolizer::Create();
     symbolizer->SetFillColor(Color::Cyan().GetRGBA());
@@ -272,11 +236,8 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderSeaArea) {
     symbolizer->SetStrokeWidth(1.0);
     
     DrawStyle style;
-    style.brush.color = Color::Cyan().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Blue().GetRGBA();
-    style.pen.width = 1.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::Cyan());
+    style.pen = Pen(Color::Blue(), 1.0);
     context->SetStyle(style);
     
     double x[] = {50, 450, 450, 300, 200, 50};
@@ -285,17 +246,12 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderSeaArea) {
     DrawResult result = context->DrawPolygon(x, y, 6);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, RenderLandArea) {
-    DrawParams params;
-    params.pixel_width = 512;
-    params.pixel_height = 512;
-    params.extent = Envelope(0, 0, 512, 512);
-    
-    context->BeginDraw(params);
-    context->Clear(Color::Cyan());
+    context->Begin();
+    device->Clear(Color::Cyan());
     
     auto symbolizer = PolygonSymbolizer::Create();
     symbolizer->SetFillColor(Color::LightGray().GetRGBA());
@@ -303,11 +259,8 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderLandArea) {
     symbolizer->SetStrokeWidth(2.0);
     
     DrawStyle style;
-    style.brush.color = Color::LightGray().GetRGBA();
-    style.brush.visible = true;
-    style.pen.color = Color::Black().GetRGBA();
-    style.pen.width = 2.0;
-    style.pen.visible = true;
+    style.brush = Brush(Color::LightGray());
+    style.pen = Pen(Color::Black(), 2.0);
     context->SetStyle(style);
     
     double x[] = {100, 400, 400, 100};
@@ -316,7 +269,7 @@ TEST_F(IntegrationPolygonSymbolizerTest, RenderLandArea) {
     DrawResult result = context->DrawPolygon(x, y, 4);
     EXPECT_EQ(result, DrawResult::kSuccess);
     
-    context->EndDraw();
+    context->End();
 }
 
 TEST_F(IntegrationPolygonSymbolizerTest, GetName) {
@@ -328,4 +281,3 @@ TEST_F(IntegrationPolygonSymbolizerTest, GetType) {
     auto symbolizer = PolygonSymbolizer::Create();
     EXPECT_EQ(symbolizer->GetType(), SymbolizerType::kPolygon);
 }
-

@@ -186,6 +186,6 @@ TEST_F(SymbolizerRuleTest, EvaluateFeatureWithFilter) {
 }
 
 TEST_F(SymbolizerRuleTest, EvaluateGeometryNoFilter) {
-    auto geom = Point::Create(0, 0);
+    auto geom = ogc::Point::Create(0, 0);
     EXPECT_TRUE(m_rule->Evaluate(geom.get()));
 }
