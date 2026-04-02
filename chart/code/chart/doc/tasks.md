@@ -3,11 +3,11 @@
 ## 概述
 
 - **总任务数**: 48
-- **已完成任务**: 32 ✅
+- **已完成任务**: 40 ✅
 - **部分完成任务**: 0 ⚠️
-- **待完成任务**: 16 📋
+- **待完成任务**: 8 📋
 - **预估总工时**: 320h (PERT期望值)
-- **已完成工时**: ~306h
+- **已完成工时**: ~352h
 - **关键路径时长**: 180h
 - **目标完成时间**: 8周
 - **团队规模**: 4人
@@ -46,7 +46,7 @@
 | T22 | 航迹记录与d回放 | P2 | M3 | 8h | ✅ Done | T21 |
 | T23 | 图层管理器实现 | P1 | M3 | 8h | ✅ Done | T9 |
 | T24 | 图层控制面板 | P2 | M3 | 6h | ✅ Done | T23 |
-| T25 | 日/夜模式切换 | P1 | M3 | 6h | 📋 Todo | T15 |
+| T25 | 日/夜模式切换 | P1 | M3 | 6h | ✅ Done | T15 |
 | T26 | 多线程渲染优化 | P1 | M3 | 12h | ✅ Done | T14 |
 | T27 | LOD细节层次实现 | P2 | M3 | 8h | ✅ Done | T26 |
 | T28 | 瓦片缓存机制 | P2 | M3 | 8h | ✅ Done | T26 |
@@ -56,20 +56,20 @@
 | T32 | Java API封装 | P2 | M4 | 8h | 📋 Todo | T31 |
 | T33 | WebAssembly编译 | P2 | M4 | 16h | 📋 Todo | T29 |
 | T34 | WebGL渲染适配 | P2 | M4 | 12h | 📋 Todo | T33 |
-| T35 | 离线数据存储 | P1 | M4 | 8h | 📋 Todo | T5 |
-| T36 | 离线数据同步 | P2 | M4 | 8h | 📋 Todo | T35 |
-| T37 | 数据加密实现 | P2 | M4 | 6h | 📋 Todo | T35 |
+| T35 | 离线数据存储 | P1 | M4 | 8h | ✅ Done | T5 |
+| T36 | 离线数据同步 | P2 | M4 | 8h | ✅ Done | T35 |
+| T37 | 数据加密实现 | P2 | M4 | 6h | ✅ Done | T35 |
 | T38 | 单元测试框架搭建 | P0 | M4 | 8h | ✅ Done | T1 |
 | T39 | 几何模块单元测试 | P1 | M4 | 8h | ✅ Done | T3, T38 |
 | T40 | 数据库模块单元测试 | P1 | M4 | 8h | ✅ Done | T7, T38 |
 | T41 | 渲染模块单元测试 | P1 | M4 | 8h | ✅ Done | T16, T38 |
-| T42 | 集成测试用例编写 | P1 | M4 | 12h | 📋 Todo | T41 |
-| T43 | 性能基准测试 | P2 | M4 | 8h | 📋 Todo | T42 |
-| T44 | 内存泄漏检测 | P2 | M4 | 6h | 📋 Todo | T43 |
+| T42 | 集成测试用例编写 | P1 | M4 | 12h | ✅ Done | T41 |
+| T43 | 性能基准测试 | P2 | M4 | 8h | ✅ Done | T42 |
+| T44 | 内存泄漏检测 | P2 | M4 | 6h | ✅ Done | T43 |
 | T45 | API文档生成 | P2 | M5 | 4h | 📋 Todo | T32 |
 | T46 | 用户手册编写 | P2 | M5 | 8h | 📋 Todo | T45 |
 | T47 | 示例代码编写 | P2 | M5 | 6h | 📋 Todo | T45 |
-| T48 | 最终验收测试 | P0 | M5 | 8h | 📋 Todo | T42, T43 |
+| T48 | 最终验收测试 | P0 | M5 | 8h | ✅ Done | T42, T43 |
 
 ## 资源分配
 
@@ -2180,13 +2180,13 @@ T42, T43
 | T35 | 离线数据存储 | code/database | 新增offline_storage.cpp |
 | T36 | 离线数据同步 | code/database | 新增offline_sync.cpp |
 | T37 | 数据加密实现 | code/database | 新增data_encryption.cpp |
-| T42 | 集成测试用例编写 | tests | 扩展各模块integration_test |
-| T43 | 性能基准测试 | tests | 扩展performance_test |
-| T44 | 内存泄漏检测 | tests | 新增内存检测配置 |
-| T45 | API文档生成 | doc | Doxygen配置 |
-| T46 | 用户手册编写 | doc | Markdown文档 |
-| T47 | 示例代码编写 | examples | 示例程序 |
-| T48 | 最终验收测试 | tests | 验收测试套件 |
+| T42 | 集成测试用例编写 | code\chart\tests | 扩展各模块integration_test |
+| T43 | 性能基准测试 | code\chart\tests | 扩展performance_test |
+| T44 | 内存泄漏检测 | code\chart\tests | 新增内存检测配置 |
+| T45 | API文档生成 | code\chart\doc | Doxygen配置 |
+| T46 | 用户手册编写 | code\chart\doc | Markdown文档 |
+| T47 | 示例代码编写 | code\chart\examples | 示例程序 |
+| T48 | 最终验收测试 | code\chart\tests | 验收测试套件 |
 
 ---
 

@@ -89,6 +89,13 @@ set(TEST_SOURCES
     test_location_display_handler.cpp
     test_track_recorder.cpp
     test_layer_control_panel.cpp
+    test_it_geometry.cpp
+    test_it_database.cpp
+    test_it_rendering.cpp
+    test_it_end_to_end.cpp
+    test_performance_benchmark.cpp
+    test_memory_leak_detection.cpp
+    test_acceptance.cpp
 )
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)

@@ -11,7 +11,7 @@
       "run tasks",
       "continue tasks"
     ],
-    "triggerMatchMode": "exact",
+    "triggerMatchMode": "regex",
     "triggerPatterns": [],
     "limits": {
       "maxExecutionTime": "8h",
