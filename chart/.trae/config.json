@@ -1,0 +1,131 @@
+{
+  "taskExecution": {
+    "triggerKeywords": [
+      "按任务清单tasks.md执行",
+      "按照tasks.md清单实施",
+      "继续按任务清单执行",
+      "实施任务清单",
+      "执行任务清单",
+      "开始任务",
+      "执行计划",
+      "run tasks",
+      "continue tasks"
+    ],
+    "triggerMatchMode": "exact",
+    "triggerPatterns": [],
+    "limits": {
+      "maxExecutionTime": "8h",
+      "maxTasks": 100,
+      "maxLoops": 1000,
+      "maxMemory": "2GB",
+      "maxConsecutiveFailures": 5,
+      "maxWaitTimeForCurrentTask": "5m",
+      "taskTimeout": "10m"
+    },
+    "concurrency": {
+      "enabled": true,
+      "maxConcurrent": 3,
+      "resourceThreshold": {
+        "maxMemory": "1GB",
+        "maxCPU": "80%"
+      },
+      "dependencyCheck": true,
+      "resourceIsolation": {
+        "enabled": true,
+        "workspaceDir": ".trae/workspace/",
+        "tempDir": ".trae/temp/",
+        "outputDir": ".trae/output/"
+      }
+    },
+    "performance": {
+      "enableMonitoring": true,
+      "cacheTaskList": true,
+      "cacheRefreshInterval": "5m",
+      "metrics": {
+        "targetTaskTime": "5m",
+        "targetStatusCheckTime": "100ms",
+        "targetMemoryUsage": "500MB",
+        "targetCPUUsage": "80%",
+        "targetSuccessRate": 95
+      },
+      "collectionInterval": "10s"
+    },
+    "stopKeywords": {
+      "stop": "停止执行",
+      "cancel": "取消任务",
+      "terminate": "终止",
+      "pause": "暂停",
+      "interrupt": "中断",
+      "forceStop": "强制停止"
+    },
+    "paths": {
+      "progressFile": ".trae/progress/task_execution_progress.json",
+      "stateFile": ".trae/progress/task_states.json",
+      "performanceFile": ".trae/progress/performance.json",
+      "defaultTaskList": "tasks.md",
+      "workspaceDir": ".trae/workspace/",
+      "tempDir": ".trae/temp/",
+      "outputDir": ".trae/output/",
+      "logsDir": ".trae/logs/"
+    },
+    "validation": {
+      "requiredFields": [
+        "taskId",
+        "taskName",
+        "taskStatus",
+        "priority"
+      ],
+      "optionalFields": [
+        "dependencies",
+        "estimatedHours",
+        "assignee",
+        "milestone",
+        "acceptanceCriteria"
+      ],
+      "validStatuses": [
+        "📋 Todo",
+        "🔄 In Progress",
+        "✅ Done",
+        "⚠️ Partial",
+        "🚫 Blocked",
+        "❌ Cancelled"
+      ],
+      "validPriorities": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "retry": {
+      "maxRetries": 3,
+      "retryDelay": "1s",
+      "networkRetryDelay": "5s"
+    },
+    "reporting": {
+      "outputProgressReport": true,
+      "outputMilestoneReport": true,
+      "outputFinalReport": true,
+      "includePerformanceStats": true
+    },
+    "planningIntegration": {
+      "autoTriggerAfterPlanning": true,
+      "planningKeywords": [
+        "规划并执行",
+        "分解并执行",
+        "设计并实施"
+      ]
+    },
+    "environmentVariables": {
+      "prefix": "TASK_EXEC_",
+      "mappings": {
+        "TASK_EXEC_MAX_TIME": "limits.maxExecutionTime",
+        "TASK_EXEC_MAX_TASKS": "limits.maxTasks",
+        "TASK_EXEC_MAX_MEMORY": "limits.maxMemory",
+        "TASK_EXEC_CONCURRENCY": "concurrency.enabled",
+        "TASK_EXEC_MAX_CONCURRENT": "concurrency.maxConcurrent",
+        "TASK_EXEC_MONITORING": "performance.enableMonitoring"
+      }
+    }
+  }
+}

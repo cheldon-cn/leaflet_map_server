@@ -252,6 +252,7 @@ When user does not specify expert role, the skill automatically detects based on
 | `network`, `protocol`, `rpc` | Network Architect | Protocol design, latency, reliability |
 | `ui`, `ux`, `frontend` | Frontend Architect | Component design, state management, UX |
 | `test`, `qa`, `quality` | QA Architect | Test strategy, coverage, automation |
+| `workflow`, `rule`, `task`, `execution`, `continuous` | Workflow System Designer | Workflow design, task orchestration, execution flow |
 | `skill`, `prompt`, `agent`, `.trae/`, `trae skill` | AI/LLM Skill Reviewer | Skill trigger, prompt quality, AI behavior |
 
 **Skill Document Detection**:

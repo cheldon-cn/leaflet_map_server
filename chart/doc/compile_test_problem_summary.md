@@ -1,18 +1,33 @@
-# 编译与测试问题记录 v2.4
+# 编译与测试问题记录 v2.5
+
+> **📚 经验标准文档**: 本文档的问题已归纳整理为系统化的经验标准，请查阅 [experience_standard.md](./experience_standard.md) 获取完整的编码实施指南。
 
 ## 概述
 
 本文档记录了在编译和测试 `ogc_geometry`、`ogc_database`、`ogc_feature`、`ogc_layer`、`ogc_graph`、`ogc_mokrender`、`ogc_draw` 库过程中遇到的所有问题。共发现 **135** 个问题，其中 **134** 个已解决，**1** 个待解决。
 
 **生成时间**: 2026-03-30  
+**更新时间**: 2026-04-02  
 **过程**: 编译 + 测试  
 **结果**: ✅ 所有模块测试全部通过！geom模块506个测试通过；database模块96个测试通过；feature模块228个测试通过；layer模块339个测试通过；graph模块所有测试通过；mokrender模块52个测试通过
+
+---
+
+## 📖 文档导航
+
+| 文档 | 说明 | 用途 |
+|------|------|------|
+| [experience_standard.md](./experience_standard.md) | **编码实施经验标准** | 系统化的编码规范、接口设计、构建配置、测试实施标准 |
+| [compile_test_problem_summary.md](./compile_test_problem_summary.md) | **问题记录文档**（本文档） | 详细的问题记录和解决方案 |
+| [../.trae/rules/proj_rules.md](../.trae/rules/proj_rules.md) | **项目编码规则** | 项目特定的编码约束和检查清单 |
 
 ---
 
 ## 避坑实施经验汇总
 
 > **重要提示**: 以下经验汇总供开发人员和大模型参考，请在编码实施前仔细阅读，避免重复踩坑。
+> 
+> **💡 提示**: 更详细的经验标准和规则ID索引请查阅 [experience_standard.md](./experience_standard.md)。
 
 ### 一、编码规范避坑清单
 
