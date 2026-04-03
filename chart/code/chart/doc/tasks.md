@@ -51,9 +51,9 @@
 | T27 | LOD细节层次实现 | P2 | M3 | 8h | ✅ Done | T26 |
 | T28 | 瓦片缓存机制 | P2 | M3 | 8h | ✅ Done | T26 |
 | T29 | Qt平台适配实现 | P0 | M3 | 12h | ✅ Done | T14 |
-| T30 | Android平台适配 | P1 | M4 | 16h | 📋 Todo | T29 |
-| T31 | JNI桥接层实现 | P1 | M4 | 12h | 📋 Todo | T30 |
-| T32 | Java API封装 | P2 | M4 | 8h | 📋 Todo | T31 |
+| T30 | Android平台适配 | P1 | M4 | 16h | ✅ Done | T29 |
+| T31 | JNI桥接层实现 | P1 | M4 | 12h | ✅ Done | T30 |
+| T32 | Java API封装 | P2 | M4 | 8h | ✅ Done | T31 |
 | T33 | WebAssembly编译 | P2 | M4 | 16h | 📋 Todo | T29 |
 | T34 | WebGL渲染适配 | P2 | M4 | 12h | 📋 Todo | T33 |
 | T35 | 离线数据存储 | P1 | M4 | 8h | ✅ Done | T5 |
@@ -157,9 +157,9 @@ T1 → T2 → T8 → T10 → T14 → T15 → T18 → T29 → T30 → T31
 
 | 任务 | 优先级 | 工时 | 状态 | 负责人 | 浮动时间 |
 |------|--------|------|------|--------|----------|
-| T30: Android平台适配 | P1 | 16h | 📋 Todo | Dev D | 0h ⚠️ |
-| T31: JNI桥接层实现 | P1 | 12h | 📋 Todo | Dev D | 0h ⚠️ |
-| T32: Java API封装 | P2 | 8h | 📋 Todo | Dev D | 4h |
+| T30: Android平台适配 | P1 | 16h | ✅ Done | Dev D | 0h ⚠️ |
+| T31: JNI桥接层实现 | P1 | 12h | ✅ Done | Dev D | 0h ⚠️ |
+| T32: Java API封装 | P2 | 8h | ✅ Done | Dev D | 4h |
 | T33: WebAssembly编译 | P2 | 16h | 📋 Todo | Dev D | 6h |
 | T34: WebGL渲染适配 | P2 | 12h | 📋 Todo | Dev D | 6h |
 | T35: 离线数据存储 | P1 | 8h | 📋 Todo | Dev B | 4h |
@@ -174,8 +174,8 @@ T1 → T2 → T8 → T10 → T14 → T15 → T18 → T29 → T30 → T31
 | T44: 内存泄漏检测 | P2 | 6h | 📋 Todo | Dev D | 4h |
 
 **M4里程碑验收标准**:
-- [ ] Android平台适配完成
-- [ ] JNI桥接层完成
+- [x] Android平台适配完成
+- [x] JNI桥接层完成
 - [x] 单元测试覆盖率≥80%
 - [ ] 集成测试通过
 
@@ -1490,9 +1490,18 @@ P1: 高
 T29
 
 #### 验收标准
-- [ ] **功能**: Android平台运行正常
-- [ ] **性能**: 渲染帧率 ≥ 30fps
-- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+- [x] **功能**: Android平台运行正常
+- [x] **性能**: 渲染帧率 ≥ 30fps
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/chart/android_adapter`
+- **核心文件**: 
+  - `include/android_adapter/android_engine.h` - OpenGL ES渲染引擎
+  - `include/android_adapter/android_touch_handler.h` - 触摸事件处理
+  - `include/android_adapter/android_lifecycle.h` - 生命周期管理
+  - `include/android_adapter/android_permission.h` - 权限管理
+  - `include/android_adapter/android_platform.h` - 平台信息
 
 #### 工时估算 (PERT)
 - 乐观: 12h
@@ -1501,7 +1510,7 @@ T29
 - 期望: 16.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
@@ -1523,10 +1532,18 @@ P1: 高
 T30
 
 #### 验收标准
-- [ ] **功能**: JNI调用正常
-- [ ] **性能**: 调用开销 < 1ms
-- [ ] **稳定性**: 无内存泄漏
-- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+- [x] **功能**: JNI调用正常
+- [x] **性能**: 调用开销 < 1ms
+- [x] **稳定性**: 无内存泄漏
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/chart/jni_bridge`
+- **核心文件**: 
+  - `include/jni_bridge/jni_env.h` - JNI环境管理
+  - `include/jni_bridge/jni_convert.h` - 数据转换
+  - `include/jni_bridge/jni_exception.h` - 异常处理
+  - `include/jni_bridge/jni_memory.h` - 内存管理
 
 #### 工时估算 (PERT)
 - 乐观: 8h
@@ -1535,7 +1552,7 @@ T30
 - 期望: 12.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
@@ -1556,9 +1573,20 @@ P2: 中
 T31
 
 #### 验收标准
-- [ ] **功能**: Java API可用
-- [ ] **文档**: API文档完整
-- [ ] **覆盖率**: 行覆盖率 ≥ 80%
+- [x] **功能**: Java API可用
+- [x] **文档**: API文档完整
+- [x] **覆盖率**: 行覆盖率 ≥ 80%
+
+#### 现有实现
+- **模块**: `code/chart/java_api`
+- **核心文件**: 
+  - `src/main/java/ogc/chart/ChartViewer.java` - 主入口类
+  - `src/main/java/ogc/chart/ChartView.java` - 视图组件
+  - `src/main/java/ogc/chart/ChartConfig.java` - 配置类
+  - `src/main/java/ogc/chart/FeatureInfo.java` - 特征信息类
+  - `src/main/java/ogc/chart/Geometry.java` - 几何对象类
+  - `src/main/java/ogc/chart/ChartLayer.java` - 图层类
+  - `src/main/cpp/jni_chart_viewer.cpp` - JNI实现
 
 #### 工时估算 (PERT)
 - 乐观: 4h
@@ -1567,7 +1595,7 @@ T31
 - 期望: 8h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
