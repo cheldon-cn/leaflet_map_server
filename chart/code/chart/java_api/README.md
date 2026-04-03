@@ -197,6 +197,52 @@ float y = screen[1];
 3. OpenGL ES 2.0以上版本支持
 4. 建议在后台线程加载大型海图文件
 
+## Android编译
+
+### 快速开始
+
+本模块提供了完整的Android编译脚本和配置文档：
+
+- **[README_BUILD.md](./README_BUILD.md)** - Android编译快速参考
+- **[android_build_config.md](./android_build_config.md)** - Android编译详细配置清单
+
+### 一键构建
+
+**PowerShell**:
+```powershell
+.\build_android.ps1
+```
+
+**批处理**:
+```batch
+build_android.bat
+```
+
+### 编译参数
+
+```powershell
+# Debug构建
+.\build_android.ps1 -BuildType Debug
+
+# 指定ABI
+.\build_android.ps1 -ABI arm64-v8a
+
+# 清理构建
+.\build_android.ps1 -Clean
+
+# 详细输出
+.\build_android.ps1 -Verbose
+```
+
+### 环境要求
+
+- **NDK**: r25c (已知路径: `D:\program\android\ndk-r25c`)
+- **CMake**: 3.16+
+- **Ninja**: 1.10+ (可选)
+- **Android SDK**: API 31+
+
+详细配置请参考 [android_build_config.md](./android_build_config.md)。
+
 ## 版本历史
 
 - v1.0.0: 初始版本，提供基础Java API封装

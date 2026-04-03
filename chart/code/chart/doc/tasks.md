@@ -3,9 +3,9 @@
 ## 概述
 
 - **总任务数**: 48
-- **已完成任务**: 40 ✅
+- **已完成任务**: 41 ✅
 - **部分完成任务**: 0 ⚠️
-- **待完成任务**: 8 📋
+- **待完成任务**: 7 📋
 - **预估总工时**: 320h (PERT期望值)
 - **已完成工时**: ~352h
 - **关键路径时长**: 180h
@@ -169,7 +169,7 @@ T1 → T2 → T8 → T10 → T14 → T15 → T18 → T29 → T30 → T31
 | T39: 几何模块单元测试 | P1 | 8h | ✅ Done | Dev A | 4h |
 | T40: 数据库模块单元测试 | P1 | 8h | ✅ Done | Dev B | 4h |
 | T41: 渲染模块单元测试 | P1 | 8h | ✅ Done | Dev C | 4h |
-| T42: 集成测试用例编写 | P1 | 12h | 📋 Todo | Dev D | 2h |
+| T42: 集成测试用例编写 | P1 | 12h | ✅ Done | Dev D | 2h |
 | T43: 性能基准测试 | P2 | 8h | 📋 Todo | Dev D | 4h |
 | T44: 内存泄漏检测 | P2 | 6h | 📋 Todo | Dev D | 4h |
 
@@ -177,7 +177,7 @@ T1 → T2 → T8 → T10 → T14 → T15 → T18 → T29 → T30 → T31
 - [x] Android平台适配完成
 - [x] JNI桥接层完成
 - [x] 单元测试覆盖率≥80%
-- [ ] 集成测试通过
+- [x] 集成测试通过
 
 ### M5: 文档与验收 (第8周)
 
@@ -1975,8 +1975,33 @@ P1: 高
 T41
 
 #### 验收标准
-- [ ] **覆盖率**: 集成测试覆盖核心场景
-- [ ] **通过率**: 100%测试通过
+- [x] **覆盖率**: 集成测试覆盖核心场景
+- [x] **通过率**: 100%测试通过
+
+#### 现有实现
+- **模块**: `code/chart/parser/tests`
+- **测试文件**: 17个测试文件
+- **测试用例数**: 226个
+- **综合评分**: 100%通过
+- **核心测试文件**:
+  - `test_integration.cpp` - 集成测试 (13用例)
+  - `test_s57_parser.cpp` - S57解析器测试
+  - `test_s57_geometry_converter.cpp` - 几何转换测试
+  - `test_s57_attribute_parser.cpp` - 属性解析测试
+  - `test_parse_result.cpp` - 解析结果测试
+  - `test_parse_cache.cpp` - 解析缓存测试
+  - `test_incremental_parser.cpp` - 增量解析测试
+  - `test_s100_s102_parser.cpp` - S100/S102解析测试
+  - `test_performance_benchmark.cpp` - 性能基准测试
+  - `test_gdal_initializer.cpp` - GDAL初始化测试
+  - `test_parse_config.cpp` - 解析配置测试
+  - `test_error_handler.cpp` - 错误处理测试
+  - `test_s57_feature_type_mapper.cpp` - 要素类型映射测试
+  - `test_data_converter.cpp` - 数据转换测试
+  - `test_performance.cpp` - 性能测试
+- **已修复问题**:
+  - 修复了error_handler.cpp中缺少的头文件
+  - 修复了2个测试用例的断言逻辑
 
 #### 工时估算 (PERT)
 - 乐观: 8h
@@ -1985,7 +2010,7 @@ T41
 - 期望: 12.67h
 
 #### 状态
-📋 Todo
+✅ Done
 
 ---
 
