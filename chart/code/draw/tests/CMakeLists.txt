@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.10)
 
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 
-set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest root directory")
+if(NOT GTEST_ROOT)
+    set(GTEST_ROOT "F:/win/3rd/googletest" CACHE PATH "GoogleTest root directory")
+endif()
 
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h
     PATHS ${GTEST_ROOT}/include

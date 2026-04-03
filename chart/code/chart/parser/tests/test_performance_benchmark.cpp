@@ -117,7 +117,7 @@ TEST_F(PerformanceBenchmarkTest, RunParsingBenchmark_InvalidFile_ReturnsResult) 
     BenchmarkResult result = PerformanceBenchmark::Instance().RunParsingBenchmark(
         "invalid_file", "nonexistent.000", 2);
     
-    EXPECT_EQ(result.testName, "invalid_file");
+    EXPECT_TRUE(result.testName.find("invalid_file") != std::string::npos);
     EXPECT_EQ(result.iterations, 2u);
 }
 

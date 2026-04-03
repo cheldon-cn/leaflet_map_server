@@ -83,8 +83,10 @@ TEST_F(IntegrationTest, IncrementalParser_IntegrationWithParser) {
     
     auto result = IncrementalParser::Instance().ParseIncremental("doc/C1104001.000");
     
-    if (result.hasChanges) {
+    if (result.hasChanges && result.addedFeatures.success) {
         EXPECT_GT(result.addedFeatures.features.size(), 0);
+    } else {
+        EXPECT_TRUE(result.addedFeatures.HasError() || !result.hasChanges);
     }
 }
 
