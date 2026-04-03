@@ -31,6 +31,7 @@ set(POSTGRESQL_ROOT "E:/Program Files/postgresql/16" CACHE PATH "PostgreSQL root
 set(SQLITE3_ROOT "E:/3rd/sqlite3-3.35.5" CACHE PATH "SQLite3 root directory")
 set(GEOS_ROOT "E:/3rd/GEOS3.10" CACHE PATH "GEOS root directory")
 set(PROJ_ROOT "E:/3rd/PROJ" CACHE PATH "PROJ root directory")
+set(CURL_ROOT "E:/3rd/libcurl_x64" CACHE PATH "cURL library root directory")
 set(GTEST_ROOT "E:/3rd/googletest" CACHE PATH "GoogleTest root directory")
 set(DATABASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/database" CACHE PATH "Database source directory")
 set(FEATURE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/feature" CACHE PATH "Feature source directory")

@@ -37,8 +37,22 @@ if(NOT DRAW_SOURCE_DIR)
     set(DRAW_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../draw" CACHE PATH "Draw library source directory")
 endif()
 
-if(NOT PROJ_ROOT)
-    set(PROJ_ROOT "E:/xspace/3rd/PROJ" CACHE PATH "PROJ library root directory")
+find_library(SQLITE3_LIBRARY
+    NAMES sqlite3
+    PATHS "${SQLITE3_ROOT}/lib(x64)"
+    NO_DEFAULT_PATH)
+
+if(NOT SQLITE3_LIBRARY)
+    message(WARNING "SQLite3 not found at ${SQLITE3_ROOT}/lib(x64)")
+endif()
+
+find_library(CURL_LIBRARY
+    NAMES libcurl_imp libcurl
+    PATHS "${CURL_ROOT}/lib"
+    NO_DEFAULT_PATH)
+
+if(NOT CURL_LIBRARY)
+    message(WARNING "cURL not found at ${CURL_ROOT}/lib")
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
@@ -148,7 +162,9 @@ target_link_libraries(ogc_graph
         ogc_draw
     PRIVATE
         ${PROJ_ROOT}/lib/proj.lib
-)
+        ${SQLITE3_LIBRARY}
+        ${CURL_LIBRARY}
+    )
 
 target_compile_definitions(ogc_graph
     PRIVATE

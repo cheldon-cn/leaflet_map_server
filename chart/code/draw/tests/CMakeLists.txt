@@ -9,12 +9,12 @@ find_path(GTEST_INCLUDE_DIR gtest/gtest.h
     PATH_SUFFIXES include
 )
 
-find_library(GTEST_LIBRARY NAMES gtest gtestd
+find_library(GTEST_LIBRARY NAMES gtest
     PATHS ${GTEST_ROOT}/lib
     PATH_SUFFIXES lib lib/Release lib/Debug
 )
 
-find_library(GTEST_MAIN_LIBRARY NAMES gtest_main gtest_maind
+find_library(GTEST_MAIN_LIBRARY NAMES gtest_main
     PATHS ${GTEST_ROOT}/lib
     PATH_SUFFIXES lib lib/Release lib/Debug
 )
