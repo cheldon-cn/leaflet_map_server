@@ -89,6 +89,10 @@ set(TEST_SOURCES
     test_location_display_handler.cpp
     test_track_recorder.cpp
     test_layer_control_panel.cpp
+    test_day_night_mode_manager.cpp
+    test_offline_storage_manager.cpp
+    test_offline_sync_manager.cpp
+    test_data_encryption.cpp
     test_it_geometry.cpp
     test_it_database.cpp
     test_it_rendering.cpp

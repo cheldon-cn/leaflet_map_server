@@ -111,6 +111,10 @@ set(OGC_GRAPH_SOURCES
     src/thread_safe.cpp
     src/layer_manager.cpp
     src/layer_control_panel.cpp
+    src/day_night_mode_manager.cpp
+    src/offline_storage_manager.cpp
+    src/offline_sync_manager.cpp
+    src/data_encryption.cpp
     src/image_draw.cpp
     src/sld_parser.cpp
     src/mapbox_style_parser.cpp
