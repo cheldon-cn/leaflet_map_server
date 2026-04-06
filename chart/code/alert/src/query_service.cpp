@@ -1,6 +1,6 @@
 #include "ogc/alert/query_service.h"
 #include "ogc/alert/alert_repository.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <algorithm>
 #include <map>
 #include <mutex>
@@ -9,8 +9,8 @@
 namespace ogc {
 namespace alert {
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 class QueryService::Impl {
 public:

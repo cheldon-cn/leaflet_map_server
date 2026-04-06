@@ -1,13 +1,13 @@
 #include "ogc/alert/data_source_manager.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <map>
 #include <mutex>
 #include <atomic>
 #include <thread>
 #include <chrono>
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 namespace ogc {
 namespace alert {

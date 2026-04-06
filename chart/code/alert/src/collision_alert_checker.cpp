@@ -1,5 +1,5 @@
 #include "ogc/alert/collision_alert_checker.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

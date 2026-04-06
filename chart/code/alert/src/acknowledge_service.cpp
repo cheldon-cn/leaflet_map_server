@@ -1,6 +1,6 @@
 #include "ogc/alert/acknowledge_service.h"
 #include "ogc/alert/alert_repository.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <vector>
 
 namespace ogc {

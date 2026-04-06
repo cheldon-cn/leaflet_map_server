@@ -1,12 +1,12 @@
 #include "ogc/alert/feedback_service.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <map>
 #include <mutex>
 #include <algorithm>
 #include <random>
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 namespace ogc {
 namespace alert {

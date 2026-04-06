@@ -1,5 +1,5 @@
 #include "ogc/alert/notice_parser.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include "ogc/polygon.h"
 #include "ogc/linearring.h"
 #include "ogc/point.h"

@@ -1,5 +1,5 @@
 #include "ogc/alert/push_strategy.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <mutex>
 #include <ctime>
 #include <algorithm>
@@ -7,8 +7,8 @@
 namespace ogc {
 namespace alert {
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 PushStrategyManager::PushStrategyManager()
     : m_maxRetryCount(3)

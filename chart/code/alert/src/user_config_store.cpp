@@ -1,11 +1,11 @@
 #include "ogc/alert/user_config_store.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <map>
 #include <mutex>
 #include <algorithm>
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 namespace ogc {
 namespace alert {

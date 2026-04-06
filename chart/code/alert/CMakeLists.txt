@@ -169,13 +169,14 @@ target_link_libraries(ogc_alert
         ogc_geometry
     PRIVATE
         ogc_graph
+        ogc_base
         ${SQLITE3_LIB}
         ${PQ_LIB}
         ${GEOS_LIB}
 )
 
 install(TARGETS ogc_alert
-    EXPORT ogc_geometry-targets
+    EXPORT ogc_alert-targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

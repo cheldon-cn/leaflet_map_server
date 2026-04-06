@@ -1,5 +1,5 @@
 #include "ogc/alert/scheduler.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <map>
 #include <queue>
 #include <mutex>
@@ -8,8 +8,8 @@
 #include <condition_variable>
 #include <chrono>
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 namespace ogc {
 namespace alert {

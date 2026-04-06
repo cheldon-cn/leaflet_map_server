@@ -2,7 +2,7 @@
 #include "ogc/alert/alert_checker.h"
 #include "ogc/alert/alert_processor.h"
 #include "ogc/alert/scheduler.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <map>
 #include <mutex>
 #include <atomic>
@@ -10,8 +10,8 @@
 #include <condition_variable>
 #include <queue>
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 namespace ogc {
 namespace alert {

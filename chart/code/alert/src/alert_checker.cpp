@@ -6,7 +6,7 @@
 #include "ogc/alert/deviation_alert_checker.h"
 #include "ogc/alert/speed_alert_checker.h"
 #include "ogc/alert/restricted_area_checker.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <mutex>
 
 namespace ogc {

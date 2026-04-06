@@ -1,5 +1,5 @@
 #include "ogc/alert/channel_alert_checker.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 
 namespace ogc {
 namespace alert {

@@ -5,15 +5,15 @@
 #include "ogc/alert/acknowledge_service.h"
 #include "ogc/alert/threshold_manager.h"
 #include "ogc/alert/exception.h"
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <sstream>
 #include <algorithm>
 
 namespace ogc {
 namespace alert {
 
-using ogc::draw::LogLevel;
-using ogc::draw::LogHelper;
+using ogc::base::LogLevel;
+using ogc::base::LogHelper;
 
 HttpResponse HttpResponse::Ok(const std::string& body) {
     HttpResponse resp;
