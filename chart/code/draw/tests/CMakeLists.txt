@@ -21,26 +21,23 @@ find_library(GTEST_MAIN_LIBRARY NAMES gtest_main
     PATH_SUFFIXES lib lib/Release lib/Debug
 )
 
-if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
+find_library(GMOCK_LIBRARY NAMES gmock
+    PATHS ${GTEST_ROOT}/lib
+    PATH_SUFFIXES lib lib/Release lib/Debug
+)
+find_library(GMOCK_MAIN_LIBRARY NAMES gmock_main
+    PATHS ${GTEST_ROOT}/lib
+    PATH_SUFFIXES lib lib/Release lib/Debug
+)
+if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY AND GMOCK_LIBRARY AND GMOCK_MAIN_LIBRARY)
     message(STATUS "Found GoogleTest: ${GTEST_INCLUDE_DIR}")
     message(STATUS "GTEST_LIBRARY: ${GTEST_LIBRARY}")
     message(STATUS "GTEST_MAIN_LIBRARY: ${GTEST_MAIN_LIBRARY}")
+    message(STATUS "GMOCK_LIBRARY: ${GMOCK_LIBRARY}")
+    message(STATUS "GMOCK_MAIN_LIBRARY: ${GMOCK_MAIN_LIBRARY}")
     set(GTest_FOUND TRUE)
-    add_library(GTest::gtest STATIC IMPORTED)
-    set_target_properties(GTest::gtest PROPERTIES
-        IMPORTED_LOCATION "${GTEST_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
-    )
-    add_library(GTest::gtest_main STATIC IMPORTED)
-    set_target_properties(GTest::gtest_main PROPERTIES
-        IMPORTED_LOCATION "${GTEST_MAIN_LIBRARY}"
-        INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
-    )
 else()
     message(STATUS "GoogleTest not found, tests will be skipped")
-    message(STATUS "GTEST_INCLUDE_DIR: ${GTEST_INCLUDE_DIR}")
-    message(STATUS "GTEST_LIBRARY: ${GTEST_LIBRARY}")
-    message(STATUS "GTEST_MAIN_LIBRARY: ${GTEST_MAIN_LIBRARY}")
     set(GTest_FOUND FALSE)
 endif()
 
@@ -93,6 +90,9 @@ set(TEST_SOURCES
     test_metal_engine.cpp
     test_webgl_engine.cpp
     test_boundary_values.cpp
+    test_exception_path.cpp
+    test_concurrency.cpp
+    test_mock_engine.cpp
 )
 
 foreach(TEST_SRC ${TEST_SOURCES})
@@ -102,16 +102,28 @@ foreach(TEST_SRC ${TEST_SOURCES})
     
     add_executable(${FULL_TEST_NAME} ${TEST_SRC})
     
+    target_compile_definitions(${FULL_TEST_NAME} PRIVATE
+        GTEST_LINKED_AS_SHARED_LIBRARY=1
+    )
     if(ENABLE_COVERAGE)
         target_compile_options(${FULL_TEST_NAME} PRIVATE --coverage -fprofile-arcs -ftest-coverage)
         target_link_options(${FULL_TEST_NAME} PRIVATE --coverage)
     endif()
     
+    if(TEST_NAME STREQUAL "test_mock_engine")
     target_link_libraries(${FULL_TEST_NAME}
         ogc_draw
-        GTest::gtest
-        GTest::gtest_main
+            ${GMOCK_MAIN_LIBRARY}
+            ${GMOCK_LIBRARY}
+            ${GTEST_LIBRARY}
+        )
+    else()
+        target_link_libraries(${FULL_TEST_NAME}
+            ogc_draw
+            ${GTEST_MAIN_LIBRARY}
+            ${GTEST_LIBRARY}
     )
+    endif()
     
     target_include_directories(${FULL_TEST_NAME} PRIVATE
         ${OGC_DRAW_INCLUDE_DIR}
