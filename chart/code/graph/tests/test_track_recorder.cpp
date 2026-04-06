@@ -1,31 +1,18 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/track_recorder.h"
+#include "ogc/navi/track/track_player.h"
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 
-using namespace ogc::draw;
+using namespace ogc::navi;
 using ogc::Coordinate;
 using ogc::Envelope;
-
-class TrackRecorderTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-        recorder = TrackRecorder::Create();
-    }
-    
-    void TearDown() override {
-        recorder.reset();
-    }
-    
-    std::unique_ptr<TrackRecorder> recorder;
-};
 
 class TrackPlayerTest : public ::testing::Test {
 protected:
     void SetUp() override {
         player = TrackPlayer::Create();
         
-        TrackData track;
+        TrackPlaybackData track;
         track.id = "test_track";
         track.name = "Test Track";
         track.totalDistance = 1000.0;
@@ -54,212 +41,6 @@ protected:
     
     std::unique_ptr<TrackPlayer> player;
 };
-
-TEST_F(TrackRecorderTest, CreateRecorder) {
-    EXPECT_TRUE(recorder != nullptr);
-    EXPECT_FALSE(recorder->IsRecording());
-    EXPECT_FALSE(recorder->IsPaused());
-}
-
-TEST_F(TrackRecorderTest, StartRecording) {
-    recorder->StartRecording("TestTrack");
-    EXPECT_TRUE(recorder->IsRecording());
-    EXPECT_FALSE(recorder->IsPaused());
-}
-
-TEST_F(TrackRecorderTest, StopRecording) {
-    recorder->StartRecording("TestTrack");
-    EXPECT_TRUE(recorder->IsRecording());
-    
-    recorder->StopRecording();
-    EXPECT_FALSE(recorder->IsRecording());
-    EXPECT_FALSE(recorder->IsPaused());
-}
-
-TEST_F(TrackRecorderTest, PauseRecording) {
-    recorder->StartRecording("TestTrack");
-    recorder->PauseRecording();
-    
-    EXPECT_TRUE(recorder->IsRecording());
-    EXPECT_TRUE(recorder->IsPaused());
-}
-
-TEST_F(TrackRecorderTest, ResumeRecording) {
-    recorder->StartRecording("TestTrack");
-    recorder->PauseRecording();
-    recorder->ResumeRecording();
-    
-    EXPECT_TRUE(recorder->IsRecording());
-    EXPECT_FALSE(recorder->IsPaused());
-}
-
-TEST_F(TrackRecorderTest, AddPoint) {
-    recorder->StartRecording("TestTrack");
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    
-    EXPECT_EQ(recorder->GetPointCount(), 1u);
-}
-
-TEST_F(TrackRecorderTest, AddMultiplePoints) {
-    recorder->StartRecording("TestTrack");
-    
-    TrackConfig config;
-    config.minDistanceInterval = 0.0;
-    config.minTimeInterval = 0.0;
-    recorder->SetTrackConfig(config);
-    
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    recorder->AddPoint(Coordinate(116.5, 39.9), 90.0, 10.0);
-    recorder->AddPoint(Coordinate(116.6, 39.9), 90.0, 10.0);
-    
-    EXPECT_EQ(recorder->GetPointCount(), 3u);
-}
-
-TEST_F(TrackRecorderTest, GetCurrentTrack) {
-    recorder->StartRecording("TestTrack");
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    
-    TrackData track = recorder->GetCurrentTrack();
-    EXPECT_EQ(track.name, "TestTrack");
-    EXPECT_EQ(track.GetPointCount(), 1u);
-}
-
-TEST_F(TrackRecorderTest, ClearCurrentTrack) {
-    recorder->StartRecording("TestTrack");
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    
-    recorder->ClearCurrentTrack();
-    EXPECT_EQ(recorder->GetPointCount(), 0u);
-}
-
-TEST_F(TrackRecorderTest, SetTrackConfig) {
-    TrackConfig config;
-    config.minDistanceInterval = 10.0;
-    config.minTimeInterval = 2.0;
-    config.maxDistanceInterval = 200.0;
-    
-    recorder->SetTrackConfig(config);
-    
-    auto result = recorder->GetTrackConfig();
-    EXPECT_DOUBLE_EQ(result.minDistanceInterval, 10.0);
-    EXPECT_DOUBLE_EQ(result.minTimeInterval, 2.0);
-    EXPECT_DOUBLE_EQ(result.maxDistanceInterval, 200.0);
-}
-
-TEST_F(TrackRecorderTest, TrackUpdatedCallback) {
-    bool callbackCalled = false;
-    recorder->SetTrackUpdatedCallback([&callbackCalled](const TrackData&) {
-        callbackCalled = true;
-    });
-    
-    recorder->StartRecording("TestTrack");
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    
-    EXPECT_TRUE(callbackCalled);
-}
-
-TEST_F(TrackRecorderTest, PointRecordedCallback) {
-    int pointCount = 0;
-    recorder->SetPointRecordedCallback([&pointCount](const TrackPoint&) {
-        pointCount++;
-    });
-    
-    TrackConfig config;
-    config.minDistanceInterval = 0.0;
-    config.minTimeInterval = 0.0;
-    recorder->SetTrackConfig(config);
-    
-    recorder->StartRecording("TestTrack");
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    recorder->AddPoint(Coordinate(116.5, 39.9), 90.0, 10.0);
-    
-    EXPECT_EQ(pointCount, 2);
-}
-
-TEST_F(TrackRecorderTest, NoRecordingWhenStopped) {
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    EXPECT_EQ(recorder->GetPointCount(), 0u);
-}
-
-TEST_F(TrackRecorderTest, NoRecordingWhenPaused) {
-    recorder->StartRecording("TestTrack");
-    recorder->PauseRecording();
-    recorder->AddPoint(Coordinate(116.4, 39.9), 90.0, 10.0);
-    
-    EXPECT_EQ(recorder->GetPointCount(), 0u);
-}
-
-TEST_F(TrackRecorderTest, TrackConfigDefaults) {
-    TrackConfig config;
-    EXPECT_DOUBLE_EQ(config.minDistanceInterval, 5.0);
-    EXPECT_DOUBLE_EQ(config.minTimeInterval, 1.0);
-    EXPECT_DOUBLE_EQ(config.maxDistanceInterval, 100.0);
-    EXPECT_TRUE(config.enableCompression);
-    EXPECT_DOUBLE_EQ(config.compressionTolerance, 2.0);
-    EXPECT_EQ(config.maxPoints, 100000u);
-}
-
-TEST_F(TrackRecorderTest, TrackPointDefaults) {
-    TrackPoint point;
-    EXPECT_DOUBLE_EQ(point.heading, 0.0);
-    EXPECT_DOUBLE_EQ(point.speed, 0.0);
-    EXPECT_DOUBLE_EQ(point.distance, 0.0);
-    EXPECT_DOUBLE_EQ(point.duration, 0.0);
-}
-
-TEST_F(TrackRecorderTest, TrackSegmentDefaults) {
-    TrackSegment segment;
-    EXPECT_TRUE(segment.points.empty());
-    EXPECT_DOUBLE_EQ(segment.totalDistance, 0.0);
-    EXPECT_DOUBLE_EQ(segment.totalDuration, 0.0);
-}
-
-TEST_F(TrackRecorderTest, TrackDataDefaults) {
-    TrackData track;
-    EXPECT_TRUE(track.id.empty());
-    EXPECT_TRUE(track.name.empty());
-    EXPECT_TRUE(track.segments.empty());
-    EXPECT_DOUBLE_EQ(track.totalDistance, 0.0);
-    EXPECT_DOUBLE_EQ(track.totalDuration, 0.0);
-    EXPECT_TRUE(track.IsEmpty());
-}
-
-TEST_F(TrackRecorderTest, TrackDataGetPointCount) {
-    TrackData track;
-    EXPECT_EQ(track.GetPointCount(), 0u);
-    
-    TrackSegment segment;
-    segment.points.resize(5);
-    track.segments.push_back(segment);
-    EXPECT_EQ(track.GetPointCount(), 5u);
-    
-    TrackSegment segment2;
-    segment2.points.resize(3);
-    track.segments.push_back(segment2);
-    EXPECT_EQ(track.GetPointCount(), 8u);
-}
-
-TEST_F(TrackRecorderTest, TrackDataGetBoundingBox) {
-    TrackData track;
-    Envelope env = track.GetBoundingBox();
-    EXPECT_TRUE(env.IsNull());
-    
-    TrackSegment segment;
-    TrackPoint p1, p2, p3;
-    p1.position = Coordinate(0.0, 0.0);
-    p2.position = Coordinate(100.0, 50.0);
-    p3.position = Coordinate(50.0, 100.0);
-    segment.points.push_back(p1);
-    segment.points.push_back(p2);
-    segment.points.push_back(p3);
-    track.segments.push_back(segment);
-    
-    Envelope bbox = track.GetBoundingBox();
-    EXPECT_DOUBLE_EQ(bbox.GetMinX(), 0.0);
-    EXPECT_DOUBLE_EQ(bbox.GetMinY(), 0.0);
-    EXPECT_DOUBLE_EQ(bbox.GetMaxX(), 100.0);
-    EXPECT_DOUBLE_EQ(bbox.GetMaxY(), 100.0);
-}
 
 TEST_F(TrackPlayerTest, CreatePlayer) {
     EXPECT_TRUE(player != nullptr);
@@ -419,7 +200,7 @@ TEST_F(TrackPlayerTest, LoopRestartsPlayback) {
 }
 
 TEST_F(TrackPlayerTest, GetTrack) {
-    const TrackData& track = player->GetTrack();
+    const TrackPlaybackData& track = player->GetTrack();
     EXPECT_EQ(track.id, "test_track");
     EXPECT_EQ(track.name, "Test Track");
 }
@@ -438,4 +219,66 @@ TEST_F(TrackPlayerTest, SeekClamped) {
     
     player->Seek(1.5);
     EXPECT_DOUBLE_EQ(player->GetProgress(), 1.0);
+}
+
+TEST_F(TrackPlayerTest, TrackPointDefaults) {
+    TrackPoint point;
+    EXPECT_DOUBLE_EQ(point.heading, 0.0);
+    EXPECT_DOUBLE_EQ(point.speed, 0.0);
+    EXPECT_DOUBLE_EQ(point.distance, 0.0);
+    EXPECT_DOUBLE_EQ(point.duration, 0.0);
+}
+
+TEST_F(TrackPlayerTest, TrackSegmentDefaults) {
+    TrackSegment segment;
+    EXPECT_TRUE(segment.points.empty());
+    EXPECT_DOUBLE_EQ(segment.totalDistance, 0.0);
+    EXPECT_DOUBLE_EQ(segment.totalDuration, 0.0);
+}
+
+TEST_F(TrackPlayerTest, TrackPlaybackDataDefaults) {
+    TrackPlaybackData track;
+    EXPECT_TRUE(track.id.empty());
+    EXPECT_TRUE(track.name.empty());
+    EXPECT_TRUE(track.segments.empty());
+    EXPECT_DOUBLE_EQ(track.totalDistance, 0.0);
+    EXPECT_DOUBLE_EQ(track.totalDuration, 0.0);
+    EXPECT_TRUE(track.IsEmpty());
+}
+
+TEST_F(TrackPlayerTest, TrackPlaybackDataGetPointCount) {
+    TrackPlaybackData track;
+    EXPECT_EQ(track.GetPointCount(), 0u);
+    
+    TrackSegment segment;
+    segment.points.resize(5);
+    track.segments.push_back(segment);
+    EXPECT_EQ(track.GetPointCount(), 5u);
+    
+    TrackSegment segment2;
+    segment2.points.resize(3);
+    track.segments.push_back(segment2);
+    EXPECT_EQ(track.GetPointCount(), 8u);
+}
+
+TEST_F(TrackPlayerTest, TrackPlaybackDataGetBoundingBox) {
+    TrackPlaybackData track;
+    Envelope env = track.GetBoundingBox();
+    EXPECT_TRUE(env.IsNull());
+    
+    TrackSegment segment;
+    TrackPoint p1, p2, p3;
+    p1.position = Coordinate(0.0, 0.0);
+    p2.position = Coordinate(100.0, 50.0);
+    p3.position = Coordinate(50.0, 100.0);
+    segment.points.push_back(p1);
+    segment.points.push_back(p2);
+    segment.points.push_back(p3);
+    track.segments.push_back(segment);
+    
+    Envelope bbox = track.GetBoundingBox();
+    EXPECT_DOUBLE_EQ(bbox.GetMinX(), 0.0);
+    EXPECT_DOUBLE_EQ(bbox.GetMinY(), 0.0);
+    EXPECT_DOUBLE_EQ(bbox.GetMaxX(), 100.0);
+    EXPECT_DOUBLE_EQ(bbox.GetMaxY(), 100.0);
 }

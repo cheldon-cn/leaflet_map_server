@@ -1,4 +1,5 @@
 #include "ogc/draw/layer_control_panel.h"
+#include "ogc/draw/layer_manager.h"
 #include <algorithm>
 #include <map>
 

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/log.h"
+#include "ogc/base/log.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::base;
 
 class LogTest : public ::testing::Test {
 protected:

@@ -165,6 +165,10 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
         PRIVATE
             ogc_graph
             ogc_geometry
+            ogc_draw
+            ogc_proj
+            ogc_cache
+            ogc_symbology
             GTest::gtest
             GTest::gtest_main
     )

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/performance_metrics.h"
+#include "ogc/base/performance_metrics.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::base;
 
 class PerformanceMetricsTest : public ::testing::Test {
 protected:

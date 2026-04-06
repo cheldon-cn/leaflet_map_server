@@ -36,6 +36,9 @@ endif()
 if(NOT DRAW_SOURCE_DIR)
     set(DRAW_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../draw" CACHE PATH "Draw library source directory")
 endif()
+if(NOT SYMBOLOGY_SOURCE_DIR)
+    set(SYMBOLOGY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../symbology" CACHE PATH "Symbology library source directory")
+endif()
 
 find_library(SQLITE3_LIBRARY
     NAMES sqlite3
@@ -66,9 +69,26 @@ if(MSVC)
 endif()
 
 set(OGC_GRAPH_SOURCES
-    src/draw_params.cpp
-    src/log.cpp
-    src/draw_facade.cpp
+    src/render/draw_params.cpp
+    src/render/draw_facade.cpp
+    src/render/render_task.cpp
+    src/render/basic_render_task.cpp
+    src/render/render_queue.cpp
+    src/render/async_renderer.cpp
+    src/label/label_engine.cpp
+    src/label/label_placement.cpp
+    src/label/label_conflict.cpp
+    src/interaction/interaction_handler.cpp
+    src/interaction/interaction_feedback.cpp
+    src/interaction/selection_handler.cpp
+    src/layer/layer_manager.cpp
+    src/layer_manager.cpp
+    src/interaction_feedback.cpp
+    src/lod/lod.cpp
+    src/lod/lod_manager.cpp
+    src/util/image_draw.cpp
+    src/util/transform_manager.cpp
+    src/util/day_night_mode_manager.cpp
     src/symbolizer.cpp
     src/point_symbolizer.cpp
     src/line_symbolizer.cpp
@@ -83,9 +103,6 @@ set(OGC_GRAPH_SOURCES
     src/spatial_filter.cpp
     src/symbolizer_rule.cpp
     src/rule_engine.cpp
-    src/label_engine.cpp
-    src/label_placement.cpp
-    src/label_conflict.cpp
     src/tile_key.cpp
     src/tile_cache.cpp
     src/memory_tile_cache.cpp
@@ -95,36 +112,19 @@ set(OGC_GRAPH_SOURCES
     src/coordinate_transformer.cpp
     src/coordinate_transform.cpp
     src/clipper.cpp
-    src/transform_manager.cpp
-    src/lod.cpp
-    src/lod_manager.cpp
-    src/render_task.cpp
-    src/basic_render_task.cpp
-    src/render_queue.cpp
-    src/async_renderer.cpp
-    src/performance_metrics.cpp
-    src/performance_monitor.cpp
     src/proj_transformer.cpp
     src/coord_system_preset.cpp
     src/s52_style_manager.cpp
     src/s52_symbol_renderer.cpp
-    src/thread_safe.cpp
-    src/layer_manager.cpp
     src/layer_control_panel.cpp
-    src/day_night_mode_manager.cpp
     src/offline_storage_manager.cpp
     src/offline_sync_manager.cpp
     src/data_encryption.cpp
-    src/image_draw.cpp
     src/sld_parser.cpp
     src/mapbox_style_parser.cpp
-    src/interaction_handler.cpp
     src/hit_test.cpp
-    src/interaction_feedback.cpp
     src/pan_zoom_handler.cpp
-    src/selection_handler.cpp
     src/location_display_handler.cpp
-    src/track_recorder.cpp
 )
 
 add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
@@ -155,6 +155,7 @@ target_include_directories(ogc_graph
         ${FEATURE_SOURCE_DIR}/include
         ${LAYER_SOURCE_DIR}/include
         ${DRAW_SOURCE_DIR}/include
+        ${SYMBOLOGY_SOURCE_DIR}/include
         ${PROJ_ROOT}/include
 )
 
@@ -164,6 +165,7 @@ target_link_libraries(ogc_graph
         ogc_feature
         ogc_layer
         ogc_draw
+        ogc_symbology
     PRIVATE
         ${PROJ_ROOT}/lib/proj.lib
         ${SQLITE3_LIBRARY}
@@ -177,7 +179,7 @@ target_compile_definitions(ogc_graph
 )
 
 install(TARGETS ogc_graph
-    EXPORT ogc_geometry-targets
+    EXPORT ogc_graph-targets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -185,6 +187,12 @@ install(TARGETS ogc_graph
 
 install(DIRECTORY include/ogc/draw/
     DESTINATION include/ogc/draw
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN "*.inl"
+)
+
+install(DIRECTORY include/ogc/graph/
+    DESTINATION include/ogc/graph
     FILES_MATCHING PATTERN "*.h"
     PATTERN "*.inl"
 )
