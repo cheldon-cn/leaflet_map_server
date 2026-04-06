@@ -38,6 +38,7 @@ set(TRACK_SOURCES
     src/track/track_point.cpp
     src/track/track.cpp
     src/track/track_recorder.cpp
+    src/track/track_player.cpp
     src/track/track_manager.cpp
 )
 
