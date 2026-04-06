@@ -1,200 +1,516 @@
 # Feature Module - Header Index
 
-## Overview
+## 模块描述
 
 Feature模块提供空间要素的数据结构和操作接口。包括要素定义、字段定义、字段值类型、要素集合等功能。该模块是OGC Simple Feature规范的核心实现，支持属性数据和几何数据的统一管理。
 
-## Header File List
+## 核心特性
+
+- 完整的OGC要素模型实现
+- 支持多种字段类型（整型、浮点、字符串、日期、二进制、列表类型）
+- 要素集合和批量处理
+- GeoJSON/WKT/WKB格式转换
+- 空间查询支持
+- 线程安全的要素迭代器
+
+---
+
+## 头文件清单
 
 | File | Description | Core Classes |
 |------|-------------|--------------|
-| [feature.h](ogc/feature/feature.h) | 要素类定义 | `CNFeature` |
-| [feature_defn.h](ogc/feature/feature_defn.h) | 要素定义 | `CNFeatureDefn` |
+| [export.h](ogc/feature/export.h) | DLL导出宏 | `OGC_FEATURE_API` |
+| [field_type.h](ogc/feature/field_type.h) | 字段类型 | `CNFieldType`, `CNFieldSubType` |
+| [field_value.h](ogc/feature/field_value.h) | 字段值 | `CNFieldValue` |
 | [field_defn.h](ogc/feature/field_defn.h) | 字段定义 | `CNFieldDefn` |
-| [field_type.h](ogc/feature/field_type.h) | 字段类型枚举 | `CNFieldType`, `CNFieldSubType` |
-| [field_value.h](ogc/feature/field_value.h) | 字段值类型 | `CNFieldValue` |
 | [geom_field_defn.h](ogc/feature/geom_field_defn.h) | 几何字段定义 | `CNGeomFieldDefn` |
+| [datetime.h](ogc/feature/datetime.h) | 日期时间 | `CNDateTime` |
+| [feature_defn.h](ogc/feature/feature_defn.h) | 要素定义 | `CNFeatureDefn` |
+| [feature.h](ogc/feature/feature.h) | 要素类 | `CNFeature` |
 | [feature_collection.h](ogc/feature/feature_collection.h) | 要素集合 | `CNFeatureCollection` |
+| [spatial_query.h](ogc/feature/spatial_query.h) | 空间查询 | `CNSpatialQuery`, `SpatialOperation` |
+| [batch_processor.h](ogc/feature/batch_processor.h) | 批量处理器 | `CNBatchProcessor`, `BatchOperation`, `BatchResult` |
 | [feature_iterator.h](ogc/feature/feature_iterator.h) | 要素迭代器 | `CNFeatureIterator` |
-| [feature_guard.h](ogc/feature/feature_guard.h) | 要素守卫 | `CNFeatureGuard` |
-| [datetime.h](ogc/feature/datetime.h) | 日期时间类型 | `CNDateTime` |
-| [spatial_query.h](ogc/feature/spatial_query.h) | 空间查询工具 | `CNSpatialQuery` |
-| [batch_processor.h](ogc/feature/batch_processor.h) | 批量处理器 | `CNBatchProcessor` |
-| [geojson_converter.h](ogc/feature/geojson_converter.h) | GeoJSON转换器 | `CNGeoJSONConverter` |
-| [wkb_wkt_converter.h](ogc/feature/wkb_wkt_converter.h) | WKB/WKT转换器 | `CNWkbConverter`, `CNWktConverter` |
-| [export.h](ogc/feature/export.h) | 导出宏定义 | `OGC_FEATURE_API` |
+| [feature_guard.h](ogc/feature/feature_guard.h) | 要素守卫 | `FeatureGuard` |
+| [geojson_converter.h](ogc/feature/geojson_converter.h) | GeoJSON转换 | `GeoJsonConverter` |
+| [wkb_wkt_converter.h](ogc/feature/wkb_wkt_converter.h) | WKB/WKT转换 | `WkbWktConverter` |
 
-## Class Inheritance Diagram
+---
+
+## 类继承关系图
 
 ```
 CNFeatureDefn
-    └── (used by CNFeature)
-
-CNFieldDefn (abstract interface)
-    └── CNFieldDefnImpl
-
-CNGeomFieldDefn
-    └── (extends field definition for geometry)
+    └── (引用) CNFieldDefn
+    └── (引用) CNGeomFieldDefn
 
 CNFeature
-    └── CNFeatureCollection (container)
+    └── (包含) CNFieldValue[]
+    └── (包含) Geometry*
 
-CNFieldValue (variant type)
-    ├── Integer
-    ├── Integer64
-    ├── Real
-    ├── String
-    ├── DateTime
-    └── Binary
+CNFeatureCollection
+    └── (包含) CNFeature[]
+
+CNFeatureIterator (独立类，迭代CNFeatureCollection)
+CNSpatialQuery (独立类，构建空间查询条件)
+CNBatchProcessor (独立类，批量处理要素)
 ```
 
-## Core Classes Detail
+---
+
+## 依赖关系图
+
+```
+export.h
+    │
+    ├──► field_type.h ──► field_value.h
+    │                          │
+    │                          └──► datetime.h
+    │
+    ├──► field_defn.h ◄────────┘
+    │
+    ├──► geom_field_defn.h
+    │
+    └──► feature_defn.h ◄──────┐
+             │                 │
+             └──► feature.h ──► feature_collection.h
+                       │
+                       ├──► spatial_query.h
+                       ├──► batch_processor.h
+                       ├──► feature_iterator.h
+                       ├──► geojson_converter.h
+                       └──► wkb_wkt_converter.h
+```
+
+---
+
+## 文件分类
+
+| Category | Files |
+|----------|-------|
+| **Core** | feature.h, feature_defn.h, feature_collection.h |
+| **Field** | field_defn.h, field_type.h, field_value.h, geom_field_defn.h |
+| **Query** | spatial_query.h, feature_iterator.h |
+| **Batch** | batch_processor.h |
+| **Convert** | geojson_converter.h, wkb_wkt_converter.h |
+| **Utility** | datetime.h, feature_guard.h |
+
+---
+
+## 关键类
 
 ### CNFeature
+**File**: [feature.h](ogc/feature/feature.h)  
+**Description**: 核心要素类，包含属性字段和几何对象
 
-**File**: [feature.h](ogc/feature/feature.h)
-
-**Base Classes**: None
-
-**Purpose**: 空间要素类，包含属性字段和几何数据，是OGC Simple Feature的核心数据结构。
-
-**Key Methods**:
-- `GetFID()` / `SetFID()` - 要素ID管理
-- `GetFeatureDefn()` - 获取要素定义
-- `GetFieldCount()` - 获取字段数量
-- `GetField(index)` / `GetField(name)` - 获取字段值
-- `SetField()` / `SetFieldNull()` - 设置字段值
-- `GetFieldAsInteger()` / `GetFieldAsReal()` / `GetFieldAsString()` - 类型转换获取
-- `GetGeometry()` / `SetGeometry()` / `StealGeometry()` - 几何数据管理
-- `GetEnvelope()` - 获取范围
-- `Clone()` - 克隆要素
+```cpp
+class CNFeature {
+public:
+    CNFeature();
+    explicit CNFeature(CNFeatureDefn* definition);
+    
+    CNFeatureDefn* GetFeatureDefn() const;
+    void SetFeatureDefn(CNFeatureDefn* definition);
+    
+    int64_t GetFID() const;
+    void SetFID(int64_t fid);
+    
+    // 字段访问
+    size_t GetFieldCount() const;
+    CNFieldValue& GetField(size_t index);
+    bool IsFieldSet(size_t index) const;
+    bool IsFieldNull(size_t index) const;
+    
+    int32_t GetFieldAsInteger(size_t index) const;
+    int64_t GetFieldAsInteger64(size_t index) const;
+    double GetFieldAsReal(size_t index) const;
+    std::string GetFieldAsString(size_t index) const;
+    CNDateTime GetFieldAsDateTime(size_t index) const;
+    std::vector<uint8_t> GetFieldAsBinary(size_t index) const;
+    
+    // 字段设置
+    void SetFieldInteger(size_t index, int32_t value);
+    void SetFieldInteger64(size_t index, int64_t value);
+    void SetFieldReal(size_t index, double value);
+    void SetFieldString(size_t index, const std::string& value);
+    void SetFieldDateTime(size_t index, const CNDateTime& value);
+    void SetFieldBinary(size_t index, const std::vector<uint8_t>& value);
+    void SetFieldNull(size_t index);
+    
+    // 几何字段
+    size_t GetGeomFieldCount() const;
+    GeometryPtr GetGeometry(size_t index = 0) const;
+    void SetGeometry(GeometryPtr geometry, size_t index = 0);
+    GeometryPtr StealGeometry(size_t index = 0);
+    
+    std::unique_ptr<Envelope> GetEnvelope() const;
+    CNFeature* Clone() const;
+};
+```
 
 ### CNFeatureDefn
+**File**: [feature_defn.h](ogc/feature/feature_defn.h)  
+**Description**: 要素定义，包含字段定义和几何字段定义
 
-**File**: [feature_defn.h](ogc/feature/feature_defn.h)
-
-**Base Classes**: None
-
-**Purpose**: 要素定义，描述要素的字段结构和几何类型。
-
-**Key Methods**:
-- `GetName()` / `SetName()` - 名称管理
-- `GetFieldCount()` / `GetFieldDefn()` / `GetFieldIndex()` - 字段访问
-- `AddFieldDefn()` / `DeleteField()` - 字段管理
-- `GetGeomFieldCount()` / `GetGeomFieldDefn()` - 几何字段访问
-- `GetGeomType()` / `SetGeomType()` - 几何类型
-- `IsSame()` - 比较定义是否相同
-
-### CNFieldDefn
-
-**File**: [field_defn.h](ogc/feature/field_defn.h)
-
-**Base Classes**: None (abstract interface)
-
-**Purpose**: 字段定义，描述单个属性字段的结构。
-
-**Key Methods**:
-- `GetName()` / `SetName()` - 字段名称
-- `GetType()` / `SetType()` - 字段类型
-- `GetSubType()` / `SetSubType()` - 字段子类型
-- `GetWidth()` / `SetWidth()` - 字段宽度
-- `GetPrecision()` / `SetPrecision()` - 小数精度
-- `IsNullable()` / `SetNullable()` - 是否可空
-- `IsUnique()` / `SetUnique()` - 是否唯一
-- `GetDefaultValue()` / `SetDefaultValue()` - 默认值
-
-### CNFieldValue
-
-**File**: [field_value.h](ogc/feature/field_value.h)
-
-**Purpose**: 字段值的变体类型，支持多种数据类型。
-
-**Supported Types**:
-- `int32_t` - 32位整数
-- `int64_t` - 64位整数
-- `double` - 浮点数
-- `std::string` - 字符串
-- `CNDateTime` - 日期时间
-- `std::vector<uint8_t>` - 二进制数据
+```cpp
+class CNFeatureDefn {
+public:
+    static CNFeatureDefn* Create(const char* name = nullptr);
+    
+    const char* GetName() const;
+    void SetName(const char* name);
+    
+    // 字段定义管理
+    size_t GetFieldCount() const;
+    CNFieldDefn* GetFieldDefn(size_t index) const;
+    int GetFieldIndex(const char* name) const;
+    void AddFieldDefn(CNFieldDefn* field);
+    
+    // 几何字段定义管理
+    size_t GetGeomFieldCount() const;
+    CNGeomFieldDefn* GetGeomFieldDefn(size_t index) const;
+    void AddGeomFieldDefn(CNGeomFieldDefn* field);
+    
+    // 引用计数
+    void AddReference() const;
+    void ReleaseReference() const;
+    
+    CNFeatureDefn* Clone() const;
+};
+```
 
 ### CNFeatureCollection
-
-**File**: [feature_collection.h](ogc/feature/feature_collection.h)
-
-**Purpose**: 要素集合，管理多个要素的容器。
-
-**Key Methods**:
-- `AddFeature()` / `RemoveFeature()` - 添加/移除要素
-- `GetFeature()` / `GetFeatureCount()` - 要素访问
-- `GetExtent()` - 获取集合范围
-- `FilterByGeometry()` / `FilterByAttribute()` - 过滤操作
-
-## Type Aliases
+**File**: [feature_collection.h](ogc/feature/feature_collection.h)  
+**Description**: 要素集合
 
 ```cpp
-using CNFeaturePtr = CNFeature*;
-using CNFeatureDefnPtr = std::shared_ptr<CNFeatureDefn>;
-using CNFieldDefnPtr = std::shared_ptr<CNFieldDefn>;
-using CNFeatureCollectionPtr = std::unique_ptr<CNFeatureCollection>;
-```
-
-## Enumerations
-
-### CNFieldType
-
-```cpp
-enum class CNFieldType {
-    kInteger,       // 32位整数
-    kInteger64,     // 64位整数
-    kReal,          // 浮点数
-    kString,        // 字符串
-    kBinary,        // 二进制
-    kDate,          // 日期
-    kTime,          // 时间
-    kDateTime,      // 日期时间
-    kBoolean        // 布尔值
+class CNFeatureCollection {
+public:
+    CNFeatureCollection();
+    
+    size_t GetFeatureCount() const;
+    CNFeature* GetFeature(size_t index) const;
+    void AddFeature(CNFeature* feature);
+    void InsertFeature(size_t index, CNFeature* feature);
+    std::unique_ptr<CNFeature> RemoveFeature(size_t index);
+    void Clear();
+    
+    // 空间操作
+    std::unique_ptr<Envelope> GetEnvelope() const;
+    CNFeatureCollection* FilterByField(const std::string& fieldName, const CNFieldValue& value) const;
+    
+    // 序列化
+    std::string ToJSON() const;
+    void FromJSON(const std::string& json);
 };
 ```
 
-### CNFieldSubType
+### CNFeatureIterator
+**File**: [feature_iterator.h](ogc/feature/feature_iterator.h)  
+**Description**: 要素迭代器
 
 ```cpp
-enum class CNFieldSubType {
-    kNone,
-    kBoolean,
-    kInt16,
-    kFloat32
+class CNFeatureIterator {
+public:
+    explicit CNFeatureIterator(const CNFeatureCollection* collection);
+    
+    void Reset();
+    bool HasNext() const;
+    CNFeature* Next();
+    
+    CNFeature* operator*() const;
+    CNFeature* operator->() const;
+    CNFeatureIterator& operator++();
+    
+    size_t GetPosition() const;
+    size_t GetTotalCount() const;
 };
 ```
 
-## Dependencies
+### CNSpatialQuery
+**File**: [spatial_query.h](ogc/feature/spatial_query.h)  
+**Description**: 空间查询构建器
 
-```
-feature
-  └── geom (Geometry, Envelope, Coordinate)
+```cpp
+class CNSpatialQuery {
+public:
+    CNSpatialQuery();
+    
+    CNSpatialQuery& SetGeometry(GeometryPtr geometry);
+    CNSpatialQuery& SetOperation(SpatialOperation op);
+    CNSpatialQuery& SetBufferDistance(double distance);
+    CNSpatialQuery& SetSRID(int srid);
+    
+    GeometryPtr GetGeometry() const;
+    SpatialOperation GetOperation() const;
+    
+    std::string ToWKT() const;
+    
+    static CNSpatialQuery Intersects(GeometryPtr geometry);
+    static CNSpatialQuery Contains(GeometryPtr geometry);
+    static CNSpatialQuery Within(GeometryPtr geometry);
+    static CNSpatialQuery WithinDistance(GeometryPtr geometry, double distance);
+};
 ```
 
-## Quick Usage Examples
+### CNFieldValue
+**File**: [field_value.h](ogc/feature/field_value.h)  
+**Description**: 字段值，支持多种类型
+
+```cpp
+class CNFieldValue {
+public:
+    CNFieldValue();
+    CNFieldValue(int32_t value);
+    CNFieldValue(int64_t value);
+    CNFieldValue(double value);
+    CNFieldValue(const std::string& value);
+    CNFieldValue(const CNDateTime& value);
+    CNFieldValue(const std::vector<uint8_t>& value);
+    
+    CNFieldType GetType() const;
+    bool IsNull() const;
+    void SetNull();
+    
+    int32_t GetInteger() const;
+    int64_t GetInteger64() const;
+    double GetReal() const;
+    std::string GetString() const;
+    CNDateTime GetDateTime() const;
+    std::vector<uint8_t> GetBinary() const;
+};
+```
+
+---
+
+## 接口
+
+### CNFeature 迭代方法
+```cpp
+size_t GetFieldCount() const;
+CNFieldValue& GetField(size_t index);
+bool IsFieldSet(size_t index) const;
+bool IsFieldNull(size_t index) const;
+```
+
+### CNFeature 字段访问方法
+```cpp
+int32_t GetFieldAsInteger(size_t index) const;
+int64_t GetFieldAsInteger64(size_t index) const;
+double GetFieldAsReal(size_t index) const;
+std::string GetFieldAsString(size_t index) const;
+CNDateTime GetFieldAsDateTime(size_t index) const;
+std::vector<uint8_t> GetFieldAsBinary(size_t index) const;
+```
+
+### CNFeature 几何方法
+```cpp
+size_t GetGeomFieldCount() const;
+GeometryPtr GetGeometry(size_t index = 0) const;
+void SetGeometry(GeometryPtr geometry, size_t index = 0);
+GeometryPtr StealGeometry(size_t index = 0);
+```
+
+### CNFeatureIterator 迭代接口
+```cpp
+void Reset();
+bool HasNext() const;
+CNFeature* Next();
+size_t GetPosition() const;
+size_t GetTotalCount() const;
+```
+
+---
+
+## 类型定义
+
+### CNFieldType (字段类型枚举)
+```cpp
+enum class CNFieldType : int32_t {
+    kInteger = 0,
+    kInteger64 = 1,
+    kReal = 2,
+    kString = 3,
+    kDate = 4,
+    kTime = 5,
+    kDateTime = 6,
+    kBinary = 7,
+    kIntegerList = 8,
+    kInteger64List = 9,
+    kRealList = 10,
+    kStringList = 11,
+    kBoolean = 12,
+    kWideString = 13,
+    
+    kNull = 100,
+    kUnset = 101,
+    kUnknown = 102
+};
+```
+
+### CNFieldSubType (字段子类型枚举)
+```cpp
+enum class CNFieldSubType : int32_t {
+    kNone = 0,
+    kBoolean = 1,
+    kInt16 = 2,
+    kFloat32 = 3,
+    kMaxSubType = 3
+};
+```
+
+### SpatialOperation (空间操作枚举)
+```cpp
+enum class SpatialOperation {
+    kIntersects,
+    kContains,
+    kWithin,
+    kOverlaps,
+    kTouches,
+    kCrosses,
+    kDisjoint,
+    kEquals
+};
+```
+
+### BatchOperation (批量操作枚举)
+```cpp
+enum class BatchOperation {
+    kCreate,
+    kUpdate,
+    kDelete,
+    kRead
+};
+```
+
+### BatchResult (批量操作结果)
+```cpp
+struct BatchResult {
+    size_t success_count;
+    size_t failure_count;
+    std::vector<size_t> failed_indices;
+    std::vector<std::string> error_messages;
+};
+```
+
+### CNDateTime
+```cpp
+class CNDateTime {
+public:
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+    double timeZone;
+    
+    std::string ToString() const;
+    static CNDateTime Now();
+    static CNDateTime Parse(const std::string& str);
+};
+```
+
+---
+
+## 使用示例
+
+### 创建要素
 
 ```cpp
 #include "ogc/feature/feature.h"
 #include "ogc/feature/feature_defn.h"
-#include "ogc/feature/field_defn.h"
+
+using namespace ogc;
 
 // 创建要素定义
-auto defn = CNFeatureDefn::Create("MyFeature");
-defn->AddFieldDefn(CNFieldDefn::Create("id", CNFieldType::kInteger64));
-defn->AddFieldDefn(CNFieldDefn::Create("name", CNFieldType::kString));
+auto defn = CNFeatureDefn::Create("PointFeature");
+
+// 添加字段定义
+auto nameField = CNFieldDefn::Create("name", CNFieldType::kString);
+defn->AddFieldDefn(nameField);
+
+auto valueField = CNFieldDefn::Create("value", CNFieldType::kReal);
+defn->AddFieldDefn(valueField);
 
 // 创建要素
 CNFeature feature(defn);
 feature.SetFID(1);
-feature.SetFieldInteger64(0, 100);
-feature.SetFieldString(1, "Test Feature");
-feature.SetGeometry(Point::Create(116.4, 39.9));
+feature.SetFieldString(0, "Point A");
+feature.SetFieldReal(1, 123.45);
 
-// 读取要素
-int64_t id = feature.GetFieldAsInteger64(0);
-std::string name = feature.GetFieldAsString(1);
-auto geom = feature.GetGeometry();
+// 设置几何
+auto point = Point::Create(116.4, 39.9);
+feature.SetGeometry(std::move(point));
 ```
+
+### 要素集合操作
+
+```cpp
+#include "ogc/feature/feature_collection.h"
+#include "ogc/feature/feature_iterator.h"
+
+CNFeatureCollection collection;
+
+// 添加要素
+collection.AddFeature(&feature1);
+collection.AddFeature(&feature2);
+
+// 使用迭代器遍历
+CNFeatureIterator iter(&collection);
+while (iter.HasNext()) {
+    CNFeature* f = iter.Next();
+    // 处理要素
+}
+
+// 过滤
+auto filtered = collection.FilterByField("value", CNFieldValue(100.0));
+
+// 序列化
+std::string json = collection.ToJSON();
+```
+
+### 空间查询
+
+```cpp
+#include "ogc/feature/spatial_query.h"
+
+// 创建空间查询
+auto query = CNSpatialQuery::Intersects(polygonGeom);
+query.SetBufferDistance(100.0);
+
+// 转换为WKT
+std::string wkt = query.ToWKT();
+```
+
+### GeoJSON转换
+
+```cpp
+#include "ogc/feature/geojson_converter.h"
+
+GeoJsonConverter converter;
+
+// 要素转GeoJSON
+std::string json = converter.ToGeoJson(feature);
+
+// GeoJSON转要素
+CNFeature feature;
+converter.FromGeoJson(json, feature);
+```
+
+---
+
+## 修改历史
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| v1.0 | 2026-01-01 | Team | 初始版本 |
+| v1.1 | 2026-02-15 | Team | 添加批量处理器 |
+| v1.2 | 2026-03-10 | Team | 添加空间查询支持 |
+| v1.3 | 2026-04-06 | index-validator | 修正章节顺序、补充类型定义、修正接口名称 |
+
+---
+
+**Generated**: 2026-04-06  
+**Module Version**: v1.3  
+**C++ Standard**: C++11
