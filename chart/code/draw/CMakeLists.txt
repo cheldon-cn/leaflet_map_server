@@ -39,6 +39,7 @@ set(OGC_DRAW_SOURCES
     src/font.cpp
     src/image.cpp
     src/region.cpp
+    src/draw/clipper.cpp
     src/draw/draw_context.cpp
     src/draw/state_serializer.cpp
     src/draw/raster_image_device.cpp
@@ -87,6 +88,7 @@ set(OGC_DRAW_HEADERS
     include/ogc/draw/draw_style.h
     include/ogc/draw/transform_matrix.h
     include/ogc/draw/geometry.h
+    include/ogc/draw/clipper.h
     include/ogc/draw/draw_device.h
     include/ogc/draw/draw_engine.h
     include/ogc/draw/draw_context.h
