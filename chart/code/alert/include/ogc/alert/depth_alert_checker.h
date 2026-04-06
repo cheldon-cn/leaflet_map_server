@@ -3,6 +3,7 @@
 
 #include "alert_checker.h"
 #include "alert_engine.h"
+#include "ukc_calculator.h"
 #include "export.h"
 #include <string>
 #include <vector>
@@ -28,8 +29,12 @@ public:
     void SetDepthData(std::shared_ptr<void> depth_data);
     void SetTideData(std::shared_ptr<void> tide_data);
     void SetShipDraft(double draft);
+    void SetShipSpeed(double speed_knots);
+    void SetSquatParams(const SquatParams& params);
     
     double CalculateUKC(double depth, double draft, double tide) const;
+    double CalculateUKCWithSquat(double depth, double draft, double tide, 
+                                  double speed_knots, const SquatParams& params) const;
     AlertLevel DetermineUKCLevel(double ukc) const;
     
     static std::unique_ptr<DepthAlertChecker> Create();

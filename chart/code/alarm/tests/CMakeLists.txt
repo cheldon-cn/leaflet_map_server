@@ -1,23 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/googletest/include" CACHE PATH "GoogleTest include directory")
-set(GTEST_LIB_DIR "${GTEST_ROOT}/googletest/lib" CACHE PATH "GoogleTest library directory")
+set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
+set(GTEST_LIB_DIR "${GTEST_ROOT}/lib")
 
-find_path(GTEST_INCLUDE NAMES gtest/gtest.h PATHS ${GTEST_INCLUDE_DIR})
-find_library(GTEST_LIB NAMES gtest PATHS ${GTEST_LIB_DIR})
-find_library(GTEST_MAIN_LIB NAMES gtest_main PATHS ${GTEST_LIB_DIR})
-
-if(NOT GTEST_INCLUDE OR NOT GTEST_LIB OR NOT GTEST_MAIN_LIB)
-    message(STATUS "GoogleTest not found, using fetched version")
-    include(FetchContent)
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG release-1.12.1
-    )
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_MakeAvailable(googletest)
-endif()
+include_directories(${GTEST_INCLUDE_DIR})
+link_directories(${GTEST_LIB_DIR})
 
 set(TEST_SOURCES
     alert_types_test.cpp
@@ -42,6 +29,8 @@ set(TEST_SOURCES
     ais_data_adapter_test.cpp
     rest_controller_test.cpp
     websocket_service_test.cpp
+    integration_test.cpp
+    performance_test.cpp
 )
 
 foreach(TEST_SRC ${TEST_SOURCES})

@@ -1,0 +1,769 @@
+openapi: 3.0.3
+info:
+  title: 预警服务 API
+  description: |
+    预警服务 REST API 规范文档，提供预警管理、配置管理、推送管理等功能。
+    
+    ## 认证方式
+    所有 API 请求需要在 Header 中携带 JWT Token：
+    ```
+    Authorization: Bearer <token>
+    ```
+    
+    ## 响应格式
+    所有响应使用统一的 JSON 格式：
+    ```json
+    {
+      "code": 0,
+      "message": "success",
+      "data": {},
+      "timestamp": "2026-04-06T12:00:00Z"
+    }
+    ```
+    
+    ## 错误码
+    | code | 说明 |
+    |------|------|
+    | 0 | 成功 |
+    | 400 | 请求参数错误 |
+    | 401 | 未授权 |
+    | 403 | 禁止访问 |
+    | 404 | 资源不存在 |
+    | 500 | 服务器内部错误 |
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: 开发服务器
+  - url: https://api.example.com/api/v1
+    description: 生产服务器
+
+tags:
+  - name: alerts
+    description: 预警管理接口
+  - name: config
+    description: 配置管理接口
+  - name: push
+    description: 推送管理接口
+  - name: statistics
+    description: 统计分析接口
+
+paths:
+  /alerts:
+    get:
+      tags:
+        - alerts
+      summary: 获取预警列表
+      description: 分页获取预警列表，支持按状态、类型、级别、时间范围筛选
+      operationId: getAlerts
+      parameters:
+        - name: status
+          in: query
+          description: 预警状态
+          schema:
+            type: string
+            enum: [pending, active, pushed, acknowledged, cleared, expired]
+        - name: type
+          in: query
+          description: 预警类型
+          schema:
+            type: string
+            enum: [depth, collision, weather, channel]
+        - name: level
+          in: query
+          description: 预警级别 (1-4)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+        - name: start_time
+          in: query
+          description: 开始时间 (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          description: 结束时间 (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          description: 页码
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: size
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: 成功获取预警列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+        '401':
+          description: 未授权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /alerts/{alertId}:
+    get:
+      tags:
+        - alerts
+      summary: 获取预警详情
+      description: 根据预警ID获取预警详情
+      operationId: getAlertById
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          description: 预警ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功获取预警详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '404':
+          description: 预警不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /alerts/active:
+    get:
+      tags:
+        - alerts
+      summary: 获取活动预警
+      description: 获取当前所有活动状态的预警
+      operationId: getActiveAlerts
+      responses:
+        '200':
+          description: 成功获取活动预警
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertListResponse'
+
+  /alerts/{alertId}/acknowledge:
+    post:
+      tags:
+        - alerts
+      summary: 确认预警
+      description: 确认预警并记录处理措施
+      operationId: acknowledgeAlert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          description: 预警ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action_taken:
+                  type: string
+                  description: 采取的措施
+                operator:
+                  type: string
+                  description: 操作人
+              required:
+                - action_taken
+      responses:
+        '200':
+          description: 确认成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /alerts/statistics:
+    get:
+      tags:
+        - statistics
+      summary: 获取预警统计
+      description: 获取预警统计数据
+      operationId: getAlertStatistics
+      parameters:
+        - name: period
+          in: query
+          description: 统计周期
+          schema:
+            type: string
+            enum: [day, week, month, year]
+            default: day
+      responses:
+        '200':
+          description: 成功获取统计数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsResponse'
+
+  /config:
+    get:
+      tags:
+        - config
+      summary: 获取配置
+      description: 获取预警系统配置
+      operationId: getConfig
+      responses:
+        '200':
+          description: 成功获取配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigResponse'
+
+    put:
+      tags:
+        - config
+      summary: 更新配置
+      description: 更新预警系统配置
+      operationId: updateConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /config/thresholds:
+    get:
+      tags:
+        - config
+      summary: 获取阈值配置
+      description: 获取各级别预警阈值配置
+      operationId: getThresholds
+      responses:
+        '200':
+          description: 成功获取阈值配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThresholdResponse'
+
+    put:
+      tags:
+        - config
+      summary: 更新阈值配置
+      description: 更新各级别预警阈值配置
+      operationId: updateThresholds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThresholdUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /push/status:
+    get:
+      tags:
+        - push
+      summary: 获取推送状态
+      description: 获取各推送渠道的状态
+      operationId: getPushStatus
+      responses:
+        '200':
+          description: 成功获取推送状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushStatusResponse'
+
+  /push/send:
+    post:
+      tags:
+        - push
+      summary: 发送推送
+      description: 手动发送预警推送
+      operationId: pushAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                alert_id:
+                  type: string
+                  description: 预警ID
+                channels:
+                  type: array
+                  items:
+                    type: string
+                    enum: [app, sound, sms, email]
+                  description: 推送渠道
+                message:
+                  type: string
+                  description: 自定义消息内容
+              required:
+                - alert_id
+                - channels
+      responses:
+        '200':
+          description: 推送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushResultResponse'
+
+  /push/channels/{channel}/enable:
+    post:
+      tags:
+        - push
+      summary: 启用/禁用推送渠道
+      description: 启用或禁用指定的推送渠道
+      operationId: enableChannel
+      parameters:
+        - name: channel
+          in: path
+          required: true
+          description: 推送渠道
+          schema:
+            type: string
+            enum: [app, sound, sms, email]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: 是否启用
+              required:
+                - enabled
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+components:
+  schemas:
+    Alert:
+      type: object
+      properties:
+        alert_id:
+          type: string
+          description: 预警ID
+        alert_type:
+          type: string
+          enum: [depth, collision, weather, channel]
+          description: 预警类型
+        alert_level:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: 预警级别
+        status:
+          type: string
+          enum: [pending, active, pushed, acknowledged, cleared, expired]
+          description: 预警状态
+        title:
+          type: string
+          description: 预警标题
+        message:
+          type: string
+          description: 预警消息
+        position:
+          $ref: '#/components/schemas/Position'
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+        acknowledged_at:
+          type: string
+          format: date-time
+          description: 确认时间
+        acknowledged_by:
+          type: string
+          description: 确认人
+
+    Position:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: 纬度
+        longitude:
+          type: number
+          format: double
+          description: 经度
+
+    AlertListResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            alerts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Alert'
+            total:
+              type: integer
+              description: 总数量
+            page:
+              type: integer
+              description: 当前页码
+            size:
+              type: integer
+              description: 每页数量
+        timestamp:
+          type: string
+          format: date-time
+
+    AlertResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            alert:
+              $ref: '#/components/schemas/Alert'
+        timestamp:
+          type: string
+          format: date-time
+
+    SuccessResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 错误码
+        message:
+          type: string
+          description: 错误消息
+        timestamp:
+          type: string
+          format: date-time
+
+    StatisticsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            total_alerts:
+              type: integer
+              description: 总预警数
+            active_alerts:
+              type: integer
+              description: 活动预警数
+            acknowledged_alerts:
+              type: integer
+              description: 已确认预警数
+            cleared_alerts:
+              type: integer
+              description: 已清除预警数
+            by_type:
+              type: object
+              properties:
+                depth:
+                  type: integer
+                collision:
+                  type: integer
+                weather:
+                  type: integer
+                channel:
+                  type: integer
+            by_level:
+              type: object
+              properties:
+                level1:
+                  type: integer
+                level2:
+                  type: integer
+                level3:
+                  type: integer
+                level4:
+                  type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    ConfigResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            thresholds:
+              $ref: '#/components/schemas/ThresholdConfig'
+            push_methods:
+              type: array
+              items:
+                type: string
+              description: 可用推送方式
+            enabled_channels:
+              type: object
+              properties:
+                app:
+                  type: boolean
+                sound:
+                  type: boolean
+                sms:
+                  type: boolean
+                email:
+                  type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    ThresholdConfig:
+      type: object
+      properties:
+        depth:
+          type: object
+          properties:
+            level1:
+              type: number
+              format: double
+            level2:
+              type: number
+              format: double
+            level3:
+              type: number
+              format: double
+            level4:
+              type: number
+              format: double
+        collision:
+          type: object
+          properties:
+            level1:
+              type: number
+              format: double
+            level2:
+              type: number
+              format: double
+            level3:
+              type: number
+              format: double
+            level4:
+              type: number
+              format: double
+
+    ConfigUpdate:
+      type: object
+      properties:
+        enabled_channels:
+          type: object
+          properties:
+            app:
+              type: boolean
+            sound:
+              type: boolean
+            sms:
+              type: boolean
+            email:
+              type: boolean
+
+    ThresholdResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          $ref: '#/components/schemas/ThresholdConfig'
+        timestamp:
+          type: string
+          format: date-time
+
+    ThresholdUpdate:
+      type: object
+      properties:
+        alert_type:
+          type: string
+          enum: [depth, collision, weather, channel]
+        thresholds:
+          type: object
+          properties:
+            level1:
+              type: number
+              format: double
+            level2:
+              type: number
+              format: double
+            level3:
+              type: number
+              format: double
+            level4:
+              type: number
+              format: double
+
+    PushStatusResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            channels:
+              type: object
+              properties:
+                app:
+                  $ref: '#/components/schemas/ChannelStatus'
+                sound:
+                  $ref: '#/components/schemas/ChannelStatus'
+                sms:
+                  $ref: '#/components/schemas/ChannelStatus'
+                email:
+                  $ref: '#/components/schemas/ChannelStatus'
+        timestamp:
+          type: string
+          format: date-time
+
+    ChannelStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: 是否启用
+        available:
+          type: boolean
+          description: 是否可用
+
+    PushResultResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          default: 0
+        message:
+          type: string
+          default: success
+        data:
+          type: object
+          properties:
+            push_results:
+              type: array
+              items:
+                $ref: '#/components/schemas/PushResult'
+        timestamp:
+          type: string
+          format: date-time
+
+    PushResult:
+      type: object
+      properties:
+        channel:
+          type: string
+          description: 推送渠道
+        success:
+          type: boolean
+          description: 是否成功
+        message:
+          type: string
+          description: 结果消息
+        timestamp:
+          type: string
+          format: date-time
+          description: 推送时间
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

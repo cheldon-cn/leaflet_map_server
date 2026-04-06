@@ -3,6 +3,7 @@
 
 #include "alert_checker.h"
 #include "alert_engine.h"
+#include "cpa_calculator.h"
 #include "export.h"
 #include <string>
 #include <vector>
@@ -30,6 +31,9 @@ public:
     void CalculateCPA_TCPA(const Coordinate& own_pos, double own_speed, double own_heading,
                            const Coordinate& target_pos, double target_speed, double target_heading,
                            double& cpa, double& tcpa) const;
+    
+    CPAResult CalculateCPAWithDetails(const Coordinate& own_pos, double own_speed, double own_heading,
+                                       const Coordinate& target_pos, double target_speed, double target_heading) const;
     
     AlertLevel DetermineCollisionLevel(double cpa, double tcpa) const;
     

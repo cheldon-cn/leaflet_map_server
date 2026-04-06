@@ -49,13 +49,13 @@ public:
     
     UKCResult Calculate(const UKCInput& input);
     
-    double CalculateSquat(double speed_knots, const SquatParams& params);
+    double CalculateSquat(double speed_knots, const SquatParams& params) const;
     
-    double CalculateHeelCorrection(double speed_knots, double turn_radius, double ship_draft);
+    double CalculateHeelCorrection(double speed_knots, double turn_radius, double ship_draft) const;
     
-    double CalculateWaveAllowance(double wave_height);
+    double CalculateWaveAllowance(double wave_height) const;
     
-    double CalculateDepthCorrection(double water_density);
+    double CalculateDepthCorrection(double water_density) const;
     
     void SetSafetyMargin(double margin);
     double GetSafetyMargin() const;
@@ -74,9 +74,9 @@ private:
     double m_level4Threshold;
     
     double CalculateBarrassSquat(double speed_knots, double block_coeff, 
-                                  double ship_length, double depth);
+                                  double ship_length, double depth) const;
     double CalculateICorellSquat(double speed_knots, double block_coeff,
-                                  double ship_length, double depth, double beam);
+                                  double ship_length, double depth, double beam) const;
     AlertLevel DetermineAlertLevel(double ukc) const;
 };
 

@@ -28,6 +28,25 @@ struct PushRecord {
     std::string error_message;
 };
 
+struct PushConfig {
+    int max_retry_count;
+    int retry_interval_ms;
+    bool enable_retry;
+    bool enable_logging;
+    int timeout_ms;
+    std::string default_sender;
+    
+    PushConfig()
+        : max_retry_count(3)
+        , retry_interval_ms(1000)
+        , enable_retry(true)
+        , enable_logging(true)
+        , timeout_ms(5000)
+        , default_sender("alert_system") {}
+};
+
+using PushCallback = std::function<void(const Alert&, const PushResult&)>;
+
 class OGC_ALERT_API IPushChannel {
 public:
     virtual ~IPushChannel() = default;
@@ -51,6 +70,11 @@ public:
                                   const std::vector<PushMethod>& level2_methods,
                                   const std::vector<PushMethod>& level3_methods,
                                   const std::vector<PushMethod>& level4_methods) = 0;
+    
+    virtual void SetConfig(const PushConfig& config) = 0;
+    virtual PushConfig GetConfig() const = 0;
+    
+    virtual void SetPushCallback(PushCallback callback) = 0;
     
     virtual std::vector<PushResult> Push(const AlertPtr& alert, const std::vector<std::string>& user_ids) = 0;
     virtual std::vector<PushResult> PushByMethod(const AlertPtr& alert, 
@@ -78,6 +102,11 @@ public:
                          const std::vector<PushMethod>& level2_methods,
                          const std::vector<PushMethod>& level3_methods,
                          const std::vector<PushMethod>& level4_methods) override;
+    
+    void SetConfig(const PushConfig& config) override;
+    PushConfig GetConfig() const override;
+    
+    void SetPushCallback(PushCallback callback) override;
     
     std::vector<PushResult> Push(const AlertPtr& alert, const std::vector<std::string>& user_ids) override;
     std::vector<PushResult> PushByMethod(const AlertPtr& alert, 

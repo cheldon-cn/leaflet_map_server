@@ -77,13 +77,13 @@ public:
     CPACalculator();
     ~CPACalculator();
     
-    CPAResult Calculate(const ShipMotion& own_ship, const ShipMotion& target_ship);
+    CPAResult Calculate(const ShipMotion& own_ship, const ShipMotion& target_ship) const;
     
     CPAResult Calculate(const Coordinate& own_pos, double own_speed, double own_heading,
-                        const Coordinate& target_pos, double target_speed, double target_heading);
+                        const Coordinate& target_pos, double target_speed, double target_heading) const;
     
     CollisionRisk AssessCollisionRisk(const ShipMotion& own_ship, 
-                                       const std::vector<ShipMotion>& target_ships);
+                                       const std::vector<ShipMotion>& target_ships) const;
     
     void SetCPAThresholds(double level1, double level2, double level3, double level4);
     void SetTCPAThresholds(double level1, double level2, double level3, double level4);

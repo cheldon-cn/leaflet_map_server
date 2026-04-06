@@ -67,7 +67,7 @@ UKCResult UKCCalculator::Calculate(const UKCInput& input) {
     return result;
 }
 
-double UKCCalculator::CalculateSquat(double speed_knots, const SquatParams& params) {
+double UKCCalculator::CalculateSquat(double speed_knots, const SquatParams& params) const {
     if (speed_knots <= 0) return 0.0;
     
     double speed_ms = KnotsToMetersPerSecond(speed_knots);
@@ -87,7 +87,7 @@ double UKCCalculator::CalculateSquat(double speed_knots, const SquatParams& para
 }
 
 double UKCCalculator::CalculateBarrassSquat(double speed_knots, double block_coeff,
-                                             double ship_length, double depth) {
+                                             double ship_length, double depth) const {
     double speed_ms = KnotsToMetersPerSecond(speed_knots);
     double fn = speed_ms / std::sqrt(9.81 * depth);
     
@@ -99,7 +99,7 @@ double UKCCalculator::CalculateBarrassSquat(double speed_knots, double block_coe
 }
 
 double UKCCalculator::CalculateICorellSquat(double speed_knots, double block_coeff,
-                                             double ship_length, double depth, double beam) {
+                                             double ship_length, double depth, double beam) const {
     double speed_ms = KnotsToMetersPerSecond(speed_knots);
     double fn = speed_ms / std::sqrt(9.81 * depth);
     
@@ -111,7 +111,7 @@ double UKCCalculator::CalculateICorellSquat(double speed_knots, double block_coe
     return squat;
 }
 
-double UKCCalculator::CalculateHeelCorrection(double speed_knots, double turn_radius, double ship_draft) {
+double UKCCalculator::CalculateHeelCorrection(double speed_knots, double turn_radius, double ship_draft) const {
     if (turn_radius <= 0 || speed_knots <= 0) return 0.0;
     
     double speed_ms = KnotsToMetersPerSecond(speed_knots);
@@ -122,11 +122,11 @@ double UKCCalculator::CalculateHeelCorrection(double speed_knots, double turn_ra
     return correction;
 }
 
-double UKCCalculator::CalculateWaveAllowance(double wave_height) {
+double UKCCalculator::CalculateWaveAllowance(double wave_height) const {
     return wave_height * 0.5;
 }
 
-double UKCCalculator::CalculateDepthCorrection(double water_density) {
+double UKCCalculator::CalculateDepthCorrection(double water_density) const {
     const double standard_density = 1.025;
     return (standard_density - water_density) * 0.1;
 }

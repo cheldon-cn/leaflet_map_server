@@ -7,13 +7,20 @@ namespace alert {
 
 class DepthAlertChecker::Impl {
 public:
-    Impl() : m_enabled(true), m_priority(1), m_shipDraft(0.0) {
+    Impl() : m_enabled(true), m_priority(1), m_shipDraft(0.0), m_shipSpeed(0.0) {
         m_threshold.level1_threshold = 2.0;
         m_threshold.level2_threshold = 1.5;
         m_threshold.level3_threshold = 1.0;
         m_threshold.level4_threshold = 0.5;
         m_threshold.ukc_safety_margin = 0.5;
         m_threshold.use_dynamic_ukc = true;
+        
+        m_squatParams.block_coefficient = 0.7;
+        m_squatParams.ship_length = 200.0;
+        m_squatParams.ship_beam = 32.0;
+        m_squatParams.channel_depth = 20.0;
+        m_squatParams.channel_width = 200.0;
+        m_squatParams.is_confined_water = false;
     }
     
     std::string GetCheckerId() const { return "depth_alert_checker"; }
@@ -40,8 +47,23 @@ public:
         m_shipDraft = draft;
     }
     
+    void SetShipSpeed(double speed_knots) {
+        m_shipSpeed = speed_knots;
+    }
+    
+    void SetSquatParams(const SquatParams& params) {
+        m_squatParams = params;
+    }
+    
     double CalculateUKC(double depth, double draft, double tide) const {
         return depth + tide - draft;
+    }
+    
+    double CalculateUKCWithSquat(double depth, double draft, double tide,
+                                  double speed_knots, const SquatParams& params) const {
+        double squat = m_ukcCalculator.CalculateSquat(speed_knots, params);
+        double effective_depth = depth + tide;
+        return effective_depth - draft - squat;
     }
     
     AlertLevel DetermineUKCLevel(double ukc) const {
@@ -57,7 +79,16 @@ public:
         
         double depth = 10.0;
         double tide = 0.0;
-        double ukc = CalculateUKC(depth, m_shipDraft, tide);
+        
+        double ukc;
+        double squat = 0.0;
+        
+        if (m_threshold.use_dynamic_ukc && m_shipSpeed > 0.0) {
+            squat = m_ukcCalculator.CalculateSquat(m_shipSpeed, m_squatParams);
+            ukc = CalculateUKCWithSquat(depth, m_shipDraft, tide, m_shipSpeed, m_squatParams);
+        } else {
+            ukc = CalculateUKC(depth, m_shipDraft, tide);
+        }
         
         AlertLevel level = DetermineUKCLevel(ukc);
         if (level != AlertLevel::kNone) {
@@ -78,7 +109,12 @@ public:
             alert->content.type = "Depth";
             alert->content.level = static_cast<int>(level);
             alert->content.title = "Depth Alert";
-            alert->content.message = "UKC is " + std::to_string(ukc) + " meters";
+            
+            std::string message = "UKC is " + std::to_string(ukc) + " meters";
+            if (squat > 0.0) {
+                message += " (squat: " + std::to_string(squat) + "m at " + std::to_string(m_shipSpeed) + " knots)";
+            }
+            alert->content.message = message;
             alert->content.position = context.ship_position;
             alert->content.action_required = "Reduce speed or change course";
             
@@ -95,6 +131,9 @@ private:
     std::shared_ptr<void> m_depthData;
     std::shared_ptr<void> m_tideData;
     double m_shipDraft;
+    double m_shipSpeed;
+    SquatParams m_squatParams;
+    UKCCalculator m_ukcCalculator;
 };
 
 DepthAlertChecker::DepthAlertChecker() 
@@ -148,8 +187,21 @@ void DepthAlertChecker::SetShipDraft(double draft) {
     m_impl->SetShipDraft(draft);
 }
 
+void DepthAlertChecker::SetShipSpeed(double speed_knots) {
+    m_impl->SetShipSpeed(speed_knots);
+}
+
+void DepthAlertChecker::SetSquatParams(const SquatParams& params) {
+    m_impl->SetSquatParams(params);
+}
+
 double DepthAlertChecker::CalculateUKC(double depth, double draft, double tide) const {
     return m_impl->CalculateUKC(depth, draft, tide);
+}
+
+double DepthAlertChecker::CalculateUKCWithSquat(double depth, double draft, double tide,
+                                                 double speed_knots, const SquatParams& params) const {
+    return m_impl->CalculateUKCWithSquat(depth, draft, tide, speed_knots, params);
 }
 
 AlertLevel DepthAlertChecker::DetermineUKCLevel(double ukc) const {

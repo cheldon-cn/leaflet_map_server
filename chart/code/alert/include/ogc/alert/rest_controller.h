@@ -21,7 +21,7 @@ struct HttpRequest {
     std::string content_type;
 };
 
-struct HttpResponse {
+struct OGC_ALERT_API HttpResponse {
     int status_code;
     std::string body;
     std::map<std::string, std::string> headers;

@@ -25,13 +25,13 @@ CPACalculator::CPACalculator()
 CPACalculator::~CPACalculator() {
 }
 
-CPAResult CPACalculator::Calculate(const ShipMotion& own_ship, const ShipMotion& target_ship) {
+CPAResult CPACalculator::Calculate(const ShipMotion& own_ship, const ShipMotion& target_ship) const {
     return Calculate(own_ship.position, own_ship.speed, own_ship.heading,
                      target_ship.position, target_ship.speed, target_ship.heading);
 }
 
 CPAResult CPACalculator::Calculate(const Coordinate& own_pos, double own_speed, double own_heading,
-                                    const Coordinate& target_pos, double target_speed, double target_heading) {
+                                    const Coordinate& target_pos, double target_speed, double target_heading) const {
     CPAResult result;
     
     double dx = target_pos.longitude - own_pos.longitude;
@@ -106,7 +106,7 @@ CPAResult CPACalculator::Calculate(const Coordinate& own_pos, double own_speed, 
 }
 
 CollisionRisk CPACalculator::AssessCollisionRisk(const ShipMotion& own_ship,
-                                                   const std::vector<ShipMotion>& target_ships) {
+                                                   const std::vector<ShipMotion>& target_ships) const {
     CollisionRisk risk;
     risk.risk_probability = 0.0;
     risk.time_to_collision = std::numeric_limits<double>::max();
@@ -212,8 +212,12 @@ Coordinate CPACalculator::VectorToPosition(const Vector2D& vec, const Coordinate
 }
 
 double CPACalculator::CalculateDistance(const Coordinate& a, const Coordinate& b) {
-    double dx = b.longitude - a.longitude;
-    double dy = b.latitude - a.latitude;
+    double latAvg = (a.latitude + b.latitude) / 2.0 * M_PI / 180.0;
+    double metersPerDegLon = AlertConstants::kEarthRadiusMeters * std::cos(latAvg) * M_PI / 180.0;
+    double metersPerDegLat = AlertConstants::kEarthRadiusMeters * M_PI / 180.0;
+    
+    double dx = (b.longitude - a.longitude) * metersPerDegLon;
+    double dy = (b.latitude - a.latitude) * metersPerDegLat;
     return std::sqrt(dx * dx + dy * dy);
 }
 

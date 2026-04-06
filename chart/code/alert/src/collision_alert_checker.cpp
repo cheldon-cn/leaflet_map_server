@@ -23,6 +23,9 @@ public:
         m_threshold.tcpa_threshold_level1 = 30.0;
         m_threshold.tcpa_threshold_level2 = 20.0;
         m_threshold.tcpa_threshold_level3 = 10.0;
+        
+        m_cpaCalculator.SetCPAThresholds(6.0, 4.0, 2.0, 1.0);
+        m_cpaCalculator.SetTCPAThresholds(30.0, 20.0, 10.0, 5.0);
     }
     
     std::string GetCheckerId() const { return "collision_alert_checker"; }
@@ -33,6 +36,18 @@ public:
     
     void SetThreshold(const AlertThreshold& threshold) {
         m_threshold = static_cast<const CollisionAlertThreshold&>(threshold);
+        m_cpaCalculator.SetCPAThresholds(
+            m_threshold.cpa_threshold_level1,
+            m_threshold.cpa_threshold_level2,
+            m_threshold.cpa_threshold_level3,
+            m_threshold.level4_threshold
+        );
+        m_cpaCalculator.SetTCPAThresholds(
+            m_threshold.tcpa_threshold_level1,
+            m_threshold.tcpa_threshold_level2,
+            m_threshold.tcpa_threshold_level3,
+            5.0
+        );
     }
     
     CollisionAlertThreshold GetThreshold() const { return m_threshold; }
@@ -44,30 +59,20 @@ public:
     void CalculateCPA_TCPA(const Coordinate& own_pos, double own_speed, double own_heading,
                            const Coordinate& target_pos, double target_speed, double target_heading,
                            double& cpa, double& tcpa) const {
-        double dx = target_pos.longitude - own_pos.longitude;
-        double dy = target_pos.latitude - own_pos.latitude;
-        
-        double own_vx = own_speed * std::sin(own_heading * M_PI / 180.0);
-        double own_vy = own_speed * std::cos(own_heading * M_PI / 180.0);
-        double target_vx = target_speed * std::sin(target_heading * M_PI / 180.0);
-        double target_vy = target_speed * std::cos(target_heading * M_PI / 180.0);
-        
-        double rel_vx = target_vx - own_vx;
-        double rel_vy = target_vy - own_vy;
-        double rel_speed = std::sqrt(rel_vx * rel_vx + rel_vy * rel_vy);
-        
-        if (rel_speed < 0.01) {
-            cpa = std::sqrt(dx * dx + dy * dy);
-            tcpa = -1.0;
-            return;
-        }
-        
-        double distance = std::sqrt(dx * dx + dy * dy);
-        double bearing = std::atan2(dy, dx);
-        double rel_bearing = std::atan2(rel_vy, rel_vx);
-        
-        cpa = distance * std::sin(bearing - rel_bearing);
-        tcpa = distance * std::cos(bearing - rel_bearing) / rel_speed;
+        CPAResult result = m_cpaCalculator.Calculate(
+            own_pos, own_speed, own_heading,
+            target_pos, target_speed, target_heading
+        );
+        cpa = result.cpa;
+        tcpa = result.tcpa;
+    }
+    
+    CPAResult CalculateCPAWithDetails(const Coordinate& own_pos, double own_speed, double own_heading,
+                                       const Coordinate& target_pos, double target_speed, double target_heading) const {
+        return m_cpaCalculator.Calculate(
+            own_pos, own_speed, own_heading,
+            target_pos, target_speed, target_heading
+        );
     }
     
     AlertLevel DetermineCollisionLevel(double cpa, double tcpa) const {
@@ -88,10 +93,25 @@ public:
     std::vector<AlertPtr> Check(const CheckContext& context) {
         std::vector<AlertPtr> alerts;
         
-        double cpa = 3.0;
-        double tcpa = 15.0;
+        ShipMotion ownShip;
+        ownShip.position = context.ship_position;
+        ownShip.speed = context.ship_speed;
+        ownShip.heading = context.ship_heading;
+        ownShip.UpdateVelocity();
         
-        AlertLevel level = DetermineCollisionLevel(cpa, tcpa);
+        ShipMotion targetShip;
+        targetShip.position = Coordinate(context.ship_position.longitude + 0.01, context.ship_position.latitude + 0.01);
+        targetShip.speed = 10.0;
+        targetShip.heading = 180.0;
+        targetShip.UpdateVelocity();
+        
+        CPAResult cpaResult = m_cpaCalculator.Calculate(ownShip, targetShip);
+        
+        AlertLevel level = cpaResult.alert_level;
+        if (level == AlertLevel::kNone && cpaResult.is_dangerous) {
+            level = AlertLevel::kLevel2;
+        }
+        
         if (level != AlertLevel::kNone) {
             auto alert = std::make_shared<CollisionAlert>();
             alert->alert_id = "COLLISION_" + std::to_string(std::time(nullptr));
@@ -102,17 +122,18 @@ public:
             alert->position = context.ship_position;
             alert->user_id = context.user_id;
             alert->acknowledge_required = true;
-            alert->cpa = cpa;
-            alert->tcpa = tcpa;
+            alert->cpa = cpaResult.cpa;
+            alert->tcpa = cpaResult.tcpa;
             alert->target_ship_id = "TARGET_001";
             alert->target_ship_name = "Unknown Vessel";
-            alert->relative_bearing = 45.0;
-            alert->relative_speed = 10.0;
+            alert->relative_bearing = cpaResult.relative_bearing;
+            alert->relative_speed = cpaResult.relative_speed;
+            alert->target_position = targetShip.position;
             
             alert->content.type = "Collision";
             alert->content.level = static_cast<int>(level);
             alert->content.title = "Collision Risk Alert";
-            alert->content.message = "CPA: " + std::to_string(cpa) + " nm, TCPA: " + std::to_string(tcpa) + " min";
+            alert->content.message = cpaResult.warning_message;
             alert->content.position = context.ship_position;
             alert->content.action_required = "Monitor target vessel";
             
@@ -127,6 +148,7 @@ private:
     int m_priority;
     CollisionAlertThreshold m_threshold;
     std::shared_ptr<void> m_aisData;
+    CPACalculator m_cpaCalculator;
 };
 
 CollisionAlertChecker::CollisionAlertChecker() 
@@ -176,6 +198,11 @@ void CollisionAlertChecker::CalculateCPA_TCPA(const Coordinate& own_pos, double 
                                                const Coordinate& target_pos, double target_speed, double target_heading,
                                                double& cpa, double& tcpa) const {
     m_impl->CalculateCPA_TCPA(own_pos, own_speed, own_heading, target_pos, target_speed, target_heading, cpa, tcpa);
+}
+
+CPAResult CollisionAlertChecker::CalculateCPAWithDetails(const Coordinate& own_pos, double own_speed, double own_heading,
+                                                          const Coordinate& target_pos, double target_speed, double target_heading) const {
+    return m_impl->CalculateCPAWithDetails(own_pos, own_speed, own_heading, target_pos, target_speed, target_heading);
 }
 
 AlertLevel CollisionAlertChecker::DetermineCollisionLevel(double cpa, double tcpa) const {

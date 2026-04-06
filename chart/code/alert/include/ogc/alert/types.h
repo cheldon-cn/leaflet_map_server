@@ -32,10 +32,13 @@ enum class AlertLevel : uint8_t {
 };
 
 enum class AlertStatus : uint8_t {
-    kActive = 0,
-    kAcknowledged = 1,
-    kExpired = 2,
-    kDismissed = 3
+    kPending = 0,
+    kActive = 1,
+    kPushed = 2,
+    kAcknowledged = 3,
+    kCleared = 4,
+    kExpired = 5,  
+    kDismissed = 6
 };
 
 enum class PushMethod : uint8_t {
@@ -58,6 +61,13 @@ enum class WeatherType : uint8_t {
     kStorm = 9,
     kHurricane = 10,
     kUnknown = 255
+};
+
+struct AlertConstants {
+    static constexpr double kEarthRadiusMeters = 6371000.0;
+    static constexpr double kNauticalMileToMeters = 1852.0;
+    static constexpr double kKnotsToMetersPerSecond = 0.514444;
+    static constexpr double kMetersPerDegreeLat = 110574.0;
 };
 
 struct OGC_ALERT_API DateTime {

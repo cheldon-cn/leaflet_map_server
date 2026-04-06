@@ -44,6 +44,23 @@ public:
         m_level4Methods = level4;
     }
     
+    void SetConfig(const PushConfig& config) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_config = config;
+        m_retryCount = config.max_retry_count;
+        m_retryIntervalMs = config.retry_interval_ms;
+    }
+    
+    PushConfig GetConfig() const {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_config;
+    }
+    
+    void SetPushCallback(PushCallback callback) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_callback = callback;
+    }
+    
     std::vector<PushResult> Push(const AlertPtr& alert, const std::vector<std::string>& user_ids) {
         std::vector<PushResult> results;
         std::vector<PushMethod> methods;
@@ -108,12 +125,14 @@ private:
         std::vector<PushResult> results;
         
         IPushChannelPtr channel;
+        PushCallback callback;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             auto it = m_channels.find(method);
             if (it != m_channels.end()) {
                 channel = it->second;
             }
+            callback = m_callback;
         }
         
         if (!channel || !channel->IsAvailable()) {
@@ -122,6 +141,9 @@ private:
                 result.success = false;
                 result.error_message = "Channel not available";
                 results.push_back(result);
+                if (callback) {
+                    callback(*alert, result);
+                }
             }
             return results;
         }
@@ -148,8 +170,14 @@ private:
             record.success = result.success;
             record.error_message = result.error_message;
             
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_history.push_back(record);
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_history.push_back(record);
+            }
+            
+            if (callback) {
+                callback(*alert, result);
+            }
         }
         
         return results;
@@ -164,6 +192,8 @@ private:
     mutable std::mutex m_mutex;
     int m_retryCount = 3;
     int m_retryIntervalMs = 1000;
+    PushConfig m_config;
+    PushCallback m_callback;
 };
 
 PushService::PushService() 
@@ -190,6 +220,18 @@ void PushService::SetPushStrategy(const std::vector<PushMethod>& level1_methods,
                                    const std::vector<PushMethod>& level3_methods,
                                    const std::vector<PushMethod>& level4_methods) {
     m_impl->SetPushStrategy(level1_methods, level2_methods, level3_methods, level4_methods);
+}
+
+void PushService::SetConfig(const PushConfig& config) {
+    m_impl->SetConfig(config);
+}
+
+PushConfig PushService::GetConfig() const {
+    return m_impl->GetConfig();
+}
+
+void PushService::SetPushCallback(PushCallback callback) {
+    m_impl->SetPushCallback(callback);
 }
 
 std::vector<PushResult> PushService::Push(const AlertPtr& alert, const std::vector<std::string>& user_ids) {

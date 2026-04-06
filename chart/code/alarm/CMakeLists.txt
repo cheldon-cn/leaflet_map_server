@@ -56,9 +56,11 @@ set(WEBSOCKETPP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../3rd/websocketpp" CACHE PATH
 set(THIRDPARTY_TEMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../3rd/temp" CACHE PATH "Third-party build temp directory")
 
 set(OGC_GEOMETRY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." CACHE PATH "OGC Geometry directory")
+set(OGC_ALERT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../alert" CACHE PATH "OGC Alert directory")
 
 include_directories(${ALERT_INCLUDE_DIR})
 include_directories(${OGC_GEOMETRY_DIR}/geom/include)
+include_directories(${OGC_ALERT_DIR}/include)
 
 add_library(alert_system
     ${ALERT_SOURCE_DIR}/alert_types.cpp
@@ -85,6 +87,10 @@ add_library(alert_system
     ${ALERT_SOURCE_DIR}/ais_data_adapter.cpp
     ${ALERT_SOURCE_DIR}/rest_controller.cpp
     ${ALERT_SOURCE_DIR}/websocket_service.cpp
+    ${ALERT_SOURCE_DIR}/checker_adapter.cpp
+    ${ALERT_SOURCE_DIR}/push_channel_adapter.cpp
+    ${ALERT_SOURCE_DIR}/rest_adapter.cpp
+    ${ALERT_SOURCE_DIR}/repository_adapter.cpp
 )
 
 target_compile_definitions(alert_system PRIVATE ALERT_SYSTEM_EXPORTS)
@@ -99,6 +105,12 @@ target_include_directories(alert_system
     PUBLIC
         $<BUILD_INTERFACE:${ALERT_INCLUDE_DIR}>
         $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(alert_system
+    PUBLIC
+        ogc_alert
+        ogc_geometry
 )
 
 if(ENABLE_TESTS)
