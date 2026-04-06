@@ -1,333 +1,928 @@
-# OGC Navigation Module Index
+# OGC Navigation Module - API Reference
+
+**Version**: 1.0.0  
+**C++ Standard**: C++11  
+**Last Updated**: 2026-04-05
+
+---
+
+## Table of Contents
+
+1. [Module Overview](#module-overview)
+2. [Common Types](#common-types)
+3. [Positioning Module](#positioning-module)
+4. [Route Module](#route-module)
+5. [Navigation Module](#navigation-module)
+6. [Track Module](#track-module)
+7. [AIS Module](#ais-module)
+8. [Usage Examples](#usage-examples)
+
+---
 
 ## Module Overview
 
-The OGC Navigation module provides comprehensive navigation functionality for marine applications, including positioning, route planning, navigation guidance, track recording, and AIS integration.
+The OGC Navigation module provides comprehensive navigation functionality for marine applications.
 
-## Submodules
+```
+ogc::navi
+├── positioning    # GPS/GNSS data processing
+├── route          # Route planning and management
+├── navigation     # Navigation guidance
+├── track          # Trajectory recording
+└── ais            # AIS integration
+```
 
-### positioning
-Positioning module handles GPS/GNSS data reception, parsing, and processing.
-
-**Key Classes:**
-- `NmeaParser` - NMEA sentence parser (singleton)
-- `IPositionProvider` - Position data provider interface
-- `PositionFilter` - Position data filter for outlier detection and smoothing
-- `CoordinateConverter` - Coordinate transformation utilities (singleton)
-- `PositionManager` - Central position management (singleton)
-
-**Header Files:**
-- `ogc/navi/positioning/nmea_parser.h`
-- `ogc/navi/positioning/position_provider.h`
-- `ogc/navi/positioning/position_filter.h`
-- `ogc/navi/positioning/coordinate_converter.h`
-- `ogc/navi/positioning/position_manager.h`
-
-**Key Methods:**
-- `NmeaParser::Instance().Parse(sentence, data)` - Parse NMEA sentence
-- `CoordinateConverter::Instance().CalculateGreatCircleDistance()` - Calculate distance
-- `CoordinateConverter::Instance().CalculateBearing()` - Calculate bearing
-- `PositionManager::Instance().Initialize()` - Initialize positioning system
-
-### route
-Route module provides route planning, editing, and management capabilities.
-
-**Key Classes:**
-- `Waypoint` - Waypoint representation with arrival radius and actions
-- `Route` - Route container with waypoints and distance calculations
-
-**Header Files:**
-- `ogc/navi/route/waypoint.h`
-- `ogc/navi/route/route.h`
-
-**Key Methods:**
-- `Waypoint::Create()` - Create waypoint instance
-- `Waypoint::GetPosition()` / `SetPosition()` - Get/set coordinates
-- `Route::Create()` - Create route instance
-- `Route::AddWaypoint()` - Add waypoint to route
-- `Route::CalculateTotalDistance()` - Calculate total route distance
-- `Route::CalculateLegBearing()` - Calculate leg bearing
-
-### navigation
-Navigation module provides real-time navigation guidance and alerts.
-
-**Key Classes:**
-- `NavigationCalculator` - Navigation calculations (singleton)
-- `OffCourseDetector` - Off-course detection (singleton)
-
-**Header Files:**
-- `ogc/navi/navigation/navigation_calculator.h`
-- `ogc/navi/navigation/off_course_detector.h`
-
-**Key Methods:**
-- `NavigationCalculator::Instance().Calculate()` - Calculate navigation data
-- `NavigationCalculator::Instance().CalculateCrossTrackError()` - Calculate XTD
-- `NavigationCalculator::Instance().CalculateDistanceToWaypoint()` - Calculate distance
-- `OffCourseDetector::Instance().Detect()` - Detect off-course condition
-
-### track
-Track module handles trajectory recording, playback, and analysis.
-
-**Key Classes:**
-- `TrackPoint` - Single track point with position and time
-- `Track` - Track container with points and statistics
-
-**Header Files:**
-- `ogc/navi/track/track_point.h`
-- `ogc/navi/track/track.h`
-
-**Key Methods:**
-- `TrackPoint::Create()` - Create track point instance
-- `Track::Create()` - Create track instance
-- `Track::AddPoint()` - Add point to track
-- `Track::Simplify()` - Simplify track using Douglas-Peucker algorithm
-- `Track::GetPointsInTimeRange()` - Query points by time range
-
-### ais
-AIS module handles AIS data reception, parsing, and collision assessment.
-
-**Key Classes:**
-- `AisMessage` - AIS message types (position report, static data)
-- `AisTarget` - AIS target representation with CPA/TCPA
-
-**Header Files:**
-- `ogc/navi/ais/ais_message.h`
-- `ogc/navi/ais/ais_target.h`
-
-**Key Methods:**
-- `AisTarget::Create(mmsi)` - Create AIS target with MMSI
-- `AisTarget::UpdatePositionReport()` - Update from position report
-- `AisTarget::UpdateStaticData()` - Update from static data
-- `AisTarget::SetCpa()` / `GetCpa()` - Set/get CPA value
-- `AisTarget::HasCollisionRisk()` - Check collision risk
+---
 
 ## Common Types
 
-All common types are defined in `ogc/navi/types.h`:
+All common types are defined in `ogc/navi/types.h`.
 
-**Enumerations:**
-- `PositionQuality` - GPS fix quality (Invalid, Gps, DGps, Rtk, etc.)
-- `PositionSource` - Position data source (Serial, File, System, etc.)
-- `NavigationStatus` - Navigation status (Inactive, Active, Paused, etc.)
-- `RouteStatus` - Route status (Planned, Active, Completed, etc.)
-- `WaypointAction` - Waypoint action (None, Turn, Stop, etc.)
-- `AlertLevel` - Alert severity level
-- `AlertType` - Alert type enumeration
-- `TrackType` - Track type (RealTime, Historical, Planned)
-- `AisNavigationStatus` - AIS navigation status
-- `AisShipType` - AIS ship type classification
+### Enumerations
 
-**Structures:**
-- `PositionData` - Position data with coordinates, speed, course
-- `GeoPoint` - Geographic point (longitude, latitude)
-- `BoundingBox` - Geographic bounding box
+#### PositionQuality
 
-## Dependencies
-
-- **ogc_geometry** - Geometry types and operations
-- **ogc_database** - Database connectivity and storage
-
-## Usage Examples
-
-### Positioning
+GPS fix quality indicator.
 
 ```cpp
-#include <ogc/navi/positioning/position_manager.h>
+enum class PositionQuality {
+    Invalid = 0,      // Invalid fix
+    Gps = 1,          // GPS fix
+    DGps = 2,         // Differential GPS
+    Pps = 3,          // PPS fix
+    Rtk = 4,          // RTK fixed solution
+    FloatRtk = 5,     // RTK float solution
+    Simulation = 6,   // Simulation mode
+    ManualInput = 7   // Manual input
+};
+```
+
+#### PositionSource
+
+Position data source.
+
+```cpp
+enum class PositionSource {
+    Unknown,          // Unknown source
+    Serial,           // Serial port
+    File,             // File playback
+    System,           // System GPS
+    Network,          // Network source
+    Simulation        // Simulation
+};
+```
+
+#### NavigationStatus
+
+Navigation engine status.
+
+```cpp
+enum class NavigationStatus {
+    Inactive = 0,     // Not active
+    Active = 1,       // Active navigation
+    Paused = 2,       // Paused
+    Completed = 3     // Route completed
+};
+```
+
+#### WaypointAction
+
+Action to take at waypoint.
+
+```cpp
+enum class WaypointAction {
+    None = 0,         // No action
+    Turn = 1,         // Turn
+    Stop = 2,         // Stop
+    Alert = 3         // Alert only
+};
+```
+
+#### AlertLevel
+
+Alert severity level.
+
+```cpp
+enum class AlertLevel {
+    None = 0,         // No alert
+    Info = 1,         // Information
+    Warning = 2,      // Warning
+    Alarm = 3         // Alarm
+};
+```
+
+#### AisShipType
+
+AIS ship type classification.
+
+```cpp
+enum class AisShipType {
+    NotAvailable = 0,
+    Reserved = 1,
+    WingInGround = 20,
+    Fishing = 30,
+    Towing = 31,
+    Dredging = 33,
+    DivingOps = 34,
+    MilitaryOps = 35,
+    Sailing = 36,
+    PleasureCraft = 37,
+    HighSpeedCraft = 40,
+    PilotVessel = 50,
+    SearchAndRescue = 51,
+    Tug = 52,
+    PortTender = 53,
+    AntiPollution = 54,
+    LawEnforcement = 55,
+    MedicalTransport = 58,
+    Passenger = 60,
+    Cargo = 70,
+    Tanker = 80,
+    Other = 90
+};
+```
+
+### Structures
+
+#### PositionData
+
+Complete position information.
+
+```cpp
+struct PositionData {
+    double timestamp;           // UTC timestamp
+    double longitude;           // Longitude (degrees)
+    double latitude;            // Latitude (degrees)
+    double altitude;            // Altitude (meters)
+    double heading;             // Heading (degrees)
+    double speed;               // Speed (knots)
+    double course;              // Course over ground (degrees)
+    double hdop;                // Horizontal dilution of precision
+    double vdop;                // Vertical dilution of precision
+    double pdop;                // Position dilution of precision
+    int satellite_count;        // Number of satellites
+    int gps_quality;            // GPS quality indicator
+    PositionQuality quality;    // Position quality enum
+    PositionSource source;      // Data source
+    uint32_t mmsi;              // MMSI (for AIS)
+    bool valid;                 // Data validity flag
+};
+```
+
+#### GeoPoint
+
+Geographic coordinate point.
+
+```cpp
+struct GeoPoint {
+    double longitude;           // Longitude (degrees)
+    double latitude;            // Latitude (degrees)
+    
+    GeoPoint();
+    GeoPoint(double lon, double lat);
+};
+```
+
+#### BoundingBox
+
+Geographic bounding box.
+
+```cpp
+struct BoundingBox {
+    double min_lon;             // Minimum longitude
+    double min_lat;             // Minimum latitude
+    double max_lon;             // Maximum longitude
+    double max_lat;             // Maximum latitude
+    
+    BoundingBox();
+    BoundingBox(double minLon, double minLat, double maxLon, double maxLat);
+    
+    bool Contains(double lon, double lat) const;
+    bool Intersects(const BoundingBox& other) const;
+};
+```
+
+---
+
+## Positioning Module
+
+Header: `ogc/navi/positioning/*.h`
+
+### NmeaParser
+
+NMEA 0183 sentence parser (Singleton).
+
+**Header**: `ogc/navi/positioning/nmea_parser.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Instance()` | `NmeaParser&` | Get singleton instance |
+| `ParseGGA(sentence, data)` | `bool` | Parse GGA sentence |
+| `ParseRMC(sentence, data)` | `bool` | Parse RMC sentence |
+| `ParseVTG(sentence, data)` | `bool` | Parse VTG sentence |
+| `ParseGSA(sentence, data)` | `bool` | Parse GSA sentence |
+| `ParseGSV(sentence, data)` | `bool` | Parse GSV sentence |
+| `ValidateChecksum(sentence)` | `bool` | Validate NMEA checksum |
+
+#### Data Structures
+
+```cpp
+struct GgaData {
+    double utc_time;            // UTC time (HHMMSS.SSS)
+    double latitude;            // Latitude (degrees)
+    double longitude;           // Longitude (degrees)
+    int gps_quality;            // GPS quality indicator
+    int satellite_count;        // Number of satellites
+    double hdop;                // Horizontal dilution
+    double altitude;            // Altitude (meters)
+    double geoidal_separation;  // Geoidal separation
+    double dgps_age;            // DGPS data age
+    int dgps_station_id;        // DGPS station ID
+};
+
+struct RmcData {
+    double utc_time;            // UTC time
+    char status;                // Status (A=valid, V=invalid)
+    double latitude;            // Latitude (degrees)
+    double longitude;           // Longitude (degrees)
+    double speed_knots;         // Speed (knots)
+    double track_angle;         // Track angle (degrees)
+    int date;                   // Date (DDMMYY)
+    double magnetic_variation;  // Magnetic variation
+    char magnetic_direction;    // Magnetic direction
+};
+
+struct VtgData {
+    double track_true;          // True track (degrees)
+    char track_true_indicator;  // 'T'
+    double track_magnetic;      // Magnetic track (degrees)
+    char track_magnetic_indicator; // 'M'
+    double speed_knots;         // Speed (knots)
+    char speed_knots_indicator; // 'N'
+    double speed_kph;           // Speed (km/h)
+    char speed_kph_indicator;   // 'K'
+};
+
+struct GsaData {
+    char mode;                  // Mode (M=manual, A=automatic)
+    int fix_type;               // Fix type (1-3)
+    int satellites[12];         // Satellite PRNs
+    double pdop;                // Position dilution
+    double hdop;                // Horizontal dilution
+    double vdop;                // Vertical dilution
+};
+
+struct GsvData {
+    int total_messages;         // Total messages
+    int message_number;         // Message number
+    int satellites_in_view;     // Satellites in view
+    GsvSatellite satellites[4]; // Satellite info (max 4 per message)
+};
+```
+
+#### Example
+
+```cpp
 #include <ogc/navi/positioning/nmea_parser.h>
 
 using namespace ogc::navi;
 
-// Parse NMEA sentence
 NmeaParser& parser = NmeaParser::Instance();
-PositionData pos;
-if (parser.Parse("$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47", pos)) {
-    // Use position data
-    double lat = pos.latitude;
-    double lon = pos.longitude;
+
+std::string gga = "$GPGGA,092750.000,5321.6802,N,00630.3372,W,1,8,1.03,61.7,M,55.2,M,,*76";
+GgaData data;
+if (parser.ParseGGA(gga, data)) {
+    printf("Position: %.6f, %.6f\n", data.latitude, data.longitude);
+    printf("Satellites: %d, HDOP: %.2f\n", data.satellite_count, data.hdop);
 }
-
-// Calculate distance
-double distance = CoordinateConverter::Instance().CalculateGreatCircleDistance(
-    31.0, 121.0,  // Start point
-    32.0, 122.0   // End point
-);
-
-// Calculate bearing
-double bearing = CoordinateConverter::Instance().CalculateBearing(
-    31.0, 121.0,  // Start point
-    32.0, 122.0   // End point
-);
 ```
 
-### Route Management
+---
+
+### CoordinateConverter
+
+Coordinate transformation utilities (Singleton).
+
+**Header**: `ogc/navi/positioning/coordinate_converter.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Instance()` | `CoordinateConverter&` | Get singleton instance |
+| `CalculateGreatCircleDistance(lat1, lon1, lat2, lon2)` | `double` | Calculate distance (meters) |
+| `CalculateBearing(lat1, lon1, lat2, lon2)` | `double` | Calculate bearing (degrees) |
+| `CalculateDestination(lat, lon, bearing, distance, &dest_lat, &dest_lon)` | `void` | Calculate destination point |
+| `LatLonToUtm(lat, lon, &zone, &easting, &northing)` | `void` | Convert to UTM |
+| `UtmToLatLon(zone, easting, northing, &lat, &lon)` | `void` | Convert from UTM |
+
+#### Example
 
 ```cpp
-#include <ogc/navi/route/waypoint.h>
-#include <ogc/navi/route/route.h>
+#include <ogc/navi/positioning/coordinate_converter.h>
 
 using namespace ogc::navi;
 
-// Create route
+CoordinateConverter& converter = CoordinateConverter::Instance();
+
+// Calculate distance
+double distance = converter.CalculateGreatCircleDistance(
+    31.2304, 121.4737,  // Shanghai
+    39.9042, 116.4074   // Beijing
+);
+// Result: ~1,067,310 meters
+
+// Calculate bearing
+double bearing = converter.CalculateBearing(
+    31.2304, 121.4737,
+    39.9042, 116.4074
+);
+// Result: ~343 degrees (NNW)
+
+// Calculate destination
+double dest_lat, dest_lon;
+converter.CalculateDestination(31.2304, 121.4737, 45.0, 100000.0, dest_lat, dest_lon);
+// Result: Point 100km away at bearing 45°
+```
+
+---
+
+### PositionFilter
+
+Position data filter for outlier detection and smoothing.
+
+**Header**: `ogc/navi/positioning/position_filter.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `PositionFilter()` | | Constructor |
+| `Filter(data)` | `PositionData` | Filter position data |
+| `Reset()` | `void` | Reset filter state |
+| `SetMaxSpeed(knots)` | `void` | Set maximum speed threshold |
+| `SetMaxAcceleration(mps2)` | `void` | Set maximum acceleration |
+| `SetSmoothWindowSize(size)` | `void` | Set smoothing window size |
+| `SetMaxHdop(hdop)` | `void` | Set maximum HDOP |
+| `SetMinSatellites(count)` | `void` | Set minimum satellite count |
+| `GetStatistics()` | `FilterStatistics` | Get filter statistics |
+
+#### Data Structures
+
+```cpp
+struct FilterStatistics {
+    int total_received;         // Total positions received
+    int valid_count;            // Valid positions
+    int outlier_count;          // Outlier positions
+    int extrapolated_count;     // Extrapolated positions
+    double outlier_rate;        // Outlier rate (0.0-1.0)
+};
+```
+
+#### Example
+
+```cpp
+#include <ogc/navi/positioning/position_filter.h>
+
+using namespace ogc::navi;
+
+PositionFilter filter;
+filter.SetMaxSpeed(25.0);
+filter.SetMaxHdop(3.0);
+filter.SetMinSatellites(6);
+
+PositionData raw;
+raw.latitude = 31.2304;
+raw.longitude = 121.4737;
+raw.hdop = 1.0;
+raw.satellite_count = 8;
+raw.quality = PositionQuality::Gps;
+
+PositionData filtered = filter.Filter(raw);
+
+FilterStatistics stats = filter.GetStatistics();
+printf("Valid: %d, Outliers: %d\n", stats.valid_count, stats.outlier_count);
+```
+
+---
+
+## Route Module
+
+Header: `ogc/navi/route/*.h`
+
+### Waypoint
+
+Waypoint representation.
+
+**Header**: `ogc/navi/route/waypoint.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Create(data)` | `Waypoint*` | Factory method |
+| `ReleaseReference()` | `void` | Release reference |
+| `GetId()` | `const std::string&` | Get waypoint ID |
+| `GetName()` | `const std::string&` | Get waypoint name |
+| `SetName(name)` | `void` | Set waypoint name |
+| `GetLongitude()` | `double` | Get longitude |
+| `GetLatitude()` | `double` | Get latitude |
+| `SetPosition(lon, lat)` | `void` | Set position |
+| `GetArrivalRadius()` | `double` | Get arrival radius (NM) |
+| `SetArrivalRadius(radius)` | `void` | Set arrival radius |
+| `GetAction()` | `WaypointAction` | Get waypoint action |
+| `SetAction(action)` | `void` | Set waypoint action |
+| `ToData()` | `WaypointData` | Export to data struct |
+
+#### Data Structure
+
+```cpp
+struct WaypointData {
+    std::string id;             // Waypoint ID
+    std::string name;           // Waypoint name
+    double longitude;           // Longitude (degrees)
+    double latitude;            // Latitude (degrees)
+    double arrival_radius;      // Arrival radius (NM)
+    WaypointAction action;      // Waypoint action
+    std::string notes;          // Notes
+};
+```
+
+#### Example
+
+```cpp
+#include <ogc/navi/route/waypoint.h>
+
+using namespace ogc::navi;
+
+WaypointData data;
+data.id = "WP001";
+data.name = "Shanghai Port";
+data.longitude = 121.4737;
+data.latitude = 31.2304;
+data.arrival_radius = 0.5;  // 0.5 NM
+
+Waypoint* wp = Waypoint::Create(data);
+printf("Waypoint: %s at (%.4f, %.4f)\n", 
+       wp->GetName().c_str(), wp->GetLongitude(), wp->GetLatitude());
+
+wp->ReleaseReference();
+```
+
+---
+
+### Route
+
+Route container with waypoints.
+
+**Header**: `ogc/navi/route/route.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Create()` | `Route*` | Factory method |
+| `ReleaseReference()` | `void` | Release reference |
+| `GetName()` | `const std::string&` | Get route name |
+| `SetName(name)` | `void` | Set route name |
+| `GetDeparture()` | `const std::string&` | Get departure port |
+| `SetDeparture(port)` | `void` | Set departure port |
+| `GetDestination()` | `const std::string&` | Get destination port |
+| `SetDestination(port)` | `void` | Set destination port |
+| `AddWaypoint(wp)` | `void` | Add waypoint |
+| `RemoveWaypoint(index)` | `bool` | Remove waypoint |
+| `GetWaypoint(index)` | `Waypoint*` | Get waypoint |
+| `GetWaypointCount()` | `int` | Get waypoint count |
+| `CalculateTotalDistance()` | `double` | Calculate total distance (m) |
+| `CalculateLegBearing(leg_index)` | `double` | Calculate leg bearing |
+| `Clear()` | `void` | Clear all waypoints |
+
+#### Example
+
+```cpp
+#include <ogc/navi/route/route.h>
+#include <ogc/navi/route/waypoint.h>
+
+using namespace ogc::navi;
+
 Route* route = Route::Create();
-route->SetName("Shanghai to Tokyo");
+route->SetName("Shanghai-Tokyo");
 route->SetDeparture("Shanghai");
 route->SetDestination("Tokyo");
 
-// Create waypoints
-Waypoint* wp1 = Waypoint::Create();
-wp1->SetName("Start Point");
-wp1->SetPosition(121.5, 31.2);
-wp1->SetArrivalRadius(0.5);
+WaypointData wp1_data;
+wp1_data.id = "WP001";
+wp1_data.name = "Shanghai";
+wp1_data.longitude = 121.4737;
+wp1_data.latitude = 31.2304;
 
-Waypoint* wp2 = Waypoint::Create();
-wp2->SetName("Waypoint 1");
-wp2->SetPosition(122.0, 32.0);
+WaypointData wp2_data;
+wp2_data.id = "WP002";
+wp2_data.name = "Tokyo";
+wp2_data.longitude = 139.6917;
+wp2_data.latitude = 35.6895;
 
-// Add waypoints to route
+Waypoint* wp1 = Waypoint::Create(wp1_data);
+Waypoint* wp2 = Waypoint::Create(wp2_data);
+
 route->AddWaypoint(wp1);
 route->AddWaypoint(wp2);
 
-// Calculate total distance
-double total_distance = route->CalculateTotalDistance();
+wp1->ReleaseReference();
+wp2->ReleaseReference();
 
-// Cleanup
+printf("Route: %s\n", route->GetName().c_str());
+printf("Waypoints: %d\n", route->GetWaypointCount());
+printf("Total distance: %.2f km\n", route->CalculateTotalDistance() / 1000.0);
+
 route->ReleaseReference();
 ```
 
-### Navigation Calculations
+---
+
+## Navigation Module
+
+Header: `ogc/navi/navigation/*.h`
+
+### NavigationCalculator
+
+Navigation calculations (Singleton).
+
+**Header**: `ogc/navi/navigation/navigation_calculator.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Instance()` | `NavigationCalculator&` | Get singleton instance |
+| `CalculateCrossTrackError(pos, start, end)` | `double` | Calculate XTD (meters) |
+| `CalculateTimeToWaypoint(distance, speed)` | `double` | Calculate TTG (seconds) |
+| `CalculateEstimatedTimeArrival(distance, speed, current_time)` | `double` | Calculate ETA |
+| `CalculateVelocityMadeGood(speed, course, bearing)` | `double` | Calculate VMG |
+
+#### Example
 
 ```cpp
 #include <ogc/navi/navigation/navigation_calculator.h>
+
+using namespace ogc::navi;
+
+NavigationCalculator& calc = NavigationCalculator::Instance();
+
+// Cross track error
+GeoPoint position(121.5, 31.5);
+GeoPoint start(121.0, 31.0);
+GeoPoint end(122.0, 32.0);
+double xtd = calc.CalculateCrossTrackError(position, start, end);
+printf("XTD: %.1f meters\n", xtd);
+
+// Time to waypoint
+double distance = 10000.0;  // 10 km
+double speed = 10.0;        // 10 knots
+double ttg = calc.CalculateTimeToWaypoint(distance, speed);
+printf("TTG: %.1f seconds (%.1f minutes)\n", ttg, ttg / 60.0);
+```
+
+---
+
+### OffCourseDetector
+
+Off-course detection (Singleton).
+
+**Header**: `ogc/navi/navigation/off_course_detector.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Instance()` | `OffCourseDetector&` | Get singleton instance |
+| `Detect(pos, start, end)` | `OffCourseResult` | Detect off-course |
+| `SetXtdWarning(meters)` | `void` | Set warning threshold |
+| `SetXtdAlarm(meters)` | `void` | Set alarm threshold |
+| `GetXtdWarning()` | `double` | Get warning threshold |
+| `GetXtdAlarm()` | `double` | Get alarm threshold |
+
+#### Data Structure
+
+```cpp
+struct OffCourseResult {
+    bool is_off_course;         // Is off course
+    double xtd;                 // Cross track distance (meters)
+    AlertLevel level;           // Alert level
+    double recommended_bearing; // Recommended bearing to return
+};
+```
+
+#### Example
+
+```cpp
 #include <ogc/navi/navigation/off_course_detector.h>
 
 using namespace ogc::navi;
 
-// Calculate navigation data
-PositionData current_pos;
-current_pos.longitude = 121.5;
-current_pos.latitude = 31.5;
-current_pos.speed = 10.0;
-current_pos.course = 45.0;
+OffCourseDetector& detector = OffCourseDetector::Instance();
+detector.SetXtdWarning(100.0);  // 100m warning
+detector.SetXtdAlarm(200.0);    // 200m alarm
 
-GeoPoint waypoint(122.0, 32.0);
+GeoPoint position(121.5, 31.5);
+GeoPoint start(121.0, 31.0);
+GeoPoint end(122.0, 32.0);
 
-NavigationData nav_data = NavigationCalculator::Instance().Calculate(
-    current_pos, waypoint, 10.0);
-
-// Check off-course
-GeoPoint route_start(121.0, 31.0);
-GeoPoint route_end(122.0, 32.0);
-
-OffCourseResult result = OffCourseDetector::Instance().Detect(
-    current_pos, route_start, route_end);
-
+OffCourseResult result = detector.Detect(position, start, end);
 if (result.is_off_course) {
-    // Handle off-course situation
-    double recommended_bearing = result.recommended_bearing;
+    printf("Off course! XTD: %.1f m\n", result.xtd);
+    printf("Recommended bearing: %.1f°\n", result.recommended_bearing);
 }
 ```
 
-### Track Recording
+---
+
+## Track Module
+
+Header: `ogc/navi/track/*.h`
+
+### TrackPoint
+
+Single track point.
+
+**Header**: `ogc/navi/track/track_point.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Create(data)` | `TrackPoint*` | Factory method |
+| `ReleaseReference()` | `void` | Release reference |
+| `GetLongitude()` | `double` | Get longitude |
+| `GetLatitude()` | `double` | Get latitude |
+| `SetPosition(lon, lat)` | `void` | Set position |
+| `GetTimestamp()` | `double` | Get timestamp |
+| `SetTimestamp(ts)` | `void` | Set timestamp |
+| `GetSpeed()` | `double` | Get speed (knots) |
+| `SetSpeed(speed)` | `void` | Set speed |
+| `GetCourse()` | `double` | Get course (degrees) |
+| `SetCourse(course)` | `void` | Set course |
+| `ToData()` | `TrackPointData` | Export to data struct |
+
+#### Data Structure
 
 ```cpp
-#include <ogc/navi/track/track_point.h>
+struct TrackPointData {
+    double longitude;           // Longitude (degrees)
+    double latitude;            // Latitude (degrees)
+    double timestamp;           // Timestamp (seconds)
+    double speed;               // Speed (knots)
+    double course;              // Course (degrees)
+    double heading;             // Heading (degrees)
+    double depth;               // Depth (meters)
+};
+```
+
+---
+
+### Track
+
+Track container with points.
+
+**Header**: `ogc/navi/track/track.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Create()` | `Track*` | Factory method |
+| `ReleaseReference()` | `void` | Release reference |
+| `GetName()` | `const std::string&` | Get track name |
+| `SetName(name)` | `void` | Set track name |
+| `GetType()` | `TrackType` | Get track type |
+| `SetType(type)` | `void` | Set track type |
+| `AddPoint(point)` | `void` | Add track point |
+| `GetPoint(index)` | `TrackPoint*` | Get track point |
+| `GetPointCount()` | `int` | Get point count |
+| `GetTotalDistance()` | `double` | Get total distance (m) |
+| `GetTotalDuration()` | `double` | Get total duration (s) |
+| `Simplify(tolerance)` | `void` | Simplify track (Douglas-Peucker) |
+| `GetPointsInTimeRange(start, end)` | `std::vector<TrackPoint*>` | Query by time |
+| `Clear()` | `void` | Clear all points |
+
+#### Example
+
+```cpp
 #include <ogc/navi/track/track.h>
+#include <ogc/navi/track/track_point.h>
 
 using namespace ogc::navi;
 
-// Create track
 Track* track = Track::Create();
 track->SetName("Morning Trip");
 track->SetType(TrackType::RealTime);
 
-// Add track points
-TrackPoint* point1 = TrackPoint::Create();
-point1->SetPosition(121.5, 31.5);
-point1->SetTimestamp(1000.0);
-point1->SetSpeed(10.0);
+for (int i = 0; i < 100; ++i) {
+    TrackPointData data;
+    data.longitude = 121.4737 + i * 0.001;
+    data.latitude = 31.2304 + i * 0.001;
+    data.timestamp = 1000.0 + i * 60.0;
+    data.speed = 10.0;
+    data.course = 45.0;
+    
+    TrackPoint* point = TrackPoint::Create(data);
+    track->AddPoint(point);
+    point->ReleaseReference();
+}
 
-track->AddPoint(point1);
-
-// Get statistics
-double total_distance = track->GetTotalDistance();
-double total_duration = track->GetTotalDuration();
+printf("Points: %d\n", track->GetPointCount());
+printf("Distance: %.2f km\n", track->GetTotalDistance() / 1000.0);
+printf("Duration: %.1f minutes\n", track->GetTotalDuration() / 60.0);
 
 // Simplify track
 track->Simplify(10.0);  // 10 meter tolerance
+printf("After simplification: %d points\n", track->GetPointCount());
 
-// Cleanup
 track->ReleaseReference();
 ```
 
-### AIS Target Handling
+---
+
+## AIS Module
+
+Header: `ogc/navi/ais/*.h`
+
+### AisTarget
+
+AIS target representation.
+
+**Header**: `ogc/navi/ais/ais_target.h`
+
+#### Methods
+
+| Method | Return | Description |
+|--------|--------|-------------|
+| `Create(mmsi)` | `AisTarget*` | Factory method |
+| `ReleaseReference()` | `void` | Release reference |
+| `GetMmsi()` | `uint32_t` | Get MMSI number |
+| `GetShipName()` | `const std::string&` | Get ship name |
+| `SetShipName(name)` | `void` | Set ship name |
+| `GetCallsign()` | `const std::string&` | Get callsign |
+| `SetCallsign(callsign)` | `void` | Set callsign |
+| `GetLongitude()` | `double` | Get longitude |
+| `GetLatitude()` | `double` | Get latitude |
+| `SetPosition(lon, lat)` | `void` | Set position |
+| `GetSpeedOverGround()` | `double` | Get SOG (knots) |
+| `SetSpeedOverGround(sog)` | `void` | Set SOG |
+| `GetCourseOverGround()` | `double` | Get COG (degrees) |
+| `SetCourseOverGround(cog)` | `void` | Set COG |
+| `GetCpa()` | `double` | Get CPA (meters) |
+| `SetCpa(cpa)` | `void` | Set CPA |
+| `GetTcpa()` | `double` | Get TCPA (seconds) |
+| `SetTcpa(tcpa)` | `void` | Set TCPA |
+| `HasCollisionRisk()` | `bool` | Check collision risk |
+| `SetCollisionRisk(risk)` | `void` | Set collision risk flag |
+| `GetShipType()` | `AisShipType` | Get ship type |
+| `SetShipType(type)` | `void` | Set ship type |
+| `GetShipLength()` | `double` | Get ship length (meters) |
+| `SetShipLength(length)` | `void` | Set ship length |
+| `GetShipWidth()` | `double` | Get ship width (meters) |
+| `SetShipWidth(width)` | `void` | Set ship width |
+| `GetDestination()` | `const std::string&` | Get destination |
+| `SetDestination(dest)` | `void` | Set destination |
+
+#### Example
 
 ```cpp
 #include <ogc/navi/ais/ais_target.h>
 
 using namespace ogc::navi;
 
-// Create AIS target
 AisTarget* target = AisTarget::Create(123456789);
-target->SetShipName("Test Vessel");
+target->SetShipName("TEST VESSEL");
+target->SetCallsign("TEST123");
 target->SetPosition(121.5, 31.5);
-target->SetSpeedOverGround(12.0);
+target->SetSpeedOverGround(12.5);
 target->SetCourseOverGround(90.0);
-
-// Update from AIS position report
-AisPositionReport report;
-report.mmsi = 123456789;
-report.longitude = 121.6;
-report.latitude = 31.6;
-report.speed_over_ground = 12.5;
-report.course_over_ground = 95.0;
-target->UpdatePositionReport(report);
+target->SetShipType(AisShipType::Cargo);
+target->SetShipLength(150.0);
+target->SetShipWidth(25.0);
 
 // Set collision risk data
 target->SetCpa(500.0);   // 500 meters
 target->SetTcpa(300.0);  // 5 minutes
-target->SetCollisionRisk(true);
 
-// Check collision risk
 if (target->HasCollisionRisk()) {
-    // Handle collision warning
+    printf("Collision risk with %s!\n", target->GetShipName().c_str());
+    printf("CPA: %.0f m, TCPA: %.0f s\n", target->GetCpa(), target->GetTcpa());
 }
 
-// Cleanup
 target->ReleaseReference();
 ```
 
-## Build Configuration
+---
 
-The module is built as a shared library (ogc_navi.dll) with the following CMake configuration:
+## Usage Examples
 
-```cmake
-# Build output directories
-RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
-ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+### Complete Navigation Workflow
 
-# For MSVC multi-config generators
-RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
-LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
-ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib"
+```cpp
+#include <ogc/navi/positioning/nmea_parser.h>
+#include <ogc/navi/positioning/position_filter.h>
+#include <ogc/navi/positioning/coordinate_converter.h>
+#include <ogc/navi/route/route.h>
+#include <ogc/navi/route/waypoint.h>
+#include <ogc/navi/navigation/navigation_calculator.h>
+#include <ogc/navi/navigation/off_course_detector.h>
+
+using namespace ogc::navi;
+
+void NavigationWorkflow() {
+    // 1. Parse NMEA data
+    NmeaParser& parser = NmeaParser::Instance();
+    std::string rmc = "$GPRMC,092751.000,A,3120.1234,N,12130.5678,E,12.5,45.0,191124,,,A*XX";
+    
+    RmcData rmc_data;
+    if (parser.ParseRMC(rmc, rmc_data)) {
+        // 2. Filter position
+        PositionFilter filter;
+        PositionData raw_pos;
+        raw_pos.latitude = rmc_data.latitude;
+        raw_pos.longitude = rmc_data.longitude;
+        raw_pos.speed = rmc_data.speed_knots;
+        raw_pos.course = rmc_data.track_angle;
+        raw_pos.hdop = 1.0;
+        raw_pos.satellite_count = 8;
+        raw_pos.quality = PositionQuality::Gps;
+        
+        PositionData filtered = filter.Filter(raw_pos);
+        
+        // 3. Create route
+        Route* route = Route::Create();
+        route->SetName("Test Route");
+        
+        WaypointData wp_data;
+        wp_data.id = "WP001";
+        wp_data.name = "Destination";
+        wp_data.longitude = 122.0;
+        wp_data.latitude = 32.0;
+        
+        Waypoint* dest = Waypoint::Create(wp_data);
+        route->AddWaypoint(dest);
+        
+        // 4. Calculate navigation
+        CoordinateConverter& converter = CoordinateConverter::Instance();
+        NavigationCalculator& calc = NavigationCalculator::Instance();
+        
+        double distance = converter.CalculateGreatCircleDistance(
+            filtered.latitude, filtered.longitude,
+            dest->GetLatitude(), dest->GetLongitude());
+        
+        double bearing = converter.CalculateBearing(
+            filtered.latitude, filtered.longitude,
+            dest->GetLatitude(), dest->GetLongitude());
+        
+        double ttg = calc.CalculateTimeToWaypoint(distance, filtered.speed);
+        
+        printf("Distance: %.2f km\n", distance / 1000.0);
+        printf("Bearing: %.1f°\n", bearing);
+        printf("Time to go: %.1f minutes\n", ttg / 60.0);
+        
+        // 5. Check off-course
+        OffCourseDetector& detector = OffCourseDetector::Instance();
+        GeoPoint pos(filtered.longitude, filtered.latitude);
+        GeoPoint start(121.0, 31.0);
+        GeoPoint end(122.0, 32.0);
+        
+        OffCourseResult result = detector.Detect(pos, start, end);
+        if (result.is_off_course) {
+            printf("Off course by %.1f meters!\n", result.xtd);
+        }
+        
+        // Cleanup
+        dest->ReleaseReference();
+        route->ReleaseReference();
+    }
+}
 ```
 
-## Test Coverage
+---
 
-The module includes comprehensive unit tests for all components:
+## Build Configuration
 
-| Component | Test File | Coverage |
-|-----------|-----------|----------|
-| NmeaParser | test_nmea_parser.cpp | GGA/RMC/VTG/GSA/GSV parsing |
-| PositionFilter | test_position_filter.cpp | Outlier detection, smoothing |
-| CoordinateConverter | test_coordinate_converter.cpp | Distance, bearing, projection |
-| Waypoint | test_waypoint.cpp | CRUD operations, serialization |
-| Route | test_route.cpp | Waypoint management, calculations |
-| NavigationCalculator | test_navigation_calculator.cpp | XTD, TTG, ETA, VMG |
-| OffCourseDetector | test_off_course_detector.cpp | Detection thresholds |
-| TrackPoint | test_track_point.cpp | Position, time, serialization |
-| Track | test_track.cpp | Point management, simplification |
-| AisTarget | test_ais_target.cpp | Position updates, collision risk |
+```cmake
+# CMakeLists.txt example
+find_package(ogc_geometry REQUIRED)
+find_package(ogc_database REQUIRED)
+
+add_executable(your_app main.cpp)
+
+target_link_libraries(your_app
+    PRIVATE
+        ogc_navi
+        ogc_geometry
+        ogc_database
+)
+```
+
+---
 
 ## Version
 
