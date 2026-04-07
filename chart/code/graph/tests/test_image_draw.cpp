@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/graph/util/image_draw.h"
+#include <ogc/graph/util/image_draw.h>
 #include <ogc/draw/color.h>
 #include <vector>
 #include <memory>
 
 using namespace ogc::graph;
+using ogc::draw::Color;
 
 class ImageDrawTest : public ::testing::Test {
 protected:

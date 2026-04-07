@@ -16,12 +16,16 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
 
 | Module | Description | Index File | Key Classes |
 |--------|-------------|------------|-------------|
+| **base** | 基础工具库，日志、线程安全、性能监控 | [index_base.md](base/include/index_base.md) | `Logger`, `ThreadSafe<T>`, `PerformanceMonitor` |
+| **proj** | 坐标转换库，PROJ库集成 | [index_proj.md](proj/include/index_proj.md) | `CoordinateTransformer`, `ProjTransformer`, `CoordSystemPreset` |
+| **cache** | 缓存库，瓦片缓存、离线存储 | [index_cache.md](cache/include/index_cache.md) | `TileCache`, `TileKey`, `OfflineStorageManager` |
+| **symbology** | 符号化库，样式解析、过滤规则 | [index_symbology.md](symbology/include/index_symbology.md) | `Symbolizer`, `Filter`, `SymbolizerRule` |
 | **geom** | 几何对象模型，OGC SFAS 1.2.1实现 | [index_geom.md](geom/include/index_geom.md) | `Geometry`, `Point`, `LineString`, `Polygon` |
 | **database** | 数据库抽象层，连接池管理 | [index_database.md](database/include/index_database.md) | `DbConnection`, `DbConnectionPool`, `DbResultSet` |
 | **feature** | 要素模型，属性字段管理 | [index_feature.md](feature/include/index_feature.md) | `CNFeature`, `CNFeatureDefn`, `CNFieldValue` |
 | **layer** | 图层抽象，多数据源支持 | [index_layer.md](layer/include/index_layer.md) | `CNLayer`, `CNVectorLayer`, `CNDataSource` |
 | **draw** | 绘图引擎，多平台渲染 | [index_draw.md](draw/include/index_draw.md) | `DrawEngine`, `DrawDevice`, `DrawContext` |
-| **graph** | 地图渲染，符号化引擎 | [index_graph.md](graph/include/index_graph.md) | `DrawFacade`, `Symbolizer`, `LabelEngine` |
+| **graph** | 地图渲染核心，图层管理、标签引擎 | [index_graph.md](graph/include/index_graph.md) | `DrawFacade`, `RenderTask`, `LayerManager`, `LabelEngine` |
 | **alarm** | 警报服务，REST/WebSocket | - | `Alert`, `AlertEngine`, `AlertRepository` |
 | **alert** | 航海警报系统 | [index_alert.md](alert/include/index_alert.md) | `AlertEngine`, `IAlertChecker`, `CpaCalculator` |
 | **navi** | 航海导航系统 | [index_navi.md](navi/include/index_navi.md) | `Route`, `AisManager`, `NavigationEngine` |
@@ -30,6 +34,42 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
 ---
 
 ## 核心类快速查找
+
+### 基础工具类 (base)
+
+| Class | Description | File |
+|-------|-------------|------|
+| `Logger` | 日志管理器 | [log.h](base/include/ogc/base/log.h) |
+| `ThreadSafe<T>` | 线程安全封装 | [thread_safe.h](base/include/ogc/base/thread_safe.h) |
+| `PerformanceMonitor` | 性能监控 | [performance_monitor.h](base/include/ogc/base/performance_monitor.h) |
+
+### 坐标转换类 (proj)
+
+| Class | Description | File |
+|-------|-------------|------|
+| `CoordinateTransformer` | 坐标转换器接口 | [coordinate_transformer.h](proj/include/ogc/proj/coordinate_transformer.h) |
+| `ProjTransformer` | PROJ转换器 | [proj_transformer.h](proj/include/ogc/proj/proj_transformer.h) |
+| `CoordSystemPreset` | 坐标系预设 | [coord_system_preset.h](proj/include/ogc/proj/coord_system_preset.h) |
+| `TransformMatrix` | 变换矩阵 | [transform_matrix.h](proj/include/ogc/proj/transform_matrix.h) |
+
+### 缓存类 (cache)
+
+| Class | Description | File |
+|-------|-------------|------|
+| `TileKey` | 瓦片键 | [tile_key.h](cache/include/ogc/cache/tile/tile_key.h) |
+| `TileCache` | 瓦片缓存基类 | [tile_cache.h](cache/include/ogc/cache/tile/tile_cache.h) |
+| `MemoryTileCache` | 内存缓存 | [memory_tile_cache.h](cache/include/ogc/cache/tile/memory_tile_cache.h) |
+| `DiskTileCache` | 磁盘缓存 | [disk_tile_cache.h](cache/include/ogc/cache/tile/disk_tile_cache.h) |
+| `OfflineStorageManager` | 离线存储管理 | [offline_storage_manager.h](cache/include/ogc/cache/offline/offline_storage_manager.h) |
+
+### 符号化类 (symbology)
+
+| Class | Description | File |
+|-------|-------------|------|
+| `Symbolizer` | 符号化器基类 | [symbolizer.h](symbology/include/ogc/symbology/symbolizer/symbolizer.h) |
+| `Filter` | 过滤器基类 | [filter.h](symbology/include/ogc/symbology/filter/filter.h) |
+| `SymbolizerRule` | 符号化规则 | [symbolizer_rule.h](symbology/include/ogc/symbology/filter/symbolizer_rule.h) |
+| `S52StyleManager` | S52海图样式管理 | [s52_style_manager.h](symbology/include/ogc/symbology/style/s52_style_manager.h) |
 
 ### 几何类 (geom)
 
@@ -167,13 +207,20 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
         │                     │                     │
         └─────────────────────┼─────────────────────┘
                               │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    graph (地图渲染核心)                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
         ┌─────────────────────┼─────────────────────┐
         │                     │                     │
         ▼                     ▼                     ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│     alert     │     │    graph      │     │     draw      │
-│  (警报系统)   │     │  (地图渲染)   │     │  (绘图引擎)   │
+│  symbology    │     │    cache      │     │     draw      │
+│  (符号化库)   │     │  (缓存库)     │     │  (绘图引擎)   │
 └───────────────┘     └───────────────┘     └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -189,9 +236,14 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
         │                     │                     │
         ▼                     ▼                     ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│   database    │     │     geom      │     │   (其他)      │
-│  (数据库)     │     │   (几何)      │     │               │
+│   database    │     │     geom      │     │     proj      │
+│  (数据库)     │     │   (几何)      │     │  (坐标转换)   │
 └───────────────┘     └───────────────┘     └───────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       base (基础工具)                       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -200,11 +252,16 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
 
 ```cpp
 ogc                          // 顶层命名空间
+├── ogc::base               // 基础工具模块
+├── ogc::proj               // 坐标转换模块
+├── ogc::cache              // 缓存模块
+├── ogc::symbology          // 符号化模块
 ├── ogc::geom               // 几何模块
 ├── ogc::db                 // 数据库模块
 ├── ogc::feature            // 要素模块
 ├── ogc::layer              // 图层模块
 ├── ogc::draw               // 绘图模块
+├── ogc::graph              // 地图渲染模块
 ├── ogc::alert              // 警报模块
 └── ogc::navi               // 导航模块
     ├── ogc::navi::ais      // AIS子模块

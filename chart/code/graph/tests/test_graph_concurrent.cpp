@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <ogc/cache/tile/memory_tile_cache.h>
 #include <ogc/cache/tile/tile_key.h>
-#include "ogc/graph/render/render_queue.h"
-#include "ogc/graph/render/render_task.h"
-#include "ogc/graph/render/async_renderer.h"
+#include <ogc/graph/render/render_queue.h>
+#include <ogc/graph/render/render_task.h>
+#include <ogc/graph/render/async_renderer.h>
 #include <ogc/draw/draw_result.h>
 
 #include <thread>
@@ -13,6 +13,10 @@
 #include <cstdint>
 
 using namespace ogc::graph;
+using ogc::cache::TileKey;
+using ogc::cache::TileData;
+using ogc::cache::MemoryTileCache;
+using ogc::draw::DrawResult;
 
 class ConcurrentTileCacheTest : public ::testing::Test {
 protected:

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
-#include "ogc/graph/label/label_engine.h"
-#include "ogc/graph/label/label_conflict.h"
+#include <ogc/graph/label/label_engine.h>
+#include <ogc/graph/label/label_conflict.h>
+#include <ogc/feature/feature.h>
 #include <ogc/draw/font.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/raster_image_device.h>
@@ -8,7 +9,15 @@
 #include <memory>
 
 using namespace ogc::graph;
-using namespace ogc;
+using ogc::CNFeature;
+using ogc::Envelope;
+using ogc::draw::Color;
+using ogc::draw::Font;
+using ogc::draw::FontStyle;
+using ogc::draw::RasterImageDevice;
+using ogc::draw::PixelFormat;
+using ogc::draw::DrawContext;
+using ogc::draw::DrawContextPtr;
 
 class LabelEngineTest : public ::testing::Test {
 protected:

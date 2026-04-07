@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/graph/render/render_queue.h"
-#include "ogc/graph/render/render_task.h"
+#include <ogc/graph/render/render_queue.h>
+#include <ogc/graph/render/render_task.h>
+#include <ogc/draw/draw_result.h>
 #include <memory>
 
 using namespace ogc::graph;
+using ogc::draw::DrawResult;
 
 class TestRenderTask : public RenderTask {
 public:

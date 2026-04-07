@@ -1,128 +1,96 @@
-# Graph (Draw) Module - Header Index
+# ogc_graph 模块 - 头文件索引
 
 ## 模块描述
 
-Graph模块（命名空间ogc::draw）提供完整的地图渲染功能，包括符号化引擎、标签引擎、瓦片缓存、坐标转换、交互处理等。支持SLD样式解析、Mapbox样式、S-52海图符号等。
+ogc_graph 是 OGC 图表系统的**地图渲染核心模块**，提供地图渲染、图层管理、标签引擎、交互处理和 LOD 管理等核心功能。作为整个系统的渲染引擎，负责将地理数据转换为可视化图像，是用户交互的直接入口。
 
 ## 核心特性
 
-- 多种符号化器：点、线、面、文本、栅格、图标
-- SLD样式解析和Mapbox样式支持
-- 标签引擎和冲突检测
-- 多级瓦片缓存（内存/磁盘）
-- 坐标转换和投影支持
-- 交互处理（平移、缩放、选择）
-- LOD（细节层次）管理
-- 异步渲染和性能监控
-- S-52海图符号渲染
-- 数据加密和离线存储
-- 日夜模式切换
-- 航迹记录和回放
+- **渲染引擎**：高性能地图渲染，支持并发渲染和任务队列
+- **图层管理**：多图层叠加、可见性控制、透明度管理
+- **标签引擎**：智能标签避让、沿线标注、冲突检测
+- **交互处理**：平移、缩放、选择、点击测试
+- **LOD管理**：多级细节控制、动态切换
+- **DrawFacade**：统一的绘图接口封装
 
 ---
 
 ## 头文件清单
 
+### 渲染核心
+
 | File | Description | Core Classes |
 |------|-------------|--------------|
-| [export.h](ogc/draw/export.h) | DLL导出宏 | `OGC_GRAPH_API`, `OGC_DRAW_API` |
-| [log.h](ogc/draw/log.h) | 日志工具 | `Log` |
-| [draw_facade.h](ogc/draw/draw_facade.h) | 绘图门面 | `DrawFacade` |
-| [draw_params.h](ogc/draw/draw_params.h) | 绘图参数 | `DrawParams` |
-| [draw_style.h](ogc/draw/draw_style.h) | 绘图样式 | `DrawStyle` |
-| [draw_context.h](ogc/draw/draw_context.h) | 绘图上下文 | `DrawContext` |
-| [draw_device.h](ogc/draw/draw_device.h) | 绘图设备 | `DrawDevice` |
-| [draw_engine.h](ogc/draw/draw_engine.h) | 绘图引擎 | `DrawEngine` |
-| [draw_result.h](ogc/draw/draw_result.h) | 绘图结果 | `DrawResult` |
-| [draw_types.h](ogc/draw/draw_types.h) | 绘图类型 | `DrawTypes` |
-| [image_draw.h](ogc/draw/image_draw.h) | 图像绘图 | `ImageDraw` |
-| [symbolizer.h](ogc/draw/symbolizer.h) | 符号化器基类 | `Symbolizer` |
-| [point_symbolizer.h](ogc/draw/point_symbolizer.h) | 点符号化器 | `PointSymbolizer` |
-| [line_symbolizer.h](ogc/draw/line_symbolizer.h) | 线符号化器 | `LineSymbolizer` |
-| [polygon_symbolizer.h](ogc/draw/polygon_symbolizer.h) | 面符号化器 | `PolygonSymbolizer` |
-| [text_symbolizer.h](ogc/draw/text_symbolizer.h) | 文本符号化器 | `TextSymbolizer` |
-| [raster_symbolizer.h](ogc/draw/raster_symbolizer.h) | 栅格符号化器 | `RasterSymbolizer` |
-| [icon_symbolizer.h](ogc/draw/icon_symbolizer.h) | 图标符号化器 | `IconSymbolizer` |
-| [composite_symbolizer.h](ogc/draw/composite_symbolizer.h) | 组合符号化器 | `CompositeSymbolizer` |
-| [symbolizer_rule.h](ogc/draw/symbolizer_rule.h) | 符号化规则 | `SymbolizerRule` |
-| [rule_engine.h](ogc/draw/rule_engine.h) | 规则引擎 | `RuleEngine` |
-| [sld_parser.h](ogc/draw/sld_parser.h) | SLD解析器 | `SldParser` |
-| [mapbox_style_parser.h](ogc/draw/mapbox_style_parser.h) | Mapbox样式解析 | `MapboxStyleParser` |
-| [s52_style_manager.h](ogc/draw/s52_style_manager.h) | S52样式管理 | `S52StyleManager` |
-| [s52_symbol_renderer.h](ogc/draw/s52_symbol_renderer.h) | S52符号渲染 | `S52SymbolRenderer` |
-| [label_engine.h](ogc/draw/label_engine.h) | 标签引擎 | `LabelEngine` |
-| [label_placement.h](ogc/draw/label_placement.h) | 标签放置 | `LabelPlacement` |
-| [label_conflict.h](ogc/draw/label_conflict.h) | 标签冲突 | `LabelConflict` |
-| [tile_key.h](ogc/draw/tile_key.h) | 瓦片键 | `TileKey` |
-| [tile_cache.h](ogc/draw/tile_cache.h) | 瓦片缓存 | `TileCache` |
-| [tile_renderer.h](ogc/draw/tile_renderer.h) | 瓦片渲染器 | `TileRenderer` |
-| [memory_tile_cache.h](ogc/draw/memory_tile_cache.h) | 内存瓦片缓存 | `MemoryTileCache` |
-| [disk_tile_cache.h](ogc/draw/disk_tile_cache.h) | 磁盘瓦片缓存 | `DiskTileCache` |
-| [multi_level_tile_cache.h](ogc/draw/multi_level_tile_cache.h) | 多级瓦片缓存 | `MultiLevelTileCache` |
-| [coordinate_transform.h](ogc/draw/coordinate_transform.h) | 坐标转换 | `CoordinateTransform` |
-| [coordinate_transformer.h](ogc/draw/coordinate_transformer.h) | 坐标转换器 | `CoordinateTransformer` |
-| [proj_transformer.h](ogc/draw/proj_transformer.h) | 投影转换 | `ProjTransformer` |
-| [transform_manager.h](ogc/draw/transform_manager.h) | 转换管理器 | `TransformManager` |
-| [coord_system_preset.h](ogc/draw/coord_system_preset.h) | 坐标系预设 | `CoordSystemPreset` |
-| [interaction_handler.h](ogc/draw/interaction_handler.h) | 交互处理器 | `IInteractionHandler`, `InteractionEvent` |
-| [interaction_feedback.h](ogc/draw/interaction_feedback.h) | 交互反馈 | `FeedbackManager`, `FeedbackItem` |
-| [pan_zoom_handler.h](ogc/draw/pan_zoom_handler.h) | 平移缩放处理 | `PanZoomHandler` |
-| [selection_handler.h](ogc/draw/selection_handler.h) | 选择处理器 | `SelectionHandler` |
-| [hit_test.h](ogc/draw/hit_test.h) | 点击测试 | `HitTest` |
-| [location_display_handler.h](ogc/draw/location_display_handler.h) | 位置显示处理 | `LocationDisplayHandler`, `Position`, `Heading`, `Speed` |
-| [lod.h](ogc/draw/lod.h) | LOD定义 | `Lod` |
-| [lod_manager.h](ogc/draw/lod_manager.h) | LOD管理器 | `LodManager` |
-| [render_queue.h](ogc/draw/render_queue.h) | 渲染队列 | `RenderQueue` |
-| [render_task.h](ogc/draw/render_task.h) | 渲染任务 | `RenderTask` |
-| [basic_render_task.h](ogc/draw/basic_render_task.h) | 基础渲染任务 | `BasicRenderTask` |
-| [async_renderer.h](ogc/draw/async_renderer.h) | 异步渲染器 | `AsyncRenderer` |
-| [layer_manager.h](ogc/draw/layer_manager.h) | 图层管理器 | `LayerManager` |
-| [layer_control_panel.h](ogc/draw/layer_control_panel.h) | 图层控制面板 | `LayerControlPanel` |
-| [filter.h](ogc/draw/filter.h) | 过滤器基类 | `Filter` |
-| [comparison_filter.h](ogc/draw/comparison_filter.h) | 比较过滤器 | `ComparisonFilter` |
-| [logical_filter.h](ogc/draw/logical_filter.h) | 逻辑过滤器 | `LogicalFilter` |
-| [spatial_filter.h](ogc/draw/spatial_filter.h) | 空间过滤器 | `SpatialFilter` |
-| [clipper.h](ogc/draw/clipper.h) | 裁剪器 | `Clipper` |
-| [performance_monitor.h](ogc/draw/performance_monitor.h) | 性能监控 | `PerformanceMonitor` |
-| [performance_metrics.h](ogc/draw/performance_metrics.h) | 性能指标 | `PerformanceMetrics` |
-| [thread_safe.h](ogc/draw/thread_safe.h) | 线程安全工具 | `ThreadSafe` |
-| [data_encryption.h](ogc/draw/data_encryption.h) | 数据加密 | `DataEncryption`, `EncryptionKey` |
-| [offline_storage_manager.h](ogc/draw/offline_storage_manager.h) | 离线存储管理 | `OfflineStorageManager`, `OfflineRegion` |
-| [offline_sync_manager.h](ogc/draw/offline_sync_manager.h) | 离线同步管理 | `OfflineSyncManager` |
-| [day_night_mode_manager.h](ogc/draw/day_night_mode_manager.h) | 日夜模式管理 | `DayNightModeManager`, `ColorScheme` |
-| [track_recorder.h](ogc/draw/track_recorder.h) | 航迹记录器 | `TrackRecorder`, `TrackPlayer`, `TrackData` |
+| [render/draw_facade.h](ogc/graph/render/draw_facade.h) | 绘图门面 | `DrawFacade` |
+| [render/draw_params.h](ogc/graph/render/draw_params.h) | 绘图参数 | `DrawParams` |
+| [render/render_task.h](ogc/graph/render/render_task.h) | 渲染任务 | `RenderTask`, `RenderTaskState` |
+| [render/render_queue.h](ogc/graph/render/render_queue.h) | 渲染队列 | `RenderQueue` |
+| [render/render_thread_pool.h](ogc/graph/render/render_thread_pool.h) | 渲染线程池 | `RenderThreadPool` |
+
+### 图层管理
+
+| File | Description | Core Classes |
+|------|-------------|--------------|
+| [layer/layer_manager.h](ogc/graph/layer/layer_manager.h) | 图层管理器 | `LayerManager`, `LayerConfig` |
+| [layer/layer_control_panel.h](ogc/graph/layer/layer_control_panel.h) | 图层控制面板 | `LayerControlPanel` |
+
+### 标签引擎
+
+| File | Description | Core Classes |
+|------|-------------|--------------|
+| [label/label_engine.h](ogc/graph/label/label_engine.h) | 标签引擎 | `LabelEngine` |
+| [label/label_info.h](ogc/graph/label/label_info.h) | 标签信息 | `LabelInfo` |
+| [label/label_placement.h](ogc/graph/label/label_placement.h) | 标签放置 | `LabelPlacement` |
+
+### 交互处理
+
+| File | Description | Core Classes |
+|------|-------------|--------------|
+| [interaction/pan_zoom_handler.h](ogc/graph/interaction/pan_zoom_handler.h) | 平移缩放处理 | `PanZoomHandler` |
+| [interaction/selection_handler.h](ogc/graph/interaction/selection_handler.h) | 选择处理 | `SelectionHandler` |
+| [interaction/hit_test.h](ogc/graph/interaction/hit_test.h) | 点击测试 | `HitTest` |
+| [interaction/location_display_handler.h](ogc/graph/interaction/location_display_handler.h) | 位置显示 | `LocationDisplayHandler` |
+
+### LOD管理
+
+| File | Description | Core Classes |
+|------|-------------|--------------|
+| [lod/lod_manager.h](ogc/graph/lod/lod_manager.h) | LOD管理器 | `LODManager` |
+| [lod/lod.h](ogc/graph/lod/lod.h) | LOD定义 | `LODLevel`, `LODStrategy` |
+
+### 坐标转换
+
+| File | Description | Core Classes |
+|------|-------------|--------------|
+| [transform/transform_manager.h](ogc/graph/transform/transform_manager.h) | 变换管理器 | `TransformManager` |
 
 ---
 
 ## 类继承关系图
 
 ```
-Symbolizer (abstract)
-    ├── PointSymbolizer
-    ├── LineSymbolizer
-    ├── PolygonSymbolizer
-    ├── TextSymbolizer
-    ├── RasterSymbolizer
-    ├── IconSymbolizer
-    └── CompositeSymbolizer
+DrawFacade (单例)
+    └── 绘图接口封装
 
-TileCache (abstract)
-    ├── MemoryTileCache
-    ├── DiskTileCache
-    └── MultiLevelTileCache
-
-IInteractionHandler (abstract)
-    ├── PanZoomHandler
-    ├── SelectionHandler
-    └── LocationDisplayHandler
-
-Filter (abstract)
-    ├── ComparisonFilter
-    ├── LogicalFilter
-    └── SpatialFilter
-
-RenderTask (abstract)
+RenderTask
     └── BasicRenderTask
+
+RenderQueue
+    └── 任务队列管理
+
+LayerManager
+    └── 图层管理
+
+LabelEngine
+    └── 标签生成与放置
+
+LODManager
+    └── 多级细节管理
+
+PanZoomHandler
+SelectionHandler
+HitTest
+    └── 交互处理器
 ```
 
 ---
@@ -130,54 +98,36 @@ RenderTask (abstract)
 ## 依赖关系图
 
 ```
-export.h
+ogc_graph
     │
-    ├──► log.h
+    ├── ogc_base (基础工具)
+    │       ├── Logger
+    │       └── ThreadSafe
     │
-    ├──► draw_result.h
-    │       │
-    │       ├──► draw_types.h ──► draw_style.h
-    │       │                          │
-    │       │                          └──► draw_params.h
-    │       │
-    │       ├──► draw_device.h ──► draw_engine.h
-    │       │         │
-    │       │         └──► draw_context.h
-    │       │
-    │       └──► symbolizer.h
-    │                │
-    │                ├──► point_symbolizer.h
-    │                ├──► line_symbolizer.h
-    │                ├──► polygon_symbolizer.h
-    │                ├──► text_symbolizer.h
-    │                ├──► raster_symbolizer.h
-    │                └──► composite_symbolizer.h
-
-sld_parser.h ──► symbolizer_rule.h ──► rule_engine.h
-mapbox_style_parser.h
-s52_style_manager.h ──► s52_symbol_renderer.h
-
-label_engine.h ──► label_placement.h ──► label_conflict.h
-
-tile_cache.h
-    ├──► memory_tile_cache.h
-    ├──► disk_tile_cache.h
-    └──► multi_level_tile_cache.h
-
-interaction_handler.h
-    ├──► interaction_feedback.h
-    ├──► pan_zoom_handler.h
-    ├──► selection_handler.h ──► hit_test.h
-    └──► location_display_handler.h ──► track_recorder.h
-
-coordinate_transform.h
-    ├──► coordinate_transformer.h
-    ├──► proj_transformer.h
-    └──► transform_manager.h ──► coord_system_preset.h
-
-data_encryption.h
-offline_storage_manager.h ──► offline_sync_manager.h
-day_night_mode_manager.h
+    ├── ogc_proj (坐标转换)
+    │       └── CoordinateTransformer
+    │
+    ├── ogc_cache (缓存)
+    │       └── TileCache
+    │
+    ├── ogc_symbology (符号化)
+    │       ├── Symbolizer
+    │       └── Filter
+    │
+    ├── ogc_geometry (几何)
+    │       ├── Geometry
+    │       └── Envelope
+    │
+    ├── ogc_feature (要素)
+    │       └── CNFeature
+    │
+    ├── ogc_layer (图层)
+    │       └── CNLayer
+    │
+    └── ogc_draw (绘图引擎)
+            ├── DrawContext
+            ├── DrawDevice
+            └── DrawEngine
 ```
 
 ---
@@ -186,265 +136,429 @@ day_night_mode_manager.h
 
 | Category | Files |
 |----------|-------|
-| **Core** | export.h, log.h, draw_facade.h, draw_params.h, draw_style.h, draw_context.h, draw_result.h, image_draw.h |
-| **Device/Engine** | draw_device.h, draw_engine.h |
-| **Symbolizer** | symbolizer.h, point_symbolizer.h, line_symbolizer.h, polygon_symbolizer.h, text_symbolizer.h, raster_symbolizer.h, icon_symbolizer.h, composite_symbolizer.h |
-| **Style** | sld_parser.h, mapbox_style_parser.h, s52_style_manager.h, s52_symbol_renderer.h, symbolizer_rule.h, rule_engine.h |
-| **Label** | label_engine.h, label_placement.h, label_conflict.h |
-| **Tile** | tile_key.h, tile_cache.h, tile_renderer.h, memory_tile_cache.h, disk_tile_cache.h, multi_level_tile_cache.h |
-| **Transform** | coordinate_transform.h, coordinate_transformer.h, proj_transformer.h, transform_manager.h, coord_system_preset.h |
-| **Interaction** | interaction_handler.h, interaction_feedback.h, pan_zoom_handler.h, selection_handler.h, hit_test.h, location_display_handler.h |
-| **LOD** | lod.h, lod_manager.h |
-| **Render** | render_queue.h, render_task.h, basic_render_task.h, async_renderer.h, layer_manager.h, layer_control_panel.h |
-| **Filter** | filter.h, comparison_filter.h, logical_filter.h, spatial_filter.h |
-| **Utility** | clipper.h, performance_monitor.h, performance_metrics.h, thread_safe.h |
-| **Security** | data_encryption.h, offline_storage_manager.h, offline_sync_manager.h |
-| **UI** | day_night_mode_manager.h, track_recorder.h |
+| **Render** | draw_facade.h, draw_params.h, render_task.h, render_queue.h, render_thread_pool.h |
+| **Layer** | layer_manager.h, layer_control_panel.h |
+| **Label** | label_engine.h, label_info.h, label_placement.h |
+| **Interaction** | pan_zoom_handler.h, selection_handler.h, hit_test.h, location_display_handler.h |
+| **LOD** | lod_manager.h, lod.h |
+| **Transform** | transform_manager.h |
+| **Build** | export.h |
 
 ---
 
 ## 关键类
 
-### DrawFacade
-**File**: [draw_facade.h](ogc/draw/draw_facade.h)  
-**Description**: 绘图门面类，提供统一的绘图接口
+### DrawFacade (绘图门面)
+
+**File**: [draw_facade.h](ogc/graph/render/draw_facade.h)  
+**Description**: 统一的绘图接口封装，单例模式
 
 ```cpp
-class DrawFacade {
+namespace ogc {
+namespace graph {
+
+class OGC_GRAPH_API DrawFacade {
 public:
     static DrawFacade& Instance();
     
     DrawResult Initialize();
     DrawResult Finalize();
+    bool IsInitialized() const;
     
-    DrawContextPtr CreateContext();
-    DrawContextPtr CreateContext(DrawDevicePtr device);
-    DrawContextPtr CreateContext(DrawDevicePtr device, DrawEnginePtr engine);
+    // 创建上下文
+    ogc::draw::DrawContextPtr CreateContext();
+    ogc::draw::DrawContextPtr CreateContext(ogc::draw::DrawDevicePtr device);
+    ogc::draw::DrawContextPtr CreateContext(ogc::draw::DrawDevicePtr device, 
+                                             ogc::draw::DrawEnginePtr engine);
     
-    DrawDevicePtr CreateDevice(DeviceType type, int width, int height);
-    DrawEnginePtr CreateEngine(EngineType type);
+    // 创建设备和引擎
+    ogc::draw::DrawDevicePtr CreateDevice(ogc::draw::DeviceType type, 
+                                           int width = 800, int height = 600);
+    ogc::draw::DrawEnginePtr CreateEngine(ogc::draw::EngineType type);
     
-    DrawResult RegisterDevice(const std::string& name, DrawDevicePtr device);
-    DrawResult RegisterEngine(const std::string& name, DrawEnginePtr engine);
+    // 注册设备和引擎
+    DrawResult RegisterDevice(const std::string& name, ogc::draw::DrawDevicePtr device);
+    DrawResult RegisterEngine(const std::string& name, ogc::draw::DrawEnginePtr engine);
     
-    DrawResult DrawGeometry(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style);
-    DrawResult RenderToImage(const Geometry* geometry, const DrawParams& params, uint8_t* imageData, int width, int height);
+    // 绘制几何对象
+    DrawResult DrawGeometry(ogc::draw::DrawDevicePtr device, 
+                            const Geometry* geometry, 
+                            const ogc::draw::DrawStyle& style);
+    DrawResult DrawGeometry(ogc::draw::DrawContextPtr context, 
+                            const Geometry* geometry, 
+                            const ogc::draw::DrawStyle& style);
+    
+    // 渲染到图像
+    DrawResult RenderToImage(const Geometry* geometry, const DrawParams& params, 
+                              const ogc::draw::DrawStyle& style, 
+                              uint8_t* imageData, int width, int height, int channels);
+    
+    // 默认设置
+    void SetDefaultDrawStyle(const ogc::draw::DrawStyle& style);
+    void SetDefaultFont(const ogc::draw::Font& font);
+    void SetDefaultColor(const ogc::draw::Color& color);
+    void SetDefaultDpi(double dpi);
+    void SetDefaultBackground(const ogc::draw::Color& color);
+    
+    // 工厂方法
+    ogc::draw::DrawStyle CreateStrokeStyle(uint32_t color, double width);
+    ogc::draw::DrawStyle CreateFillStyle(uint32_t color);
+    ogc::draw::Font CreateFont(const std::string& family, double size, 
+                                bool bold = false, bool italic = false);
+    ogc::draw::Color CreateColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
+    
+    // 版本信息
+    static std::string GetVersion();
+    static std::string GetBuildInfo();
 };
+
+} // namespace graph
+} // namespace ogc
 ```
 
-### Symbolizer (抽象基类)
-**File**: [symbolizer.h](ogc/draw/symbolizer.h)  
-**Description**: 符号化器抽象基类
+---
+
+### RenderTask (渲染任务)
+
+**File**: [render_task.h](ogc/graph/render/render_task.h)  
+**Description**: 渲染任务抽象
 
 ```cpp
-class Symbolizer {
-public:
-    virtual ~Symbolizer() = default;
-    
-    virtual SymbolizerType GetType() const = 0;
-    virtual std::string GetName() const = 0;
-    
-    virtual DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry) = 0;
-    virtual DrawResult Symbolize(DrawContextPtr context, const Geometry* geometry, const DrawStyle& style) = 0;
-    
-    virtual bool CanSymbolize(GeomType geomType) const = 0;
-    virtual SymbolizerPtr Clone() const = 0;
+enum class RenderTaskState {
+    kPending = 0,
+    kQueued = 1,
+    kRunning = 2,
+    kCompleted = 3,
+    kFailed = 4,
+    kCancelled = 5
 };
+
+enum class RenderTaskPriority {
+    kLow = 0,
+    kNormal = 1,
+    kHigh = 2,
+    kUrgent = 3
+};
+
+struct RenderTaskStats {
+    int64_t queueTime;
+    int64_t startTime;
+    int64_t endTime;
+    int64_t renderTime;
+    size_t featureCount;
+    size_t geometryCount;
+    size_t memoryUsage;
+};
+
+class OGC_GRAPH_API RenderTask : public std::enable_shared_from_this<RenderTask> {
+public:
+    RenderTask();
+    RenderTask(const std::string& id, const DrawParams& params);
+    
+    void SetId(const std::string& id);
+    std::string GetId() const;
+    
+    void SetParams(const DrawParams& params);
+    DrawParams GetParams() const;
+    
+    void SetExtent(const Envelope& extent);
+    Envelope GetExtent() const;
+    
+    void SetPriority(RenderTaskPriority priority);
+    RenderTaskPriority GetPriority() const;
+    
+    void SetState(RenderTaskState state);
+    RenderTaskState GetState() const;
+    
+    void SetProgress(double progress);
+    double GetProgress() const;
+    
+    void SetResult(const ogc::draw::DrawResult& result);
+    ogc::draw::DrawResult GetResult() const;
+    
+    void SetCallback(RenderTaskCallback callback);
+    
+    virtual void Execute() = 0;
+    virtual void Cancel();
+    
+    static RenderTaskPtr Create(const std::string& id, const DrawParams& params);
+};
+
+typedef std::shared_ptr<RenderTask> RenderTaskPtr;
 ```
 
-### DataEncryption
-**File**: [data_encryption.h](ogc/draw/data_encryption.h)  
-**Description**: 数据加密类
+---
+
+### RenderQueue (渲染队列)
+
+**File**: [render_queue.h](ogc/graph/render/render_queue.h)  
+**Description**: 渲染任务队列管理
 
 ```cpp
-class DataEncryption {
-public:
-    static std::unique_ptr<DataEncryption> Create();
-    
-    virtual bool Initialize(const std::string& keyStoragePath) = 0;
-    virtual void Shutdown() = 0;
-    
-    virtual EncryptionKey GenerateKey() = 0;
-    virtual bool SetActiveKey(const EncryptionKey& key) = 0;
-    
-    virtual std::vector<uint8_t> Encrypt(const std::vector<uint8_t>& data) = 0;
-    virtual std::vector<uint8_t> Decrypt(const std::vector<uint8_t>& encryptedData) = 0;
-    
-    virtual Coordinate WGS84ToGCJ02(const Coordinate& coord) = 0;
-    virtual Coordinate GCJ02ToWGS84(const Coordinate& coord) = 0;
-};
-```
-
-### OfflineStorageManager
-**File**: [offline_storage_manager.h](ogc/draw/offline_storage_manager.h)  
-**Description**: 离线存储管理器
-
-```cpp
-class OfflineStorageManager {
-public:
-    static std::unique_ptr<OfflineStorageManager> Create(const std::string& storagePath);
-    
-    virtual std::string CreateRegion(const std::string& name,
-                                      double minLon, double maxLon,
-                                      double minLat, double maxLat,
-                                      int minZoom, int maxZoom) = 0;
-    
-    virtual void StartDownload(const std::string& regionId,
-                               ProgressCallback progressCallback,
-                               CompletionCallback completionCallback) = 0;
-    
-    virtual bool StoreTile(const std::string& regionId,
-                          const TileKey& key,
-                          const std::vector<uint8_t>& data) = 0;
-};
-```
-
-### DayNightModeManager
-**File**: [day_night_mode_manager.h](ogc/draw/day_night_mode_manager.h)  
-**Description**: 日夜模式管理器
-
-```cpp
-class DayNightModeManager {
-public:
-    static std::unique_ptr<DayNightModeManager> Create();
-    
-    void SetMode(DisplayMode mode);
-    DisplayMode GetMode() const;
-    
-    void SetDayMode();
-    void SetNightMode();
-    
-    const ColorScheme& GetCurrentScheme() const;
-    void SetDayScheme(const ColorScheme& scheme);
-    void SetNightScheme(const ColorScheme& scheme);
-    
-    void StartTransition(DisplayMode targetMode);
-    bool IsTransitioning() const;
-};
-```
-
-### TrackRecorder
-**File**: [track_recorder.h](ogc/draw/track_recorder.h)  
-**Description**: 航迹记录器
-
-```cpp
-class TrackRecorder {
-public:
-    static std::unique_ptr<TrackRecorder> Create();
-    
-    void StartRecording(const std::string& trackName = "");
-    void StopRecording();
-    void PauseRecording();
-    void ResumeRecording();
-    
-    void AddPoint(const Coordinate& position, double heading, double speed);
-    
-    TrackData GetCurrentTrack() const;
-    static TrackData LoadTrack(const std::string& filePath);
-    static bool SaveTrack(const TrackData& track, const std::string& filePath);
+struct RenderQueueStats {
+    size_t totalTasks;
+    size_t pendingTasks;
+    size_t runningTasks;
+    size_t completedTasks;
+    size_t failedTasks;
+    size_t cancelledTasks;
+    int64_t totalWaitTime;
+    int64_t totalRenderTime;
 };
 
-class TrackPlayer {
+class OGC_GRAPH_API RenderQueue {
 public:
-    void SetTrack(const TrackData& track);
-    void Play();
+    RenderQueue();
+    explicit RenderQueue(size_t maxQueueSize);
+    
+    bool Enqueue(RenderTaskPtr task);
+    RenderTaskPtr Dequeue();
+    RenderTaskPtr TryDequeue(int64_t timeoutMs = 0);
+    
+    RenderTaskPtr Peek() const;
+    
+    bool IsEmpty() const;
+    size_t GetSize() const;
+    size_t GetMaxSize() const;
+    void SetMaxSize(size_t maxSize);
+    
+    void Clear();
+    void CancelAll();
+    
+    void RemoveTask(const std::string& taskId);
+    RenderTaskPtr GetTask(const std::string& taskId) const;
+    bool HasTask(const std::string& taskId) const;
+    
+    RenderQueueStats GetStats() const;
+    void ResetStats();
+    
+    void SetPriorityMode(bool enable);
+    bool IsPriorityModeEnabled() const;
+    
     void Pause();
-    void Stop();
-    void Seek(double progress);
-    void SetPlaybackSpeed(double speed);
+    void Resume();
+    bool IsPaused() const;
+    
+    static RenderQueuePtr Create();
+    static RenderQueuePtr Create(size_t maxQueueSize);
 };
+
+typedef std::shared_ptr<RenderQueue> RenderQueuePtr;
 ```
 
-### LocationDisplayHandler
-**File**: [location_display_handler.h](ogc/draw/location_display_handler.h)  
-**Description**: 位置显示处理器
+---
+
+### LayerManager (图层管理器)
+
+**File**: [layer_manager.h](ogc/graph/layer/layer_manager.h)  
+**Description**: 多图层管理
 
 ```cpp
-class LocationDisplayHandler : public IInteractionHandler {
-public:
-    void UpdatePosition(const Position& position);
-    void UpdateHeading(const Heading& heading);
-    void UpdateSpeed(const Speed& speed);
-    
-    void SetAutoCenter(bool enabled);
-    void SetAutoRotate(bool enabled);
-    
-    void StartTrackRecording();
-    void StopTrackRecording();
-    
-    const Position& GetPosition() const;
-    const Heading& GetHeading() const;
-    const Speed& GetSpeed() const;
+enum class LayerVisibility {
+    kVisible,
+    kHidden,
+    kConditional
 };
+
+struct LayerInfo {
+    std::string name;
+    int index;
+    LayerVisibility visibility;
+    double minScale;
+    double maxScale;
+    double opacity;
+    bool selectable;
+    bool editable;
+    bool hasLabels;
+};
+
+class OGC_GRAPH_API LayerManager {
+public:
+    LayerManager();
+    ~LayerManager();
+    
+    // 图层操作
+    void AddLayer(CNLayer* layer, int index = -1);
+    void RemoveLayer(const std::string& name);
+    void RemoveLayer(int index);
+    void ClearLayers();
+    
+    // 图层查询
+    CNLayer* GetLayer(const std::string& name) const;
+    CNLayer* GetLayer(int index) const;
+    std::vector<CNLayer*> GetLayers() const;
+    std::vector<std::string> GetLayerNames() const;
+    int GetLayerIndex(const std::string& name) const;
+    size_t GetLayerCount() const;
+    bool HasLayer(const std::string& name) const;
+    
+    // 图层顺序
+    void MoveLayer(int fromIndex, int toIndex);
+    void MoveLayerUp(const std::string& name);
+    void MoveLayerDown(const std::string& name);
+    
+    // 可见性
+    void SetLayerVisibility(const std::string& name, LayerVisibility visibility);
+    LayerVisibility GetLayerVisibility(const std::string& name) const;
+    void SetLayerOpacity(const std::string& name, double opacity);
+    double GetLayerOpacity(const std::string& name) const;
+    
+    // 渲染
+    ogc::draw::DrawResult Render(DrawContext& context);
+    ogc::draw::DrawResult RenderLayer(const std::string& name, DrawContext& context);
+    
+    // 选择
+    std::vector<int64_t> QueryFeatures(const Envelope& extent) const;
+    std::vector<int64_t> QueryFeatures(const Coordinate& point, double tolerance) const;
+    
+    static LayerManagerPtr Create();
+};
+
+typedef std::shared_ptr<LayerManager> LayerManagerPtr;
+```
+
+---
+
+### LabelEngine (标签引擎)
+
+**File**: [label_engine.h](ogc/graph/label/label_engine.h)  
+**Description**: 智能标签放置引擎
+
+```cpp
+struct LabelPlacementResult {
+    bool success;
+    double x;
+    double y;
+    double rotation;
+    std::string message;
+};
+
+class OGC_GRAPH_API LabelEngine {
+public:
+    LabelEngine();
+    
+    // 标签属性
+    void SetLabelProperty(const std::string& propertyName);
+    void SetFont(const ogc::draw::Font& font);
+    void SetColor(uint32_t color);
+    void SetHaloColor(uint32_t color);
+    void SetHaloRadius(double radius);
+    
+    // 放置参数
+    void SetMinDistance(double distance);
+    void SetMaxDistance(double distance);
+    void SetPriority(int priority);
+    void SetAllowOverlap(bool allow);
+    void SetFollowLine(bool follow);
+    void SetMaxAngleDelta(double delta);
+    
+    // 冲突检测
+    void SetConflictResolver(LabelConflictResolverPtr resolver);
+    
+    // 标签生成
+    std::vector<LabelInfo> GenerateLabels(const std::vector<const CNFeature*>& features, 
+                                           ogc::draw::DrawContext& context);
+    std::vector<LabelInfo> GenerateLabels(const CNFeature* feature, 
+                                           ogc::draw::DrawContext& context);
+    
+    // 标签放置
+    LabelPlacementResult PlaceLabel(const CNFeature* feature, ogc::draw::DrawContext& context);
+    LabelPlacementResult PlacePointLabel(const Geometry* geometry, const std::string& text, 
+                                          ogc::draw::DrawContext& context);
+    LabelPlacementResult PlaceLineLabel(const Geometry* geometry, const std::string& text, 
+                                         ogc::draw::DrawContext& context);
+    
+    static LabelEnginePtr Create();
+};
+
+typedef std::shared_ptr<LabelEngine> LabelEnginePtr;
+```
+
+---
+
+### LODManager (LOD管理器)
+
+**File**: [lod_manager.h](ogc/graph/lod/lod_manager.h)  
+**Description**: 多级细节管理
+
+```cpp
+class OGC_GRAPH_API LODManager {
+public:
+    LODManager();
+    explicit LODManager(LODStrategyPtr strategy);
+    
+    // 策略设置
+    void SetStrategy(LODStrategyPtr strategy);
+    LODStrategyPtr GetStrategy() const;
+    
+    // LOD级别管理
+    void AddLODLevel(LODLevelPtr level);
+    void RemoveLODLevel(int level);
+    void ClearLODLevels();
+    
+    LODLevelPtr GetLODLevel(int level) const;
+    std::vector<LODLevelPtr> GetLODLevels() const;
+    size_t GetLODCount() const;
+    
+    // LOD选择
+    int SelectLOD(double scale) const;
+    int SelectLODByResolution(double resolution) const;
+    int SelectLODByExtent(const Envelope& extent, int pixelWidth, int pixelHeight) const;
+    
+    // 可见性
+    std::vector<int> GetVisibleLODs(double scale) const;
+    bool IsLODVisible(int lod) const;
+    
+    // 范围设置
+    void SetMinLOD(int minLOD);
+    void SetMaxLOD(int maxLOD);
+    void SetLODRange(int minLOD, int maxLOD);
+    
+    // 过渡效果
+    void SetTransitionFactor(double factor);
+    void SetEnableTransitions(bool enable);
+    
+    // 预设LOD
+    void CreateDefaultLODs(int minLevel, int maxLevel, double baseResolution);
+    void CreateWebMercatorLODs(int minLevel = 0, int maxLevel = 18);
+    
+    // 工具方法
+    double GetResolutionForLevel(int level) const;
+    int GetLevelForResolution(double resolution) const;
+    double GetScaleForLevel(int level, double dpi = 96.0) const;
+    int GetLevelForScale(double scale, double dpi = 96.0) const;
+    
+    static LODManagerPtr Create();
+    static LODManagerPtr CreateWebMercator(int minLevel = 0, int maxLevel = 18);
+};
+
+typedef std::shared_ptr<LODManager> LODManagerPtr;
 ```
 
 ---
 
 ## 类型定义
 
-### SymbolizerType
+### RenderTaskState (渲染任务状态)
+
 ```cpp
-enum class SymbolizerType {
-    kPoint,
-    kLine,
-    kPolygon,
-    kText,
-    kRaster,
-    kComposite,
-    kIcon
+enum class RenderTaskState {
+    kPending = 0,    // 待处理
+    kQueued = 1,     // 已入队
+    kRunning = 2,    // 运行中
+    kCompleted = 3,  // 已完成
+    kFailed = 4,     // 失败
+    kCancelled = 5   // 已取消
 };
 ```
 
-### DeviceType
-```cpp
-enum class DeviceType {
-    kRaster,
-    kVector,
-    kGPU
-};
-```
+### LayerVisibility (图层可见性)
 
-### EngineType
 ```cpp
-enum class EngineType {
-    kSimple2D,
-    kGPU,
-    kCairo,
-    kQt,
-    kGDIPlus,
-    kDirect2D
-};
-```
-
-### DisplayMode
-```cpp
-enum class DisplayMode {
-    kDay = 0,
-    kNight = 1,
-    kDusk = 2,
-    kDawn = 3,
-    kCustom = 4
-};
-```
-
-### PositionSource
-```cpp
-enum class PositionSource {
-    kNone = 0,
-    kInternalGPS,
-    kExternalGPS,
-    kBeidou,
-    kRTK,
-    kManual
-};
-```
-
-### EncryptionAlgorithm
-```cpp
-enum class EncryptionAlgorithm {
-    kAES256_CBC = 0,
-    kAES256_GCM = 1,
-    kAES256_CTR = 2
+enum class LayerVisibility {
+    kVisible,     // 可见
+    kHidden,      // 隐藏
+    kConditional  // 条件可见
 };
 ```
 
@@ -452,80 +566,118 @@ enum class EncryptionAlgorithm {
 
 ## 使用示例
 
-### 基本绘图
+### DrawFacade 基本使用
 
 ```cpp
-#include "ogc/draw/draw_facade.h"
+#include <ogc/graph/render/draw_facade.h>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 
+// 初始化
 auto& facade = DrawFacade::Instance();
 facade.Initialize();
 
 // 创建设备
-auto device = facade.CreateDevice(DeviceType::kRaster, 800, 600);
-auto engine = facade.CreateEngine(EngineType::kSimple2D);
-auto context = facade.CreateContext(device, engine);
+auto device = facade.CreateDevice(ogc::draw::DeviceType::kRaster, 800, 600);
 
-// 绘制几何
-DrawStyle style;
-style.strokeColor = Color(255, 0, 0);
-style.fillColor = Color(0, 255, 0, 128);
+// 创建样式
+auto style = facade.CreateStrokeStyle(0xFF0000FF, 2.0);  // 蓝色，2像素宽
 
-facade.DrawGeometry(context, polygon, style);
+// 绘制几何对象
+ogc::LineString line;
+line.AddCoordinate(ogc::Coordinate(0, 0));
+line.AddCoordinate(ogc::Coordinate(100, 100));
+
+facade.DrawGeometry(device, &line, style);
+
+// 清理
+facade.Finalize();
 ```
 
-### 日夜模式切换
+### 渲染队列使用
 
 ```cpp
-#include "ogc/draw/day_night_mode_manager.h"
+#include <ogc/graph/render/render_queue.h>
+#include <ogc/graph/render/render_task.h>
 
-auto manager = DayNightModeManager::Create();
+using namespace ogc::graph;
 
-// 切换到夜间模式
-manager->SetNightMode();
+// 创建渲染队列
+auto queue = RenderQueue::Create(100);
 
-// 获取当前配色
-const auto& scheme = manager->GetCurrentScheme();
-Color bgColor = scheme.backgroundColor;
+// 创建渲染任务
+auto task = RenderTask::Create("task1", DrawParams());
+task->SetPriority(RenderTaskPriority::kHigh);
+
+// 设置回调
+task->SetCallback([](const RenderTaskPtr& t) {
+    if (t->GetState() == RenderTaskState::kCompleted) {
+        std::cout << "Task completed: " << t->GetId() << std::endl;
+    }
+});
+
+// 入队
+queue->Enqueue(task);
+
+// 获取统计信息
+auto stats = queue->GetStats();
+std::cout << "Completed: " << stats.completedTasks << std::endl;
 ```
 
-### 航迹记录
+### 图层管理使用
 
 ```cpp
-#include "ogc/draw/track_recorder.h"
+#include <ogc/graph/layer/layer_manager.h>
 
-auto recorder = TrackRecorder::Create();
+using namespace ogc::graph;
 
-// 开始记录
-recorder->StartRecording("My Track");
+// 创建图层管理器
+auto manager = LayerManager::Create();
 
-// 添加航点
-recorder->AddPoint(Coordinate(116.4, 39.9), 45.0, 10.5);
+// 添加图层
+manager->AddLayer(roadLayer, 0);
+manager->AddLayer(buildingLayer, 1);
+manager->AddLayer(labelLayer, 2);
 
-// 停止记录
-recorder->StopRecording();
+// 设置可见性
+manager->SetLayerVisibility("roads", LayerVisibility::kVisible);
+manager->SetLayerOpacity("buildings", 0.8);
 
-// 保存航迹
-auto track = recorder->GetCurrentTrack();
-TrackRecorder::SaveTrack(track, "/path/to/track.gpx");
+// 移动图层顺序
+manager->MoveLayerUp("labels");
+
+// 渲染
+ogc::draw::DrawContext context;
+manager->Render(context);
 ```
 
-### 离线存储
+### 标签引擎使用
 
 ```cpp
-#include "ogc/draw/offline_storage_manager.h"
+#include <ogc/graph/label/label_engine.h>
 
-auto storage = OfflineStorageManager::Create("/path/to/storage");
+using namespace ogc::graph;
 
-// 创建离线区域
-std::string regionId = storage->CreateRegion("Beijing", 
-    116.0, 117.0, 39.5, 40.5, 10, 16);
+// 创建标签引擎
+auto engine = LabelEngine::Create();
 
-// 开始下载
-storage->StartDownload(regionId, 
-    [](const DownloadProgress& p) { /* 进度回调 */ },
-    [](StorageError err) { /* 完成回调 */ });
+// 配置标签属性
+engine->SetLabelProperty("name");
+engine->SetFont(ogc::draw::Font("Arial", 12.0));
+engine->SetColor(0xFF000000);
+engine->SetHaloColor(0xFFFFFFFF);
+engine->SetHaloRadius(2.0);
+engine->SetMinDistance(50.0);
+engine->SetAllowOverlap(false);
+
+// 生成标签
+std::vector<const CNFeature*> features = GetFeatures();
+auto labels = engine->GenerateLabels(features, context);
+
+for (const auto& label : labels) {
+    // 绘制标签
+    DrawLabel(label);
+}
 ```
 
 ---
@@ -534,14 +686,10 @@ storage->StartDownload(regionId,
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| v1.0 | 2026-01-01 | Team | 初始版本 |
-| v1.1 | 2026-02-15 | Team | 添加S52海图支持 |
-| v1.2 | 2026-03-10 | Team | 添加Mapbox样式解析 |
-| v1.3 | 2026-04-01 | Team | 添加多级瓦片缓存 |
-| v1.4 | 2026-04-06 | index-validator | 补充缺失头文件、修正章节顺序、添加新功能类 |
+| v1.0 | 2026-04-06 | Team | 模块拆分后保留核心渲染功能 |
 
 ---
 
-**Generated**: 2026-04-06  
-**Module Version**: v1.4  
+**Generated**: 2026-04-07  
+**Module Version**: v1.0  
 **C++ Standard**: C++11
