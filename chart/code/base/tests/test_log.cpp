@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/base/log.h"
+#include <ogc/base/log.h>
 #include <memory>
 
 using namespace ogc::base;

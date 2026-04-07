@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/base/performance_monitor.h"
+#include <ogc/base/performance_monitor.h>
 #include <memory>
 
 using namespace ogc::base;

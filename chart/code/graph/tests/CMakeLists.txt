@@ -10,17 +10,7 @@ set(TEST_SOURCES
     test_engine_type.cpp
     test_draw_params.cpp
     test_draw_error.cpp
-    test_tile_key.cpp
-    test_coordinate_transform.cpp
-    test_tile_cache.cpp
-    test_disk_tile_cache.cpp
-    test_multi_level_tile_cache.cpp
     test_tile_renderer.cpp
-    test_symbolizer.cpp
-    test_line_symbolizer.cpp
-    test_polygon_symbolizer.cpp
-    test_point_symbolizer.cpp
-    test_text_symbolizer.cpp
     test_image_draw.cpp
     test_clipper.cpp
     test_label_placement.cpp
@@ -28,31 +18,14 @@ set(TEST_SOURCES
     test_label_engine.cpp
     test_layer_manager.cpp
     test_transform_manager.cpp
-    test_raster_symbolizer.cpp
-    test_icon_symbolizer.cpp
-    test_filter.cpp
-    test_comparison_filter.cpp
-    test_logical_filter.cpp
-    test_spatial_filter.cpp
     test_rule_engine.cpp
-    test_symbolizer_rule.cpp
-    test_composite_symbolizer.cpp
     test_lod.cpp
     test_lod_manager.cpp
-    test_performance_metrics.cpp
-    test_performance_monitor.cpp
     test_render_task.cpp
     test_render_queue.cpp
     test_async_renderer.cpp
     test_basic_render_task.cpp
     test_draw_facade.cpp
-    test_proj_transformer.cpp
-    test_coord_system_preset.cpp
-    test_s52_style_manager.cpp
-    test_s52_symbol_renderer.cpp
-    test_coordinate_transformer.cpp
-    test_thread_safe.cpp
-    test_log.cpp
     test_graph_boundary.cpp
     test_graph_concurrent.cpp
     test_graph_performance.cpp
@@ -90,9 +63,6 @@ set(TEST_SOURCES
     test_track_recorder.cpp
     test_layer_control_panel.cpp
     test_day_night_mode_manager.cpp
-    test_offline_storage_manager.cpp
-    test_offline_sync_manager.cpp
-    test_data_encryption.cpp
     test_it_geometry.cpp
     test_it_database.cpp
     test_it_rendering.cpp
@@ -108,11 +78,6 @@ find_library(GTEST_MAIN_LIBRARY NAMES gtest_main PATHS "${GTEST_ROOT}/lib" NO_DE
 
 if(NOT GTEST_INCLUDE_DIR OR NOT GTEST_LIBRARY OR NOT GTEST_MAIN_LIBRARY)
     message(STATUS "GoogleTest not found in ${GTEST_ROOT}, skipping graph tests")
-    message(STATUS "Please ensure GoogleTest is installed at E:/xspace/3rd/googletest")
-    message(STATUS "Expected structure:")
-    message(STATUS "  E:/xspace/3rd/googletest/include/gtest/gtest.h")
-    message(STATUS "  E:/xspace/3rd/googletest/lib/gtest.lib")
-    message(STATUS "  E:/xspace/3rd/googletest/lib/gtest_main.lib")
     return()
 endif()
 
@@ -136,10 +101,6 @@ set_target_properties(GTest::gtest_main PROPERTIES
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib")
 
 foreach(TEST_SOURCE ${TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
@@ -175,13 +136,3 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()
-
-if(ENABLE_COVERAGE)
-    add_custom_target(coverage
-        COMMAND lcov --capture --directory ${CMAKE_BINARY_DIR} --output-file coverage.info
-        COMMAND lcov --remove coverage.info '/usr/*' --output-file coverage.info
-        COMMAND genhtml coverage.info --output-directory coverage_report
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Generating coverage report"
-    )
-endif()

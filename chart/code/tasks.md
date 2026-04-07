@@ -27,19 +27,19 @@
 | T5 | 创建ogc_symbology目录结构 | P0 | M1 | 1h | ✅ Done | T1 |
 | T6 | 迁移ogc_base文件 | P0 | M2 | 2h | ✅ Done | T2 |
 | T7 | 配置ogc_base CMake | P0 | M2 | 1h | ✅ Done | T6 |
-| T8 | 编写ogc_base单元测试 | P1 | M2 | 2h | 📋 Todo | T7 |
+| T8 | 编写ogc_base单元测试 | P1 | M2 | 2h | ✅ Done | T7 |
 | T9 | 迁移ogc_proj文件 | P0 | M2 | 2h | ✅ Done | T3 |
 | T10 | 配置ogc_proj CMake | P0 | M2 | 1h | ✅ Done | T9 |
-| T11 | 编写ogc_proj单元测试 | P1 | M2 | 2h | 📋 Todo | T10 |
+| T11 | 编写ogc_proj单元测试 | P1 | M2 | 2h | ✅ Done | T10 |
 | T12 | 迁移ogc_cache瓦片缓存文件 | P0 | M3 | 3h | ✅ Done | T4 |
 | T13 | 迁移ogc_cache离线存储文件 | P0 | M3 | 2h | ✅ Done | T4 |
 | T14 | 配置ogc_cache CMake | P0 | M3 | 1h | ✅ Done | T12,T13 |
-| T15 | 编写ogc_cache单元测试 | P1 | M3 | 3h | 📋 Todo | T14 |
+| T15 | 编写ogc_cache单元测试 | P1 | M3 | 3h | ✅ Done | T14 |
 | T16 | 迁移ogc_symbology样式解析文件 | P0 | M4 | 2h | ✅ Done | T5 |
 | T17 | 迁移ogc_symbology过滤规则文件 | P0 | M4 | 2h | ✅ Done | T5 |
 | T18 | 迁移ogc_symbology符号化器文件 | P0 | M4 | 3h | ✅ Done | T5 |
 | T19 | 配置ogc_symbology CMake | P0 | M4 | 1h | ✅ Done | T16,T17,T18 |
-| T20 | 编写ogc_symbology单元测试 | P1 | M4 | 4h | 📋 Todo | T19 |
+| T20 | 编写ogc_symbology单元测试 | P1 | M4 | 4h | ✅ Done | T19 |
 | T21 | 重组ogc_graph目录结构 | P0 | M5 | 2h | ✅ Done | T6,T9,T12,T16 |
 | T22 | 迁移ogc_graph渲染核心文件 | P0 | M5 | 1h | ✅ Done | T21 |
 | T23 | 迁移ogc_graph标签引擎文件 | P0 | M5 | 1h | ✅ Done | T21 |

@@ -77,3 +77,7 @@ install(DIRECTORY include/ogc
     DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )
+
+if(ENABLE_TESTS)
+    add_subdirectory(tests)
+endif()
