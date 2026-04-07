@@ -70,9 +70,9 @@ void CoordinateTransform::SetOffset(double offsetX, double offsetY)
     double rotation = m_matrix.GetRotation();
     
     m_matrix = TransformMatrix::CreateTranslation(offsetX, offsetY);
-    m_matrix.Scale(scaleX, scaleY);
+    m_matrix.ApplyScale(scaleX, scaleY);
     if (std::abs(rotation) > 1e-10) {
-        m_matrix.Rotate(rotation);
+        m_matrix.ApplyRotate(rotation);
     }
     m_inverseValid = false;
 }
@@ -90,9 +90,9 @@ void CoordinateTransform::SetScale(double scaleX, double scaleY)
     double rotation = m_matrix.GetRotation();
     
     m_matrix = TransformMatrix::CreateTranslation(offsetX, offsetY);
-    m_matrix.Scale(scaleX, scaleY);
+    m_matrix.ApplyScale(scaleX, scaleY);
     if (std::abs(rotation) > 1e-10) {
-        m_matrix.Rotate(rotation);
+        m_matrix.ApplyRotate(rotation);
     }
     m_inverseValid = false;
 }

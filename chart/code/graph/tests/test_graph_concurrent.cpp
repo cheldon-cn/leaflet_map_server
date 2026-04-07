@@ -256,14 +256,17 @@ TEST_F(ConcurrentRenderQueueTest, ConcurrentDequeue) {
     
     const int num_threads = 8;
     std::atomic<int> dequeue_count{0};
+    std::atomic<bool> should_stop{false};
     
     std::vector<std::thread> threads;
     for (int t = 0; t < num_threads; ++t) {
         threads.emplace_back([&]() {
-            for (int i = 0; i < num_tasks / num_threads; ++i) {
-                auto task = queue->Dequeue();
+            while (!should_stop.load()) {
+                auto task = queue->TryDequeue(10);
                 if (task != nullptr) {
                     dequeue_count++;
+                } else if (queue->IsEmpty()) {
+                    break;
                 }
             }
         });

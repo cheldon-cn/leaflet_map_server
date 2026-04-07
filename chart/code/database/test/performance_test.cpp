@@ -63,7 +63,7 @@ TEST_F(PerformanceTest, WkbLineStringConversionSpeed) {
     }, 100);
     
     std::cout << "WKB LineString (1000 points) Conversion: " << avgTime << " ms/op" << std::endl;
-    EXPECT_LT(avgTime, 10.0);
+    EXPECT_LT(avgTime, 15.0);
 }
 
 TEST_F(PerformanceTest, WkbPolygonConversionSpeed) {

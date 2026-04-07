@@ -10,19 +10,19 @@ public:
     CNReadWriteLock() = default;
 
     void LockRead() {
-        read_lock_ = std::unique_lock<std::shared_mutex>(mutex_);
+        mutex_.lock_shared();
     }
 
     void UnlockRead() {
-        read_lock_.unlock();
+        mutex_.unlock_shared();
     }
 
     void LockWrite() {
-        write_lock_ = std::unique_lock<std::shared_mutex>(mutex_);
+        mutex_.lock();
     }
 
     void UnlockWrite() {
-        write_lock_.unlock();
+        mutex_.unlock();
     }
 
     class ReadGuard {
@@ -55,8 +55,6 @@ public:
 
 private:
     mutable std::shared_mutex mutex_;
-    std::unique_lock<std::shared_mutex> read_lock_;
-    std::unique_lock<std::shared_mutex> write_lock_;
 };
 
 } // namespace ogc

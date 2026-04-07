@@ -56,7 +56,10 @@ TEST_F(DrawFacadeTest, CreateContext) {
     auto& facade = DrawFacade::Instance();
     facade.Initialize();
     
-    auto context = facade.CreateContext();
+    auto device = facade.CreateDevice(DeviceType::kRasterImage, 256, 256);
+    ASSERT_NE(device, nullptr);
+    
+    auto context = facade.CreateContext(device);
     EXPECT_NE(context, nullptr);
 }
 

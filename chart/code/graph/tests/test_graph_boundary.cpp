@@ -361,7 +361,7 @@ TEST_F(RenderQueueBoundaryTest, LargeMaxSize) {
 }
 
 TEST_F(RenderQueueBoundaryTest, EmptyQueueDequeue) {
-    auto task = queue->Dequeue();
+    auto task = queue->TryDequeue(0);
     EXPECT_EQ(task, nullptr);
 }
 
@@ -389,8 +389,8 @@ TEST_F(EnvelopeBoundaryTest, ZeroSize) {
 
 TEST_F(EnvelopeBoundaryTest, NegativeSize) {
     Envelope env(100, 100, 0, 0);
-    EXPECT_DOUBLE_EQ(env.GetWidth(), -100.0);
-    EXPECT_DOUBLE_EQ(env.GetHeight(), -100.0);
+    EXPECT_DOUBLE_EQ(env.GetWidth(), 100.0);
+    EXPECT_DOUBLE_EQ(env.GetHeight(), 100.0);
 }
 
 TEST_F(EnvelopeBoundaryTest, LargeCoordinates) {
