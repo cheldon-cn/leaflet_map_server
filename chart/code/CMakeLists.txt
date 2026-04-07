@@ -146,4 +146,6 @@ install(EXPORT ogc_geometry-targets
     DESTINATION lib/cmake/ogc_geometry
 )
 
+ogc_copy_third_party_dlls()
+ogc_install_index_files()
 ogc_print_install_summary()

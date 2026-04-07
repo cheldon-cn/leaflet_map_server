@@ -10,7 +10,7 @@
 
 # Set default install prefix if not specified
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/build/install" CACHE PATH "Installation directory" FORCE)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/../install" CACHE PATH "Installation directory" FORCE)
 endif()
 
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
@@ -82,7 +82,6 @@ endfunction()
 # Function to copy third-party DLLs
 function(ogc_copy_third_party_dlls)
     if(WIN32)
-        # Copy third-party DLLs to bin directory
         set(THIRD_PARTY_DLLS
             "${GEOS_ROOT}/bin/geos.dll"
             "${GEOS_ROOT}/bin/geos_c.dll"
@@ -102,6 +101,75 @@ function(ogc_copy_third_party_dlls)
                 )
             endif()
         endforeach()
+        
+        set(BUILD_DLLS
+            "${CMAKE_BINARY_DIR}/test/spatialite5.dll"
+            "${CMAKE_BINARY_DIR}/test/mod_spatialite5.dll"
+            "${CMAKE_BINARY_DIR}/test/librttopo.dll"
+            "${CMAKE_BINARY_DIR}/test/freexl.dll"
+            "${CMAKE_BINARY_DIR}/test/gdal.dll"
+            "${CMAKE_BINARY_DIR}/test/libssl-3-x64.dll"
+            "${CMAKE_BINARY_DIR}/test/libpq.dll"
+            "${CMAKE_BINARY_DIR}/test/libintl-9.dll"
+            "${CMAKE_BINARY_DIR}/test/libcrypto-3-x64.dll"
+            "${CMAKE_BINARY_DIR}/test/hdf5.dll"
+            "${CMAKE_BINARY_DIR}/test/libexpat.dll"
+            "${CMAKE_BINARY_DIR}/test/gtest_main.dll"
+            "${CMAKE_BINARY_DIR}/test/gtest.dll"
+            "${CMAKE_BINARY_DIR}/test/libiconv-2.dll"
+            "${CMAKE_BINARY_DIR}/test/libcharset-1.dll"
+            "${CMAKE_BINARY_DIR}/test/sqlite3.dll"
+            "${CMAKE_BINARY_DIR}/test/tiff.dll"
+            "${CMAKE_BINARY_DIR}/test/geos_c.dll"
+            "${CMAKE_BINARY_DIR}/test/geos.dll"
+            "${CMAKE_BINARY_DIR}/test/libcurl.dll"
+            "${CMAKE_BINARY_DIR}/test/libxml2-2.dll"
+            "${CMAKE_BINARY_DIR}/test/zlib1.dll"
+        )
+        
+        foreach(DLL ${BUILD_DLLS})
+            if(EXISTS ${DLL})
+                install(FILES ${DLL}
+                    DESTINATION bin
+                )
+            endif()
+        endforeach()
+    endif()
+endfunction()
+
+# Function to install index.md files for each module
+function(ogc_install_index_files)
+    set(INDEX_FILES
+        "${CMAKE_SOURCE_DIR}/geom/include/index_geom.md"
+        "${CMAKE_SOURCE_DIR}/base/include/index_base.md"
+        "${CMAKE_SOURCE_DIR}/proj/include/index_proj.md"
+        "${CMAKE_SOURCE_DIR}/database/include/index_database.md"
+        "${CMAKE_SOURCE_DIR}/feature/include/index_feature.md"
+        "${CMAKE_SOURCE_DIR}/layer/include/index_layer.md"
+        "${CMAKE_SOURCE_DIR}/cache/include/index_cache.md"
+        "${CMAKE_SOURCE_DIR}/symbology/include/index_symbology.md"
+        "${CMAKE_SOURCE_DIR}/draw/include/index_draw.md"
+        "${CMAKE_SOURCE_DIR}/graph/include/index_graph.md"
+        "${CMAKE_SOURCE_DIR}/alert/include/index_alert.md"
+        "${CMAKE_SOURCE_DIR}/navi/include/index_navi.md"
+        "${CMAKE_SOURCE_DIR}/navi/include/ogc/navi/index.md"
+    )
+    
+    foreach(INDEX_FILE ${INDEX_FILES})
+        if(EXISTS "${INDEX_FILE}")
+            get_filename_component(FILENAME ${INDEX_FILE} NAME)
+            install(FILES "${INDEX_FILE}"
+                DESTINATION include/ogc
+            )
+            message(STATUS "Installing index: ${INDEX_FILE} -> include/ogc/${FILENAME}")
+        endif()
+    endforeach()
+    
+    if(EXISTS "${CMAKE_SOURCE_DIR}/index_all.md")
+        install(FILES "${CMAKE_SOURCE_DIR}/index_all.md"
+            DESTINATION include/ogc
+        )
+        message(STATUS "Installing index: ${CMAKE_SOURCE_DIR}/index_all.md -> include/ogc/index_all.md")
     endif()
 endfunction()
 
