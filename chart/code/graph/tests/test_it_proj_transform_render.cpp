@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/proj_transformer.h"
-#include "ogc/draw/coordinate_transformer.h"
+#include <ogc/proj/proj_transformer.h>
+#include <ogc/proj/coordinate_transformer.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
@@ -8,7 +8,7 @@
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::proj;
 using ogc::Coordinate;
 using ogc::Envelope;
 

@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/symbolizer_rule.h"
-#include "ogc/draw/filter.h"
-#include "ogc/draw/line_symbolizer.h"
+#include <ogc/symbology/filter/symbolizer_rule.h>
+#include <ogc/symbology/filter/filter.h>
+#include <ogc/symbology/symbolizer/line_symbolizer.h>
 #include "ogc/point.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class SymbolizerRuleTest : public ::testing::Test {

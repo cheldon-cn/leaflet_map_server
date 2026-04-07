@@ -91,6 +91,7 @@ SymbolizerRulePtr SymbolizerRule::Clone() const {
         }
     }
     
+    rule->SetExtent(m_extent);
     rule->SetElseFilter(m_isElseFilter);
     rule->SetPriority(m_priority);
     

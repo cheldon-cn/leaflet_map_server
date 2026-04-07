@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/interaction_handler.h"
-#include "ogc/draw/hit_test.h"
-#include "ogc/draw/interaction_feedback.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/interaction/interaction_handler.h"
+#include "ogc/graph/interaction/hit_test.h"
+#include "ogc/graph/interaction/interaction_feedback.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 
 class InteractionHandlerTest : public ::testing::Test {
 protected:

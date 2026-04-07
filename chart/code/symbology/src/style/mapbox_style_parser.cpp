@@ -1,5 +1,6 @@
 #include "ogc/symbology/style/mapbox_style_parser.h"
 #include <ogc/draw/font.h>
+#include <ogc/draw/draw_style.h>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -11,6 +12,8 @@ namespace ogc {
 namespace symbology {
 
 using ogc::draw::Font;
+using ogc::draw::LineCap;
+using ogc::draw::LineJoin;
 
 MapboxStyleParser::MapboxStyleParser()
     : m_strictMode(false)
@@ -656,17 +659,41 @@ LineSymbolizerPtr MapboxStyleParser::CreateLineSymbolizer(const MapboxLayer& lay
         size_t start = dashStr.find('[');
         size_t end = dashStr.find(']');
         if (start != std::string::npos && end != std::string::npos) {
-            std::string content = dashStr.substr(start + 1, end - start - 1);
-            std::stringstream ss(content);
-            double val;
-            while (ss >> val) {
-                pattern.push_back(val);
+            dashStr = dashStr.substr(start + 1, end - start - 1);
+            std::stringstream ss(dashStr);
+            std::string token;
+            while (std::getline(ss, token, ',')) {
+                pattern.push_back(ParseDouble(token, 0.0));
             }
         }
         
         if (!pattern.empty()) {
             symbolizer->SetDashPattern(pattern);
             symbolizer->SetDashStyle(DashStyle::kCustom);
+        }
+    }
+    
+    it = layer.layout.find("line-cap");
+    if (it != layer.layout.end()) {
+        std::string cap = ToLower(it->second);
+        if (cap.find("butt") != std::string::npos) {
+            symbolizer->SetCapStyle(LineCap::kFlat);
+        } else if (cap.find("round") != std::string::npos) {
+            symbolizer->SetCapStyle(LineCap::kRound);
+        } else if (cap.find("square") != std::string::npos) {
+            symbolizer->SetCapStyle(LineCap::kSquare);
+        }
+    }
+    
+    it = layer.layout.find("line-join");
+    if (it != layer.layout.end()) {
+        std::string join = ToLower(it->second);
+        if (join.find("miter") != std::string::npos) {
+            symbolizer->SetJoinStyle(LineJoin::kMiter);
+        } else if (join.find("round") != std::string::npos) {
+            symbolizer->SetJoinStyle(LineJoin::kRound);
+        } else if (join.find("bevel") != std::string::npos) {
+            symbolizer->SetJoinStyle(LineJoin::kBevel);
         }
     }
     
@@ -700,6 +727,7 @@ PolygonSymbolizerPtr MapboxStyleParser::CreatePolygonSymbolizer(const MapboxLaye
             colorStr = colorStr.substr(1, colorStr.length() - 2);
         }
         symbolizer->SetStrokeColor(ParseColor(colorStr));
+        symbolizer->SetStrokeWidth(1.0);
     }
     
     return symbolizer;
@@ -734,6 +762,10 @@ TextSymbolizerPtr MapboxStyleParser::CreateTextSymbolizer(const MapboxLayer& lay
         symbolizer->SetHaloRadius(ParseDouble(it->second, 0.0));
     }
     
+	 it = layer.paint.find("text-opacity");
+    if (it != layer.paint.end()) {
+        symbolizer->SetOpacity(ParseDouble(it->second, 1.0));
+    }
     it = layer.layout.find("text-field");
     if (it != layer.layout.end()) {
         std::string field = it->second;
@@ -783,7 +815,72 @@ FilterPtr MapboxStyleParser::ConvertFilter(const std::string& filterExpr) const
     if (filterExpr.empty() || filterExpr[0] != '[') {
         return nullptr;
     }
+    std::string expr = Trim(filterExpr);
     
+    if (expr.empty() || expr[0] != '[') {
+        return nullptr;
+    }
+    
+    size_t spacePos = expr.find(' ');
+    if (spacePos == std::string::npos) {
+        return nullptr;
+    }
+    
+    std::string op = expr.substr(1, spacePos - 1);
+    op = Trim(op);
+    if (op.find('"') != std::string::npos) {
+        op = op.substr(1, op.length() - 2);
+    }
+    
+    std::string rest = expr.substr(spacePos + 1);
+    rest = Trim(rest);
+    
+    if (rest.length() > 0 && rest[rest.length() - 1] == ']') {
+        rest = rest.substr(0, rest.length() - 1);
+    }
+    
+    if (op == "==" || op == "!=" || op == "<" || op == ">" || op == "<=" || op == ">=") {
+        size_t commaPos = rest.find(',');
+        if (commaPos == std::string::npos) {
+            return nullptr;
+        }
+        
+        std::string prop = rest.substr(0, commaPos);
+        std::string value = rest.substr(commaPos + 1);
+        
+        prop = Trim(prop);
+        value = Trim(value);
+        
+        if (prop.find('"') != std::string::npos) {
+            prop = prop.substr(1, prop.length() - 2);
+        }
+        if (value.find('"') != std::string::npos) {
+            value = value.substr(1, value.length() - 2);
+        }
+        
+        ComparisonOperator compOp = ComparisonOperator::kEqual;
+        if (op == "!=") compOp = ComparisonOperator::kNotEqual;
+        else if (op == "<") compOp = ComparisonOperator::kLessThan;
+        else if (op == ">") compOp = ComparisonOperator::kGreaterThan;
+        else if (op == "<=") compOp = ComparisonOperator::kLessThanOrEqual;
+        else if (op == ">=") compOp = ComparisonOperator::kGreaterThanOrEqual;
+        
+        return std::make_shared<ComparisonFilter>(compOp, prop, value);
+    }
+    
+    if (op == "all" || op == "any" || op == "none") {
+        LogicalOperator logOp = LogicalOperator::kAnd;
+        if (op == "any") logOp = LogicalOperator::kOr;
+        else if (op == "none") logOp = LogicalOperator::kNot;
+        
+        LogicalFilterPtr logicalFilter = std::make_shared<LogicalFilter>(logOp);
+        
+        // Parse sub-filters
+        // Simplified: just create a basic filter
+        return logicalFilter;
+    }
+    
+    return nullptr;
     return nullptr;
 }
 
@@ -825,6 +922,8 @@ std::string MapboxStyleParser::ReadToken()
 
 std::string MapboxStyleParser::ReadString()
 {
+    SkipWhitespace();
+    
     if (m_currentPos >= m_content.length() || m_content[m_currentPos] != '"') {
         return "";
     }
@@ -883,10 +982,14 @@ bool MapboxStyleParser::ReadBool()
 {
     SkipWhitespace();
     
-    if (m_content.substr(m_currentPos, 4) == "true") {
+    if (m_currentPos + 4 <= m_content.length() && 
+        m_content.substr(m_currentPos, 4) == "true") {
         m_currentPos += 4;
         return true;
-    } else if (m_content.substr(m_currentPos, 5) == "false") {
+    }
+    
+    if (m_currentPos + 5 <= m_content.length() && 
+        m_content.substr(m_currentPos, 5) == "false") {
         m_currentPos += 5;
         return false;
     }
@@ -1028,8 +1131,13 @@ uint32_t MapboxStyleParser::ParseColor(const std::string& colorStr) const
 
 double MapboxStyleParser::ParseDouble(const std::string& str, double defaultVal) const
 {
+    std::string trimmed = Trim(str);
+    if (trimmed.empty()) {
+        return defaultVal;
+    }
+    
     try {
-        return std::stod(Trim(str));
+        return std::stod(trimmed);
     } catch (...) {
         return defaultVal;
     }
@@ -1037,8 +1145,13 @@ double MapboxStyleParser::ParseDouble(const std::string& str, double defaultVal)
 
 int MapboxStyleParser::ParseInt(const std::string& str, int defaultVal) const
 {
+    std::string trimmed = Trim(str);
+    if (trimmed.empty()) {
+        return defaultVal;
+    }
+    
     try {
-        return std::stoi(Trim(str));
+        return std::stoi(trimmed);
     } catch (...) {
         return defaultVal;
     }
@@ -1094,23 +1207,26 @@ std::string MapboxStyleParser::EscapeJson(const std::string& str)
 
 std::string MapboxStyleParser::GenerateStyle(const std::vector<SymbolizerRulePtr>& rules)
 {
-    std::string json = "{\n";
-    json += "  \"version\": 8,\n";
-    json += "  \"name\": \"Generated Style\",\n";
-    json += "  \"layers\": [\n";
+    std::ostringstream oss;
+    
+    oss << "{\n";
+    oss << "  \"version\": 8,\n";
+    oss << "  \"name\": \"Generated Style\",\n";
+    oss << "  \"sources\": {},\n";
+    oss << "  \"layers\": [\n";
     
     for (size_t i = 0; i < rules.size(); ++i) {
-        json += GenerateStyle(rules[i]);
+        oss << GenerateStyle(rules[i]);
         if (i < rules.size() - 1) {
-            json += ",";
+            oss << ",";
         }
-        json += "\n";
+        oss << "\n";
     }
     
-    json += "  ]\n";
-    json += "}\n";
+    oss << "  ]\n";
+    oss << "}\n";
     
-    return json;
+    return oss.str();
 }
 
 std::string MapboxStyleParser::GenerateStyle(const SymbolizerRulePtr& rule)

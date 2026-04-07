@@ -1,5 +1,5 @@
-#include "ogc/draw/location_display_handler.h"
-#include "ogc/draw/interaction_feedback.h"
+#include "ogc/graph/interaction/location_display_handler.h"
+#include "ogc/graph/interaction/interaction_feedback.h"
 #include <cmath>
 #include <algorithm>
 
@@ -8,7 +8,7 @@
 #endif
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 std::unique_ptr<LocationDisplayHandler> LocationDisplayHandler::Create(const std::string& name) {
     return std::unique_ptr<LocationDisplayHandler>(new LocationDisplayHandler(name));

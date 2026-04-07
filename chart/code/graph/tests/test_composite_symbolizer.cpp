@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/composite_symbolizer.h"
-#include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/polygon_symbolizer.h"
+#include <ogc/symbology/symbolizer/composite_symbolizer.h>
+#include <ogc/symbology/symbolizer/line_symbolizer.h>
+#include <ogc/symbology/symbolizer/polygon_symbolizer.h>
 #include "ogc/point.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class CompositeSymbolizerTest : public ::testing::Test {

@@ -18,6 +18,8 @@ namespace graph {
 
 class DrawContext;
 using DrawContextPtr = std::shared_ptr<DrawContext>;
+class Symbolizer;
+class SymbolizerRule;
 
 enum class LayerVisibility {
     kVisible,
@@ -78,12 +80,12 @@ public:
     
     bool IsVisibleAtScale(double scale) const;
     
-    void SetSymbolizer(std::shared_ptr<void> symbolizer);
-    std::shared_ptr<void> GetSymbolizer() const { return m_symbolizer; }
+    void SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer);
+    std::shared_ptr<Symbolizer> GetSymbolizer() const { return m_symbolizer; }
     
-    void AddRule(std::shared_ptr<void> rule);
+    void AddRule(std::shared_ptr<SymbolizerRule> rule);
     void ClearRules();
-    const std::vector<std::shared_ptr<void>>& GetRules() const { return m_rules; }
+    const std::vector<std::shared_ptr<SymbolizerRule>>& GetRules() const { return m_rules; }
     
     LayerConfigPtr Clone() const;
     
@@ -95,8 +97,8 @@ private:
     double m_opacity;
     bool m_selectable;
     bool m_editable;
-    std::shared_ptr<void> m_symbolizer;
-    std::vector<std::shared_ptr<void>> m_rules;
+    std::shared_ptr<Symbolizer> m_symbolizer;
+    std::vector<std::shared_ptr<SymbolizerRule>> m_rules;
 };
 
 class LayerItem;

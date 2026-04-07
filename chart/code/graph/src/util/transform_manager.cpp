@@ -1,8 +1,12 @@
 #include "ogc/graph/util/transform_manager.h"
+#include <ogc/proj/coordinate_transformer.h>
 #include <algorithm>
 
 namespace ogc {
 namespace graph {
+
+using ogc::proj::CoordinateTransformer;
+using ogc::proj::CoordinateTransformerPtr;
 
 TransformManagerPtr TransformManager::s_instance = nullptr;
 std::mutex TransformManager::s_instanceMutex;
@@ -26,7 +30,7 @@ std::string TransformManager::MakeKey(const std::string& sourceCRS, const std::s
     return sourceCRS + "->" + targetCRS;
 }
 
-ogc::draw::CoordinateTransformerPtr TransformManager::GetTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
+CoordinateTransformerPtr TransformManager::GetTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
     std::string key = MakeKey(sourceCRS, targetCRS);
     
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -49,7 +53,7 @@ ogc::draw::CoordinateTransformerPtr TransformManager::GetTransformer(const std::
     return transformer;
 }
 
-void TransformManager::RegisterTransformer(const std::string& sourceCRS, const std::string& targetCRS, ogc::draw::CoordinateTransformerPtr transformer) {
+void TransformManager::RegisterTransformer(const std::string& sourceCRS, const std::string& targetCRS, CoordinateTransformerPtr transformer) {
     if (!transformer) return;
     
     std::string key = MakeKey(sourceCRS, targetCRS);
@@ -111,8 +115,8 @@ bool TransformManager::IsCacheEnabled() const {
     return m_enableCache;
 }
 
-ogc::draw::CoordinateTransformerPtr TransformManager::CreateTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
-    return ogc::draw::CoordinateTransformer::Create(sourceCRS, targetCRS);
+CoordinateTransformerPtr TransformManager::CreateTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
+    return CoordinateTransformer::Create(sourceCRS, targetCRS);
 }
 
 Coordinate TransformManager::Transform(const std::string& sourceCRS, const std::string& targetCRS, const Coordinate& coord) {
@@ -172,11 +176,11 @@ bool TransformManager::IsTransformationSupported(const std::string& sourceCRS, c
     return findCRS(sourceCRS) && findCRS(targetCRS);
 }
 
-ogc::draw::CoordinateTransformerPtr TransformManager::GetWGS84ToWebMercator() {
+CoordinateTransformerPtr TransformManager::GetWGS84ToWebMercator() {
     return GetInstance()->GetTransformer("EPSG:4326", "EPSG:3857");
 }
 
-ogc::draw::CoordinateTransformerPtr TransformManager::GetWebMercatorToWGS84() {
+CoordinateTransformerPtr TransformManager::GetWebMercatorToWGS84() {
     return GetInstance()->GetTransformer("EPSG:3857", "EPSG:4326");
 }
 

@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/coordinate_transform.h"
+#include <ogc/proj/coordinate_transform.h>
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 #include "ogc/point.h"
 #include <cmath>
 
-using namespace ogc::draw;
+using namespace ogc::proj;
 
 namespace {
     constexpr double EPSILON = 1e-9;

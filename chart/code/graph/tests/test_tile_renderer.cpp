@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/tile_renderer.h"
-#include "ogc/draw/tile_key.h"
-#include "ogc/draw/memory_tile_cache.h"
+#include <ogc/cache/tile/tile_renderer.h>
+#include <ogc/cache/tile/tile_key.h>
+#include <ogc/cache/tile/memory_tile_cache.h>
 #include "ogc/envelope.h"
 #include <vector>
 #include <cstdint>
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 using namespace ogc;
 
 class TileRendererTest : public ::testing::Test {

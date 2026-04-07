@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/clipper.h"
+#include <ogc/draw/clipper.h>
 #include "ogc/geometry.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"

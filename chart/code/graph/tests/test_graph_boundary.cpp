@@ -1,14 +1,14 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <ogc/draw/color.h>
-#include "ogc/draw/tile_key.h"
-#include "ogc/draw/tile_cache.h"
-#include "ogc/draw/memory_tile_cache.h"
+#include <ogc/cache/tile/tile_key.h>
+#include <ogc/cache/tile/tile_cache.h>
+#include <ogc/cache/tile/memory_tile_cache.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_result.h>
 #include <ogc/draw/transform_matrix.h>
-#include "ogc/draw/render_queue.h"
-#include "ogc/draw/render_task.h"
+#include "ogc/graph/render/render_queue.h"
+#include "ogc/graph/render/render_task.h"
 #include "ogc/envelope.h"
 
 #include <limits>
@@ -16,8 +16,15 @@
 #include <vector>
 #include <cstdint>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
+using ogc::draw::Color;
+using ogc::cache::TileKey;
+using ogc::cache::MemoryTileCache;
+using ogc::cache::TileData;
+using ogc::draw::DrawStyle;
+using ogc::draw::TransformMatrix;
+using ogc::draw::DrawResult;
 
 class ColorBoundaryTest : public ::testing::Test {
 protected:

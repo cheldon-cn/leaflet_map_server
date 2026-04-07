@@ -1,5 +1,5 @@
 #include "ogc/graph/interaction/selection_handler.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include <algorithm>
 
 namespace ogc {
@@ -40,7 +40,7 @@ bool SelectionHandler::HandleEvent(const InteractionEvent& event) {
     }
 }
 
-void SelectionHandler::SetLayerManager(ogc::draw::LayerManager* manager) {
+void SelectionHandler::SetLayerManager(LayerManager* manager) {
     m_layerManager = manager;
 }
 
@@ -113,7 +113,7 @@ void SelectionHandler::SelectByEnvelope(const Envelope& envelope) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, envelope, ogc::draw::HitTestMode::kBox);
+    auto result = m_hitTester->HitTest(m_layerManager, envelope, HitTestMode::kBox);
     
     if (result && !result->IsEmpty()) {
         bool addToSelection = m_isShiftPressed || m_isCtrlPressed;
@@ -139,7 +139,7 @@ void SelectionHandler::SelectByGeometry(const Geometry* geometry) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, geometry, ogc::draw::HitTestMode::kPolygon);
+    auto result = m_hitTester->HitTest(m_layerManager, geometry, HitTestMode::kPolygon);
     
     if (result && !result->IsEmpty()) {
         bool addToSelection = m_isShiftPressed || m_isCtrlPressed;
@@ -164,7 +164,7 @@ void SelectionHandler::SetFeatureSelectedCallback(FeatureSelectedCallback callba
     m_featureSelectedCallback = callback;
 }
 
-void SelectionHandler::SetHitTester(ogc::draw::HitTester* hitTester) {
+void SelectionHandler::SetHitTester(HitTester* hitTester) {
     m_hitTester = hitTester;
 }
 
@@ -364,7 +364,7 @@ void SelectionHandler::PerformBoxSelection(const Envelope& envelope, bool addToS
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, envelope, ogc::draw::HitTestMode::kBox);
+    auto result = m_hitTester->HitTest(m_layerManager, envelope, HitTestMode::kBox);
     
     if (result && !result->IsEmpty()) {
         if (!addToSelection) {

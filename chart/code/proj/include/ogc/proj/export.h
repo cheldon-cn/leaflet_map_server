@@ -8,7 +8,11 @@
         #define OGC_PROJ_API __declspec(dllimport)
     #endif
 #else
-    #define OGC_PROJ_API
+    #ifdef OGC_PROJ_EXPORTS
+        #define OGC_PROJ_API __attribute__((visibility("default")))
+    #else
+        #define OGC_PROJ_API
+    #endif
 #endif
 
 #endif

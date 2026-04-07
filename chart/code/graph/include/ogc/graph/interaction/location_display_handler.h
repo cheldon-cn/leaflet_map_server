@@ -1,9 +1,9 @@
-#ifndef OGC_DRAW_LOCATION_DISPLAY_HANDLER_H
-#define OGC_DRAW_LOCATION_DISPLAY_HANDLER_H
+#ifndef OGC_GRAPH_LOCATION_DISPLAY_HANDLER_H
+#define OGC_GRAPH_LOCATION_DISPLAY_HANDLER_H
 
-#include "ogc/draw/export.h"
-#include "ogc/draw/interaction_handler.h"
-#include "ogc/draw/interaction_feedback.h"
+#include "ogc/graph/export.h"
+#include "ogc/graph/interaction/interaction_handler.h"
+#include "ogc/graph/interaction/interaction_feedback.h"
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 #include <memory>
@@ -13,7 +13,7 @@
 #include <chrono>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 class LayerManager;
 class FeedbackManager;

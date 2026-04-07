@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/point_symbolizer.h"
+#include <ogc/symbology/symbolizer/point_symbolizer.h>
 #include <ogc/draw/draw_style.h>
 #include "ogc/common.h"
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class PointSymbolizerTest : public ::testing::Test {

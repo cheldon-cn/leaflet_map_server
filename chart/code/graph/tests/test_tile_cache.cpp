@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/tile_cache.h"
-#include "ogc/draw/memory_tile_cache.h"
-#include "ogc/draw/tile_key.h"
+#include <ogc/cache/tile/tile_cache.h>
+#include <ogc/cache/tile/memory_tile_cache.h>
+#include <ogc/cache/tile/tile_key.h>
 #include <vector>
 #include <cstdint>
 #include <thread>
 #include <chrono>
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 
 class MemoryTileCacheTest : public ::testing::Test {
 protected:

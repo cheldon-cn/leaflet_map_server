@@ -1,12 +1,20 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/draw_facade.h"
+#include "ogc/graph/render/draw_facade.h"
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_engine.h>
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
+using ogc::draw::RasterImageDevice;
+using ogc::draw::PixelFormat;
+using ogc::draw::DeviceType;
+using ogc::draw::DrawResult;
+using ogc::draw::DrawStyle;
+using ogc::draw::Font;
+using ogc::draw::Color;
+using ogc::draw::EngineType;
 
 class DrawFacadeTest : public ::testing::Test {
 protected:

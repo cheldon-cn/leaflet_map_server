@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/clipper.h"
+#include <ogc/draw/clipper.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include "ogc/envelope.h"

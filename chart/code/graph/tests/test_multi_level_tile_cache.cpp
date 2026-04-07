@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/multi_level_tile_cache.h"
-#include "ogc/draw/memory_tile_cache.h"
-#include "ogc/draw/tile_key.h"
+#include <ogc/cache/tile/multi_level_tile_cache.h>
+#include <ogc/cache/tile/memory_tile_cache.h>
+#include <ogc/cache/tile/tile_key.h>
 #include <vector>
 #include <cstdint>
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 
 class MultiLevelTileCacheTest : public ::testing::Test {
 protected:

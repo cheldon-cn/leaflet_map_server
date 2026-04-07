@@ -7,9 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../geom/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../database/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+if(ENABLE_DATABASE)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../database/include)
+endif()
 
 set(POSITIONING_SOURCES
     src/positioning/nmea_parser.cpp
@@ -68,9 +71,11 @@ endif()
 target_link_libraries(ogc_navi
     PUBLIC
         ogc_geometry
-    PRIVATE
-        ogc_database
 )
+
+if(ENABLE_DATABASE)
+    target_link_libraries(ogc_navi PRIVATE ogc_database)
+endif()
 
 if(ENABLE_TESTS)
     add_subdirectory(tests)

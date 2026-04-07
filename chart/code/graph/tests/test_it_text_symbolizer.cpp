@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/text_symbolizer.h"
+#include <ogc/symbology/symbolizer/text_symbolizer.h>
 #include <ogc/draw/font.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/transform_matrix.h>
@@ -11,7 +11,7 @@
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 using ogc::Envelope;
 

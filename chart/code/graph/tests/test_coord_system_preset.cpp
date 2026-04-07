@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/coord_system_preset.h"
+#include <ogc/proj/coord_system_preset.h>
 
-using namespace ogc::draw;
+using namespace ogc::proj;
 
 class CoordSystemPresetTest : public ::testing::Test {
 protected:

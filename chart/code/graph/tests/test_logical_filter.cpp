@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/logical_filter.h"
-#include "ogc/draw/comparison_filter.h"
+#include <ogc/symbology/filter/logical_filter.h>
+#include <ogc/symbology/filter/comparison_filter.h>
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class LogicalFilterTest : public ::testing::Test {

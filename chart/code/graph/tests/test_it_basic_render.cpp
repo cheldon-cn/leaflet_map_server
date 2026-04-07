@@ -1,7 +1,7 @@
-﻿#include <gtest/gtest.h>
+#include <gtest/gtest.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/simple2d_engine.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/transform_matrix.h>

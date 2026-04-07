@@ -9,7 +9,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace ogc::draw;
+using namespace ogc::base;
 using ogc::base::PerformanceMonitor;
 using ogc::base::PerformanceMetricsCollector;
 using ogc::Envelope;

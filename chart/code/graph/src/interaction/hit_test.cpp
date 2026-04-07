@@ -1,5 +1,5 @@
-#include "ogc/draw/hit_test.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/interaction/hit_test.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
 #include "ogc/polygon.h"
@@ -9,7 +9,7 @@
 #include <cmath>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 HitTestResultPtr HitTestResult::Create()
 {

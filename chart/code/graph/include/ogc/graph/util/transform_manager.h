@@ -2,7 +2,7 @@
 #define OGC_GRAPH_TRANSFORM_MANAGER_H
 
 #include "ogc/graph/export.h"
-#include <ogc/draw/coordinate_transformer.h>
+#include <ogc/proj/coordinate_transformer.h>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -20,9 +20,9 @@ public:
     
     static TransformManagerPtr GetInstance();
     
-    ogc::draw::CoordinateTransformerPtr GetTransformer(const std::string& sourceCRS, const std::string& targetCRS);
+    ogc::proj::CoordinateTransformerPtr GetTransformer(const std::string& sourceCRS, const std::string& targetCRS);
     
-    void RegisterTransformer(const std::string& sourceCRS, const std::string& targetCRS, ogc::draw::CoordinateTransformerPtr transformer);
+    void RegisterTransformer(const std::string& sourceCRS, const std::string& targetCRS, ogc::proj::CoordinateTransformerPtr transformer);
     
     void UnregisterTransformer(const std::string& sourceCRS, const std::string& targetCRS);
     
@@ -38,7 +38,7 @@ public:
     void SetEnableCache(bool enable);
     bool IsCacheEnabled() const;
     
-    ogc::draw::CoordinateTransformerPtr CreateTransformer(const std::string& sourceCRS, const std::string& targetCRS);
+    ogc::proj::CoordinateTransformerPtr CreateTransformer(const std::string& sourceCRS, const std::string& targetCRS);
     
     Coordinate Transform(const std::string& sourceCRS, const std::string& targetCRS, const Coordinate& coord);
     
@@ -52,8 +52,8 @@ public:
     
     bool IsTransformationSupported(const std::string& sourceCRS, const std::string& targetCRS) const;
     
-    static ogc::draw::CoordinateTransformerPtr GetWGS84ToWebMercator();
-    static ogc::draw::CoordinateTransformerPtr GetWebMercatorToWGS84();
+    static ogc::proj::CoordinateTransformerPtr GetWGS84ToWebMercator();
+    static ogc::proj::CoordinateTransformerPtr GetWebMercatorToWGS84();
     
 private:
     TransformManager();
@@ -67,12 +67,12 @@ private:
     static std::mutex s_instanceMutex;
     
     mutable std::mutex m_mutex;
-    std::unordered_map<std::string, ogc::draw::CoordinateTransformerPtr> m_cache;
+    std::unordered_map<std::string, ogc::proj::CoordinateTransformerPtr> m_cache;
     size_t m_maxCacheSize;
     bool m_enableCache;
 };
 
-}
-}
+}  
+}  
 
 #endif

@@ -4,7 +4,7 @@
 #include <ogc/draw/transform_matrix.h>
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include "ogc/envelope.h"
 #include <cmath>
 #include <memory>

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/async_renderer.h"
-#include "ogc/draw/render_queue.h"
-#include "ogc/draw/basic_render_task.h"
+#include "ogc/graph/render/async_renderer.h"
+#include "ogc/graph/render/render_queue.h"
+#include "ogc/graph/render/basic_render_task.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
@@ -10,7 +10,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
 
 class TestRenderTaskForIT : public BasicRenderTask {

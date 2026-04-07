@@ -1,10 +1,10 @@
-#include "ogc/draw/layer_control_panel.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/layer/layer_control_panel.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include <algorithm>
 #include <map>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 std::unique_ptr<LayerControlPanel> LayerControlPanel::Create() {
     return std::unique_ptr<LayerControlPanel>(new LayerControlPanel());
@@ -229,12 +229,30 @@ void LayerControlPanel::SetGroupVisible(const std::string& groupId, bool visible
     }
 }
 
+bool LayerControlPanel::IsGroupVisible(const std::string& groupId) const {
+    for (const auto& layer : m_layers) {
+        if (layer.group == groupId && layer.visible) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void LayerControlPanel::SetGroupOpacity(const std::string& groupId, double opacity) {
     for (auto& layer : m_layers) {
         if (layer.group == groupId) {
             SetLayerOpacity(layer.layerId, opacity);
         }
     }
+}
+
+double LayerControlPanel::GetGroupOpacity(const std::string& groupId) const {
+    for (const auto& layer : m_layers) {
+        if (layer.group == groupId) {
+            return layer.opacity;
+        }
+    }
+    return 1.0;
 }
 
 void LayerControlPanel::ShowAllLayers() {
@@ -271,6 +289,10 @@ void LayerControlPanel::SetOrderChangedCallback(OrderChangedCallback callback) {
 
 void LayerControlPanel::SetSelectionChangedCallback(SelectionChangedCallback callback) {
     m_selectionChangedCallback = callback;
+}
+
+bool LayerControlPanel::HasLayer(const std::string& layerId) const {
+    return FindLayer(layerId) != nullptr;
 }
 
 LayerControlInfo* LayerControlPanel::FindLayer(const std::string& layerId) {

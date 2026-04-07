@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/s52_symbol_renderer.h"
-#include "ogc/draw/s52_style_manager.h"
-#include "ogc/draw/draw_context.h"
-#include "ogc/draw/point_symbolizer.h"
+#include <ogc/symbology/style/s52_symbol_renderer.h>
+#include <ogc/symbology/style/s52_style_manager.h>
+#include <ogc/draw/draw_context.h>
+#include <ogc/symbology/symbolizer/point_symbolizer.h>
 #include "ogc/point.h"
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 
 class S52SymbolRendererTest : public ::testing::Test {
 protected:

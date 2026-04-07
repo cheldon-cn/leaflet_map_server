@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/day_night_mode_manager.h"
+#include "ogc/graph/util/day_night_mode_manager.h"
 
-using namespace ogc::draw;
+using namespace ogc::graph;
+using ogc::draw::Color;
 
 class DayNightModeManagerTest : public ::testing::Test {
 protected:

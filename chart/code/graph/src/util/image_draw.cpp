@@ -716,7 +716,7 @@ void ImageDraw::FillPolygonScanline(const std::vector<std::pair<int, int>>& poin
             int x2 = points[next].first;
             
             if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
-                double x = x1 + (double)(y - y1) / (y2 - y1) * (x2 - x1);
+                double x = x1 + static_cast<double>(y - y1) / (y2 - y1) * (x2 - x1);
                 intersections.push_back(static_cast<int>(x));
             }
         }
@@ -754,6 +754,7 @@ ImageFormat GetImageFormatFromExtension(const std::string& path)
     if (ext == "tif" || ext == "tiff") return ImageFormat::kTIFF;
     if (ext == "gif") return ImageFormat::kGIF;
     if (ext == "webp") return ImageFormat::kWEBP;
+    if (ext == "raw") return ImageFormat::kRAW;
     
     return ImageFormat::kUnknown;
 }
@@ -767,6 +768,7 @@ std::string GetExtensionFromImageFormat(ImageFormat format)
         case ImageFormat::kTIFF: return "tif";
         case ImageFormat::kGIF: return "gif";
         case ImageFormat::kWEBP: return "webp";
+        case ImageFormat::kRAW: return "raw";
         default: return "";
     }
 }

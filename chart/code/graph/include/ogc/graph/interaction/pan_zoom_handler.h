@@ -1,8 +1,8 @@
-#ifndef OGC_DRAW_PAN_ZOOM_HANDLER_H
-#define OGC_DRAW_PAN_ZOOM_HANDLER_H
+#ifndef OGC_GRAPH_PAN_ZOOM_HANDLER_H
+#define OGC_GRAPH_PAN_ZOOM_HANDLER_H
 
-#include "ogc/draw/export.h"
-#include "ogc/draw/interaction_handler.h"
+#include "ogc/graph/export.h"
+#include "ogc/graph/interaction/interaction_handler.h"
 #include "ogc/envelope.h"
 #include "ogc/coordinate.h"
 #include <memory>
@@ -10,7 +10,7 @@
 #include <chrono>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 struct PanZoomState {
     double centerX = 0.0;

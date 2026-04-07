@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/label_engine.h"
-#include "ogc/draw/label_conflict.h"
+#include "ogc/graph/label/label_engine.h"
+#include "ogc/graph/label/label_conflict.h"
 #include <ogc/draw/font.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_context.h>
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using namespace ogc;
 
 class LabelEngineTest : public ::testing::Test {

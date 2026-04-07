@@ -1,12 +1,17 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/basic_render_task.h"
+#include "ogc/graph/render/basic_render_task.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
+using ogc::draw::RasterImageDevice;
+using ogc::draw::DrawContext;
+using ogc::draw::DrawContextPtr;
+using ogc::draw::PixelFormat;
+using ogc::draw::DrawResult;
 
 class BasicRenderTaskTest : public ::testing::Test {
 protected:

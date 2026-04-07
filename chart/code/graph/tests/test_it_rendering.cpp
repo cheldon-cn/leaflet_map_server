@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <vector>
-#include "ogc/draw/draw_facade.h"
-#include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/draw_engine.h"
-#include "ogc/draw/draw_style.h"
-#include "ogc/draw/color.h"
+#include "ogc/graph/render/draw_facade.h"
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/draw_engine.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
 #include "ogc/geometry.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
@@ -14,7 +14,7 @@
 #include "ogc/multilinestring.h"
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
-#include "ogc/draw/coordinate_transform.h"
+#include <ogc/proj/coordinate_transform.h>
 
 #ifdef _WIN32
 #include <windows.h>

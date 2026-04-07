@@ -1,17 +1,17 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
-#include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/polygon_symbolizer.h"
+#include <ogc/symbology/symbolizer/line_symbolizer.h>
+#include <ogc/symbology/symbolizer/polygon_symbolizer.h>
 #include "ogc/layer/memory_layer.h"
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
 using ogc::CNLayer;
 using ogc::CNMemoryLayer;

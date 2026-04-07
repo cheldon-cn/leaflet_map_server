@@ -739,7 +739,11 @@ std::string MeasureTool::GetDistanceString() const
     } else if (m_unit == "nm") {
         oss << distance / 1852.0 << " nm";
     } else {
-        oss << distance << " m";
+        if (distance >= 1000) {
+            oss << distance / 1000.0 << " km";
+        } else {
+            oss << distance << " m";
+        }
     }
     
     return oss.str();
@@ -781,12 +785,17 @@ void MeasureTool::Stop()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_active = false;
+    if (m_feedbackManager && m_feedbackId > 0) {
+        m_feedbackManager->RemoveFeedback(m_feedbackId);
+        m_feedbackId = 0;
+    }
 }
 
 void MeasureTool::UpdateFeedback()
 {
     if (m_feedbackManager && !m_points.empty()) {
-        m_feedbackManager->ShowMeasureFeedback(m_points, GetTotalDistance(), GetArea());
+        m_feedbackId = m_feedbackManager->ShowMeasureFeedback(
+            m_points, GetTotalDistance(), GetArea());
     }
 }
 

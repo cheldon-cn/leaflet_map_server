@@ -43,12 +43,12 @@ bool LayerConfig::IsVisibleAtScale(double scale) const
     return true;
 }
 
-void LayerConfig::SetSymbolizer(std::shared_ptr<void> symbolizer)
+void LayerConfig::SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer)
 {
     m_symbolizer = symbolizer;
 }
 
-void LayerConfig::AddRule(std::shared_ptr<void> rule)
+void LayerConfig::AddRule(std::shared_ptr<SymbolizerRule> rule)
 {
     m_rules.push_back(rule);
 }

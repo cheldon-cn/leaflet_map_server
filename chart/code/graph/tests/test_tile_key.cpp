@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/tile_key.h"
+#include <ogc/cache/tile/tile_key.h>
 
 TEST(TileKeyTest, DefaultConstructor) {
-    ogc::draw::TileKey key;
+    ogc::cache::TileKey key;
     EXPECT_EQ(key.x, 0);
     EXPECT_EQ(key.y, 0);
     EXPECT_EQ(key.z, 0);
 }
 
 TEST(TileKeyTest, ParameterizedConstructor) {
-    ogc::draw::TileKey key(10, 20, 5);
+    ogc::cache::TileKey key(10, 20, 5);
     EXPECT_EQ(key.x, 10);
     EXPECT_EQ(key.y, 20);
     EXPECT_EQ(key.z, 5);

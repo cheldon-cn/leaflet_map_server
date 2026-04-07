@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/lod.h"
+#include "ogc/graph/lod/lod.h"
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using namespace ogc;
 
 class LODLevelTest : public ::testing::Test {

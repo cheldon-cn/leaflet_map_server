@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/layer_control_panel.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/layer/layer_control_panel.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include "ogc/layer/memory_layer.h"
 #include "ogc/geometry.h"
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::CNMemoryLayer;
 using ogc::GeomType;
 

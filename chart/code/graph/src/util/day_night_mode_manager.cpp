@@ -1,9 +1,12 @@
 #include "ogc/graph/util/day_night_mode_manager.h"
+#include <ogc/draw/color.h>
 #include <algorithm>
 #include <cmath>
 
 namespace ogc {
 namespace graph {
+
+using ogc::draw::Color;
 
 std::unique_ptr<DayNightModeManager> DayNightModeManager::Create() {
     return std::unique_ptr<DayNightModeManager>(new DayNightModeManager());
@@ -365,8 +368,8 @@ void DayNightModeManager::ApplyCurrentMode() {
 }
 
 void DayNightModeManager::InterpolateSchemes(const ColorScheme& from, const ColorScheme& to, double progress) {
-    auto lerpColor = [](const ogc::draw::Color& a, const ogc::draw::Color& b, double t) -> ogc::draw::Color {
-        return ogc::draw::Color(
+    auto lerpColor = [](const Color& a, const Color& b, double t) -> Color {
+        return Color(
             static_cast<uint8_t>(a.GetRed() + (b.GetRed() - a.GetRed()) * t),
             static_cast<uint8_t>(a.GetGreen() + (b.GetGreen() - a.GetGreen()) * t),
             static_cast<uint8_t>(a.GetBlue() + (b.GetBlue() - a.GetBlue()) * t),

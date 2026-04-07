@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/text_symbolizer.h"
+#include <ogc/symbology/symbolizer/text_symbolizer.h>
 #include <ogc/draw/font.h>
 #include <ogc/draw/draw_style.h>
 #include "ogc/common.h"
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class TextSymbolizerTest : public ::testing::Test {

@@ -3,7 +3,7 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/render/draw_params.h"
-#include <ogc/draw/draw_result.h>
+#include "ogc/draw/draw_result.h"
 #include "ogc/envelope.h"
 #include "ogc/geometry.h"
 #include <memory>

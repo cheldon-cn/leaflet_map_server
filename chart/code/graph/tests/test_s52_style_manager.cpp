@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/s52_style_manager.h"
+#include <ogc/symbology/style/s52_style_manager.h>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 
 class ColorSchemeManagerTest : public ::testing::Test {
 protected:

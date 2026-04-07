@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/coordinate_transformer.h"
+#include <ogc/proj/coordinate_transformer.h>
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::proj;
 using ogc::Coordinate;
 using ogc::Envelope;
 

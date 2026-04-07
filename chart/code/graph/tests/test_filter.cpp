@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/filter.h"
+#include <ogc/symbology/filter/filter.h>
 #include "ogc/point.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class FilterTest : public ::testing::Test {

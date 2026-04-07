@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/rule_engine.h"
-#include "ogc/draw/symbolizer_rule.h"
-#include "ogc/draw/symbolizer.h"
-#include "ogc/draw/point_symbolizer.h"
-#include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/polygon_symbolizer.h"
-#include "ogc/draw/text_symbolizer.h"
-#include "ogc/draw/composite_symbolizer.h"
-#include "ogc/draw/filter.h"
+#include <ogc/symbology/filter/rule_engine.h>
+#include <ogc/symbology/filter/symbolizer_rule.h>
+#include <ogc/symbology/symbolizer/symbolizer.h>
+#include <ogc/symbology/symbolizer/point_symbolizer.h>
+#include <ogc/symbology/symbolizer/line_symbolizer.h>
+#include <ogc/symbology/symbolizer/polygon_symbolizer.h>
+#include <ogc/symbology/symbolizer/text_symbolizer.h>
+#include <ogc/symbology/symbolizer/composite_symbolizer.h>
+#include <ogc/symbology/filter/filter.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
@@ -17,7 +17,7 @@
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using ogc::Envelope;
 using ogc::Geometry;
 using ogc::GeometryFactory;

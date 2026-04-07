@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/label_conflict.h"
-#include "ogc/draw/label_engine.h"
+#include "ogc/graph/label/label_conflict.h"
+#include "ogc/graph/label/label_engine.h"
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using namespace ogc;
 
 class LabelConflictTest : public ::testing::Test {

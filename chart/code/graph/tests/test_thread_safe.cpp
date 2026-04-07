@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/thread_safe.h"
+#include <ogc/base/thread_safe.h>
 #include <thread>
 #include <vector>
 #include <atomic>
 
-using namespace ogc::draw;
+using namespace ogc::base;
 
 class ThreadSafeTest : public ::testing::Test {
 protected:

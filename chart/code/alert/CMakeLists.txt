@@ -170,10 +170,19 @@ target_link_libraries(ogc_alert
     PRIVATE
         ogc_graph
         ogc_base
-        ${SQLITE3_LIB}
-        ${PQ_LIB}
-        ${GEOS_LIB}
 )
+
+if(SQLITE3_LIB)
+    target_link_libraries(ogc_alert PRIVATE ${SQLITE3_LIB})
+endif()
+
+if(PQ_LIB)
+    target_link_libraries(ogc_alert PRIVATE ${PQ_LIB})
+endif()
+
+if(GEOS_LIB)
+    target_link_libraries(ogc_alert PRIVATE ${GEOS_LIB})
+endif()
 
 install(TARGETS ogc_alert
     EXPORT ogc_alert-targets

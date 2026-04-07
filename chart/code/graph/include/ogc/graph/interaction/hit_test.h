@@ -1,8 +1,8 @@
-#ifndef OGC_DRAW_HIT_TEST_H
-#define OGC_DRAW_HIT_TEST_H
+#ifndef OGC_GRAPH_HIT_TEST_H
+#define OGC_GRAPH_HIT_TEST_H
 
-#include "ogc/draw/export.h"
-#include "ogc/draw/draw_result.h"
+#include "ogc/graph/export.h"
+#include <ogc/draw/draw_result.h>
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
 #include "ogc/geometry.h"
@@ -11,16 +11,20 @@
 #include <vector>
 #include <functional>
 #include <map>
+#include <mutex>
 
 namespace ogc {
 
 class CNLayer;
 class CNFeature;
 
-namespace draw {
+namespace graph {
 
 class LayerManager;
+
+namespace draw {
 class DrawContext;
+}
 
 enum class HitTestMode {
     kPoint = 0,

@@ -633,6 +633,9 @@ bool SldParser::ParseTextSymbolizer(TextSymbolizerPtr& symbolizer)
             if (params.find("fill") != params.end()) {
                 symbolizer->SetColor(ParseColor(params["fill"]));
             }
+            if (params.find("fill-opacity") != params.end()) {
+                symbolizer->SetOpacity(ParseDouble(params["fill-opacity"], 1.0));
+            }
         }
     }
     
@@ -707,6 +710,21 @@ bool SldParser::ParseRasterSymbolizer(RasterSymbolizerPtr& symbolizer)
     std::string opacity = ReadElementContent("Opacity");
     if (!opacity.empty()) {
         symbolizer->SetOpacity(ParseDouble(opacity, 1.0));
+    }
+    
+    std::string channelSelection = ReadElementContent("ChannelSelection");
+    if (!channelSelection.empty()) {
+        symbolizer->SetChannelSelection(RasterChannelSelection::kRGB);
+    }
+    
+    std::string contrastEnhancement = ReadElementContent("ContrastEnhancement");
+    if (!contrastEnhancement.empty()) {
+        symbolizer->SetContrastEnhancement(true);
+        
+        std::string gamma = ReadElementContent("GammaValue");
+        if (!gamma.empty()) {
+            symbolizer->SetGammaValue(ParseDouble(gamma, 1.0));
+        }
     }
     
     std::string colorMap = ReadElementContent("ColorMap");
@@ -817,80 +835,95 @@ bool SldParser::ParseFilter(FilterPtr& filter)
 
 bool SldParser::ParseComparisonFilter(FilterPtr& filter)
 {
+    std::string opName;
     ComparisonOperator op = ComparisonOperator::kEqual;
-    std::string tagName;
     
-    if (m_content.find("<PropertyIsEqualTo", m_currentPos) != std::string::npos) {
+    size_t opStart = std::string::npos;
+    
+    if ((opStart = m_content.find("<PropertyIsEqualTo", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kEqual;
-        tagName = "PropertyIsEqualTo";
-    } else if (m_content.find("<PropertyIsNotEqualTo", m_currentPos) != std::string::npos) {
+        opName = "PropertyIsEqualTo";
+    } else if ((opStart = m_content.find("<PropertyIsNotEqualTo", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kNotEqual;
-        tagName = "PropertyIsNotEqualTo";
-    } else if (m_content.find("<PropertyIsLessThan", m_currentPos) != std::string::npos) {
+        opName = "PropertyIsNotEqualTo";
+    } else if ((opStart = m_content.find("<PropertyIsLessThan", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kLessThan;
-        tagName = "PropertyIsLessThan";
-    } else if (m_content.find("<PropertyIsGreaterThan", m_currentPos) != std::string::npos) {
+        opName = "PropertyIsLessThan";
+    } else if ((opStart = m_content.find("<PropertyIsGreaterThan", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kGreaterThan;
-        tagName = "PropertyIsGreaterThan";
-    } else if (m_content.find("<PropertyIsLessThanOrEqualTo", m_currentPos) != std::string::npos) {
+        opName = "PropertyIsGreaterThan";
+    } else if ((opStart = m_content.find("<PropertyIsLessThanOrEqualTo", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kLessThanOrEqual;
-        tagName = "PropertyIsLessThanOrEqualTo";
-    } else if (m_content.find("<PropertyIsGreaterThanOrEqualTo", m_currentPos) != std::string::npos) {
+        opName = "PropertyIsLessThanOrEqualTo";
+    } else if ((opStart = m_content.find("<PropertyIsGreaterThanOrEqualTo", m_currentPos)) != std::string::npos) {
         op = ComparisonOperator::kGreaterThanOrEqual;
-        tagName = "PropertyIsGreaterThanOrEqualTo";
-    } else {
+        opName = "PropertyIsGreaterThanOrEqualTo";
+    }
+    
+    if (opStart == std::string::npos) {
         return false;
     }
+    
+    m_currentPos = opStart;
     
     std::string propertyName = ReadElementContent("PropertyName");
     std::string literal = ReadElementContent("Literal");
     
     filter = std::make_shared<ComparisonFilter>(op, propertyName, literal);
     
+    SkipToEndElement(opName);
     return true;
 }
 
 bool SldParser::ParseLogicalFilter(FilterPtr& filter)
 {
-    LogicalOperator op = LogicalOperator::kAnd;
-    std::string tagName;
+    size_t andPos = m_content.find("<And", m_currentPos);
+    size_t orPos = m_content.find("<Or", m_currentPos);
+    size_t notPos = m_content.find("<Not", m_currentPos);
     
-    if (m_content.find("<And", m_currentPos) != std::string::npos) {
+    LogicalOperator op;
+    std::string tagName;
+    size_t opPos = std::string::npos;
+    
+    if (andPos != std::string::npos && (orPos == std::string::npos || andPos < orPos) &&
+        (notPos == std::string::npos || andPos < notPos)) {
         op = LogicalOperator::kAnd;
         tagName = "And";
-    } else if (m_content.find("<Or", m_currentPos) != std::string::npos) {
+        opPos = andPos;
+    } else if (orPos != std::string::npos && (notPos == std::string::npos || orPos < notPos)) {
         op = LogicalOperator::kOr;
         tagName = "Or";
-    } else if (m_content.find("<Not", m_currentPos) != std::string::npos) {
+        opPos = orPos;
+    } else if (notPos != std::string::npos) {
         op = LogicalOperator::kNot;
         tagName = "Not";
-    } else {
+        opPos = notPos;
+    }
+    
+    if (opPos == std::string::npos) {
         return false;
     }
+    
+    m_currentPos = opPos;
     
     LogicalFilterPtr logicalFilter = std::make_shared<LogicalFilter>(op);
     
-    size_t tagStart = m_content.find("<" + tagName, m_currentPos);
-    size_t tagEnd = m_content.find("</" + tagName + ">", tagStart);
-    
-    if (tagStart == std::string::npos || tagEnd == std::string::npos) {
+    size_t endTag = m_content.find("</" + tagName + ">", m_currentPos);
+    if (endTag == std::string::npos) {
         return false;
     }
     
-    size_t savedPos = m_currentPos;
-    m_currentPos = tagStart + tagName.length() + 1;
-    
-    while (m_currentPos < tagEnd) {
-        FilterPtr childFilter;
-        if (ParseFilter(childFilter)) {
-            logicalFilter->AddFilter(childFilter);
+    while (m_currentPos < endTag) {
+        FilterPtr subFilter;
+        if (ParseFilter(subFilter)) {
+            logicalFilter->AddFilter(subFilter);
         } else {
             break;
         }
     }
     
-    m_currentPos = tagEnd + tagName.length() + 3;
     filter = logicalFilter;
+    m_currentPos = endTag + tagName.length() + 3;
     return true;
 }
 
@@ -898,73 +931,115 @@ bool SldParser::ParseSpatialFilter(FilterPtr& filter)
 {
     SpatialOperator op = SpatialOperator::kBbox;
     std::string tagName;
+    size_t opPos = std::string::npos;
     
-    if (m_content.find("<BBOX", m_currentPos) != std::string::npos) {
+    if ((opPos = m_content.find("<BBOX", m_currentPos)) != std::string::npos) {
         op = SpatialOperator::kBbox;
         tagName = "BBOX";
-    } else if (m_content.find("<Intersects", m_currentPos) != std::string::npos) {
+    } else if ((opPos = m_content.find("<Intersects", m_currentPos)) != std::string::npos) {
         op = SpatialOperator::kIntersects;
         tagName = "Intersects";
-    } else if (m_content.find("<Within", m_currentPos) != std::string::npos) {
+    } else if ((opPos = m_content.find("<Within", m_currentPos)) != std::string::npos) {
         op = SpatialOperator::kWithin;
         tagName = "Within";
-    } else if (m_content.find("<Contains", m_currentPos) != std::string::npos) {
+    } else if ((opPos = m_content.find("<Contains", m_currentPos)) != std::string::npos) {
         op = SpatialOperator::kContains;
         tagName = "Contains";
-    } else {
+    }
+    
+    if (opPos == std::string::npos) {
         return false;
     }
     
+    m_currentPos = opPos;
+    
     std::string propertyName = ReadElementContent("PropertyName");
+    std::string envelopeContent = ReadElementContent("Envelope");
     
-    SpatialFilterPtr spatialFilter = std::make_shared<SpatialFilter>(op, static_cast<const Geometry*>(nullptr));
-    spatialFilter->SetPropertyName(propertyName);
-    filter = spatialFilter;
+    if (!envelopeContent.empty()) {
+        std::string lowerCorner = ReadElementContent("lowerCorner");
+        std::string upperCorner = ReadElementContent("upperCorner");
+        
+        double minX = 0, minY = 0, maxX = 0, maxY = 0;
+        
+        std::stringstream ss1(lowerCorner);
+        ss1 >> minX >> minY;
+        
+        std::stringstream ss2(upperCorner);
+        ss2 >> maxX >> maxY;
+        
+        Envelope env(minX, minY, maxX, maxY);
+        filter = std::make_shared<SpatialFilter>(op, env);
+    }
     
-    return true;
-}
-
-bool SldParser::ParseBinaryComparisonFilter(FilterPtr& filter)
-{
-    return ParseComparisonFilter(filter);
+    SkipToEndElement(tagName);
+    return filter != nullptr;
 }
 
 bool SldParser::ParsePropertyIsBetween(FilterPtr& filter)
 {
+    size_t startPos = m_content.find("<PropertyIsBetween", m_currentPos);
+    if (startPos == std::string::npos) {
+        return false;
+    }
+    
+    m_currentPos = startPos;
+    
     std::string propertyName = ReadElementContent("PropertyName");
-    std::string lower = ReadElementContent("LowerBoundary");
-    std::string upper = ReadElementContent("UpperBoundary");
+    std::string lowerBoundary = ReadElementContent("LowerBoundary");
+    std::string upperBoundary = ReadElementContent("UpperBoundary");
     
-    filter = std::make_shared<ComparisonFilter>(ComparisonOperator::kBetween, propertyName, lower, upper);
+    std::string lowerLiteral = ReadElementContent("Literal");
+    std::string upperLiteral = ReadElementContent("Literal");
     
+    filter = std::make_shared<ComparisonFilter>(ComparisonOperator::kBetween, 
+                                                  propertyName, lowerLiteral, upperLiteral);
+    
+    SkipToEndElement("PropertyIsBetween");
     return true;
 }
 
 bool SldParser::ParsePropertyIsLike(FilterPtr& filter)
 {
+    size_t startPos = m_content.find("<PropertyIsLike", m_currentPos);
+    if (startPos == std::string::npos) {
+        return false;
+    }
+    
+    m_currentPos = startPos;
+    
     std::string propertyName = ReadElementContent("PropertyName");
     std::string literal = ReadElementContent("Literal");
     
     filter = std::make_shared<ComparisonFilter>(ComparisonOperator::kLike, propertyName, literal);
     
+    SkipToEndElement("PropertyIsLike");
     return true;
 }
 
 bool SldParser::ParsePropertyIsNull(FilterPtr& filter)
 {
+    size_t startPos = m_content.find("<PropertyIsNull", m_currentPos);
+    if (startPos == std::string::npos) {
+        return false;
+    }
+    
+    m_currentPos = startPos;
+    
     std::string propertyName = ReadElementContent("PropertyName");
     
     filter = std::make_shared<ComparisonFilter>(ComparisonOperator::kIsNull, propertyName, "");
     
+    SkipToEndElement("PropertyIsNull");
     return true;
 }
 
 bool SldParser::ParseParameter(std::map<std::string, std::string>& params, const std::string& tagName)
 {
-    size_t pos = m_currentPos;
+    size_t searchPos = m_currentPos;
     
     while (true) {
-        size_t paramStart = m_content.find("<" + tagName, pos);
+        size_t paramStart = m_content.find("<" + tagName, searchPos);
         if (paramStart == std::string::npos) {
             break;
         }
@@ -974,17 +1049,19 @@ bool SldParser::ParseParameter(std::map<std::string, std::string>& params, const
             break;
         }
         
-        std::string nameAttr = ReadAttribute(tagName, "name");
-        
-        size_t contentStart = m_content.find(">", paramStart);
-        if (contentStart == std::string::npos || contentStart > paramEnd) {
-            break;
+        size_t nameAttrStart = m_content.find("name=\"", paramStart);
+        if (nameAttrStart != std::string::npos && nameAttrStart < paramEnd) {
+            nameAttrStart += 6;
+            size_t nameAttrEnd = m_content.find("\"", nameAttrStart);
+            std::string name = m_content.substr(nameAttrStart, nameAttrEnd - nameAttrStart);
+            
+            size_t contentStart = m_content.find(">", paramStart) + 1;
+            std::string value = m_content.substr(contentStart, paramEnd - contentStart);
+            
+            params[Trim(name)] = Trim(value);
         }
         
-        std::string content = m_content.substr(contentStart + 1, paramEnd - contentStart - 1);
-        params[nameAttr] = Trim(content);
-        
-        pos = paramEnd + tagName.length() + 3;
+        searchPos = paramEnd + tagName.length() + 3;
     }
     
     return !params.empty();
@@ -1016,17 +1093,14 @@ std::string SldParser::ReadElementContent(const std::string& tagName)
     if (contentStart == std::string::npos) {
         return "";
     }
-    
-    if (m_content[contentStart - 1] == '/') {
-        return "";
-    }
+    contentStart++;
     
     size_t end = m_content.find("</" + tagName + ">", contentStart);
     if (end == std::string::npos) {
         return "";
     }
     
-    return m_content.substr(contentStart + 1, end - contentStart - 1);
+    return m_content.substr(contentStart, end - contentStart);
 }
 
 bool SldParser::SkipToElement(const std::string& tagName)
@@ -1035,7 +1109,6 @@ bool SldParser::SkipToElement(const std::string& tagName)
     if (pos == std::string::npos) {
         return false;
     }
-    
     m_currentPos = pos;
     return true;
 }
@@ -1046,24 +1119,23 @@ bool SldParser::SkipToEndElement(const std::string& tagName)
     if (pos == std::string::npos) {
         return false;
     }
-    
     m_currentPos = pos + tagName.length() + 3;
     return true;
 }
 
 std::string SldParser::ReadAttribute(const std::string& tagName, const std::string& attrName)
 {
-    size_t tagStart = m_content.find("<" + tagName, m_currentPos);
-    if (tagStart == std::string::npos) {
+    size_t start = m_content.find("<" + tagName, m_currentPos);
+    if (start == std::string::npos) {
         return "";
     }
     
-    size_t tagEnd = m_content.find(">", tagStart);
-    if (tagEnd == std::string::npos) {
+    size_t end = m_content.find(">", start);
+    if (end == std::string::npos) {
         return "";
     }
     
-    std::string tagContent = m_content.substr(tagStart, tagEnd - tagStart);
+    std::string tagContent = m_content.substr(start, end - start);
     
     std::string attrPattern = attrName + "=\"";
     size_t attrStart = tagContent.find(attrPattern);
@@ -1100,7 +1172,7 @@ std::string SldParser::ToLower(const std::string& str) const
 
 std::string SldParser::GetElementName(const std::string& fullName) const
 {
-    size_t colonPos = fullName.find(":");
+    size_t colonPos = fullName.find(':');
     if (colonPos != std::string::npos) {
         return fullName.substr(colonPos + 1);
     }
@@ -1109,35 +1181,36 @@ std::string SldParser::GetElementName(const std::string& fullName) const
 
 uint32_t SldParser::ParseColor(const std::string& colorStr)
 {
-    std::string str = Trim(colorStr);
+    std::string color = Trim(colorStr);
     
-    if (str.empty()) {
-        return 0x000000FF;
+    if (color.empty()) {
+        return 0xFF000000;
     }
     
-    if (str[0] == '#') {
-        std::string hex = str.substr(1);
-        if (hex.length() == 6) {
-            uint32_t r = std::stoul(hex.substr(0, 2), nullptr, 16);
-            uint32_t g = std::stoul(hex.substr(2, 2), nullptr, 16);
-            uint32_t b = std::stoul(hex.substr(4, 2), nullptr, 16);
-            return (r << 24) | (g << 16) | (b << 8) | 0xFF;
-        } else if (hex.length() == 8) {
-            uint32_t r = std::stoul(hex.substr(0, 2), nullptr, 16);
-            uint32_t g = std::stoul(hex.substr(2, 2), nullptr, 16);
-            uint32_t b = std::stoul(hex.substr(4, 2), nullptr, 16);
-            uint32_t a = std::stoul(hex.substr(6, 2), nullptr, 16);
-            return (r << 24) | (g << 16) | (b << 8) | a;
-        }
+    if (color[0] == '#') {
+        color = color.substr(1);
     }
     
-    return 0x000000FF;
+    if (color.length() == 6) {
+        uint32_t rgb = static_cast<uint32_t>(std::strtoul(color.c_str(), nullptr, 16));
+        return 0xFF000000 | rgb;
+    } else if (color.length() == 8) {
+        uint32_t argb = static_cast<uint32_t>(std::strtoul(color.c_str(), nullptr, 16));
+        return argb;
+    }
+    
+    return 0xFF000000;
 }
 
 double SldParser::ParseDouble(const std::string& str, double defaultVal)
 {
+    std::string trimmed = Trim(str);
+    if (trimmed.empty()) {
+        return defaultVal;
+    }
+    
     try {
-        return std::stod(Trim(str));
+        return std::stod(trimmed);
     } catch (...) {
         return defaultVal;
     }
@@ -1145,8 +1218,13 @@ double SldParser::ParseDouble(const std::string& str, double defaultVal)
 
 int SldParser::ParseInt(const std::string& str, int defaultVal)
 {
+    std::string trimmed = Trim(str);
+    if (trimmed.empty()) {
+        return defaultVal;
+    }
+    
     try {
-        return std::stoi(Trim(str));
+        return std::stoi(trimmed);
     } catch (...) {
         return defaultVal;
     }
@@ -1155,18 +1233,15 @@ int SldParser::ParseInt(const std::string& str, int defaultVal)
 std::string SldParser::ColorToString(uint32_t color)
 {
     char buf[16];
-    snprintf(buf, sizeof(buf), "#%02X%02X%02X",
-             (color >> 24) & 0xFF,
-             (color >> 16) & 0xFF,
-             (color >> 8) & 0xFF);
+    snprintf(buf, sizeof(buf), "#%06X", color & 0x00FFFFFF);
     return std::string(buf);
 }
 
 std::string SldParser::DoubleToString(double val)
 {
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%.6f", val);
-    return std::string(buf);
+    std::ostringstream oss;
+    oss << val;
+    return oss.str();
 }
 
 void SldParser::SetError(const std::string& message)
@@ -1179,162 +1254,223 @@ void SldParser::ClearError()
     m_lastError.clear();
 }
 
+std::string SldParser::GenerateIndent(int level)
+{
+    return std::string(level * 2, ' ');
+}
+
 std::string SldParser::GenerateSld(const std::vector<SymbolizerRulePtr>& rules)
 {
-    std::string sld = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    sld += "<StyledLayerDescriptor version=\"1.0.0\" xmlns=\"http://www.opengis.net/sld\">\n";
-    sld += "  <NamedLayer>\n";
-    sld += "    <Name>Default</Name>\n";
-    sld += "    <UserStyle>\n";
-    sld += "      <FeatureTypeStyle>\n";
+    std::ostringstream oss;
+    
+    oss << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    oss << "<StyledLayerDescriptor version=\"1.0.0\" \n";
+    oss << "    xsi:schemaLocation=\"http://www.opengis.net/sld StyledLayerDescriptor.xsd\" \n";
+    oss << "    xmlns=\"http://www.opengis.net/sld\" \n";
+    oss << "    xmlns:ogc=\"http://www.opengis.net/ogc\" \n";
+    oss << "    xmlns:xlink=\"http://www.w3.org/1999/xlink\" \n";
+    oss << "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n";
+    
+    oss << "  <NamedLayer>\n";
+    oss << "    <Name>DefaultLayer</Name>\n";
+    oss << "    <UserStyle>\n";
+    oss << "      <FeatureTypeStyle>\n";
     
     for (const auto& rule : rules) {
-        sld += GenerateSld(rule);
+        oss << GenerateSld(rule);
     }
     
-    sld += "      </FeatureTypeStyle>\n";
-    sld += "    </UserStyle>\n";
-    sld += "  </NamedLayer>\n";
-    sld += "</StyledLayerDescriptor>\n";
+    oss << "      </FeatureTypeStyle>\n";
+    oss << "    </UserStyle>\n";
+    oss << "  </NamedLayer>\n";
+    oss << "</StyledLayerDescriptor>\n";
     
-    return sld;
+    return oss.str();
 }
 
 std::string SldParser::GenerateSld(const SymbolizerRulePtr& rule)
 {
-    std::string sld = GenerateIndent(3) + "<Rule>\n";
+    std::ostringstream oss;
+    
+    oss << "        <Rule>\n";
     
     if (!rule->GetName().empty()) {
-        sld += GenerateIndent(4) + "<Name>" + rule->GetName() + "</Name>\n";
+        oss << "          <Name>" << rule->GetName() << "</Name>\n";
     }
     
     if (!rule->GetTitle().empty()) {
-        sld += GenerateIndent(4) + "<Title>" + rule->GetTitle() + "</Title>\n";
+        oss << "          <Title>" << rule->GetTitle() << "</Title>\n";
     }
     
     if (rule->GetMinScaleDenominator() > 0) {
-        sld += GenerateIndent(4) + "<MinScaleDenominator>" + 
-               DoubleToString(rule->GetMinScaleDenominator()) + "</MinScaleDenominator>\n";
+        oss << "          <MinScaleDenominator>" << rule->GetMinScaleDenominator() 
+            << "</MinScaleDenominator>\n";
     }
     
     if (rule->GetMaxScaleDenominator() < std::numeric_limits<double>::max()) {
-        sld += GenerateIndent(4) + "<MaxScaleDenominator>" + 
-               DoubleToString(rule->GetMaxScaleDenominator()) + "</MaxScaleDenominator>\n";
+        oss << "          <MaxScaleDenominator>" << rule->GetMaxScaleDenominator() 
+            << "</MaxScaleDenominator>\n";
     }
     
     if (rule->HasFilter()) {
-        sld += GenerateFilter(rule->GetFilter(), 4);
+        oss << GenerateFilter(rule->GetFilter(), 10);
     }
     
     for (const auto& symbolizer : rule->GetSymbolizers()) {
-        SymbolizerType type = symbolizer->GetType();
-        switch (type) {
+        switch (symbolizer->GetType()) {
             case SymbolizerType::kPoint:
-                sld += GeneratePointSymbolizer(
-                    std::static_pointer_cast<PointSymbolizer>(symbolizer), 4);
+                oss << GeneratePointSymbolizer(
+                    std::dynamic_pointer_cast<PointSymbolizer>(symbolizer), 10);
                 break;
             case SymbolizerType::kLine:
-                sld += GenerateLineSymbolizer(
-                    std::static_pointer_cast<LineSymbolizer>(symbolizer), 4);
+                oss << GenerateLineSymbolizer(
+                    std::dynamic_pointer_cast<LineSymbolizer>(symbolizer), 10);
                 break;
             case SymbolizerType::kPolygon:
-                sld += GeneratePolygonSymbolizer(
-                    std::static_pointer_cast<PolygonSymbolizer>(symbolizer), 4);
+                oss << GeneratePolygonSymbolizer(
+                    std::dynamic_pointer_cast<PolygonSymbolizer>(symbolizer), 10);
                 break;
             case SymbolizerType::kText:
-                sld += GenerateTextSymbolizer(
-                    std::static_pointer_cast<TextSymbolizer>(symbolizer), 4);
+                oss << GenerateTextSymbolizer(
+                    std::dynamic_pointer_cast<TextSymbolizer>(symbolizer), 10);
                 break;
             case SymbolizerType::kRaster:
-                sld += GenerateRasterSymbolizer(
-                    std::static_pointer_cast<RasterSymbolizer>(symbolizer), 4);
+                oss << GenerateRasterSymbolizer(
+                    std::dynamic_pointer_cast<RasterSymbolizer>(symbolizer), 10);
                 break;
             default:
                 break;
         }
     }
     
-    sld += GenerateIndent(3) + "</Rule>\n";
-    return sld;
-}
-
-std::string SldParser::GenerateIndent(int level)
-{
-    return std::string(level * 2, ' ');
+    oss << "        </Rule>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GeneratePointSymbolizer(const PointSymbolizerPtr& symbolizer, int indent)
 {
-    std::string sld = GenerateIndent(indent) + "<PointSymbolizer>\n";
-    sld += GenerateIndent(indent + 1) + "<Graphic>\n";
-    sld += GenerateIndent(indent + 2) + "<Mark>\n";
-    sld += GenerateIndent(indent + 3) + "<WellKnownName>circle</WellKnownName>\n";
-    sld += GenerateIndent(indent + 3) + "<Fill>\n";
-    sld += GenerateIndent(indent + 4) + "<CssParameter name=\"fill\">" + 
-           ColorToString(symbolizer->GetColor()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 3) + "</Fill>\n";
-    sld += GenerateIndent(indent + 2) + "</Mark>\n";
-    sld += GenerateIndent(indent + 2) + "<Size>" + DoubleToString(symbolizer->GetSize()) + "</Size>\n";
-    sld += GenerateIndent(indent + 1) + "</Graphic>\n";
-    sld += GenerateIndent(indent) + "</PointSymbolizer>\n";
-    return sld;
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
+    oss << ind << "<PointSymbolizer>\n";
+    oss << ind << "  <Graphic>\n";
+    oss << ind << "    <Mark>\n";
+    oss << ind << "      <WellKnownName>circle</WellKnownName>\n";
+    oss << ind << "      <Fill>\n";
+    oss << ind << "        <CssParameter name=\"fill\">" 
+        << ColorToString(symbolizer->GetColor()) << "</CssParameter>\n";
+    oss << ind << "      </Fill>\n";
+    oss << ind << "      <Stroke>\n";
+    oss << ind << "        <CssParameter name=\"stroke\">" 
+        << ColorToString(symbolizer->GetStrokeColor()) << "</CssParameter>\n";
+    oss << ind << "        <CssParameter name=\"stroke-width\">" 
+        << symbolizer->GetStrokeWidth() << "</CssParameter>\n";
+    oss << ind << "      </Stroke>\n";
+    oss << ind << "    </Mark>\n";
+    oss << ind << "    <Size>" << symbolizer->GetSize() << "</Size>\n";
+    oss << ind << "  </Graphic>\n";
+    oss << ind << "</PointSymbolizer>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateLineSymbolizer(const LineSymbolizerPtr& symbolizer, int indent)
 {
-    std::string sld = GenerateIndent(indent) + "<LineSymbolizer>\n";
-    sld += GenerateIndent(indent + 1) + "<Stroke>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"stroke\">" + 
-           ColorToString(symbolizer->GetColor()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"stroke-width\">" + 
-           DoubleToString(symbolizer->GetWidth()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 1) + "</Stroke>\n";
-    sld += GenerateIndent(indent) + "</LineSymbolizer>\n";
-    return sld;
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
+    oss << ind << "<LineSymbolizer>\n";
+    oss << ind << "  <Stroke>\n";
+    oss << ind << "    <CssParameter name=\"stroke\">" 
+        << ColorToString(symbolizer->GetColor()) << "</CssParameter>\n";
+    oss << ind << "    <CssParameter name=\"stroke-width\">" 
+        << symbolizer->GetWidth() << "</CssParameter>\n";
+    if (symbolizer->GetOpacity() < 1.0) {
+        oss << ind << "    <CssParameter name=\"stroke-opacity\">" 
+            << symbolizer->GetOpacity() << "</CssParameter>\n";
+    }
+    oss << ind << "  </Stroke>\n";
+    oss << ind << "</LineSymbolizer>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GeneratePolygonSymbolizer(const PolygonSymbolizerPtr& symbolizer, int indent)
 {
-    std::string sld = GenerateIndent(indent) + "<PolygonSymbolizer>\n";
-    sld += GenerateIndent(indent + 1) + "<Fill>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"fill\">" + 
-           ColorToString(symbolizer->GetFillColor()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 1) + "</Fill>\n";
-    sld += GenerateIndent(indent + 1) + "<Stroke>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"stroke\">" + 
-           ColorToString(symbolizer->GetStrokeColor()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"stroke-width\">" + 
-           DoubleToString(symbolizer->GetStrokeWidth()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 1) + "</Stroke>\n";
-    sld += GenerateIndent(indent) + "</PolygonSymbolizer>\n";
-    return sld;
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
+    oss << ind << "<PolygonSymbolizer>\n";
+    oss << ind << "  <Fill>\n";
+    oss << ind << "    <CssParameter name=\"fill\">" 
+        << ColorToString(symbolizer->GetFillColor()) << "</CssParameter>\n";
+    if (symbolizer->GetFillOpacity() < 1.0) {
+        oss << ind << "    <CssParameter name=\"fill-opacity\">" 
+            << symbolizer->GetFillOpacity() << "</CssParameter>\n";
+    }
+    oss << ind << "  </Fill>\n";
+    oss << ind << "  <Stroke>\n";
+    oss << ind << "    <CssParameter name=\"stroke\">" 
+        << ColorToString(symbolizer->GetStrokeColor()) << "</CssParameter>\n";
+    oss << ind << "    <CssParameter name=\"stroke-width\">" 
+        << symbolizer->GetStrokeWidth() << "</CssParameter>\n";
+    oss << ind << "  </Stroke>\n";
+    oss << ind << "</PolygonSymbolizer>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateTextSymbolizer(const TextSymbolizerPtr& symbolizer, int indent)
 {
-    std::string sld = GenerateIndent(indent) + "<TextSymbolizer>\n";
-    sld += GenerateIndent(indent + 1) + "<Label>" + symbolizer->GetLabel() + "</Label>\n";
-    sld += GenerateIndent(indent + 1) + "<Font>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"font-family\">" + 
-           symbolizer->GetFont().GetFamily() + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"font-size\">" + 
-           std::to_string(symbolizer->GetFont().GetSize()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 1) + "</Font>\n";
-    sld += GenerateIndent(indent + 1) + "<Fill>\n";
-    sld += GenerateIndent(indent + 2) + "<CssParameter name=\"fill\">" + 
-           ColorToString(symbolizer->GetColor()) + "</CssParameter>\n";
-    sld += GenerateIndent(indent + 1) + "</Fill>\n";
-    sld += GenerateIndent(indent) + "</TextSymbolizer>\n";
-    return sld;
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
+    oss << ind << "<TextSymbolizer>\n";
+    
+    if (!symbolizer->GetLabelProperty().empty()) {
+        oss << ind << "  <Label>\n";
+        oss << ind << "    <ogc:PropertyName>" << symbolizer->GetLabelProperty() 
+            << "</ogc:PropertyName>\n";
+        oss << ind << "  </Label>\n";
+    } else if (!symbolizer->GetLabel().empty()) {
+        oss << ind << "  <Label>" << symbolizer->GetLabel() << "</Label>\n";
+    }
+    
+    Font font = symbolizer->GetFont();
+    oss << ind << "  <Font>\n";
+    oss << ind << "    <CssParameter name=\"font-family\">" << font.GetFamily() 
+        << "</CssParameter>\n";
+    oss << ind << "    <CssParameter name=\"font-size\">" << font.GetSize() 
+        << "</CssParameter>\n";
+    if (font.IsBold()) {
+        oss << ind << "    <CssParameter name=\"font-weight\">bold</CssParameter>\n";
+    }
+    if (font.IsItalic()) {
+        oss << ind << "    <CssParameter name=\"font-style\">italic</CssParameter>\n";
+    }
+    oss << ind << "  </Font>\n";
+    
+    oss << ind << "  <Fill>\n";
+    oss << ind << "    <CssParameter name=\"fill\">" 
+        << ColorToString(symbolizer->GetColor()) << "</CssParameter>\n";
+    oss << ind << "  </Fill>\n";
+    
+    oss << ind << "</TextSymbolizer>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateRasterSymbolizer(const RasterSymbolizerPtr& symbolizer, int indent)
 {
-    std::string sld = GenerateIndent(indent) + "<RasterSymbolizer>\n";
-    sld += GenerateIndent(indent + 1) + "<Opacity>" + 
-           DoubleToString(symbolizer->GetOpacity()) + "</Opacity>\n";
-    sld += GenerateIndent(indent) + "</RasterSymbolizer>\n";
-    return sld;
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
+    oss << ind << "<RasterSymbolizer>\n";
+    oss << ind << "  <Opacity>" << symbolizer->GetOpacity() << "</Opacity>\n";
+    oss << ind << "</RasterSymbolizer>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateFilter(const FilterPtr& filter, int indent)
@@ -1343,17 +1479,16 @@ std::string SldParser::GenerateFilter(const FilterPtr& filter, int indent)
         return "";
     }
     
-    FilterType type = filter->GetType();
-    switch (type) {
+    switch (filter->GetType()) {
         case FilterType::kComparison:
             return GenerateComparisonFilter(
-                std::static_pointer_cast<ComparisonFilter>(filter), indent);
+                std::dynamic_pointer_cast<ComparisonFilter>(filter), indent);
         case FilterType::kLogical:
             return GenerateLogicalFilter(
-                std::static_pointer_cast<LogicalFilter>(filter), indent);
+                std::dynamic_pointer_cast<LogicalFilter>(filter), indent);
         case FilterType::kSpatial:
             return GenerateSpatialFilter(
-                std::static_pointer_cast<SpatialFilter>(filter), indent);
+                std::dynamic_pointer_cast<SpatialFilter>(filter), indent);
         default:
             return "";
     }
@@ -1361,6 +1496,9 @@ std::string SldParser::GenerateFilter(const FilterPtr& filter, int indent)
 
 std::string SldParser::GenerateComparisonFilter(const ComparisonFilterPtr& filter, int indent)
 {
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
     std::string tagName;
     switch (filter->GetOperator()) {
         case ComparisonOperator::kEqual:
@@ -1381,21 +1519,41 @@ std::string SldParser::GenerateComparisonFilter(const ComparisonFilterPtr& filte
         case ComparisonOperator::kGreaterThanOrEqual:
             tagName = "PropertyIsGreaterThanOrEqualTo";
             break;
+        case ComparisonOperator::kLike:
+            tagName = "PropertyIsLike";
+            break;
+        case ComparisonOperator::kIsNull:
+            tagName = "PropertyIsNull";
+            break;
+        case ComparisonOperator::kBetween:
+            tagName = "PropertyIsBetween";
+            break;
         default:
-            return "";
+            tagName = "PropertyIsEqualTo";
+            break;
     }
     
-    std::string sld = GenerateIndent(indent) + "<ogc:" + tagName + ">\n";
-    sld += GenerateIndent(indent + 1) + "<ogc:PropertyName>" + 
-           filter->GetPropertyName() + "</ogc:PropertyName>\n";
-    sld += GenerateIndent(indent + 1) + "<ogc:Literal>" + 
-           filter->GetLiteral() + "</ogc:Literal>\n";
-    sld += GenerateIndent(indent) + "</ogc:" + tagName + ">\n";
-    return sld;
+    oss << ind << "<ogc:Filter>\n";
+    oss << ind << "  <ogc:" << tagName << ">\n";
+    oss << ind << "    <ogc:PropertyName>" << filter->GetPropertyName() 
+        << "</ogc:PropertyName>\n";
+    
+    if (filter->GetOperator() != ComparisonOperator::kIsNull) {
+        oss << ind << "    <ogc:Literal>" << filter->GetLiteral() 
+            << "</ogc:Literal>\n";
+    }
+    
+    oss << ind << "  </ogc:" << tagName << ">\n";
+    oss << ind << "</ogc:Filter>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateLogicalFilter(const LogicalFilterPtr& filter, int indent)
 {
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
     std::string tagName;
     switch (filter->GetOperator()) {
         case LogicalOperator::kAnd:
@@ -1408,21 +1566,37 @@ std::string SldParser::GenerateLogicalFilter(const LogicalFilterPtr& filter, int
             tagName = "Not";
             break;
         default:
-            return "";
+            tagName = "And";
+            break;
     }
     
-    std::string sld = GenerateIndent(indent) + "<ogc:" + tagName + ">\n";
+    oss << ind << "<ogc:Filter>\n";
+    oss << ind << "  <ogc:" << tagName << ">\n";
     
-    for (const auto& child : filter->GetFilters()) {
-        sld += GenerateFilter(child, indent + 1);
+    for (const auto& subFilter : filter->GetFilters()) {
+        std::string subFilterStr = GenerateFilter(subFilter, indent + 4);
+        // Remove outer Filter tags for nested filters
+        size_t start = subFilterStr.find("<ogc:Filter>");
+        size_t end = subFilterStr.find("</ogc:Filter>");
+        if (start != std::string::npos && end != std::string::npos) {
+            start += 12;
+            oss << subFilterStr.substr(start, end - start);
+        } else {
+            oss << subFilterStr;
+        }
     }
     
-    sld += GenerateIndent(indent) + "</ogc:" + tagName + ">\n";
-    return sld;
+    oss << ind << "  </ogc:" << tagName << ">\n";
+    oss << ind << "</ogc:Filter>\n";
+    
+    return oss.str();
 }
 
 std::string SldParser::GenerateSpatialFilter(const SpatialFilterPtr& filter, int indent)
 {
+    std::ostringstream oss;
+    std::string ind = GenerateIndent(indent);
+    
     std::string tagName;
     switch (filter->GetOperator()) {
         case SpatialOperator::kBbox:
@@ -1438,14 +1612,28 @@ std::string SldParser::GenerateSpatialFilter(const SpatialFilterPtr& filter, int
             tagName = "Contains";
             break;
         default:
-            return "";
+            tagName = "BBOX";
+            break;
     }
     
-    std::string sld = GenerateIndent(indent) + "<ogc:" + tagName + ">\n";
-    sld += GenerateIndent(indent + 1) + "<ogc:PropertyName>" + 
-           filter->GetPropertyName() + "</ogc:PropertyName>\n";
-    sld += GenerateIndent(indent) + "</ogc:" + tagName + ">\n";
-    return sld;
+    oss << ind << "<ogc:Filter>\n";
+    oss << ind << "  <ogc:" << tagName << ">\n";
+    
+    if (filter->HasEnvelope()) {
+        const Envelope& env = filter->GetEnvelope();
+        oss << ind << "    <ogc:PropertyName>geometry</ogc:PropertyName>\n";
+        oss << ind << "    <gml:Envelope>\n";
+        oss << ind << "      <gml:lowerCorner>" << env.GetMinX() << " " << env.GetMinY() 
+            << "</gml:lowerCorner>\n";
+        oss << ind << "      <gml:upperCorner>" << env.GetMaxX() << " " << env.GetMaxY() 
+            << "</gml:upperCorner>\n";
+        oss << ind << "    </gml:Envelope>\n";
+    }
+    
+    oss << ind << "  </ogc:" << tagName << ">\n";
+    oss << ind << "</ogc:Filter>\n";
+    
+    return oss.str();
 }
 
 }

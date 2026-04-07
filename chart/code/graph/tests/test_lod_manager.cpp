@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/lod_manager.h"
-#include "ogc/draw/lod.h"
+#include "ogc/graph/lod/lod_manager.h"
+#include "ogc/graph/lod/lod.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using namespace ogc;
 
 class LODManagerTest : public ::testing::Test {

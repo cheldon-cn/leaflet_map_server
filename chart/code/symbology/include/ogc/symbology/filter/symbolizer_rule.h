@@ -54,6 +54,10 @@ public:
     
     bool HasSymbolizers() const { return !m_symbolizers.empty(); }
     
+    const Envelope& GetExtent() const { return m_extent; }
+    void SetExtent(const Envelope& extent) { m_extent = extent; }
+    bool HasExtent() const { return !m_extent.IsNull(); }
+    
     bool IsElseFilter() const { return m_isElseFilter; }
     void SetElseFilter(bool isElse) { m_isElseFilter = isElse; }
     
@@ -73,6 +77,7 @@ private:
     double m_minScaleDenominator;
     double m_maxScaleDenominator;
     std::vector<SymbolizerPtr> m_symbolizers;
+    Envelope m_extent;
     bool m_isElseFilter;
     int m_priority;
 };

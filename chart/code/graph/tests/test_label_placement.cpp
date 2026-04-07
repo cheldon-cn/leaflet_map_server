@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/label_placement.h"
+#include "ogc/graph/label/label_placement.h"
 #include "ogc/geometry.h"
 #include "ogc/point.h"
 #include "ogc/linestring.h"
@@ -7,7 +7,7 @@
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using namespace ogc;
 
 class LabelPlacementTest : public ::testing::Test {

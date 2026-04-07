@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/render_task.h"
+#include "ogc/graph/render/render_task.h"
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
 
 class TestRenderTask : public RenderTask {

@@ -16,7 +16,7 @@
 namespace ogc {
 namespace navi {
 
-struct TrackPoint {
+struct PlaybackTrackPoint {
     Coordinate position;
     double heading = 0.0;
     double speed = 0.0;
@@ -25,8 +25,8 @@ struct TrackPoint {
     double duration = 0.0;
 };
 
-struct TrackSegment {
-    std::vector<TrackPoint> points;
+struct PlaybackTrackSegment {
+    std::vector<PlaybackTrackPoint> points;
     double totalDistance = 0.0;
     double totalDuration = 0.0;
     std::chrono::system_clock::time_point startTime;
@@ -36,7 +36,7 @@ struct TrackSegment {
 struct TrackPlaybackData {
     std::string id;
     std::string name;
-    std::vector<TrackSegment> segments;
+    std::vector<PlaybackTrackSegment> segments;
     double totalDistance = 0.0;
     double totalDuration = 0.0;
     std::chrono::system_clock::time_point startTime;
@@ -92,7 +92,7 @@ public:
         kStepByStep
     };
     
-    using PlaybackProgressCallback = std::function<void(const TrackPoint&, double progress)>;
+    using PlaybackProgressCallback = std::function<void(const PlaybackTrackPoint&, double progress)>;
     using PlaybackStateChangedCallback = std::function<void(PlaybackState)>;
     using PlaybackFinishedCallback = std::function<void()>;
     
@@ -124,7 +124,7 @@ public:
     
     double GetProgress() const { return m_progress; }
     size_t GetCurrentPointIndex() const { return m_currentPointIndex; }
-    TrackPoint GetCurrentPoint() const;
+    PlaybackTrackPoint GetCurrentPoint() const;
     
     double GetElapsedTime() const;
     double GetRemainingTime() const;
@@ -145,7 +145,7 @@ private:
     
     void AdvancePlayback(double deltaTime);
     void UpdateProgress();
-    void NotifyProgress(const TrackPoint& point);
+    void NotifyProgress(const PlaybackTrackPoint& point);
     void NotifyStateChanged(PlaybackState state);
     void NotifyFinished();
     

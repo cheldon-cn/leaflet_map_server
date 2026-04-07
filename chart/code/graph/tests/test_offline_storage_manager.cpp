@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/offline_storage_manager.h"
+#include <ogc/cache/offline/offline_storage_manager.h>
 #include <fstream>
 #include <sys/stat.h>
 
@@ -13,7 +13,7 @@
 #include <unistd.h>
 #endif
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 
 namespace {
 

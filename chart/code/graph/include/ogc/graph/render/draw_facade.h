@@ -1,9 +1,9 @@
-#ifndef OGC_GRAPH_DRAW_FACADE_H
-#define OGC_GRAPH_DRAW_FACADE_H
+#ifndef OGC_GRAPH_RENDER_DRAW_FACADE_H
+#define OGC_GRAPH_RENDER_DRAW_FACADE_H
 
 #include "ogc/graph/export.h"
-#include <ogc/draw/draw_result.h>
 #include "ogc/graph/render/draw_params.h"
+#include <ogc/draw/draw_result.h>
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/draw_device.h>

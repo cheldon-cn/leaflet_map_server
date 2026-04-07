@@ -1,9 +1,9 @@
-#include "ogc/draw/pan_zoom_handler.h"
+#include "ogc/graph/interaction/pan_zoom_handler.h"
 #include <algorithm>
 #include <cmath>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 std::unique_ptr<PanZoomHandler> PanZoomHandler::Create(const std::string& name) {
     return std::unique_ptr<PanZoomHandler>(new PanZoomHandler(name));
@@ -480,16 +480,16 @@ bool PanZoomHandler::HandleKeyDown(const InteractionEvent& event) {
         case '-':
             ZoomOut();
             return true;
-        case 37:  // Left
+        case 37:
             Pan(m_viewportWidth * 0.1, 0);
             return true;
-        case 38:  // Up
+        case 38:
             Pan(0, m_viewportHeight * 0.1);
             return true;
-        case 39:  // Right
+        case 39:
             Pan(-m_viewportWidth * 0.1, 0);
             return true;
-        case 40:  // Down
+        case 40:
             Pan(0, -m_viewportHeight * 0.1);
             return true;
         default:

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/data_encryption.h"
+#include <ogc/cache/offline/data_encryption.h>
 #include <fstream>
 
 #ifdef _WIN32
@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #endif
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 
 namespace {
 

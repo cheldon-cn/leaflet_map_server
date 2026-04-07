@@ -81,7 +81,7 @@ void TrackPlayer::SeekToTime(const std::chrono::system_clock::time_point& time) 
     }
     
     for (size_t i = 0; i < totalPoints; ++i) {
-        TrackPoint point = GetCurrentPoint();
+        PlaybackTrackPoint point = GetCurrentPoint();
         if (point.timestamp >= time) {
             m_currentPointIndex = i;
             UpdateProgress();
@@ -108,9 +108,9 @@ void TrackPlayer::SetPlaybackMode(PlaybackMode mode) {
     m_playbackMode = mode;
 }
 
-TrackPoint TrackPlayer::GetCurrentPoint() const {
+PlaybackTrackPoint TrackPlayer::GetCurrentPoint() const {
     if (m_track.IsEmpty() || m_currentPointIndex >= m_track.GetPointCount()) {
-        return TrackPoint();
+        return PlaybackTrackPoint();
     }
     
     size_t currentIdx = 0;
@@ -123,7 +123,7 @@ TrackPoint TrackPlayer::GetCurrentPoint() const {
         }
     }
     
-    return TrackPoint();
+    return PlaybackTrackPoint();
 }
 
 double TrackPlayer::GetElapsedTime() const {
@@ -208,7 +208,7 @@ void TrackPlayer::AdvancePlayback(double deltaTime) {
         UpdateProgress();
     }
     
-    TrackPoint currentPoint = GetCurrentPoint();
+    PlaybackTrackPoint currentPoint = GetCurrentPoint();
     NotifyProgress(currentPoint);
     
     if (m_positionCallback) {
@@ -223,7 +223,7 @@ void TrackPlayer::UpdateProgress() {
     }
 }
 
-void TrackPlayer::NotifyProgress(const TrackPoint& point) {
+void TrackPlayer::NotifyProgress(const PlaybackTrackPoint& point) {
     if (m_progressCallback) {
         m_progressCallback(point, m_progress);
     }

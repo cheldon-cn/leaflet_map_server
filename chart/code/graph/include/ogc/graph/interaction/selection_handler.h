@@ -3,7 +3,7 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/interaction/interaction_handler.h"
-#include <ogc/draw/hit_test.h>
+#include "ogc/graph/interaction/hit_test.h"
 #include "ogc/graph/interaction/interaction_feedback.h"
 #include "ogc/envelope.h"
 #include "ogc/coordinate.h"
@@ -12,12 +12,9 @@
 #include <set>
 
 namespace ogc {
-namespace draw {
-class LayerManager;
-class Feature;
-}
-
 namespace graph {
+
+class LayerManager;
 
 enum class SelectionMode {
     kNone = 0,
@@ -70,8 +67,8 @@ public:
         return m_isSelecting ? InteractionState::kSelect : InteractionState::kNone; 
     }
     
-    void SetLayerManager(ogc::draw::LayerManager* manager);
-    ogc::draw::LayerManager* GetLayerManager() const { return m_layerManager; }
+    void SetLayerManager(LayerManager* manager);
+    LayerManager* GetLayerManager() const { return m_layerManager; }
     
     void SetSelectionMode(SelectionMode mode);
     SelectionMode GetSelectionMode() const { return m_params.mode; }
@@ -103,8 +100,8 @@ public:
     void SetSelectionChangedCallback(SelectionChangedCallback callback);
     void SetFeatureSelectedCallback(FeatureSelectedCallback callback);
     
-    void SetHitTester(ogc::draw::HitTester* hitTester);
-    ogc::draw::HitTester* GetHitTester() const { return m_hitTester; }
+    void SetHitTester(HitTester* hitTester);
+    HitTester* GetHitTester() const { return m_hitTester; }
     
     void SetFeedbackManager(FeedbackManager* manager);
     FeedbackManager* GetFeedbackManager() const { return m_feedbackManager; }
@@ -148,8 +145,8 @@ private:
     std::set<std::string> m_selectedFeatures;
     Envelope m_selectionEnvelope;
     
-    ogc::draw::LayerManager* m_layerManager = nullptr;
-    ogc::draw::HitTester* m_hitTester = nullptr;
+    LayerManager* m_layerManager = nullptr;
+    HitTester* m_hitTester = nullptr;
     FeedbackManager* m_feedbackManager = nullptr;
     
     bool m_isSelecting = false;

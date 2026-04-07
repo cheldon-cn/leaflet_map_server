@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/disk_tile_cache.h"
-#include "ogc/draw/tile_key.h"
+#include <ogc/cache/tile/disk_tile_cache.h>
+#include <ogc/cache/tile/tile_key.h>
 #include <ogc/draw/tile_device.h>
 #include <ogc/draw/raster_image_device.h>
-#include "ogc/draw/draw_params.h"
+#include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include "ogc/envelope.h"
@@ -16,7 +16,7 @@
 #include <sys/stat.h>
 #endif
 
-using namespace ogc::draw;
+using namespace ogc::cache;
 using ogc::Envelope;
 
 namespace {

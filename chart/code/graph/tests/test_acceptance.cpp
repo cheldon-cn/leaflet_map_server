@@ -11,12 +11,14 @@
 #include "ogc/multilinestring.h"
 #include "ogc/coordinate.h"
 #include "ogc/envelope.h"
-#include "ogc/draw/draw_facade.h"
+#include "ogc/graph/render/draw_facade.h"
 #include "ogc/draw/raster_image_device.h"
-#include "ogc/draw/coordinate_transform.h"
+#include <ogc/proj/coordinate_transform.h>
 
 using namespace ogc;
 using namespace ogc::draw;
+using ogc::graph::DrawFacade;
+using ogc::proj::CoordinateTransform;
 
 class AcceptanceTest : public ::testing::Test {
 protected:

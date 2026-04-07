@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/selection_handler.h"
-#include "ogc/draw/hit_test.h"
-#include "ogc/draw/interaction_feedback.h"
+#include "ogc/graph/interaction/selection_handler.h"
+#include "ogc/graph/interaction/hit_test.h"
+#include "ogc/graph/interaction/interaction_feedback.h"
 #include "ogc/envelope.h"
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Coordinate;
 using ogc::Envelope;
 

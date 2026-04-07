@@ -253,16 +253,19 @@ PerformanceLevel PerformanceMonitor::CalculatePerformanceLevel() const {
     auto metrics = m_collector.GetCurrentMetrics();
     
     if (metrics.fps.currentFps < m_thresholds.lowFpsThreshold ||
-        metrics.memory.usedMemoryMB > m_thresholds.memoryCriticalThresholdMB) {
+        metrics.memory.usedMemoryMB > m_thresholds.memoryCriticalThresholdMB ||
+        metrics.frame.frameTimeMs > m_thresholds.frameTimeCriticalMs) {
         return PerformanceLevel::kCritical;
     }
     
-    if (metrics.fps.currentFps < m_thresholds.highFpsThreshold * 0.5 ||
-        metrics.memory.usedMemoryMB > m_thresholds.memoryWarningThresholdMB) {
+    if (metrics.fps.currentFps < m_thresholds.lowFpsThreshold * 1.5 ||
+        metrics.memory.usedMemoryMB > m_thresholds.memoryWarningThresholdMB ||
+        metrics.frame.frameTimeMs > m_thresholds.frameTimeWarningMs) {
         return PerformanceLevel::kPoor;
     }
     
-    if (metrics.fps.currentFps < m_thresholds.highFpsThreshold * 0.75) {
+    if (metrics.fps.currentFps < m_thresholds.highFpsThreshold * 0.8 ||
+        metrics.memory.usedMemoryMB > m_thresholds.memoryWarningThresholdMB * 0.5) {
         return PerformanceLevel::kFair;
     }
     

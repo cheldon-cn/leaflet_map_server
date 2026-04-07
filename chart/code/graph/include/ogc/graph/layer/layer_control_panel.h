@@ -1,15 +1,15 @@
-#ifndef OGC_DRAW_LAYER_CONTROL_PANEL_H
-#define OGC_DRAW_LAYER_CONTROL_PANEL_H
+#ifndef OGC_GRAPH_LAYER_CONTROL_PANEL_H
+#define OGC_GRAPH_LAYER_CONTROL_PANEL_H
 
-#include "ogc/draw/export.h"
-#include "ogc/draw/layer_manager.h"
+#include "ogc/graph/export.h"
+#include "ogc/graph/layer/layer_manager.h"
 #include <memory>
 #include <string>
 #include <vector>
 #include <functional>
 
 namespace ogc {
-namespace draw {
+namespace graph {
 
 struct LayerControlInfo {
     std::string layerId;
@@ -77,7 +77,10 @@ public:
     const std::vector<LayerGroupInfo>& GetGroups() const { return m_groups; }
     
     void SetGroupVisible(const std::string& groupId, bool visible);
+    bool IsGroupVisible(const std::string& groupId) const;
+    
     void SetGroupOpacity(const std::string& groupId, double opacity);
+    double GetGroupOpacity(const std::string& groupId) const;
     
     void ShowAllLayers();
     void HideAllLayers();
@@ -89,7 +92,7 @@ public:
     void SetSelectionChangedCallback(SelectionChangedCallback callback);
     
     size_t GetLayerCount() const { return m_layers.size(); }
-    bool HasLayers() const { return !m_layers.empty(); }
+    bool HasLayer(const std::string& layerId) const;
     
     LayerControlInfo* FindLayer(const std::string& layerId);
     const LayerControlInfo* FindLayer(const std::string& layerId) const;

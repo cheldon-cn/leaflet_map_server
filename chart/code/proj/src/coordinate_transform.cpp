@@ -7,6 +7,24 @@
 #include "ogc/multipolygon.h"
 #include "ogc/geometrycollection.h"
 
+using ogc::Point;
+using ogc::LineString;
+using ogc::Polygon;
+using ogc::MultiPoint;
+using ogc::MultiLineString;
+using ogc::MultiPolygon;
+using ogc::GeometryCollection;
+using ogc::LinearRing;
+using ogc::Coordinate;
+using ogc::Envelope;
+using ogc::Geometry;
+using ogc::GeomType;
+using ogc::CoordinateList;
+using ogc::LinearRingPtr;
+using ogc::LineStringPtr;
+using ogc::PolygonPtr;
+using ogc::GeometryPtr;
+
 namespace ogc {
 namespace proj {
 
@@ -136,16 +154,16 @@ void CoordinateTransform::TransformInverse(double& x, double& y) const
     y = outY;
 }
 
-ogc::Coordinate CoordinateTransform::Transform(const ogc::Coordinate& coord) const
+Coordinate CoordinateTransform::Transform(const Coordinate& coord) const
 {
-    ogc::Coordinate result = coord;
+    Coordinate result = coord;
     Transform(result.x, result.y);
     return result;
 }
 
-ogc::Coordinate CoordinateTransform::TransformInverse(const ogc::Coordinate& coord) const
+Coordinate CoordinateTransform::TransformInverse(const Coordinate& coord) const
 {
-    ogc::Coordinate result = coord;
+    Coordinate result = coord;
     TransformInverse(result.x, result.y);
     return result;
 }
@@ -172,7 +190,7 @@ void CoordinateTransform::TransformArrayInverse(double* x, double* y, size_t cou
     }
 }
 
-ogc::Envelope CoordinateTransform::Transform(const ogc::Envelope& env) const
+Envelope CoordinateTransform::Transform(const Envelope& env) const
 {
     double minX = env.GetMinX();
     double minY = env.GetMinY();
@@ -182,11 +200,11 @@ ogc::Envelope CoordinateTransform::Transform(const ogc::Envelope& env) const
     Transform(minX, minY);
     Transform(maxX, maxY);
     
-    return ogc::Envelope(std::min(minX, maxX), std::min(minY, maxY),
+    return Envelope(std::min(minX, maxX), std::min(minY, maxY),
                     std::max(minX, maxX), std::max(minY, maxY));
 }
 
-ogc::Envelope CoordinateTransform::TransformInverse(const ogc::Envelope& env) const
+Envelope CoordinateTransform::TransformInverse(const Envelope& env) const
 {
     double minX = env.GetMinX();
     double minY = env.GetMinY();
@@ -196,16 +214,16 @@ ogc::Envelope CoordinateTransform::TransformInverse(const ogc::Envelope& env) co
     TransformInverse(minX, minY);
     TransformInverse(maxX, maxY);
     
-    return ogc::Envelope(std::min(minX, maxX), std::min(minY, maxY),
+    return Envelope(std::min(minX, maxX), std::min(minY, maxY),
                     std::max(minX, maxX), std::max(minY, maxY));
 }
 
-ogc::GeometryPtr CoordinateTransform::Transform(const ogc::Geometry* geometry) const
+GeometryPtr CoordinateTransform::Transform(const Geometry* geometry) const
 {
     return TransformGeometry(geometry, true);
 }
 
-ogc::GeometryPtr CoordinateTransform::TransformInverse(const ogc::Geometry* geometry) const
+GeometryPtr CoordinateTransform::TransformInverse(const Geometry* geometry) const
 {
     return TransformGeometry(geometry, false);
 }
@@ -271,17 +289,17 @@ void CoordinateTransform::UpdateInverse()
     m_inverseValid = true;
 }
 
-ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geometry, bool forward) const
+GeometryPtr CoordinateTransform::TransformGeometry(const Geometry* geometry, bool forward) const
 {
     if (!geometry) {
         return nullptr;
     }
     
     switch (geometry->GetGeometryType()) {
-        case ogc::GeomType::kPoint: {
+        case GeomType::kPoint: {
             const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
             if (!point) return nullptr;
-            ogc::Coordinate coord = point->GetCoordinate();
+            Coordinate coord = point->GetCoordinate();
             if (forward) {
                 Transform(coord.x, coord.y);
             } else {
@@ -289,13 +307,13 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             }
             return ogc::Point::Create(coord);
         }
-        case ogc::GeomType::kLineString: {
+        case GeomType::kLineString: {
             const ogc::LineString* lineString = dynamic_cast<const ogc::LineString*>(geometry);
             if (!lineString) return nullptr;
-            std::vector<ogc::Coordinate> coords;
+            std::vector<Coordinate> coords;
             coords.reserve(lineString->GetNumPoints());
             for (size_t i = 0; i < lineString->GetNumPoints(); ++i) {
-                ogc::Coordinate coord = lineString->GetCoordinateN(i);
+                Coordinate coord = lineString->GetCoordinateN(i);
                 if (forward) {
                     Transform(coord.x, coord.y);
                 } else {
@@ -305,16 +323,16 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             }
             return ogc::LineString::Create(coords);
         }
-        case ogc::GeomType::kPolygon: {
+        case GeomType::kPolygon: {
             const ogc::Polygon* polygon = dynamic_cast<const ogc::Polygon*>(geometry);
             if (!polygon) return nullptr;
             
-            std::vector<ogc::Coordinate> shellCoords;
+            std::vector<Coordinate> shellCoords;
             const ogc::LinearRing* shell = polygon->GetExteriorRing();
             if (shell) {
                 shellCoords.reserve(shell->GetNumPoints());
                 for (size_t i = 0; i < shell->GetNumPoints(); ++i) {
-                    ogc::Coordinate coord = shell->GetCoordinateN(i);
+                    Coordinate coord = shell->GetCoordinateN(i);
                     if (forward) {
                         Transform(coord.x, coord.y);
                     } else {
@@ -348,7 +366,7 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             
             return result;
         }
-        case ogc::GeomType::kMultiPoint: {
+        case GeomType::kMultiPoint: {
             const ogc::MultiPoint* multiPoint = dynamic_cast<const ogc::MultiPoint*>(geometry);
             if (!multiPoint) return nullptr;
             
@@ -368,7 +386,7 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             }
             return ogc::MultiPoint::Create(coords);
         }
-        case ogc::GeomType::kMultiLineString: {
+        case GeomType::kMultiLineString: {
             const ogc::MultiLineString* multiLineString = dynamic_cast<const ogc::MultiLineString*>(geometry);
             if (!multiLineString) return nullptr;
             
@@ -386,7 +404,7 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             }
             return ogc::MultiLineString::Create(std::move(lineStrings));
         }
-        case ogc::GeomType::kMultiPolygon: {
+        case GeomType::kMultiPolygon: {
             const ogc::MultiPolygon* multiPolygon = dynamic_cast<const ogc::MultiPolygon*>(geometry);
             if (!multiPolygon) return nullptr;
             
@@ -404,7 +422,7 @@ ogc::GeometryPtr CoordinateTransform::TransformGeometry(const ogc::Geometry* geo
             }
             return ogc::MultiPolygon::Create(std::move(polygons));
         }
-        case ogc::GeomType::kGeometryCollection: {
+        case GeomType::kGeometryCollection: {
             const ogc::GeometryCollection* collection = dynamic_cast<const ogc::GeometryCollection*>(geometry);
             if (!collection) return nullptr;
             

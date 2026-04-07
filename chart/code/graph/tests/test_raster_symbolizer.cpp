@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/raster_symbolizer.h"
+#include <ogc/symbology/symbolizer/raster_symbolizer.h>
 #include <ogc/draw/color.h>
 #include "ogc/common.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class RasterSymbolizerTest : public ::testing::Test {

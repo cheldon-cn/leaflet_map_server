@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/symbolizer.h"
-#include "ogc/draw/line_symbolizer.h"
-#include "ogc/draw/polygon_symbolizer.h"
-#include "ogc/draw/point_symbolizer.h"
-#include "ogc/draw/text_symbolizer.h"
+#include <ogc/symbology/symbolizer/symbolizer.h>
+#include <ogc/symbology/symbolizer/line_symbolizer.h>
+#include <ogc/symbology/symbolizer/polygon_symbolizer.h>
+#include <ogc/symbology/symbolizer/point_symbolizer.h>
+#include <ogc/symbology/symbolizer/text_symbolizer.h>
 #include <ogc/draw/draw_style.h>
 #include "ogc/common.h"
 
-using namespace ogc::draw;
+using namespace ogc::symbology;
 using namespace ogc;
 
 class SymbolizerTest : public ::testing::Test {

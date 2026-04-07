@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/draw_facade.h"
+#include "ogc/graph/render/draw_facade.h"
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_engine.h>
 #include <ogc/draw/draw_style.h>
@@ -8,7 +8,7 @@
 #include "ogc/envelope.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
 using ogc::Envelope;
 
 class DrawFacadeITTest : public ::testing::Test {

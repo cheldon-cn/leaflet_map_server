@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
-#include "ogc/draw/async_renderer.h"
-#include "ogc/draw/render_task.h"
-#include "ogc/draw/render_queue.h"
+#include "ogc/graph/render/async_renderer.h"
+#include "ogc/graph/render/render_task.h"
+#include "ogc/graph/render/render_queue.h"
 #include <memory>
 
-using namespace ogc::draw;
+using namespace ogc::graph;
+using ogc::draw::DrawResult;
 
 class TestRenderTaskForAsync : public RenderTask {
 public:

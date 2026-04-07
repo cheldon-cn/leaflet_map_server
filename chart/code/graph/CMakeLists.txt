@@ -39,6 +39,15 @@ endif()
 if(NOT SYMBOLOGY_SOURCE_DIR)
     set(SYMBOLOGY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../symbology" CACHE PATH "Symbology library source directory")
 endif()
+if(NOT BASE_SOURCE_DIR)
+    set(BASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../base" CACHE PATH "Base library source directory")
+endif()
+if(NOT PROJ_MODULE_SOURCE_DIR)
+    set(PROJ_MODULE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../proj" CACHE PATH "Proj module source directory")
+endif()
+if(NOT CACHE_SOURCE_DIR)
+    set(CACHE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cache" CACHE PATH "Cache module source directory")
+endif()
 
 find_library(SQLITE3_LIBRARY
     NAMES sqlite3
@@ -81,50 +90,16 @@ set(OGC_GRAPH_SOURCES
     src/interaction/interaction_handler.cpp
     src/interaction/interaction_feedback.cpp
     src/interaction/selection_handler.cpp
+    src/interaction/pan_zoom_handler.cpp
+    src/interaction/location_display_handler.cpp
+    src/interaction/hit_test.cpp
     src/layer/layer_manager.cpp
-    src/layer_manager.cpp
-    src/interaction_feedback.cpp
+    src/layer/layer_control_panel.cpp
     src/lod/lod.cpp
     src/lod/lod_manager.cpp
     src/util/image_draw.cpp
     src/util/transform_manager.cpp
     src/util/day_night_mode_manager.cpp
-    src/symbolizer.cpp
-    src/point_symbolizer.cpp
-    src/line_symbolizer.cpp
-    src/polygon_symbolizer.cpp
-    src/text_symbolizer.cpp
-    src/raster_symbolizer.cpp
-    src/composite_symbolizer.cpp
-    src/icon_symbolizer.cpp
-    src/filter.cpp
-    src/comparison_filter.cpp
-    src/logical_filter.cpp
-    src/spatial_filter.cpp
-    src/symbolizer_rule.cpp
-    src/rule_engine.cpp
-    src/tile_key.cpp
-    src/tile_cache.cpp
-    src/memory_tile_cache.cpp
-    src/disk_tile_cache.cpp
-    src/multi_level_tile_cache.cpp
-    src/tile_renderer.cpp
-    src/coordinate_transformer.cpp
-    src/coordinate_transform.cpp
-    src/clipper.cpp
-    src/proj_transformer.cpp
-    src/coord_system_preset.cpp
-    src/s52_style_manager.cpp
-    src/s52_symbol_renderer.cpp
-    src/layer_control_panel.cpp
-    src/offline_storage_manager.cpp
-    src/offline_sync_manager.cpp
-    src/data_encryption.cpp
-    src/sld_parser.cpp
-    src/mapbox_style_parser.cpp
-    src/hit_test.cpp
-    src/pan_zoom_handler.cpp
-    src/location_display_handler.cpp
 )
 
 add_library(ogc_graph SHARED ${OGC_GRAPH_SOURCES})
@@ -157,6 +132,9 @@ target_include_directories(ogc_graph
         ${DRAW_SOURCE_DIR}/include
         ${SYMBOLOGY_SOURCE_DIR}/include
         ${PROJ_ROOT}/include
+        ${BASE_SOURCE_DIR}/include
+        ${PROJ_MODULE_SOURCE_DIR}/include
+        ${CACHE_SOURCE_DIR}/include
 )
 
 target_link_libraries(ogc_graph
@@ -166,11 +144,22 @@ target_link_libraries(ogc_graph
         ogc_layer
         ogc_draw
         ogc_symbology
-    PRIVATE
-        ${PROJ_ROOT}/lib/proj.lib
-        ${SQLITE3_LIBRARY}
-        ${CURL_LIBRARY}
-    )
+        ogc_base
+        ogc_proj
+        ogc_cache
+)
+
+if(EXISTS "${PROJ_ROOT}/lib/proj.lib")
+    target_link_libraries(ogc_graph PRIVATE "${PROJ_ROOT}/lib/proj.lib")
+endif()
+
+if(SQLITE3_LIBRARY)
+    target_link_libraries(ogc_graph PRIVATE ${SQLITE3_LIBRARY})
+endif()
+
+if(CURL_LIBRARY)
+    target_link_libraries(ogc_graph PRIVATE ${CURL_LIBRARY})
+endif()
 
 target_compile_definitions(ogc_graph
     PRIVATE
