@@ -26,8 +26,8 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
 | **layer** | 图层抽象，多数据源支持 | [index_layer.md](layer/include/index_layer.md) | `CNLayer`, `CNVectorLayer`, `CNDataSource` |
 | **draw** | 绘图引擎，多平台渲染 | [index_draw.md](draw/include/index_draw.md) | `DrawEngine`, `DrawDevice`, `DrawContext` |
 | **graph** | 地图渲染核心，图层管理、标签引擎 | [index_graph.md](graph/include/index_graph.md) | `DrawFacade`, `RenderTask`, `LayerManager`, `LabelEngine` |
-| **alarm** | 警报服务，REST/WebSocket | - | `Alert`, `AlertEngine`, `AlertRepository` |
-| **alert** | 航海警报系统 | [index_alert.md](alert/include/index_alert.md) | `AlertEngine`, `IAlertChecker`, `CpaCalculator` |
+| **alarm** | 警报服务层，REST/WebSocket、适配alert模块 | [index_alarm.md](alarm/include/index_alarm.md) | `Alert`, `IAlertEngine`, `AlertJudgeService` |
+| **alert** | 航海警报核心，深度/碰撞/天气警报检查 | [index_alert.md](alert/include/index_alert.md) | `AlertEngine`, `IAlertChecker`, `CpaCalculator` |
 | **navi** | 航海导航系统 | [index_navi.md](navi/include/index_navi.md) | `Route`, `AisManager`, `NavigationEngine` |
 | **parser** | 海图解析器 | [chart/parser/include/index_parser.md](chart/parser/include/index_parser.md) | `ChartParser`, `S57Parser`, `IncrementalParser` |
 
@@ -202,22 +202,24 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
         ▼                     ▼                     ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
 │     alarm     │     │     navi      │     │    parser     │
-│  (警报服务)   │     │  (导航系统)   │     │  (海图解析)   │
-└───────────────┘     └───────────────┘     └───────────────┘
+│  (警报服务层) │     │  (导航系统)   │     │  (海图解析)   │
+└───────┬───────┘     └───────────────┘     └───────────────┘
         │                     │                     │
-        └─────────────────────┼─────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    graph (地图渲染核心)                     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
+        │ 依赖alert           │                     │
+        ▼                     └─────────────────────┘
+┌───────────────┐                     │
+│     alert     │◄────────────────────┘
+│ (警报核心层)  │
+└───────────────┘
+        │
+        └─────────────────────┬─────────────────────┐
+                              │                     │
+        ┌─────────────────────┼─────────────────────┤
         │                     │                     │
         ▼                     ▼                     ▼
 ┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│  symbology    │     │    cache      │     │     draw      │
-│  (符号化库)   │     │  (缓存库)     │     │  (绘图引擎)   │
+│     graph     │     │  symbology    │     │    cache      │
+│ (地图渲染核心)│     │  (符号化库)   │     │  (缓存库)     │
 └───────────────┘     └───────────────┘     └───────────────┘
         │                     │                     │
         └─────────────────────┼─────────────────────┘
@@ -244,6 +246,11 @@ OGC Chart是一个基于C++11的海图信息系统，遵循OGC Simple Feature Ac
 ┌─────────────────────────────────────────────────────────────┐
 │                       base (基础工具)                       │
 └─────────────────────────────────────────────────────────────┘
+
+说明:
+- alarm模块依赖alert模块的接口 (IAlertChecker, IAlertRepository等)
+- alert模块是警报核心层，提供警报检查、计算功能
+- alarm模块是警报服务层，提供REST/WebSocket服务
 ```
 
 ---
@@ -359,4 +366,4 @@ ParseResult result = s57->Parse();
 
 ---
 
-**快速跳转**: [geom](geom/include/index_geom.md) | [database](database/include/index_database.md) | [feature](feature/include/index_feature.md) | [layer](layer/include/index_layer.md) | [draw](draw/include/index_draw.md) | [graph](graph/include/index_graph.md) | [alarm](alarm/) | [alert](alert/include/index_alert.md) | [navi](navi/include/index_navi.md) | [parser](chart/parser/include/index_parser.md)
+**快速跳转**: [geom](geom/include/index_geom.md) | [database](database/include/index_database.md) | [feature](feature/include/index_feature.md) | [layer](layer/include/index_layer.md) | [draw](draw/include/index_draw.md) | [graph](graph/include/index_graph.md) | [alarm](alarm/include/index_alarm.md) | [alert](alert/include/index_alert.md) | [navi](navi/include/index_navi.md) | [parser](chart/parser/include/index_parser.md)

@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
-set(GTEST_LIB_DIR "${GTEST_ROOT}/lib")
+find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
+find_library(GTEST_LIBRARY NAMES gtest PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
+find_library(GTEST_MAIN_LIBRARY NAMES gtest_main PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
 
-include_directories(${GTEST_INCLUDE_DIR})
-link_directories(${GTEST_LIB_DIR})
+if(NOT GTEST_INCLUDE_DIR OR NOT GTEST_LIBRARY OR NOT GTEST_MAIN_LIBRARY)
+    message(STATUS "GoogleTest not found in ${GTEST_ROOT}, skipping navi tests")
+    return()
+endif()
+
+message(STATUS "GoogleTest found for navi tests:")
+message(STATUS "  Include: ${GTEST_INCLUDE_DIR}")
+message(STATUS "  Library: ${GTEST_LIBRARY}")
+message(STATUS "  Main: ${GTEST_MAIN_LIBRARY}")
 
 add_executable(ogc_navi_tests
     test_nmea_parser.cpp
@@ -21,12 +29,20 @@ add_executable(ogc_navi_tests
     test_performance.cpp
 )
 
+target_include_directories(ogc_navi_tests PRIVATE ${GTEST_INCLUDE_DIR})
+
 target_link_libraries(ogc_navi_tests
     PRIVATE
         ogc_navi
         ogc_geometry
-        gtest
-        gtest_main
+        ${GTEST_LIBRARY}
+        ${GTEST_MAIN_LIBRARY}
+)
+
+set_target_properties(ogc_navi_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test"
 )
 
 enable_testing()

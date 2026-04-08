@@ -1,12 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
-set(GTEST_LIB_DIR "${GTEST_ROOT}/lib")
+find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
+find_library(GTEST_LIBRARY NAMES gtest PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
+find_library(GTEST_MAIN_LIBRARY NAMES gtest_main PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
+
+if(NOT GTEST_INCLUDE_DIR OR NOT GTEST_LIBRARY OR NOT GTEST_MAIN_LIBRARY)
+    message(STATUS "GoogleTest not found in ${GTEST_ROOT}, skipping feature tests")
+    return()
+endif()
+
+message(STATUS "GoogleTest found for feature tests:")
+message(STATUS "  Include: ${GTEST_INCLUDE_DIR}")
+message(STATUS "  Library: ${GTEST_LIBRARY}")
+message(STATUS "  Main: ${GTEST_MAIN_LIBRARY}")
 
 include_directories(${GTEST_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/code/feature/include)
 include_directories(${CMAKE_SOURCE_DIR}/code/geom/include)
-link_directories(${GTEST_LIB_DIR})
 
 add_executable(ogc_feature_tests
     test_field_value.cpp
@@ -36,8 +46,8 @@ target_link_libraries(ogc_feature_tests
     PRIVATE
         ogc_feature
         ogc_geometry
-        gtest
-        gtest_main
+        ${GTEST_LIBRARY}
+        ${GTEST_MAIN_LIBRARY}
 )
 
 enable_testing()

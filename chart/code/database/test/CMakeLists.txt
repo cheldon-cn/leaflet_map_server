@@ -5,8 +5,19 @@ project(ogc_database_test)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
-set(GTEST_LIB_DIR "${GTEST_ROOT}/lib")
+find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
+find_library(GTEST_LIBRARY NAMES gtest PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
+find_library(GTEST_MAIN_LIBRARY NAMES gtest_main PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
+
+if(NOT GTEST_INCLUDE_DIR OR NOT GTEST_LIBRARY OR NOT GTEST_MAIN_LIBRARY)
+    message(STATUS "GoogleTest not found in ${GTEST_ROOT}, skipping database tests")
+    return()
+endif()
+
+message(STATUS "GoogleTest found for database tests:")
+message(STATUS "  Include: ${GTEST_INCLUDE_DIR}")
+message(STATUS "  Library: ${GTEST_LIBRARY}")
+message(STATUS "  Main: ${GTEST_MAIN_LIBRARY}")
 
 include_directories(
     ${DATABASE_SOURCE_DIR}/include
@@ -14,12 +25,6 @@ include_directories(
     ${GEOM_SOURCE_DIR}/include
     ${POSTGRESQL_INCLUDE_DIR}
     ${SQLITE3_INCLUDE_DIR}
-)
-
-link_directories(
-    ${GTEST_LIB_DIR}
-    ${POSTGRESQL_LIB_DIR}
-    ${SQLITE3_LIB_DIR}
 )
 
 set(TEST_SOURCES
@@ -44,8 +49,8 @@ target_compile_definitions(ogc_database_test PRIVATE OGC_DATABASE_EXPORTS)
 target_link_libraries(ogc_database_test PRIVATE
     ogc_database
     ogc_geometry
-    gtest
-    gtest_main
+    ${GTEST_LIBRARY}
+    ${GTEST_MAIN_LIBRARY}
 )
 
 enable_testing()
