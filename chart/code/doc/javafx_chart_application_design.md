@@ -1,7 +1,7 @@
 # JavaFX海图显示应用设计文档
 
 **文档编号**: CDS-JAVAFX-DESIGN-001  
-**版本**: v1.0  
+**版本**: v1.1  
 **日期**: 2026-04-08  
 **状态**: 正式版  
 **需求文档**: [chart_display_system.md](../doc/yangzt/chart_display_system.md)  
@@ -15,6 +15,7 @@
 | 版本 | 日期 | 作者 | 修订内容 |
 |------|------|------|----------|
 | v1.0 | 2026-04-08 | Team | 初始版本 |
+| v1.1 | 2026-04-08 | Team | 解决评审问题：线程安全、资源管理、错误恢复、帧率控制、触摸支持 |
 
 ---
 
@@ -370,6 +371,83 @@ void RegisterChartViewerNatives(JNIEnv* env) {
 }
 ```
 
+### 3.7 JNI版本兼容性
+
+| Java版本 | JNI版本 | 兼容性说明 |
+|----------|---------|------------|
+| Java 17 | JNI 1.8 | 当前目标版本 |
+| Java 21 | JNI 1.8 | 完全兼容 |
+| Java 11 | JNI 1.8 | 需移除Java 17特性 |
+
+**注意事项**:
+- 使用`JNI_VERSION_1_8`作为最低版本要求
+- 避免使用特定版本的JNI特性
+- 定期测试新Java版本兼容性
+- 在JNI_OnLoad中检查版本
+
+```cpp
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+    JNIEnv* env;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_8) != JNI_OK) {
+        return JNI_ERR; // 不支持的版本
+    }
+    
+    JniEnvManager::GetInstance()->Initialize(vm);
+    RegisterChartViewerNatives(env);
+    
+    return JNI_VERSION_1_8;
+}
+```
+
+### 3.8 JNI局部引用管理
+
+**问题**: 在循环或递归调用中，JNI局部引用可能累积导致局部引用表溢出。
+
+**解决方案**:
+
+```cpp
+// 方案1：显式删除局部引用
+void ProcessArray(JNIEnv* env, jobjectArray array) {
+    jsize count = env->GetArrayLength(array);
+    for (jsize i = 0; i < count; i++) {
+        jobject item = env->GetObjectArrayElement(array, i);
+        
+        // 处理item...
+        
+        env->DeleteLocalRef(item); // 显式释放
+    }
+}
+
+// 方案2：使用JniLocalRef自动管理（推荐）
+void ProcessArraySafe(JNIEnv* env, jobjectArray array) {
+    jsize count = env->GetArrayLength(array);
+    for (jsize i = 0; i < count; i++) {
+        JniLocalRef<jobject> item(env, env->GetObjectArrayElement(array, i));
+        
+        // 处理item...
+        // 自动释放，无需手动DeleteLocalRef
+    }
+}
+
+// 方案3：使用Push/PopLocalFrame管理作用域
+void ProcessWithFrame(JNIEnv* env, jobjectArray array) {
+    const int FRAME_CAPACITY = 16;
+    env->PushLocalFrame(FRAME_CAPACITY);
+    
+    // 在此作用域内创建的局部引用会在Pop时自动释放
+    jobject item = env->GetObjectArrayElement(array, 0);
+    // 处理...
+    
+    env->PopLocalFrame(nullptr);
+}
+```
+
+**最佳实践**:
+- 循环中必须管理局部引用
+- 优先使用RAII包装类（JniLocalRef）
+- 大量对象处理时使用Push/PopLocalFrame
+- 定期使用`env->EnsureLocalCapacity()`预留空间
+
 ---
 
 ## 4. Java API层设计
@@ -528,24 +606,42 @@ public class ChartViewer implements AutoCloseable {
         }
     }
     
-    // ==================== JNI回调方法 ====================
+    // ==================== JNI回调方法（线程安全） ====================
     
+    /**
+     * JNI回调方法 - 渲染完成
+     * 
+     * <p>注意：此方法由Native线程调用，必须使用Platform.runLater
+     * 确保在JavaFX应用线程执行回调。</p>
+     */
     private void onRenderComplete() {
-        if (renderCallback != null) {
-            renderCallback.onRenderComplete();
-        }
+        Platform.runLater(() -> {
+            if (renderCallback != null) {
+                renderCallback.onRenderComplete();
+            }
+        });
     }
     
+    /**
+     * JNI回调方法 - 加载成功
+     */
     private void onLoadSuccess(String chartId) {
-        if (loadCallback != null) {
-            loadCallback.onLoadSuccess(chartId);
-        }
+        Platform.runLater(() -> {
+            if (loadCallback != null) {
+                loadCallback.onLoadSuccess(chartId);
+            }
+        });
     }
     
+    /**
+     * JNI回调方法 - 加载失败
+     */
     private void onLoadError(String error) {
-        if (loadCallback != null) {
-            loadCallback.onLoadError(error);
-        }
+        Platform.runLater(() -> {
+            if (loadCallback != null) {
+                loadCallback.onLoadError(error);
+            }
+        });
     }
 }
 ```
@@ -643,8 +739,9 @@ package ogc.chart;
  * 
  * <p>轻量级包装类，通过native指针引用C++几何对象。</p>
  * <p>不存储实际坐标数据，仅在需要时从C++层获取。</p>
+ * <p><b>重要：</b>必须调用close()释放Native资源，建议使用try-with-resources。</p>
  */
-public class Geometry {
+public class Geometry implements AutoCloseable {
     
     public enum Type {
         POINT,
@@ -656,7 +753,8 @@ public class Geometry {
         GEOMETRYCOLLECTION
     }
     
-    private final long nativePtr;
+    private long nativePtr;
+    private boolean disposed = false;
     private Type type;
     
     Geometry(long nativePtr) {
@@ -665,20 +763,41 @@ public class Geometry {
     }
     
     public Type getType() {
+        checkDisposed();
         return type;
     }
     
     public double[] getCoordinates() {
+        checkDisposed();
         return nativeGetCoordinates(nativePtr);
     }
     
     public Envelope getEnvelope() {
+        checkDisposed();
         double[] bounds = nativeGetEnvelope(nativePtr);
         return new Envelope(bounds[0], bounds[1], bounds[2], bounds[3]);
     }
     
     public String asWKT() {
+        checkDisposed();
         return nativeAsWKT(nativePtr);
+    }
+    
+    // ==================== 资源管理 ====================
+    
+    @Override
+    public void close() {
+        if (!disposed && nativePtr != 0) {
+            nativeDispose(nativePtr);
+            nativePtr = 0;
+            disposed = true;
+        }
+    }
+    
+    private void checkDisposed() {
+        if (disposed || nativePtr == 0) {
+            throw new IllegalStateException("Geometry has been disposed");
+        }
     }
     
     // Native methods
@@ -686,6 +805,7 @@ public class Geometry {
     private static native double[] nativeGetCoordinates(long ptr);
     private static native double[] nativeGetEnvelope(long ptr);
     private static native String nativeAsWKT(long ptr);
+    private static native void nativeDispose(long ptr);
 }
 ```
 
@@ -779,11 +899,13 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.*;
 import javafx.scene.input.*;
+import javafx.application.Platform;
 
 /**
  * JavaFX Canvas海图渲染组件
  * 
  * <p>基于JavaFX Canvas的海图显示组件，封装渲染循环和事件处理。</p>
+ * <p><b>帧率控制：</b>使用脏标记和最小帧间隔避免过度渲染。</p>
  */
 public class ChartCanvas extends Canvas {
     
@@ -797,16 +919,31 @@ public class ChartCanvas extends Canvas {
     private final DoubleProperty zoomLevel = new SimpleDoubleProperty(1.0);
     private final BooleanProperty renderEnabled = new SimpleBooleanProperty(true);
     
+    // 帧率控制
+    private volatile boolean dirty = true;
+    private long lastRenderTime = 0;
+    private static final long MIN_FRAME_INTERVAL_NS = 16_000_000; // ~60fps
+    private static final long IDLE_FRAME_INTERVAL_NS = 100_000_000; // 10fps when idle
+    
     public ChartCanvas(ChartViewer viewer) {
         this.viewer = viewer;
         this.eventHandler = new JavaFXEventHandler(viewer);
         
-        // 渲染循环
+        // 渲染循环（带帧率控制）
         renderTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (renderEnabled.get()) {
+                if (!renderEnabled.get()) return;
+                
+                long elapsed = now - lastRenderTime;
+                long targetInterval = dirty ? MIN_FRAME_INTERVAL_NS : IDLE_FRAME_INTERVAL_NS;
+                
+                if (elapsed >= targetInterval) {
                     render();
+                    lastRenderTime = now;
+                    if (!dirty) {
+                        // 无变化时降低帧率
+                    }
                 }
             }
         };
@@ -817,6 +954,7 @@ public class ChartCanvas extends Canvas {
         
         // 事件绑定
         setupEventHandlers();
+        setupTouchHandlers(); // 触摸屏支持
         
         renderTimer.start();
     }
@@ -829,8 +967,13 @@ public class ChartCanvas extends Canvas {
         viewer.render(gc, getWidth(), getHeight());
     }
     
+    /**
+     * 请求重绘
+     * 
+     * <p>设置脏标记，触发下一帧渲染。</p>
+     */
     public void requestRender() {
-        // 标记需要重绘
+        dirty = true;
     }
     
     private void setupEventHandlers() {
@@ -844,6 +987,32 @@ public class ChartCanvas extends Canvas {
         // 键盘事件
         setOnKeyPressed(eventHandler::onKeyPressed);
         setOnKeyReleased(eventHandler::onKeyReleased);
+    }
+    
+    /**
+     * 设置触摸屏事件处理器
+     */
+    private void setupTouchHandlers() {
+        setOnTouchPressed(event -> {
+            eventHandler.onTouchPressed(event.getTouchPoint());
+        });
+        
+        setOnTouchMoved(event -> {
+            eventHandler.onTouchMoved(event.getTouchPoint());
+        });
+        
+        setOnTouchReleased(event -> {
+            eventHandler.onTouchReleased(event.getTouchPoint());
+        });
+        
+        setOnZoom(event -> {
+            eventHandler.onZoom(event.getZoomFactor(), 
+                               event.getCenterX(), event.getCenterY());
+        });
+        
+        setOnRotate(event -> {
+            eventHandler.onRotate(event.getAngle());
+        });
     }
     
     // 属性访问器
@@ -881,15 +1050,20 @@ public:
     int GetWidth() const override { return m_width; }
     int GetHeight() const override { return m_height; }
     
+    bool HasError() const { return m_hasError; }
+    void ClearError() { m_hasError = false; }
+
 private:
     void EnsureGraphicsContext();
     void ApplyStyle(const DrawStyle& style);
     void ApplyTextStyle(const TextStyle& style);
+    bool TryRecover();
     
     jobject m_canvas;
     jobject m_gc;
     JNIEnv* m_env;
     int m_width, m_height;
+    bool m_hasError = false;
     
     jclass m_gcClass;
     jmethodID m_setStrokeMethod;
@@ -899,6 +1073,34 @@ private:
     jmethodID m_fillRectMethod;
     jmethodID m_fillTextMethod;
 };
+
+// 错误恢复实现示例
+void JavaFXCanvasAdapter::DrawLine(const std::vector<Point>& points, 
+                                    const DrawStyle& style) {
+    try {
+        EnsureGraphicsContext();
+        if (m_hasError) return;
+        
+        ApplyStyle(style);
+        // 绘制逻辑...
+    } catch (const std::exception& e) {
+        LOG_ERROR("DrawLine failed: " + std::string(e.what()));
+        m_hasError = true;
+        if (TryRecover()) {
+            m_hasError = false;
+        }
+    }
+}
+
+bool JavaFXCanvasAdapter::TryRecover() {
+    try {
+        m_gc = nullptr;
+        EnsureGraphicsContext();
+        return m_gc != nullptr;
+    } catch (...) {
+        return false;
+    }
+}
 
 }
 ```
@@ -914,17 +1116,20 @@ import javafx.geometry.Point2D;
 /**
  * JavaFX事件处理器
  * 
- * <p>处理鼠标、键盘、滚轮等输入事件，转换为海图操作。</p>
+ * <p>处理鼠标、键盘、滚轮、触摸屏等输入事件，转换为海图操作。</p>
  */
 public class JavaFXEventHandler {
     
     private final ChartViewer viewer;
     private Point2D lastMousePos;
+    private Point2D lastTouchPos;
     private boolean isDragging = false;
     
     public JavaFXEventHandler(ChartViewer viewer) {
         this.viewer = viewer;
     }
+    
+    // ==================== 鼠标事件 ====================
     
     public void onMousePressed(MouseEvent event) {
         lastMousePos = new Point2D(event.getX(), event.getY());
@@ -968,6 +1173,8 @@ public class JavaFXEventHandler {
         viewer.zoom(factor, event.getX(), event.getY());
     }
     
+    // ==================== 键盘事件 ====================
+    
     public void onKeyPressed(KeyEvent event) {
         switch (event.getCode()) {
             case PLUS:
@@ -995,6 +1202,48 @@ public class JavaFXEventHandler {
     public void onKeyReleased(KeyEvent event) {
         // 键盘释放处理
     }
+    
+    // ==================== 触摸屏事件 ====================
+    
+    public void onTouchPressed(TouchPoint tp) {
+        lastTouchPos = new Point2D(tp.getX(), tp.getY());
+        isDragging = false;
+    }
+    
+    public void onTouchMoved(TouchPoint tp) {
+        if (lastTouchPos != null) {
+            double dx = tp.getX() - lastTouchPos.getX();
+            double dy = tp.getY() - lastTouchPos.getY();
+            
+            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+                isDragging = true;
+                viewer.pan(-dx, -dy);
+            }
+            
+            lastTouchPos = new Point2D(tp.getX(), tp.getY());
+        }
+    }
+    
+    public void onTouchReleased(TouchPoint tp) {
+        if (!isDragging) {
+            // 触摸查询
+            FeatureInfo feature = viewer.queryFeature(tp.getX(), tp.getY());
+            if (feature != null) {
+                showFeatureInfo(feature);
+            }
+        }
+        isDragging = false;
+    }
+    
+    public void onZoom(double factor, double centerX, double centerY) {
+        viewer.zoom(factor, centerX, centerY);
+    }
+    
+    public void onRotate(double angle) {
+        viewer.rotate(angle);
+    }
+    
+    // ==================== 辅助方法 ====================
     
     private void showFeatureInfo(FeatureInfo feature) {
         // 显示要素信息
@@ -1475,6 +1724,236 @@ class ChartViewerTest {
         assertThrows(IllegalStateException.class, () -> viewer.loadChart("test.000"));
     }
 }
+```
+
+---
+
+## 9. 日志与部署
+
+### 9.1 日志系统集成
+
+**架构设计**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        日志系统架构                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐      ┌─────────────────┐                  │
+│  │  Java层日志     │      │  C++层日志      │                  │
+│  │  (SLF4J/Logback)│      │  (spdlog)       │                  │
+│  └────────┬────────┘      └────────┬────────┘                  │
+│           │                        │                            │
+│           │                        ▼                            │
+│           │              ┌─────────────────┐                    │
+│           │              │ JNI日志桥接     │                    │
+│           │              │ JniLogBridge    │                    │
+│           │              └────────┬────────┘                    │
+│           │                       │                             │
+│           ▼                       ▼                             │
+│  ┌─────────────────────────────────────────────┐                │
+│  │           统一日志输出                       │                │
+│  │  - 控制台输出                                │                │
+│  │  - 文件输出（按日期滚动）                     │                │
+│  │  - 异步输出（高性能）                        │                │
+│  └─────────────────────────────────────────────┘                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**C++层日志桥接**:
+
+```cpp
+namespace ogc::jni {
+
+class JniLogBridge {
+public:
+    static void Initialize(JNIEnv* env) {
+        jclass logClass = env->FindClass("ogc/chart/internal/NativeLog");
+        s_logClass = reinterpret_cast<jclass>(env->NewGlobalRef(logClass));
+        s_logMethod = env->GetStaticMethodID(s_logClass, "log", 
+            "(ILjava/lang/String;Ljava/lang/String;)V");
+    }
+    
+    static void Log(int level, const std::string& tag, const std::string& message) {
+        JNIEnv* env = JniEnvManager::GetInstance()->AttachCurrentThread();
+        if (env && s_logClass) {
+            jstring jTag = env->NewStringUTF(tag.c_str());
+            jstring jMsg = env->NewStringUTF(message.c_str());
+            env->CallStaticVoidMethod(s_logClass, s_logMethod, level, jTag, jMsg);
+            env->DeleteLocalRef(jTag);
+            env->DeleteLocalRef(jMsg);
+        }
+    }
+    
+private:
+    static jclass s_logClass;
+    static jmethodID s_logMethod;
+};
+
+// 日志宏
+#define JNI_LOG_DEBUG(tag, msg) JniLogBridge::Log(0, tag, msg)
+#define JNI_LOG_INFO(tag, msg)  JniLogBridge::Log(1, tag, msg)
+#define JNI_LOG_WARN(tag, msg)  JniLogBridge::Log(2, tag, msg)
+#define JNI_LOG_ERROR(tag, msg) JniLogBridge::Log(3, tag, msg)
+
+}
+```
+
+**Java层日志接收**:
+
+```java
+package ogc.chart.internal;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class NativeLog {
+    
+    private static final Logger LOG = LoggerFactory.getLogger("Native");
+    
+    public static void log(int level, String tag, String message) {
+        String fullMessage = "[" + tag + "] " + message;
+        switch (level) {
+            case 0: LOG.debug(fullMessage); break;
+            case 1: LOG.info(fullMessage); break;
+            case 2: LOG.warn(fullMessage); break;
+            case 3: LOG.error(fullMessage); break;
+        }
+    }
+}
+```
+
+### 9.2 部署与打包
+
+**打包结构**:
+
+```
+chart-app/
+├── lib/
+│   ├── ogc_chart_jni.dll      # Windows
+│   ├── libogc_chart_jni.so    # Linux
+│   ├── libogc_chart_jni.dylib # macOS
+│   ├── ogc_base.dll
+│   ├── ogc_geom.dll
+│   ├── ogc_proj.dll
+│   └── ... (其他依赖库)
+├── chart-app.jar              # 主应用JAR
+├── lib/                       # Java依赖库
+│   ├── javafx-controls.jar
+│   ├── javafx-graphics.jar
+│   └── ... (其他Java依赖)
+└── config/
+    ├── logback.xml            # 日志配置
+    └── chart.properties       # 应用配置
+```
+
+**jpackage配置**:
+
+```bash
+# Windows打包
+jpackage --name ChartApp \
+    --input target/libs \
+    --main-jar chart-app.jar \
+    --main-class ogc.chart.app.Main \
+    --java-options "--enable-preview" \
+    --win-dir-chooser \
+    --win-menu \
+    --win-shortcut \
+    --native-image-dir target/native
+
+# Linux打包
+jpackage --name ChartApp \
+    --input target/libs \
+    --main-jar chart-app.jar \
+    --main-class ogc.chart.app.Main \
+    --linux-deb-maintainer admin@example.com \
+    --linux-menu-group "Graphics" \
+    --native-image-dir target/native
+
+# macOS打包
+jpackage --name ChartApp \
+    --input target/libs \
+    --main-jar chart-app.jar \
+    --main-class ogc.chart.app.Main \
+    --mac-package-identifier com.example.chartapp \
+    --native-image-dir target/native
+```
+
+**库路径配置**:
+
+```java
+public class LibraryLoader {
+    
+    private static final String[] NATIVE_LIBS = {
+        "ogc_base", "ogc_geom", "ogc_proj", "ogc_chart_jni"
+    };
+    
+    public static void loadNativeLibraries() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        String osArch = System.getProperty("os.arch");
+        String libPath = getLibraryPath(osName, osArch);
+        
+        // 设置库搜索路径
+        System.setProperty("java.library.path", libPath);
+        
+        // 按依赖顺序加载库
+        for (String lib : NATIVE_LIBS) {
+            System.loadLibrary(lib);
+        }
+    }
+    
+    private static String getLibraryPath(String osName, String osArch) {
+        String basePath = getAppPath();
+        if (osName.contains("win")) {
+            return basePath + "/lib/windows-" + osArch;
+        } else if (osName.contains("linux")) {
+            return basePath + "/lib/linux-" + osArch;
+        } else if (osName.contains("mac")) {
+            return basePath + "/lib/macos-" + osArch;
+        }
+        throw new UnsupportedOperationException("Unsupported OS: " + osName);
+    }
+}
+```
+
+### 9.3 多平台构建配置
+
+**Maven配置**:
+
+```xml
+<profiles>
+    <profile>
+        <id>windows-x64</id>
+        <activation>
+            <os><family>windows</family></os>
+            <property><name>os.arch</name><value>amd64</value></property>
+        </activation>
+        <properties>
+            <native.path>${project.basedir}/native/windows-x64</native.path>
+        </properties>
+    </profile>
+    <profile>
+        <id>linux-x64</id>
+        <activation>
+            <os><family>linux</family></os>
+            <property><name>os.arch</name><value>amd64</value></property>
+        </activation>
+        <properties>
+            <native.path>${project.basedir}/native/linux-x64</native.path>
+        </properties>
+    </profile>
+    <profile>
+        <id>macos-x64</id>
+        <activation>
+            <os><family>mac</family></os>
+            <property><name>os.arch</name><value>amd64</value></property>
+        </activation>
+        <properties>
+            <native.path>${project.basedir}/native/macos-x64</native.path>
+        </properties>
+    </profile>
+</profiles>
 ```
 
 ---
