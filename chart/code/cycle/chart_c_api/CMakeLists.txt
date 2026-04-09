@@ -18,20 +18,20 @@ endif()
 
 set(OGC_CHART_C_API_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 if(NOT DEFINED INSTALL_INCLUDE_DIR)
-    set(INSTALL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../install/include)
+    set(INSTALL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../install/include)
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../../build/test")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../../build/test")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../../build/lib")
 
 if(MSVC)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/test")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/test")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib")
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/test" CACHE PATH "" FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/test" CACHE PATH "" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/lib" CACHE PATH "" FORCE)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/../../build/test" CACHE PATH "" FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/../../build/test" CACHE PATH "" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/../../build/lib" CACHE PATH "" FORCE)
 endif()
 
 set(CHART_C_API_SOURCES
@@ -74,7 +74,7 @@ target_include_directories(ogc_chart_c_api
 target_link_libraries(ogc_chart_c_api
     PRIVATE
         ogc_base
-        ogc_geom
+        ogc_geometry
         ogc_feature
         ogc_layer
         ogc_draw
@@ -85,7 +85,6 @@ target_link_libraries(ogc_chart_c_api
         ogc_navi
         ogc_proj
         chart_parser
-        ogc_plugin
 )
 
 set_target_properties(ogc_chart_c_api PROPERTIES
@@ -105,7 +104,6 @@ if(ENABLE_TESTS)
 endif()
 
 install(TARGETS ogc_chart_c_api
-    EXPORT ogc_chart_c_api-targets
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -113,10 +111,4 @@ install(TARGETS ogc_chart_c_api
 
 install(FILES ${CHART_C_API_HEADERS}
     DESTINATION include
-)
-
-install(EXPORT ogc_chart_c_api-targets
-    FILE ogc_chart_c_api-config.cmake
-    NAMESPACE ogc::
-    DESTINATION lib/cmake/ogc_chart_c_api
 )

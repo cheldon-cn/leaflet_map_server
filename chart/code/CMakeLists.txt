@@ -33,6 +33,8 @@ set(GEOS_ROOT "E:/3rd/GEOS3.10" CACHE PATH "GEOS root directory")
 set(PROJ_ROOT "E:/3rd/PROJ" CACHE PATH "PROJ root directory")
 set(CURL_ROOT "E:/3rd/libcurl_x64" CACHE PATH "cURL library root directory")
 set(GTEST_ROOT "E:/3rd/googletest" CACHE PATH "GoogleTest root directory")
+set(GDAL_ROOT "E:/3rd/gdal-3.9.3" CACHE PATH "GDAL root directory")
+set(LIBXML2_ROOT "E:/3rd/libxml2" CACHE PATH "libxml2 root directory")
 set(DATABASE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/database" CACHE PATH "Database source directory")
 set(FEATURE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/feature" CACHE PATH "Feature source directory")
 set(GEOM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/geom" CACHE PATH "Geometry source directory")
@@ -104,7 +106,9 @@ if(ENABLE_GRAPH)
     add_subdirectory(graph)
 endif()
 add_subdirectory(navi)
+add_subdirectory(chart/parser)
 # add_subdirectory(chart/mokrender)
+add_subdirectory(cycle/chart_c_api)
 if(ENABLE_TESTS)
     add_subdirectory(feature/tests)
     add_subdirectory(geom/tests)
@@ -125,7 +129,7 @@ install(TARGETS ogc_geometry
     INCLUDES DESTINATION include
 )
 
-install(DIRECTORY geom/include/ogc/
+install(DIRECTORY geom/include/ogc/geom/
     DESTINATION include/ogc/geom
     FILES_MATCHING PATTERN "*.h"
 )

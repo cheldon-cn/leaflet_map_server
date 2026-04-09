@@ -5,16 +5,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../../build/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../../build/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/../../build/test)
-
-if(MSVC)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/lib" CACHE PATH "" FORCE)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/lib" CACHE PATH "" FORCE)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/../../build/test" CACHE PATH "" FORCE)
-endif()
-
 option(BUILD_TESTING "Build tests" ON)
 option(ENABLE_COVERAGE "Enable coverage" OFF)
 
@@ -22,9 +12,9 @@ if(ENABLE_COVERAGE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
 endif()
 
-set(GDAL_ROOT "E:/xspace/3rd/gdal-3.9.3" CACHE PATH "GDAL installation directory")
-set(LIBXML2_ROOT "E:/xspace/3rd/libxml2" CACHE PATH "libxml2 installation directory")
-set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest installation directory")
+set(GDAL_ROOT "F:/win/3rd/gdal-3.9.3" CACHE PATH "GDAL installation directory")
+set(LIBXML2_ROOT "E:/3rd/libxml2" CACHE PATH "libxml2 installation directory")
+set(GTEST_ROOT "E:/3rd/googletest" CACHE PATH "GoogleTest installation directory")
 
 find_path(GDAL_INCLUDE_DIR NAMES gdal.h PATHS "${GDAL_ROOT}/include" NO_DEFAULT_PATH)
 find_library(GDAL_LIBRARY NAMES gdal gdal_i PATHS "${GDAL_ROOT}/lib" NO_DEFAULT_PATH)
@@ -75,31 +65,31 @@ if(LIBXML2_FOUND)
 endif()
 
 set(CHART_PARSER_HEADERS
-    include/chart_parser/chart_parser.h
-    include/chart_parser/iparser.h
-    include/chart_parser/parse_result.h
-    include/chart_parser/chart_format.h
-    include/chart_parser/parse_config.h
-    include/chart_parser/gdal_initializer.h
-    include/chart_parser/s57_parser.h
-    include/chart_parser/s57_geometry_converter.h
-    include/chart_parser/s57_attribute_parser.h
-    include/chart_parser/s57_feature_type_mapper.h
-    include/chart_parser/error_handler.h
-    include/chart_parser/error_codes.h
-    include/chart_parser/data_converter.h
-    include/chart_parser/ogr_data_converter.h
-    include/chart_parser/parse_cache.h
-    include/chart_parser/performance_benchmark.h
-    include/chart_parser/s100_parser.h
-    include/chart_parser/s102_parser.h
-    include/chart_parser/incremental_parser.h
+    include/parser/chart_parser.h
+    include/parser/iparser.h
+    include/parser/parse_result.h
+    include/parser/chart_format.h
+    include/parser/parse_config.h
+    include/parser/gdal_initializer.h
+    include/parser/s57_parser.h
+    include/parser/s57_geometry_converter.h
+    include/parser/s57_attribute_parser.h
+    include/parser/s57_feature_type_mapper.h
+    include/parser/error_handler.h
+    include/parser/error_codes.h
+    include/parser/data_converter.h
+    include/parser/ogr_data_converter.h
+    include/parser/parse_cache.h
+    include/parser/performance_benchmark.h
+    include/parser/s100_parser.h
+    include/parser/s102_parser.h
+    include/parser/incremental_parser.h
 )
 
 if(LIBXML2_FOUND)
     list(APPEND CHART_PARSER_HEADERS
-        include/chart_parser/s101_parser.h
-        include/chart_parser/s101_gml_parser.h
+        include/parser/s101_parser.h
+        include/parser/s101_gml_parser.h
     )
 endif()
 
@@ -192,6 +182,6 @@ install(TARGETS chart_parser
     RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY include/chart_parser
+install(DIRECTORY include/parser
     DESTINATION include
 )

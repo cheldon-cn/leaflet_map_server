@@ -21,27 +21,27 @@ Geom模块是OGC Simple Feature Access规范的核心实现，提供完整的几
 
 | File | Description | Core Classes |
 |------|-------------|--------------|
-| [export.h](ogc/export.h) | DLL导出宏定义 | `OGC_GEOM_API` |
-| [common.h](ogc/common.h) | 公共定义 | `GeomType`, `Dimension`, `GeomResult` |
-| [coordinate.h](ogc/coordinate.h) | 坐标结构 | `Coordinate`, `CoordinateList` |
-| [geometry.h](ogc/geometry.h) | 几何基类 | `Geometry` |
-| [point.h](ogc/point.h) | 点几何类 | `Point` |
-| [linestring.h](ogc/linestring.h) | 线几何类 | `LineString` |
-| [linearring.h](ogc/linearring.h) | 线环类 | `LinearRing` |
-| [polygon.h](ogc/polygon.h) | 多边形类 | `Polygon` |
-| [multipoint.h](ogc/multipoint.h) | 多点类 | `MultiPoint` |
-| [multilinestring.h](ogc/multilinestring.h) | 多线类 | `MultiLineString` |
-| [multipolygon.h](ogc/multipolygon.h) | 多多边形类 | `MultiPolygon` |
-| [geometrycollection.h](ogc/geometrycollection.h) | 几何集合 | `GeometryCollection` |
-| [envelope.h](ogc/envelope.h) | 二维边界范围 | `Envelope` |
-| [envelope3d.h](ogc/envelope3d.h) | 三维边界 | `Envelope3D` |
-| [factory.h](ogc/factory.h) | 几何工厂 | `GeometryFactory` |
-| [geometry_pool.h](ogc/geometry_pool.h) | 几何对象池 | `GeometryPool` |
-| [precision.h](ogc/precision.h) | 精度模型 | `PrecisionModel` |
-| [spatial_index.h](ogc/spatial_index.h) | 空间索引 | `ISpatialIndex`, `RTree` |
-| [visitor.h](ogc/visitor.h) | 访问者模式 | `GeometryVisitor`, `GeometryConstVisitor` |
-| [exception.h](ogc/exception.h) | 异常类 | `GeometryException` |
-| [serialization_utils.h](ogc/serialization_utils.h) | 序列化工具 | `wkb::`, `geojson::` |
+| [export.h](ogc/geom/export.h) | DLL导出宏定义 | `OGC_GEOM_API` |
+| [common.h](ogc/geom/common.h) | 公共定义 | `GeomType`, `Dimension`, `GeomResult` |
+| [coordinate.h](ogc/geom/coordinate.h) | 坐标结构 | `Coordinate`, `CoordinateList` |
+| [geometry.h](ogc/geom/geometry.h) | 几何基类 | `Geometry` |
+| [point.h](ogc/geom/point.h) | 点几何类 | `Point` |
+| [linestring.h](ogc/geom/linestring.h) | 线几何类 | `LineString` |
+| [linearring.h](ogc/geom/linearring.h) | 线环类 | `LinearRing` |
+| [polygon.h](ogc/geom/polygon.h) | 多边形类 | `Polygon` |
+| [multipoint.h](ogc/geom/multipoint.h) | 多点类 | `MultiPoint` |
+| [multilinestring.h](ogc/geom/multilinestring.h) | 多线类 | `MultiLineString` |
+| [multipolygon.h](ogc/geom/multipolygon.h) | 多多边形类 | `MultiPolygon` |
+| [geometrycollection.h](ogc/geom/geometrycollection.h) | 几何集合 | `GeometryCollection` |
+| [envelope.h](ogc/geom/envelope.h) | 二维边界范围 | `Envelope` |
+| [envelope3d.h](ogc/geom/envelope3d.h) | 三维边界 | `Envelope3D` |
+| [factory.h](ogc/geom/factory.h) | 几何工厂 | `GeometryFactory` |
+| [geometry_pool.h](ogc/geom/geometry_pool.h) | 几何对象池 | `GeometryPool` |
+| [precision.h](ogc/geom/precision.h) | 精度模型 | `PrecisionModel` |
+| [spatial_index.h](ogc/geom/spatial_index.h) | 空间索引 | `ISpatialIndex`, `RTree` |
+| [visitor.h](ogc/geom/visitor.h) | 访问者模式 | `GeometryVisitor`, `GeometryConstVisitor` |
+| [exception.h](ogc/geom/exception.h) | 异常类 | `GeometryException` |
+| [serialization_utils.h](ogc/geom/serialization_utils.h) | 序列化工具 | `wkb::`, `geojson::` |
 
 ---
 

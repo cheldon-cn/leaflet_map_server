@@ -1,10 +1,10 @@
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/linearring.h"
-#include "ogc/geometrycollection.h"
-#include "ogc/visitor.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/geometrycollection.h"
+#include "ogc/geom/visitor.h"
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
