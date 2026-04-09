@@ -5,6 +5,7 @@ set(SOURCES
     src/thread_safe.cpp
     src/performance_metrics.cpp
     src/performance_monitor.cpp
+    src/version.cpp
 )
 
 set(HEADERS
@@ -13,6 +14,7 @@ set(HEADERS
     include/ogc/base/thread_safe.h
     include/ogc/base/performance_metrics.h
     include/ogc/base/performance_monitor.h
+    include/ogc/base/version.h
 )
 
 add_library(ogc_base SHARED ${SOURCES} ${HEADERS})

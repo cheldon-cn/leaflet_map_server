@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ogc/symbology/symbolizer/polygon_symbolizer.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/common.h"
+#include "ogc/geom/common.h"
 
 using namespace ogc::symbology;
 using namespace ogc;

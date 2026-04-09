@@ -1,7 +1,7 @@
 #include "ogc/mokrender/multipoint_generator.h"
-#include "ogc/multipoint.h"
-#include "ogc/point.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/multipoint.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/coordinate.h"
 #include <random>
 #include <vector>
 

@@ -2,7 +2,7 @@
 #include <limits>
 #include "ogc/mokrender/line_generator.h"
 #include "ogc/mokrender/common.h"
-#include "ogc/linestring.h"
+#include "ogc/geom/linestring.h"
 
 using namespace ogc::mokrender;
 

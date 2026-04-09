@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/util/transform_manager.h"
 #include <ogc/proj/coordinate_transformer.h>
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

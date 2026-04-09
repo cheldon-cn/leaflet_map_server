@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ogc/navi/track/track_player.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 
 using namespace ogc::navi;
 using ogc::Coordinate;

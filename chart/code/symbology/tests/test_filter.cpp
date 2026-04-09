@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <ogc/symbology/filter/filter.h>
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 #include <memory>
 
 using namespace ogc::symbology;

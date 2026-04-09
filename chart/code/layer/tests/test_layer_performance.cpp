@@ -7,8 +7,8 @@
 #include "ogc/feature/feature.h"
 #include "ogc/feature/field_defn.h"
 #include "ogc/feature/field_value.h"
-#include "ogc/geometry.h"
-#include "ogc/factory.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/factory.h"
 
 #include <chrono>
 #include <thread>

@@ -1,8 +1,8 @@
 #include "ogc/graph/label/label_engine.h"
 #include <ogc/draw/color.h>
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
 #include <cmath>
 
 using ogc::Point;

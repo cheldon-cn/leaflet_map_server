@@ -3,7 +3,7 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/lod/lod.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <string>
 #include <vector>

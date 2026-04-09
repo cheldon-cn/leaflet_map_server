@@ -5,7 +5,7 @@
 #include "ogc/layer/layer_observer.h"
 #include "ogc/feature/feature.h"
 #include "ogc/feature/field_defn.h"
-#include "ogc/factory.h"
+#include "ogc/geom/factory.h"
 
 using namespace ogc;
 

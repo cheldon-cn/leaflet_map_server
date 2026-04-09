@@ -3,7 +3,7 @@
 #include <set>
 #include "ogc/mokrender/point_generator.h"
 #include "ogc/mokrender/common.h"
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 
 using namespace ogc::mokrender;
 

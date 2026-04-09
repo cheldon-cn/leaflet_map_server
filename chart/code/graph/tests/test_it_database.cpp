@@ -3,12 +3,12 @@
 #include <vector>
 #include <thread>
 #include <chrono>
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 
 #ifdef _WIN32
 #include <windows.h>

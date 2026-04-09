@@ -7,7 +7,7 @@
 #include <ogc/draw/color.h>
 #include <ogc/symbology/symbolizer/line_symbolizer.h>
 #include <ogc/symbology/symbolizer/polygon_symbolizer.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

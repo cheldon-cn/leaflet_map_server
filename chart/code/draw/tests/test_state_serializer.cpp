@@ -2,7 +2,7 @@
 #include "ogc/draw/state_serializer.h"
 #include "ogc/draw/draw_engine.h"
 #include "ogc/draw/transform_matrix.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 using namespace ogc::draw;
 

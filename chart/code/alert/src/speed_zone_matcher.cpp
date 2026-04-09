@@ -1,5 +1,5 @@
 #include "ogc/alert/speed_zone_matcher.h"
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 #include <cmath>
 #include <algorithm>
 #include <limits>

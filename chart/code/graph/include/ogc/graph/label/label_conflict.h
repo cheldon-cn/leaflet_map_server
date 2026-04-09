@@ -3,7 +3,7 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/label/label_info.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <vector>
 #include <functional>

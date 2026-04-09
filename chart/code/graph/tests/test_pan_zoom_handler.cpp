@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/interaction/pan_zoom_handler.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 using namespace ogc::graph;
 using ogc::Coordinate;

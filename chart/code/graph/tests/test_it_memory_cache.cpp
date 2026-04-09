@@ -7,7 +7,7 @@
 #include "ogc/graph/render/draw_params.h"
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::cache;

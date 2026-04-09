@@ -3,7 +3,7 @@
 #include <ogc/symbology/style/s52_style_manager.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/symbology/symbolizer/point_symbolizer.h>
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 
 using namespace ogc::symbology;
 

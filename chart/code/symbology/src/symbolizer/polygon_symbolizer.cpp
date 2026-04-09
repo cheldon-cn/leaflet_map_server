@@ -1,6 +1,6 @@
 #include "ogc/symbology/symbolizer/polygon_symbolizer.h"
-#include "ogc/polygon.h"
-#include "ogc/multipolygon.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipolygon.h"
 #include <cmath>
 
 namespace ogc {

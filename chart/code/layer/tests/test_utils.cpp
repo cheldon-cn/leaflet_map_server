@@ -5,12 +5,12 @@
 #include "ogc/feature/field_defn.h"
 #include "ogc/feature/field_value.h"
 #include "ogc/feature/field_type.h"
-#include "ogc/geometry.h"
-#include "ogc/factory.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/factory.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/envelope.h"
 
 #include <algorithm>
 #include <random>

@@ -9,9 +9,9 @@
 #include "ogc/feature/spatial_query.h"
 #include "ogc/feature/batch_processor.h"
 #include "ogc/feature/feature_iterator.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
 
 using namespace ogc;
 

@@ -1,13 +1,13 @@
 #include "ogc/db/wkb_converter.h"
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/linearring.h"
-#include "ogc/polygon.h"
-#include "ogc/multipoint.h"
-#include "ogc/multilinestring.h"
-#include "ogc/multipolygon.h"
-#include "ogc/geometrycollection.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipoint.h"
+#include "ogc/geom/multilinestring.h"
+#include "ogc/geom/multipolygon.h"
+#include "ogc/geom/geometrycollection.h"
 #include <algorithm>
 #include <cstring>
 

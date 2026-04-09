@@ -2,7 +2,7 @@
 #include "ogc/graph/render/draw_facade.h"
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_engine.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

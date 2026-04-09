@@ -2,7 +2,7 @@
 #include <limits>
 #include "ogc/mokrender/polygon_generator.h"
 #include "ogc/mokrender/common.h"
-#include "ogc/polygon.h"
+#include "ogc/geom/polygon.h"
 
 using namespace ogc::mokrender;
 

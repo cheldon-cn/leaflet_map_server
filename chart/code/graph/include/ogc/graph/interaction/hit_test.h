@@ -3,9 +3,9 @@
 
 #include "ogc/graph/export.h"
 #include <ogc/draw/draw_result.h>
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
+#include "ogc/geom/geometry.h"
 #include <memory>
 #include <string>
 #include <vector>

@@ -2,7 +2,7 @@
 #include "ogc/draw/raster_image_device.h"
 #include "ogc/draw/draw_style.h"
 #include "ogc/draw/font.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <fstream>
 #include <vector>
 #include <cstring>

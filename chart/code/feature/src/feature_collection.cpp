@@ -1,6 +1,6 @@
 #include "ogc/feature/feature_collection.h"
-#include "ogc/geometry.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/envelope.h"
 #include <algorithm>
 #include <sstream>
 

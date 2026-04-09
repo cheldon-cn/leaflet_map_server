@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/feature/geom_field_defn.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 using namespace ogc;
 

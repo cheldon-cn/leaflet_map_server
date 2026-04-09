@@ -6,14 +6,14 @@
 #include <ogc/draw/draw_engine.h>
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/multipoint.h"
-#include "ogc/multilinestring.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipoint.h"
+#include "ogc/geom/multilinestring.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 #include <ogc/proj/coordinate_transform.h>
 
 #ifdef _WIN32

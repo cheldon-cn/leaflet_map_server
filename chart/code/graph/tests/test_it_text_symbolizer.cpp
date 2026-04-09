@@ -7,8 +7,8 @@
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/transform_matrix.h>
-#include "ogc/common.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/common.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::symbology;

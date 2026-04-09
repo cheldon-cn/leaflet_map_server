@@ -1,6 +1,6 @@
 #include "ogc/symbology/symbolizer/icon_symbolizer.h"
-#include "ogc/point.h"
-#include "ogc/multipoint.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/multipoint.h"
 #include <cmath>
 
 namespace ogc {

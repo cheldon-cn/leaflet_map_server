@@ -2,8 +2,8 @@
 #define OGC_DRAW_CLIPPER_H
 
 #include "ogc/draw/export.h"
-#include "ogc/envelope.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/envelope.h"
+#include "ogc/geom/geometry.h"
 #include <memory>
 #include <vector>
 

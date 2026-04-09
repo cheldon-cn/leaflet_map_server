@@ -3,10 +3,10 @@
 #include "ogc/feature/feature.h"
 #include "ogc/feature/feature_collection.h"
 #include "ogc/feature/feature_defn.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/linearring.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linearring.h"
 
 using namespace ogc;
 

@@ -2,7 +2,7 @@
 #include "ogc/graph/render/basic_render_task.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

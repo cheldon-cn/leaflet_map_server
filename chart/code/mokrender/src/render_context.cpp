@@ -3,7 +3,7 @@
 #include "ogc/draw/draw_device.h"
 #include "ogc/draw/draw_engine.h"
 #include "ogc/draw/draw_style.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 namespace ogc {
 namespace mokrender {

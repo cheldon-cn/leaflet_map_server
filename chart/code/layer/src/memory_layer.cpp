@@ -2,9 +2,9 @@
 
 #include "ogc/feature/feature.h"
 #include "ogc/feature/field_defn.h"
-#include "ogc/geometry.h"
-#include "ogc/envelope.h"
-#include "ogc/factory.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/envelope.h"
+#include "ogc/geom/factory.h"
 
 #include <algorithm>
 

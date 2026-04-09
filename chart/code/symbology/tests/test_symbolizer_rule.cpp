@@ -2,7 +2,7 @@
 #include <ogc/symbology/filter/symbolizer_rule.h>
 #include <ogc/symbology/filter/filter.h>
 #include <ogc/symbology/symbolizer/line_symbolizer.h>
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 #include <memory>
 
 using namespace ogc::symbology;

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ogc/symbology/symbolizer/line_symbolizer.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/common.h"
+#include "ogc/geom/common.h"
 #include <vector>
 
 using namespace ogc::symbology;

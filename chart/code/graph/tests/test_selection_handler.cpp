@@ -2,7 +2,7 @@
 #include "ogc/graph/interaction/selection_handler.h"
 #include "ogc/graph/interaction/hit_test.h"
 #include "ogc/graph/interaction/interaction_feedback.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 using namespace ogc::graph;
 using ogc::Coordinate;

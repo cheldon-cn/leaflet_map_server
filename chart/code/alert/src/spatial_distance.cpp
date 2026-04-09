@@ -1,6 +1,6 @@
 #include "ogc/alert/spatial_distance.h"
-#include "ogc/geometry.h"
-#include "ogc/point.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
 #include <cmath>
 #include <algorithm>
 #include <limits>

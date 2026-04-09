@@ -3,7 +3,7 @@
 #include "common.h"
 #include "result.h"
 #include "resultset.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <memory>
 #include <string>
 #include <vector>

@@ -11,10 +11,10 @@
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/geometry.h"
-#include "ogc/factory.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/factory.h"
 #include "ogc/feature/feature.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::symbology;

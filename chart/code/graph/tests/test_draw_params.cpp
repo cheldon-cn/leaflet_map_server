@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/render/draw_params.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 using ogc::graph::DrawParams;
 using ogc::Envelope;

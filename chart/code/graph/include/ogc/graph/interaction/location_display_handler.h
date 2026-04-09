@@ -4,8 +4,8 @@
 #include "ogc/graph/export.h"
 #include "ogc/graph/interaction/interaction_handler.h"
 #include "ogc/graph/interaction/interaction_feedback.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <string>
 #include <set>

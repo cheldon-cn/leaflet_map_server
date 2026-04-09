@@ -1,7 +1,7 @@
 #include "ogc/mokrender/polygon_generator.h"
-#include "ogc/polygon.h"
-#include "ogc/linearring.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/coordinate.h"
 #include <random>
 #include <vector>
 #include <cmath>

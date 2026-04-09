@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 namespace ogc {
     using CNGeometry = Geometry;

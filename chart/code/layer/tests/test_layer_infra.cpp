@@ -9,7 +9,7 @@
 #include "ogc/feature/feature.h"
 #include "ogc/feature/field_defn.h"
 #include "ogc/feature/field_value.h"
-#include "ogc/factory.h"
+#include "ogc/geom/factory.h"
 
 #include <thread>
 #include <vector>

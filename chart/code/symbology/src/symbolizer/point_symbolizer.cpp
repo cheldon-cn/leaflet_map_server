@@ -1,6 +1,6 @@
 #include "ogc/symbology/symbolizer/point_symbolizer.h"
-#include "ogc/point.h"
-#include "ogc/multipoint.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/multipoint.h"
 #include <cmath>
 
 #ifndef M_PI

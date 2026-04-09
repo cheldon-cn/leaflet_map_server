@@ -1,8 +1,8 @@
 #include "ogc/alert/notice_parser.h"
 #include "ogc/base/log.h"
-#include "ogc/polygon.h"
-#include "ogc/linearring.h"
-#include "ogc/point.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/point.h"
 #include <sstream>
 #include <algorithm>
 #include <cmath>

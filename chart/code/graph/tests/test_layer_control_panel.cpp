@@ -2,7 +2,7 @@
 #include "ogc/graph/layer/layer_control_panel.h"
 #include "ogc/graph/layer/layer_manager.h"
 #include "ogc/layer/memory_layer.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 using namespace ogc::graph;
 using ogc::CNMemoryLayer;

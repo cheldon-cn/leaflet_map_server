@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
 #include "ogc/feature/spatial_query.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/geometry.h"
 
 using namespace ogc;
 

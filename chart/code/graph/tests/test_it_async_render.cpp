@@ -5,7 +5,7 @@
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <chrono>
 #include <thread>

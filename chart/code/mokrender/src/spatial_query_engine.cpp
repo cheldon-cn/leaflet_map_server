@@ -1,7 +1,7 @@
 #include "ogc/mokrender/spatial_query_engine.h"
 #include "ogc/db/sqlite_connection.h"
-#include "ogc/geometry.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/envelope.h"
 #include <string>
 #include <vector>
 #include <sqlite3.h>

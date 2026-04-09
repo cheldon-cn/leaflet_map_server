@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ogc/graph/render/render_task.h>
 #include <ogc/draw/draw_result.h>
-#include <ogc/envelope.h>
+#include <ogc/geom/envelope.h>
 #include <memory>
 
 using namespace ogc::graph;

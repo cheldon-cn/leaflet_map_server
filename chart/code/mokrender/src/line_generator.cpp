@@ -1,6 +1,6 @@
 #include "ogc/mokrender/line_generator.h"
-#include "ogc/linestring.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/coordinate.h"
 #include <random>
 #include <vector>
 

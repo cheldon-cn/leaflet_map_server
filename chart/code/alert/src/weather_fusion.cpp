@@ -1,6 +1,6 @@
 #include "ogc/alert/weather_fusion.h"
 #include "ogc/base/log.h"
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 #include <cmath>
 #include <algorithm>
 #include <sstream>

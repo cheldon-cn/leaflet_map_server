@@ -1,6 +1,6 @@
 #include "ogc/layer/gdal_adapter.h"
 #include "ogc/feature/feature.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 namespace ogc {
 

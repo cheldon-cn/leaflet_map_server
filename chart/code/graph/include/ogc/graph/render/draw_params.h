@@ -2,7 +2,7 @@
 #define OGC_GRAPH_DRAW_PARAMS_H
 
 #include "ogc/graph/export.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <cstdint>
 
 namespace ogc {

@@ -2,7 +2,7 @@
 #include <ogc/cache/tile/tile_renderer.h>
 #include <ogc/cache/tile/tile_key.h>
 #include <ogc/cache/tile/memory_tile_cache.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <vector>
 #include <cstdint>
 

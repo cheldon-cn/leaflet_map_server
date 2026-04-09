@@ -2,10 +2,10 @@
 #include "ogc/feature/feature_defn.h"
 #include "ogc/feature/field_defn.h"
 #include "ogc/feature/field_type.h"
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/polygon.h"
-#include "ogc/linestring.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linestring.h"
 #include <sstream>
 #include <iomanip>
 #include <cmath>

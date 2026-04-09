@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <ogc/proj/coordinate_transform.h>
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
-#include "ogc/point.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
+#include "ogc/geom/point.h"
 #include <cmath>
 
 using namespace ogc::proj;

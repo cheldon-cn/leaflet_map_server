@@ -1,9 +1,9 @@
 #include "ogc/db/sqlite_connection.h"
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/envelope.h"
 #include <sstream>
 #include <cstring>
 #include <cstdint>

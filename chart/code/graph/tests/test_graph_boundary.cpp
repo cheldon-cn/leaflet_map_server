@@ -9,7 +9,7 @@
 #include <ogc/draw/transform_matrix.h>
 #include "ogc/graph/render/render_queue.h"
 #include "ogc/graph/render/render_task.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 #include <limits>
 #include <memory>

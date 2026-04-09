@@ -2,7 +2,7 @@
 #include <limits>
 #include "ogc/mokrender/annotation_generator.h"
 #include "ogc/mokrender/common.h"
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 
 using namespace ogc::mokrender;
 

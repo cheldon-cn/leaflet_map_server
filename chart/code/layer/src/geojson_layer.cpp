@@ -3,7 +3,7 @@
 
 #include "ogc/feature/feature.h"
 #include "ogc/feature/field_defn.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 
 #include <fstream>
 #include <sstream>

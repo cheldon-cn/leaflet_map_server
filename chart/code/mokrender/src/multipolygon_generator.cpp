@@ -1,8 +1,8 @@
 #include "ogc/mokrender/multipolygon_generator.h"
-#include "ogc/multipolygon.h"
-#include "ogc/polygon.h"
-#include "ogc/linearring.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/multipolygon.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/coordinate.h"
 #include <random>
 #include <vector>
 #include <cmath>

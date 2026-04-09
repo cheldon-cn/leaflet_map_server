@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ogc/symbology/symbolizer/raster_symbolizer.h>
 #include <ogc/draw/color.h>
-#include "ogc/common.h"
+#include "ogc/geom/common.h"
 #include <memory>
 
 using namespace ogc::symbology;

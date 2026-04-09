@@ -5,7 +5,7 @@
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/color.h>
 #include <ogc/draw/transform_matrix.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::draw;

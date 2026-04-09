@@ -4,7 +4,7 @@
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/font.h>
 #include <ogc/draw/color.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <cstdio>
 

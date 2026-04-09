@@ -1,6 +1,6 @@
 #include "ogc/mokrender/point_generator.h"
-#include "ogc/point.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/coordinate.h"
 #include <random>
 
 namespace ogc {

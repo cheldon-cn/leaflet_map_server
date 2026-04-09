@@ -4,8 +4,8 @@
 #include "ogc/layer/layer.h"
 #include "ogc/layer/layer_type.h"
 
-#include "ogc/geometry.h"
-#include "ogc/spatial_index.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/spatial_index.h"
 
 #include <memory>
 #include <stack>

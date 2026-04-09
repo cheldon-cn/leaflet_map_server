@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/lod/lod.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

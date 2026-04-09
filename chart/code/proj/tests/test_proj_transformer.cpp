@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <ogc/proj/proj_transformer.h>
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::proj;

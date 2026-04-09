@@ -5,8 +5,8 @@
 #include "ogc/feature/feature_collection.h"
 #include "ogc/feature/wkb_wkt_converter.h"
 #include "ogc/feature/geojson_converter.h"
-#include "ogc/geometry.h"
-#include "ogc/factory.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/factory.h"
 
 using namespace ogc;
 

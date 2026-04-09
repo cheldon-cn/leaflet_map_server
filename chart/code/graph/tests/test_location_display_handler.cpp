@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/interaction/location_display_handler.h"
 #include "ogc/graph/interaction/interaction_feedback.h"
-#include "ogc/coordinate.h"
+#include "ogc/geom/coordinate.h"
 
 using namespace ogc::graph;
 using ogc::Coordinate;

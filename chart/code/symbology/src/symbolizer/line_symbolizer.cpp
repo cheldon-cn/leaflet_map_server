@@ -1,6 +1,6 @@
 #include "ogc/symbology/symbolizer/line_symbolizer.h"
-#include "ogc/linestring.h"
-#include "ogc/multilinestring.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/multilinestring.h"
 #include <cmath>
 
 namespace ogc {

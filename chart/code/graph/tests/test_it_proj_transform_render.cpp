@@ -4,8 +4,8 @@
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/draw_style.h>
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::proj;

@@ -3,9 +3,9 @@
 #include "ogc/graph/interaction/hit_test.h"
 #include "ogc/graph/interaction/interaction_feedback.h"
 #include "ogc/graph/layer/layer_manager.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
 
 using namespace ogc::graph;
 

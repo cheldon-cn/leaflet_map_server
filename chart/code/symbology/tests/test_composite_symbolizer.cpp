@@ -2,7 +2,7 @@
 #include <ogc/symbology/symbolizer/composite_symbolizer.h>
 #include <ogc/symbology/symbolizer/line_symbolizer.h>
 #include <ogc/symbology/symbolizer/polygon_symbolizer.h>
-#include "ogc/point.h"
+#include "ogc/geom/point.h"
 #include <memory>
 
 using namespace ogc::symbology;

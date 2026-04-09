@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "ogc/graph/label/label_conflict.h"
 #include "ogc/graph/label/label_engine.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 using namespace ogc::graph;

@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <vector>
-#include "ogc/geometry.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/linearring.h"
-#include "ogc/polygon.h"
-#include "ogc/multipoint.h"
-#include "ogc/multilinestring.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/linearring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipoint.h"
+#include "ogc/geom/multilinestring.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 
 #ifdef _WIN32
 #include <windows.h>
