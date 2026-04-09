@@ -5,7 +5,7 @@
 
 #include "ogc/feature/feature_defn.h"
 #include "ogc/layer/geometry_compat.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 #include <cstdint>
 #include <memory>

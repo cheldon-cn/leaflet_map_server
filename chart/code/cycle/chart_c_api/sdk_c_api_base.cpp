@@ -80,12 +80,13 @@ void ogc_logger_set_console_output(ogc_logger_t* logger, int enable) {
 }
 
 ogc_performance_monitor_t* ogc_performance_monitor_get_instance(void) {
-    return reinterpret_cast<ogc_performance_monitor_t*>(&PerformanceMonitor::Instance());
+    static PerformanceMonitor instance;
+    return reinterpret_cast<ogc_performance_monitor_t*>(&instance);
 }
 
 void ogc_performance_monitor_start_frame(ogc_performance_monitor_t* monitor) {
     if (monitor) {
-        reinterpret_cast<PerformanceMonitor*>(monitor)->StartFrame();
+        reinterpret_cast<PerformanceMonitor*>(monitor)->BeginFrame();
     }
 }
 
@@ -97,34 +98,34 @@ void ogc_performance_monitor_end_frame(ogc_performance_monitor_t* monitor) {
 
 double ogc_performance_monitor_get_fps(ogc_performance_monitor_t* monitor) {
     if (monitor) {
-        return reinterpret_cast<PerformanceMonitor*>(monitor)->GetFPS();
+        return reinterpret_cast<PerformanceMonitor*>(monitor)->GetCurrentFps();
     }
     return 0.0;
 }
 
 long ogc_performance_monitor_get_memory_used(ogc_performance_monitor_t* monitor) {
     if (monitor) {
-        return reinterpret_cast<PerformanceMonitor*>(monitor)->GetMemoryUsed();
+        return static_cast<long>(reinterpret_cast<PerformanceMonitor*>(monitor)->GetMemoryUsageMB());
     }
     return 0;
 }
 
 void ogc_performance_monitor_reset(ogc_performance_monitor_t* monitor) {
     if (monitor) {
-        reinterpret_cast<PerformanceMonitor*>(monitor)->Reset();
+        reinterpret_cast<PerformanceMonitor*>(monitor)->ClearAlerts();
     }
 }
 
 void ogc_performance_stats_get(ogc_performance_stats_t* stats) {
     if (stats) {
-        auto& monitor = PerformanceMonitor::Instance();
-        stats->fps = monitor.GetFPS();
-        stats->frame_time_ms = monitor.GetFrameTime();
-        stats->memory_used = monitor.GetMemoryUsed();
-        stats->memory_total = monitor.GetMemoryTotal();
-        stats->render_count = static_cast<int>(monitor.GetRenderCount());
-        stats->cache_hit_count = static_cast<int>(monitor.GetCacheHitCount());
-        stats->cache_miss_count = static_cast<int>(monitor.GetCacheMissCount());
+        static PerformanceMonitor monitor;
+        stats->fps = monitor.GetCurrentFps();
+        stats->frame_time_ms = monitor.GetFrameTimeMs();
+        stats->memory_used = static_cast<long>(monitor.GetMemoryUsageMB());
+        stats->memory_total = 0;
+        stats->render_count = static_cast<int>(monitor.GetDrawCallCount());
+        stats->cache_hit_count = 0;
+        stats->cache_miss_count = 0;
     }
 }
 

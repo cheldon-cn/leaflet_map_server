@@ -7,249 +7,304 @@
 
 #include "sdk_c_api.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <ogc/proj/coordinate_transformer.h>
-#include <ogc/proj/transform_matrix.h>
+#include <ogc/proj/proj_transformer.h>
 
 #include <cstring>
 #include <cstdlib>
 #include <memory>
 #include <string>
 
+using namespace ogc;
 using namespace ogc::proj;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
-}  
+struct LocalTransformMatrix {
+    double m[9];
+    LocalTransformMatrix() {
+        for (int i = 0; i < 9; ++i) m[i] = 0.0;
+        m[0] = m[4] = m[8] = 1.0;
+    }
+};
 
-ogc_coordinate_transformer_t* ogc_coordinate_transformer_create(void) {
-    return reinterpret_cast<ogc_coordinate_transformer_t*>(CoordinateTransformer::Create().release());
+struct LocalCoordTransformer {
+    std::string sourceCRS;
+    std::string targetCRS;
+    CoordinateTransformerPtr transformer;
+};
+
 }
 
-void ogc_coordinate_transformer_destroy(ogc_coordinate_transformer_t* transformer) {
-    delete reinterpret_cast<CoordinateTransformer*>(transformer);
+ogc_coord_transformer_t* ogc_coord_transformer_create(const char* source_crs, const char* target_crs) {
+    if (source_crs && target_crs) {
+        LocalCoordTransformer* t = new LocalCoordTransformer();
+        t->sourceCRS = SafeString(source_crs);
+        t->targetCRS = SafeString(target_crs);
+        t->transformer = CoordinateTransformer::Create(t->sourceCRS, t->targetCRS);
+        return reinterpret_cast<ogc_coord_transformer_t*>(t);
+    }
+    return nullptr;
 }
 
-int ogc_coordinate_transformer_set_source_crs(ogc_coordinate_transformer_t* transformer, const char* crs) {
-    if (transformer && crs) {
-        return reinterpret_cast<CoordinateTransformer*>(transformer)->SetSourceCRS(SafeString(crs)) ? 1 : 0;
+void ogc_coord_transformer_destroy(ogc_coord_transformer_t* transformer) {
+    delete reinterpret_cast<LocalCoordTransformer*>(transformer);
+}
+
+int ogc_coord_transformer_is_valid(const ogc_coord_transformer_t* transformer) {
+    if (transformer) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        return (t->transformer && t->transformer->IsValid()) ? 1 : 0;
     }
     return 0;
 }
 
-int ogc_coordinate_transformer_set_target_crs(ogc_coordinate_transformer_t* transformer, const char* crs) {
-    if (transformer && crs) {
-        return reinterpret_cast<CoordinateTransformer*>(transformer)->SetTargetCRS(SafeString(crs)) ? 1 : 0;
+ogc_coordinate_t ogc_coord_transformer_transform(const ogc_coord_transformer_t* transformer, const ogc_coordinate_t* coord) {
+    ogc_coordinate_t result = {0.0, 0.0};
+    if (transformer && coord) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        if (t->transformer && t->transformer->IsValid()) {
+            result.x = coord->x;
+            result.y = coord->y;
+            t->transformer->Transform(result.x, result.y);
+        }
     }
-    return 0;
+    return result;
 }
 
-int ogc_coordinate_transformer_transform_point(const ogc_coordinate_transformer_t* transformer, double x, double y, double* out_x, double* out_y) {
-    if (transformer && out_x && out_y) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->Transform(x, y, *out_x, *out_y) ? 1 : 0;
+ogc_coordinate_t ogc_coord_transformer_transform_inverse(const ogc_coord_transformer_t* transformer, const ogc_coordinate_t* coord) {
+    ogc_coordinate_t result = {0.0, 0.0};
+    if (transformer && coord) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        if (t->transformer && t->transformer->IsValid()) {
+            result.x = coord->x;
+            result.y = coord->y;
+            t->transformer->TransformInverse(result.x, result.y);
+        }
     }
-    return 0;
+    return result;
 }
 
-int ogc_coordinate_transformer_transform_point_3d(const ogc_coordinate_transformer_t* transformer, double x, double y, double z, double* out_x, double* out_y, double* out_z) {
-    if (transformer && out_x && out_y && out_z) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->Transform(x, y, z, *out_x, *out_y, *out_z) ? 1 : 0;
+void ogc_coord_transformer_transform_array(const ogc_coord_transformer_t* transformer, double* x, double* y, size_t count) {
+    if (transformer && x && y && count > 0) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        if (t->transformer && t->transformer->IsValid()) {
+            for (size_t i = 0; i < count; ++i) {
+                t->transformer->Transform(x[i], y[i]);
+            }
+        }
     }
-    return 0;
 }
 
-ogc_geometry_t* ogc_coordinate_transformer_transform_geometry(const ogc_coordinate_transformer_t* transformer, const ogc_geometry_t* geom) {
-    if (transformer && geom) {
-        ogc::geom::GeometryPtr result = reinterpret_cast<const CoordinateTransformer*>(transformer)->Transform(
-            *reinterpret_cast<const ogc::geom::Geometry*>(geom));
-        if (result) {
-            return reinterpret_cast<ogc_geometry_t*>(result.release());
+ogc_envelope_t* ogc_coord_transformer_transform_envelope(const ogc_coord_transformer_t* transformer, const ogc_envelope_t* env) {
+    if (transformer && env) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        if (t->transformer && t->transformer->IsValid()) {
+            double min_x = ogc_envelope_get_min_x(env);
+            double min_y = ogc_envelope_get_min_y(env);
+            double max_x = ogc_envelope_get_max_x(env);
+            double max_y = ogc_envelope_get_max_y(env);
+            t->transformer->Transform(min_x, min_y);
+            t->transformer->Transform(max_x, max_y);
+            return ogc_envelope_create_from_coords(min_x, min_y, max_x, max_y);
         }
     }
     return nullptr;
 }
 
-int ogc_coordinate_transformer_is_valid(const ogc_coordinate_transformer_t* transformer) {
-    if (transformer) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->IsValid() ? 1 : 0;
-    }
-    return 0;
-}
-
-const char* ogc_coordinate_transformer_get_source_crs(const ogc_coordinate_transformer_t* transformer) {
-    if (transformer) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->GetSourceCRS().c_str();
-    }
-    return "";
-}
-
-const char* ogc_coordinate_transformer_get_target_crs(const ogc_coordinate_transformer_t* transformer) {
-    if (transformer) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->GetTargetCRS().c_str();
-    }
-    return "";
-}
-
-int ogc_coordinate_transformer_transform_forward(const ogc_coordinate_transformer_t* transformer, double x, double y, double* out_x, double* out_y) {
-    if (transformer && out_x && out_y) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->TransformForward(x, y, *out_x, *out_y) ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_coordinate_transformer_transform_inverse(const ogc_coordinate_transformer_t* transformer, double x, double y, double* out_x, double* out_y) {
-    if (transformer && out_x && out_y) {
-        return reinterpret_cast<const CoordinateTransformer*>(transformer)->TransformInverse(x, y, *out_x, *out_y) ? 1 : 0;
-    }
-    return 0;
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_create(void) {
-    return reinterpret_cast<ogc_transform_matrix_t*>(TransformMatrix::Create().release());
-}
-
-void ogc_transform_matrix_destroy(ogc_transform_matrix_t* matrix) {
-    delete reinterpret_cast<TransformMatrix*>(matrix);
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_create_identity(void) {
-    return reinterpret_cast<ogc_transform_matrix_t*>(TransformMatrix::CreateIdentity().release());
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_create_translation(double tx, double ty) {
-    return reinterpret_cast<ogc_transform_matrix_t*>(TransformMatrix::CreateTranslation(tx, ty).release());
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_create_scale(double sx, double sy) {
-    return reinterpret_cast<ogc_transform_matrix_t*>(TransformMatrix::CreateScale(sx, sy).release());
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_create_rotation(double angle) {
-    return reinterpret_cast<ogc_transform_matrix_t*>(TransformMatrix::CreateRotation(angle).release());
-}
-
-ogc_transform_matrix_t* ogc_transform_matrix_clone(const ogc_transform_matrix_t* matrix) {
-    if (matrix) {
-        return reinterpret_cast<ogc_transform_matrix_t*>(
-            reinterpret_cast<const TransformMatrix*>(matrix)->Clone().release());
+ogc_geometry_t* ogc_coord_transformer_transform_geometry(const ogc_coord_transformer_t* transformer, const ogc_geometry_t* geom) {
+    if (transformer && geom) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        if (t->transformer && t->transformer->IsValid()) {
+            GeometryPtr result = t->transformer->Transform(
+                reinterpret_cast<const Geometry*>(geom));
+            if (result) {
+                return reinterpret_cast<ogc_geometry_t*>(result.release());
+            }
+        }
     }
     return nullptr;
 }
 
-void ogc_transform_matrix_set_identity(ogc_transform_matrix_t* matrix) {
-    if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->SetIdentity();
+const char* ogc_coord_transformer_get_source_crs(const ogc_coord_transformer_t* transformer) {
+    if (transformer) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        return t->sourceCRS.c_str();
     }
+    return "";
 }
 
-void ogc_transform_matrix_set_translation(ogc_transform_matrix_t* matrix, double tx, double ty) {
-    if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->SetTranslation(tx, ty);
+const char* ogc_coord_transformer_get_target_crs(const ogc_coord_transformer_t* transformer) {
+    if (transformer) {
+        const LocalCoordTransformer* t = reinterpret_cast<const LocalCoordTransformer*>(transformer);
+        return t->targetCRS.c_str();
     }
+    return "";
 }
 
-void ogc_transform_matrix_set_scale(ogc_transform_matrix_t* matrix, double sx, double sy) {
-    if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->SetScale(sx, sy);
-    }
+ogc_transform_matrix_t* ogc_transform_matrix_create(void) {
+    return reinterpret_cast<ogc_transform_matrix_t*>(new LocalTransformMatrix());
 }
 
-void ogc_transform_matrix_set_rotation(ogc_transform_matrix_t* matrix, double angle) {
-    if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->SetRotation(angle);
-    }
+ogc_transform_matrix_t* ogc_transform_matrix_create_identity(void) {
+    return reinterpret_cast<ogc_transform_matrix_t*>(new LocalTransformMatrix());
 }
 
-void ogc_transform_matrix_translate(ogc_transform_matrix_t* matrix, double tx, double ty) {
+ogc_transform_matrix_t* ogc_transform_matrix_create_translation(double tx, double ty) {
+    LocalTransformMatrix* mat = new LocalTransformMatrix();
+    mat->m[2] = tx;
+    mat->m[5] = ty;
+    return reinterpret_cast<ogc_transform_matrix_t*>(mat);
+}
+
+ogc_transform_matrix_t* ogc_transform_matrix_create_scale(double sx, double sy) {
+    LocalTransformMatrix* mat = new LocalTransformMatrix();
+    mat->m[0] = sx;
+    mat->m[4] = sy;
+    return reinterpret_cast<ogc_transform_matrix_t*>(mat);
+}
+
+ogc_transform_matrix_t* ogc_transform_matrix_create_rotation(double angle) {
+    LocalTransformMatrix* mat = new LocalTransformMatrix();
+    double c = cos(angle);
+    double s = sin(angle);
+    mat->m[0] = c;
+    mat->m[1] = -s;
+    mat->m[3] = s;
+    mat->m[4] = c;
+    return reinterpret_cast<ogc_transform_matrix_t*>(mat);
+}
+
+void ogc_transform_matrix_destroy(ogc_transform_matrix_t* matrix) {
+    delete reinterpret_cast<LocalTransformMatrix*>(matrix);
+}
+
+void ogc_transform_matrix_translate(ogc_transform_matrix_t* matrix, double dx, double dy) {
     if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->Translate(tx, ty);
+        LocalTransformMatrix* mat = reinterpret_cast<LocalTransformMatrix*>(matrix);
+        mat->m[2] += dx;
+        mat->m[5] += dy;
     }
 }
 
 void ogc_transform_matrix_scale(ogc_transform_matrix_t* matrix, double sx, double sy) {
     if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->Scale(sx, sy);
+        LocalTransformMatrix* mat = reinterpret_cast<LocalTransformMatrix*>(matrix);
+        mat->m[0] *= sx;
+        mat->m[4] *= sy;
     }
 }
 
-void ogc_transform_matrix_rotate(ogc_transform_matrix_t* matrix, double angle) {
+void ogc_transform_matrix_rotate(ogc_transform_matrix_t* matrix, double angle_degrees) {
     if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->Rotate(angle);
+        LocalTransformMatrix* mat = reinterpret_cast<LocalTransformMatrix*>(matrix);
+        double rad = angle_degrees * M_PI / 180.0;
+        double c = cos(rad);
+        double s = sin(rad);
+        double m0 = mat->m[0] * c - mat->m[3] * s;
+        double m1 = mat->m[1] * c - mat->m[4] * s;
+        double m2 = mat->m[2] * c - mat->m[5] * s;
+        double m3 = mat->m[0] * s + mat->m[3] * c;
+        double m4 = mat->m[1] * s + mat->m[4] * c;
+        double m5 = mat->m[2] * s + mat->m[5] * c;
+        mat->m[0] = m0; mat->m[1] = m1; mat->m[2] = m2;
+        mat->m[3] = m3; mat->m[4] = m4; mat->m[5] = m5;
     }
 }
 
-ogc_transform_matrix_t* ogc_transform_matrix_multiply(const ogc_transform_matrix_t* a, const ogc_transform_matrix_t* b) {
-    if (a && b) {
-        return reinterpret_cast<ogc_transform_matrix_t*>(
-            TransformMatrix::Multiply(
-                *reinterpret_cast<const TransformMatrix*>(a),
-                *reinterpret_cast<const TransformMatrix*>(b)).release());
+void ogc_transform_matrix_multiply(ogc_transform_matrix_t* result, const ogc_transform_matrix_t* a, const ogc_transform_matrix_t* b) {
+    if (result && a && b) {
+        LocalTransformMatrix* r = reinterpret_cast<LocalTransformMatrix*>(result);
+        const LocalTransformMatrix* ma = reinterpret_cast<const LocalTransformMatrix*>(a);
+        const LocalTransformMatrix* mb = reinterpret_cast<const LocalTransformMatrix*>(b);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                r->m[i * 3 + j] = 0;
+                for (int k = 0; k < 3; ++k) {
+                    r->m[i * 3 + j] += ma->m[i * 3 + k] * mb->m[k * 3 + j];
+                }
+            }
+        }
     }
-    return nullptr;
+}
+
+ogc_transform_matrix_t* ogc_transform_matrix_multiply_new(const ogc_transform_matrix_t* a, const ogc_transform_matrix_t* b) {
+    ogc_transform_matrix_t* result = ogc_transform_matrix_create();
+    ogc_transform_matrix_multiply(result, a, b);
+    return result;
 }
 
 ogc_transform_matrix_t* ogc_transform_matrix_inverse(const ogc_transform_matrix_t* matrix) {
     if (matrix) {
-        return reinterpret_cast<ogc_transform_matrix_t*>(
-            reinterpret_cast<const TransformMatrix*>(matrix)->Inverse().release());
-    }
-    return nullptr;
-}
-
-double ogc_transform_matrix_determinant(const ogc_transform_matrix_t* matrix) {
-    if (matrix) {
-        return reinterpret_cast<const TransformMatrix*>(matrix)->Determinant();
-    }
-    return 0.0;
-}
-
-int ogc_transform_matrix_is_identity(const ogc_transform_matrix_t* matrix) {
-    if (matrix) {
-        return reinterpret_cast<const TransformMatrix*>(matrix)->IsIdentity() ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_transform_matrix_is_invertible(const ogc_transform_matrix_t* matrix) {
-    if (matrix) {
-        return reinterpret_cast<const TransformMatrix*>(matrix)->IsInvertible() ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_transform_matrix_transform_point(const ogc_transform_matrix_t* matrix, double x, double y, double* out_x, double* out_y) {
-    if (matrix && out_x && out_y) {
-        reinterpret_cast<const TransformMatrix*>(matrix)->TransformPoint(x, y, *out_x, *out_y);
-    }
-}
-
-ogc_geometry_t* ogc_transform_matrix_transform_geometry(const ogc_transform_matrix_t* matrix, const ogc_geometry_t* geom) {
-    if (matrix && geom) {
-        ogc::geom::GeometryPtr result = reinterpret_cast<const TransformMatrix*>(matrix)->TransformGeometry(
-            *reinterpret_cast<const ogc::geom::Geometry*>(geom));
-        if (result) {
-            return reinterpret_cast<ogc_geometry_t*>(result.release());
+        const LocalTransformMatrix* mat = reinterpret_cast<const LocalTransformMatrix*>(matrix);
+        double det = mat->m[0] * (mat->m[4] * mat->m[8] - mat->m[5] * mat->m[7])
+                   - mat->m[1] * (mat->m[3] * mat->m[8] - mat->m[5] * mat->m[6])
+                   + mat->m[2] * (mat->m[3] * mat->m[7] - mat->m[4] * mat->m[6]);
+        if (det != 0.0) {
+            LocalTransformMatrix* inv = new LocalTransformMatrix();
+            inv->m[0] = (mat->m[4] * mat->m[8] - mat->m[5] * mat->m[7]) / det;
+            inv->m[1] = (mat->m[2] * mat->m[7] - mat->m[1] * mat->m[8]) / det;
+            inv->m[2] = (mat->m[1] * mat->m[5] - mat->m[2] * mat->m[4]) / det;
+            inv->m[3] = (mat->m[5] * mat->m[6] - mat->m[3] * mat->m[8]) / det;
+            inv->m[4] = (mat->m[0] * mat->m[8] - mat->m[2] * mat->m[6]) / det;
+            inv->m[5] = (mat->m[2] * mat->m[3] - mat->m[0] * mat->m[5]) / det;
+            inv->m[6] = (mat->m[3] * mat->m[7] - mat->m[4] * mat->m[6]) / det;
+            inv->m[7] = (mat->m[1] * mat->m[6] - mat->m[0] * mat->m[7]) / det;
+            inv->m[8] = (mat->m[0] * mat->m[4] - mat->m[1] * mat->m[3]) / det;
+            return reinterpret_cast<ogc_transform_matrix_t*>(inv);
         }
     }
     return nullptr;
 }
 
-void ogc_transform_matrix_get_elements(const ogc_transform_matrix_t* matrix, double* m11, double* m12, double* m21, double* m22, double* dx, double* dy) {
-    if (matrix && m11 && m12 && m21 && m22 && dx && dy) {
-        reinterpret_cast<const TransformMatrix*>(matrix)->GetElements(*m11, *m12, *m21, *m22, *dx, *dy);
+ogc_coordinate_t ogc_transform_matrix_transform(const ogc_transform_matrix_t* matrix, const ogc_coordinate_t* coord) {
+    ogc_coordinate_t result = {0.0, 0.0};
+    if (matrix && coord) {
+        const LocalTransformMatrix* mat = reinterpret_cast<const LocalTransformMatrix*>(matrix);
+        result.x = mat->m[0] * coord->x + mat->m[1] * coord->y + mat->m[2];
+        result.y = mat->m[3] * coord->x + mat->m[4] * coord->y + mat->m[5];
+    }
+    return result;
+}
+
+void ogc_transform_matrix_transform_point(const ogc_transform_matrix_t* matrix, double* x, double* y) {
+    if (matrix && x && y) {
+        const LocalTransformMatrix* mat = reinterpret_cast<const LocalTransformMatrix*>(matrix);
+        double tx = mat->m[0] * (*x) + mat->m[1] * (*y) + mat->m[2];
+        double ty = mat->m[3] * (*x) + mat->m[4] * (*y) + mat->m[5];
+        *x = tx;
+        *y = ty;
     }
 }
 
-void ogc_transform_matrix_set_elements(ogc_transform_matrix_t* matrix, double m11, double m12, double m21, double m22, double dx, double dy) {
-    if (matrix) {
-        reinterpret_cast<TransformMatrix*>(matrix)->SetElements(m11, m12, m21, m22, dx, dy);
+void ogc_transform_matrix_get_values(const ogc_transform_matrix_t* matrix, double* values) {
+    if (matrix && values) {
+        const LocalTransformMatrix* mat = reinterpret_cast<const LocalTransformMatrix*>(matrix);
+        for (int i = 0; i < 9; ++i) {
+            values[i] = mat->m[i];
+        }
+    }
+}
+
+void ogc_transform_matrix_get_elements(const ogc_transform_matrix_t* matrix, double* elements) {
+    ogc_transform_matrix_get_values(matrix, elements);
+}
+
+void ogc_transform_matrix_set_elements(ogc_transform_matrix_t* matrix, const double* elements) {
+    if (matrix && elements) {
+        LocalTransformMatrix* mat = reinterpret_cast<LocalTransformMatrix*>(matrix);
+        for (int i = 0; i < 9; ++i) {
+            mat->m[i] = elements[i];
+        }
     }
 }
 

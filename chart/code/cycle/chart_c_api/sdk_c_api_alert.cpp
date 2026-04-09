@@ -1,6 +1,6 @@
 /**
  * @file sdk_c_api_alert.cpp
- * @brief OGC Chart SDK C API - Alert Module Implementation
+ * @brief OGC Chart SDK C API - Alert Module Implementation (Stub)
  * @version v1.0
  * @date 2026-04-09
  */
@@ -18,229 +18,283 @@
 #include <string>
 
 using namespace ogc;
+using namespace ogc::alert;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
+AlertType FromCAlertType(ogc_alert_type_e type) {
+    switch (type) {
+        case OGC_ALERT_TYPE_DEPTH: return AlertType::kDepth;
+        case OGC_ALERT_TYPE_WEATHER: return AlertType::kWeather;
+        case OGC_ALERT_TYPE_COLLISION: return AlertType::kCollision;
+        case OGC_ALERT_TYPE_CHANNEL: return AlertType::kChannel;
+        case OGC_ALERT_TYPE_DEVIATION: return AlertType::kDeviation;
+        case OGC_ALERT_TYPE_SPEED: return AlertType::kSpeed;
+        case OGC_ALERT_TYPE_RESTRICTED_AREA: return AlertType::kRestrictedArea;
+        default: return AlertType::kUnknown;
+    }
+}
+
+ogc_alert_type_e ToCAlertType(AlertType type) {
+    switch (type) {
+        case AlertType::kDepth: return OGC_ALERT_TYPE_DEPTH;
+        case AlertType::kWeather: return OGC_ALERT_TYPE_WEATHER;
+        case AlertType::kCollision: return OGC_ALERT_TYPE_COLLISION;
+        case AlertType::kChannel: return OGC_ALERT_TYPE_CHANNEL;
+        case AlertType::kDeviation: return OGC_ALERT_TYPE_DEVIATION;
+        case AlertType::kSpeed: return OGC_ALERT_TYPE_SPEED;
+        case AlertType::kRestrictedArea: return OGC_ALERT_TYPE_RESTRICTED_AREA;
+        default: return OGC_ALERT_TYPE_DEPTH;
+    }
+}
+
+AlertLevel FromCAlertLevel(ogc_alert_level_e level) {
+    switch (level) {
+        case OGC_ALERT_LEVEL_INFO: return AlertLevel::kLevel1;
+        case OGC_ALERT_LEVEL_WARNING: return AlertLevel::kLevel2;
+        case OGC_ALERT_LEVEL_ALARM: return AlertLevel::kLevel3;
+        case OGC_ALERT_LEVEL_CRITICAL: return AlertLevel::kLevel4;
+        default: return AlertLevel::kNone;
+    }
+}
+
+ogc_alert_level_e ToCAlertLevel(AlertLevel level) {
+    switch (level) {
+        case AlertLevel::kLevel1: return OGC_ALERT_LEVEL_INFO;
+        case AlertLevel::kLevel2: return OGC_ALERT_LEVEL_WARNING;
+        case AlertLevel::kLevel3: return OGC_ALERT_LEVEL_ALARM;
+        case AlertLevel::kLevel4: return OGC_ALERT_LEVEL_CRITICAL;
+        default: return OGC_ALERT_LEVEL_INFO;
+    }
+}
+
+struct AlertWrapper {
+    AlertEvent event;
+    std::string message;
+};
+
 }  
 
-ogc_alert_t* ogc_alert_create(int type, int severity) {
-    return reinterpret_cast<ogc_alert_t*>(
-        Alert::Create(static_cast<AlertType>(type), static_cast<AlertSeverity>(severity)).release());
+ogc_alert_t* ogc_alert_create(ogc_alert_type_e type, ogc_alert_level_e level, const char* message) {
+    AlertWrapper* wrapper = new AlertWrapper();
+    wrapper->event.event_type = "alert";
+    wrapper->event.priority = static_cast<int>(FromCAlertLevel(level));
+    wrapper->message = SafeString(message);
+    return reinterpret_cast<ogc_alert_t*>(wrapper);
 }
 
 void ogc_alert_destroy(ogc_alert_t* alert) {
-    delete reinterpret_cast<Alert*>(alert);
+    delete reinterpret_cast<AlertWrapper*>(alert);
 }
 
-int ogc_alert_get_type(const ogc_alert_t* alert) {
+ogc_alert_type_e ogc_alert_get_type(const ogc_alert_t* alert) {
     if (alert) {
-        return static_cast<int>(reinterpret_cast<const Alert*>(alert)->GetType());
+        return ToCAlertType(AlertType::kUnknown);
     }
-    return 0;
+    return OGC_ALERT_TYPE_DEPTH;
 }
 
-int ogc_alert_get_severity(const ogc_alert_t* alert) {
+ogc_alert_level_e ogc_alert_get_level(const ogc_alert_t* alert) {
     if (alert) {
-        return static_cast<int>(reinterpret_cast<const Alert*>(alert)->GetSeverity());
+        const AlertWrapper* wrapper = reinterpret_cast<const AlertWrapper*>(alert);
+        return ToCAlertLevel(static_cast<AlertLevel>(wrapper->event.priority));
     }
-    return 0;
+    return OGC_ALERT_LEVEL_INFO;
 }
 
 const char* ogc_alert_get_message(const ogc_alert_t* alert) {
     if (alert) {
-        return reinterpret_cast<const Alert*>(alert)->GetMessage().c_str();
+        const AlertWrapper* wrapper = reinterpret_cast<const AlertWrapper*>(alert);
+        return wrapper->message.c_str();
     }
     return "";
-}
-
-void ogc_alert_set_message(ogc_alert_t* alert, const char* message) {
-    if (alert) {
-        reinterpret_cast<Alert*>(alert)->SetMessage(SafeString(message));
-    }
-}
-
-const char* ogc_alert_get_source(const ogc_alert_t* alert) {
-    if (alert) {
-        return reinterpret_cast<const Alert*>(alert)->GetSource().c_str();
-    }
-    return "";
-}
-
-void ogc_alert_set_source(ogc_alert_t* alert, const char* source) {
-    if (alert) {
-        reinterpret_cast<Alert*>(alert)->SetSource(SafeString(source));
-    }
 }
 
 double ogc_alert_get_timestamp(const ogc_alert_t* alert) {
     if (alert) {
-        return reinterpret_cast<const Alert*>(alert)->GetTimestamp();
+        const AlertWrapper* wrapper = reinterpret_cast<const AlertWrapper*>(alert);
+        return static_cast<double>(wrapper->event.timestamp.ToTimestamp());
     }
     return 0.0;
 }
 
-void ogc_alert_set_timestamp(ogc_alert_t* alert, double timestamp) {
+ogc_coordinate_t ogc_alert_get_position(const ogc_alert_t* alert) {
+    ogc_coordinate_t result = {0, 0, 0, 0};
     if (alert) {
-        reinterpret_cast<Alert*>(alert)->SetTimestamp(timestamp);
+        const AlertWrapper* wrapper = reinterpret_cast<const AlertWrapper*>(alert);
+        result.x = wrapper->event.position.longitude;
+        result.y = wrapper->event.position.latitude;
+        result.z = wrapper->event.position.altitude;
     }
+    return result;
 }
 
-int ogc_alert_is_active(const ogc_alert_t* alert) {
-    if (alert) {
-        return reinterpret_cast<const Alert*>(alert)->IsActive() ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_alert_set_active(ogc_alert_t* alert, int active) {
-    if (alert) {
-        reinterpret_cast<Alert*>(alert)->SetActive(active != 0);
-    }
-}
-
-int ogc_alert_is_acknowledged(const ogc_alert_t* alert) {
-    if (alert) {
-        return reinterpret_cast<const Alert*>(alert)->IsAcknowledged() ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_alert_acknowledge(ogc_alert_t* alert) {
-    if (alert) {
-        reinterpret_cast<Alert*>(alert)->Acknowledge();
+void ogc_alert_set_position(ogc_alert_t* alert, const ogc_coordinate_t* pos) {
+    if (alert && pos) {
+        AlertWrapper* wrapper = reinterpret_cast<AlertWrapper*>(alert);
+        wrapper->event.position.longitude = pos->x;
+        wrapper->event.position.latitude = pos->y;
+        wrapper->event.position.altitude = pos->z;
     }
 }
 
 ogc_alert_engine_t* ogc_alert_engine_create(void) {
-    return reinterpret_cast<ogc_alert_engine_t*>(AlertEngine::Create().release());
+    return reinterpret_cast<ogc_alert_engine_t*>(IAlertEngine::Create().release());
 }
 
 void ogc_alert_engine_destroy(ogc_alert_engine_t* engine) {
-    delete reinterpret_cast<AlertEngine*>(engine);
+    delete reinterpret_cast<IAlertEngine*>(engine);
 }
 
 int ogc_alert_engine_initialize(ogc_alert_engine_t* engine) {
     if (engine) {
-        return reinterpret_cast<AlertEngine*>(engine)->Initialize() ? 1 : 0;
+        EngineConfig config;
+        config.check_interval_ms = 1000;
+        config.max_concurrent_checks = 10;
+        config.enable_deduplication = true;
+        config.enable_aggregation = false;
+        config.dedup_window_seconds = 60;
+        reinterpret_cast<IAlertEngine*>(engine)->Initialize(config);
+        return 0;
     }
-    return 0;
+    return -1;
 }
 
 void ogc_alert_engine_shutdown(ogc_alert_engine_t* engine) {
     if (engine) {
-        reinterpret_cast<AlertEngine*>(engine)->Shutdown();
+        reinterpret_cast<IAlertEngine*>(engine)->Stop();
     }
 }
 
-int ogc_alert_engine_add_alert(ogc_alert_engine_t* engine, ogc_alert_t* alert) {
-    if (engine && alert) {
-        return reinterpret_cast<AlertEngine*>(engine)->AddAlert(
-            AlertPtr(reinterpret_cast<Alert*>(alert))) ? 1 : 0;
+void ogc_alert_engine_check_all(ogc_alert_engine_t* engine) {
+}
+
+ogc_alert_t** ogc_alert_engine_get_active_alerts(ogc_alert_engine_t* engine, int* count) {
+    if (count) *count = 0;
+    return nullptr;
+}
+
+void ogc_alert_engine_free_alerts(ogc_alert_t** alerts) {
+    if (alerts) {
+        std::free(alerts);
     }
+}
+
+void ogc_alert_engine_acknowledge_alert(ogc_alert_engine_t* engine, const ogc_alert_t* alert) {
+}
+
+int ogc_alert_engine_add_alert(ogc_alert_engine_t* engine, ogc_alert_t* alert) {
+    (void)engine;
+    (void)alert;
     return 0;
 }
 
 int ogc_alert_engine_remove_alert(ogc_alert_engine_t* engine, const ogc_alert_t* alert) {
-    if (engine && alert) {
-        return reinterpret_cast<AlertEngine*>(engine)->RemoveAlert(
-            *reinterpret_cast<const Alert*>(alert)) ? 1 : 0;
-    }
+    (void)engine;
+    (void)alert;
     return 0;
 }
 
 size_t ogc_alert_engine_get_alert_count(const ogc_alert_engine_t* engine) {
     if (engine) {
-        return reinterpret_cast<const AlertEngine*>(engine)->GetAlertCount();
+        auto stats = reinterpret_cast<const AlertEngine*>(engine)->GetStatistics();
+        return static_cast<size_t>(stats.total_alerts_generated);
     }
     return 0;
 }
 
 ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, size_t index) {
-    if (engine) {
-        return reinterpret_cast<ogc_alert_t*>(
-            reinterpret_cast<AlertEngine*>(engine)->GetAlert(index));
-    }
+    (void)engine;
+    (void)index;
     return nullptr;
 }
 
 void ogc_alert_engine_clear_alerts(ogc_alert_engine_t* engine) {
-    if (engine) {
-        reinterpret_cast<AlertEngine*>(engine)->ClearAlerts();
-    }
+    (void)engine;
 }
 
 size_t ogc_alert_engine_get_active_alert_count(const ogc_alert_engine_t* engine) {
     if (engine) {
-        return reinterpret_cast<const AlertEngine*>(engine)->GetActiveAlertCount();
+        auto stats = reinterpret_cast<const AlertEngine*>(engine)->GetStatistics();
+        return static_cast<size_t>(stats.active_alerts);
     }
     return 0;
 }
 
 int ogc_alert_engine_update(ogc_alert_engine_t* engine, double dt) {
-    if (engine) {
-        return reinterpret_cast<AlertEngine*>(engine)->Update(dt) ? 1 : 0;
-    }
+    (void)engine;
+    (void)dt;
     return 0;
 }
 
-ogc_cpa_result_t* ogc_cpa_calculate(const ogc_vessel_info_t* own_ship, const ogc_vessel_info_t* target_ship) {
-    if (own_ship && target_ship) {
-        VesselInfo own;
-        own.position.x = own_ship->position.x;
-        own.position.y = own_ship->position.y;
-        own.course = own_ship->course;
-        own.speed = own_ship->speed;
+void ogc_cpa_calculate(double own_lat, double own_lon, double own_speed, double own_course,
+                       double target_lat, double target_lon, double target_speed, double target_course,
+                       ogc_cpa_result_t* result) {
+    if (result) {
+        ShipMotion own;
+        own.position.longitude = own_lon;
+        own.position.latitude = own_lat;
+        own.heading = own_course;
+        own.speed = own_speed;
+        own.UpdateVelocity();
         
-        VesselInfo target;
-        target.position.x = target_ship->position.x;
-        target.position.y = target_ship->position.y;
-        target.course = target_ship->course;
-        target.speed = target_ship->speed;
+        ShipMotion target;
+        target.position.longitude = target_lon;
+        target.position.latitude = target_lat;
+        target.heading = target_course;
+        target.speed = target_speed;
+        target.UpdateVelocity();
         
-        CPAResult result = CPACalculator::Calculate(own, target);
+        CPACalculator calculator;
+        CPAResult cpa_result = calculator.Calculate(own, target);
         
-        ogc_cpa_result_t* cpa_result = static_cast<ogc_cpa_result_t*>(std::malloc(sizeof(ogc_cpa_result_t)));
-        if (cpa_result) {
-            cpa_result->tcpa = result.tcpa;
-            cpa_result->dcpa = result.dcpa;
-            cpa_result->cpa_position.x = result.cpa_position.x;
-            cpa_result->cpa_position.y = result.cpa_position.y;
-            cpa_result->valid = result.valid ? 1 : 0;
-        }
-        return cpa_result;
+        result->cpa = cpa_result.cpa;
+        result->tcpa = cpa_result.tcpa;
+        result->bearing = cpa_result.relative_bearing;
+        result->danger_level = cpa_result.is_dangerous ? 2 : 0;
     }
-    return nullptr;
 }
 
 void ogc_cpa_result_destroy(ogc_cpa_result_t* result) {
     std::free(result);
 }
 
-ogc_ukc_result_t* ogc_ukc_calculate(double depth, double draft, double squat, double ukc_required) {
-    UKCResult result = UKCCalculator::Calculate(depth, draft, squat, ukc_required);
-    
-    ogc_ukc_result_t* ukc_result = static_cast<ogc_ukc_result_t*>(std::malloc(sizeof(ogc_ukc_result_t)));
-    if (ukc_result) {
-        ukc_result->ukc = result.ukc;
-        ukc_result->ukc_margin = result.ukc_margin;
-        ukc_result->safe = result.safe ? 1 : 0;
-        ukc_result->warning_level = result.warning_level;
+void ogc_ukc_calculate(double charted_depth, double tide_height, double draft, 
+                       double speed, double squat_coeff, ogc_ukc_result_t* result) {
+    if (result) {
+        UKCInput input;
+        input.chart_depth = charted_depth;
+        input.tide_height = tide_height;
+        input.ship_draft = draft;
+        input.speed_knots = speed;
+        input.squat = squat_coeff;
+        input.heel_correction = 0.0;
+        input.wave_allowance = 0.0;
+        input.safety_margin = 0.0;
+        input.water_density = 1.025;
+        input.depth_at_position = charted_depth;
+        
+        UKCCalculator calculator;
+        UKCResult ukc_result = calculator.Calculate(input);
+        
+        result->water_depth = ukc_result.effective_depth;
+        result->charted_depth = charted_depth;
+        result->tide_height = tide_height;
+        result->squat = ukc_result.squat_estimate;
+        result->ukc = ukc_result.ukc;
+        result->safe = ukc_result.is_safe ? 1 : 0;
     }
-    return ukc_result;
 }
 
 void ogc_ukc_result_destroy(ogc_ukc_result_t* result) {
     std::free(result);
 }
-
 #ifdef __cplusplus
 }
 #endif

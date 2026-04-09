@@ -7,7 +7,7 @@
 #include "export.h"
 #include "ogc/feature/feature_defn.h"
 #include "ogc/feature/field_value.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <cstdint>
 #include <memory>
 #include <vector>

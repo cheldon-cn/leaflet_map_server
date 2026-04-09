@@ -18,16 +18,12 @@
 #include <vector>
 
 using namespace ogc;
-using namespace ogc::geom;
-using namespace ogc::feature;
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
-char* AllocString(const std::string& str) {
+static char* AllocString(const std::string& str) {
     char* result = static_cast<char*>(std::malloc(str.size() + 1));
     if (result) {
         std::memcpy(result, str.c_str(), str.size() + 1);
@@ -35,13 +31,7 @@ char* AllocString(const std::string& str) {
     return result;
 }
 
-}
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-ogc_geom_type_e ToCType(GeomType type) {
+static ogc_geom_type_e ToCType(GeomType type) {
     switch (type) {
         case GeomType::kPoint: return OGC_GEOM_TYPE_POINT;
         case GeomType::kLineString: return OGC_GEOM_TYPE_LINESTRING;
@@ -54,7 +44,7 @@ ogc_geom_type_e ToCType(GeomType type) {
     }
 }
 
-GeomType FromCType(ogc_geom_type_e type) {
+static GeomType FromCType(ogc_geom_type_e type) {
     switch (type) {
         case OGC_GEOM_TYPE_POINT: return GeomType::kPoint;
         case OGC_GEOM_TYPE_LINESTRING: return GeomType::kLineString;
@@ -67,7 +57,7 @@ GeomType FromCType(ogc_geom_type_e type) {
     }
 }
 
-ogc_field_type_e ToCFieldType(CNFieldType type) {
+static ogc_field_type_e ToCFieldType(CNFieldType type) {
     switch (type) {
         case CNFieldType::kInteger: return OGC_FIELD_TYPE_INTEGER;
         case CNFieldType::kInteger64: return OGC_FIELD_TYPE_INTEGER64;
@@ -84,7 +74,7 @@ ogc_field_type_e ToCFieldType(CNFieldType type) {
     }
 }
 
-CNFieldType FromCFieldType(ogc_field_type_e type) {
+static CNFieldType FromCFieldType(ogc_field_type_e type) {
     switch (type) {
         case OGC_FIELD_TYPE_INTEGER: return CNFieldType::kInteger;
         case OGC_FIELD_TYPE_INTEGER64: return CNFieldType::kInteger64;
@@ -100,6 +90,12 @@ CNFieldType FromCFieldType(ogc_field_type_e type) {
         default: return CNFieldType::kString;
     }
 }
+
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 const char* ogc_error_get_message(ogc_error_code_e code) {
     switch (code) {

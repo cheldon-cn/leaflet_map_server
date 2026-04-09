@@ -11,8 +11,8 @@
 #include <ogc/draw/color.h>
 #include <ogc/draw/font.h>
 #include <ogc/draw/draw_types.h>
-#include "ogc/geometry.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <string>
 #include <vector>

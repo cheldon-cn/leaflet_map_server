@@ -27,9 +27,7 @@ using namespace chart::parser;
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
@@ -113,7 +111,7 @@ ogc_parse_result_t* ogc_iparser_parse_incremental(ogc_iparser_t* parser, int bat
     return nullptr;
 }
 
-ogc_chart_format_e ogc_iparser_get_format(const ogc_chart_t* parser) {
+ogc_chart_format_e ogc_iparser_get_format(const ogc_iparser_t* parser) {
     if (parser) {
         auto formats = reinterpret_cast<const IParser*>(parser)->GetSupportedFormats();
         if (!formats.empty()) {

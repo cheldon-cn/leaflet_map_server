@@ -2,7 +2,7 @@
 #define OGC_SYMBOLOGY_SPATIAL_FILTER_H
 
 #include "ogc/symbology/filter/filter.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 
 namespace ogc {

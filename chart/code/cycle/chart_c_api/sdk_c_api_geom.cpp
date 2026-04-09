@@ -26,19 +26,17 @@
 #include <string>
 #include <vector>
 
-using namespace ogc::geom;
+using namespace ogc;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
-char* AllocString(const std::string& str) {
+static char* AllocString(const std::string& str) {
     char* result = static_cast<char*>(std::malloc(str.size() + 1));
     if (result) {
         std::memcpy(result, str.c_str(), str.size() + 1);
@@ -46,7 +44,7 @@ char* AllocString(const std::string& str) {
     return result;
 }
 
-ogc_geom_type_e ToCType(GeomType type) {
+static ogc_geom_type_e ToCType(GeomType type) {
     switch (type) {
         case GeomType::kPoint: return OGC_GEOM_TYPE_POINT;
         case GeomType::kLineString: return OGC_GEOM_TYPE_LINESTRING;
@@ -185,14 +183,14 @@ int ogc_envelope_intersects(const ogc_envelope_t* env, const ogc_envelope_t* oth
 
 void ogc_envelope_expand(ogc_envelope_t* env, double dx, double dy) {
     if (env) {
-        reinterpret_cast<Envelope*>(env)->Expand(dx, dy);
+        reinterpret_cast<Envelope*>(env)->ExpandBy(dx, dy);
     }
 }
 
 ogc_coordinate_t ogc_envelope_get_center(const ogc_envelope_t* env) {
     ogc_coordinate_t result = {0, 0, 0, 0};
     if (env) {
-        Coordinate c = reinterpret_cast<const Envelope*>(env)->GetCenter();
+        Coordinate c = reinterpret_cast<const Envelope*>(env)->GetCentre();
         result.x = c.x;
         result.y = c.y;
         result.z = c.z;
@@ -403,7 +401,7 @@ ogc_geometry_t* ogc_geometry_intersection(const ogc_geometry_t* a, const ogc_geo
     if (a && b) {
         GeometryPtr result;
         if (reinterpret_cast<const Geometry*>(a)->Intersection(
-            reinterpret_cast<const Geometry*>(b), result) == GeomResult::Success) {
+            reinterpret_cast<const Geometry*>(b), result) == GeomResult::kSuccess) {
             return reinterpret_cast<ogc_geometry_t*>(result.release());
         }
     }
@@ -414,7 +412,7 @@ ogc_geometry_t* ogc_geometry_union(const ogc_geometry_t* a, const ogc_geometry_t
     if (a && b) {
         GeometryPtr result;
         if (reinterpret_cast<const Geometry*>(a)->Union(
-            reinterpret_cast<const Geometry*>(b), result) == GeomResult::Success) {
+            reinterpret_cast<const Geometry*>(b), result) == GeomResult::kSuccess) {
             return reinterpret_cast<ogc_geometry_t*>(result.release());
         }
     }
@@ -425,7 +423,7 @@ ogc_geometry_t* ogc_geometry_difference(const ogc_geometry_t* a, const ogc_geome
     if (a && b) {
         GeometryPtr result;
         if (reinterpret_cast<const Geometry*>(a)->Difference(
-            reinterpret_cast<const Geometry*>(b), result) == GeomResult::Success) {
+            reinterpret_cast<const Geometry*>(b), result) == GeomResult::kSuccess) {
             return reinterpret_cast<ogc_geometry_t*>(result.release());
         }
     }
@@ -435,7 +433,7 @@ ogc_geometry_t* ogc_geometry_difference(const ogc_geometry_t* a, const ogc_geome
 ogc_geometry_t* ogc_geometry_buffer(const ogc_geometry_t* geom, double distance, int segments) {
     if (geom) {
         GeometryPtr result;
-        if (reinterpret_cast<const Geometry*>(geom)->Buffer(distance, result, segments) == GeomResult::Success) {
+        if (reinterpret_cast<const Geometry*>(geom)->Buffer(distance, result, segments) == GeomResult::kSuccess) {
             return reinterpret_cast<ogc_geometry_t*>(result.release());
         }
     }
@@ -566,26 +564,31 @@ ogc_coordinate_t ogc_linestring_get_point_n(const ogc_geometry_t* line, size_t i
 
 void ogc_linestring_add_point(ogc_geometry_t* line, double x, double y) {
     if (line) {
-        reinterpret_cast<LineString*>(line)->AddPoint(x, y);
+        reinterpret_cast<LineString*>(line)->AddPoint(Coordinate(x, y));
     }
 }
 
 void ogc_linestring_add_point_3d(ogc_geometry_t* line, double x, double y, double z) {
     if (line) {
-        reinterpret_cast<LineString*>(line)->AddPoint(x, y, z);
+        reinterpret_cast<LineString*>(line)->AddPoint(Coordinate(x, y, z));
     }
 }
 
 void ogc_linestring_set_point_n(ogc_geometry_t* line, size_t index, const ogc_coordinate_t* coord) {
     if (line && coord) {
+        LineString* ls = reinterpret_cast<LineString*>(line);
         Coordinate c(coord->x, coord->y, coord->z, coord->m);
-        reinterpret_cast<LineString*>(line)->SetCoordinateN(index, c);
+        if (index < ls->GetNumPoints()) {
+            ls->RemovePoint(index);
+            ls->InsertPoint(index, c);
+        }
     }
 }
 
 ogc_geometry_t* ogc_linestring_get_point_geometry(const ogc_geometry_t* line, size_t index) {
     if (line) {
-        GeometryPtr pt = reinterpret_cast<const LineString*>(line)->GetPointN(index);
+        Coordinate c = reinterpret_cast<const LineString*>(line)->GetPointN(index);
+        PointPtr pt = Point::Create(c);
         return reinterpret_cast<ogc_geometry_t*>(pt.release());
     }
     return nullptr;
@@ -631,7 +634,8 @@ ogc_geometry_t* ogc_polygon_create_from_coords(const ogc_coordinate_t* coords, s
         for (size_t i = 0; i < count; ++i) {
             coordList.push_back(Coordinate(coords[i].x, coords[i].y, coords[i].z, coords[i].m));
         }
-        return reinterpret_cast<ogc_geometry_t*>(Polygon::Create(coordList).release());
+        LinearRingPtr ring = LinearRing::Create(coordList);
+        return reinterpret_cast<ogc_geometry_t*>(Polygon::Create(std::move(ring)).release());
     }
     return nullptr;
 }
@@ -703,8 +707,8 @@ ogc_geometry_t* ogc_multipoint_get_geometry_n(const ogc_geometry_t* mp, size_t i
 
 void ogc_multipoint_add_geometry(ogc_geometry_t* mp, ogc_geometry_t* point) {
     if (mp && point) {
-        GeometryPtr geom(reinterpret_cast<Geometry*>(point));
-        reinterpret_cast<MultiPoint*>(mp)->AddGeometry(std::move(geom));
+        PointPtr pt(reinterpret_cast<Point*>(point));
+        reinterpret_cast<MultiPoint*>(mp)->AddPoint(std::move(pt));
     }
 }
 
@@ -732,8 +736,8 @@ ogc_geometry_t* ogc_multilinestring_get_geometry_n(const ogc_geometry_t* mls, si
 
 void ogc_multilinestring_add_geometry(ogc_geometry_t* mls, ogc_geometry_t* linestring) {
     if (mls && linestring) {
-        GeometryPtr geom(reinterpret_cast<Geometry*>(linestring));
-        reinterpret_cast<MultiLineString*>(mls)->AddGeometry(std::move(geom));
+        LineStringPtr line(reinterpret_cast<LineString*>(linestring));
+        reinterpret_cast<MultiLineString*>(mls)->AddLineString(std::move(line));
     }
 }
 
@@ -761,8 +765,8 @@ ogc_geometry_t* ogc_multipolygon_get_geometry_n(const ogc_geometry_t* mp, size_t
 
 void ogc_multipolygon_add_geometry(ogc_geometry_t* mp, ogc_geometry_t* polygon) {
     if (mp && polygon) {
-        GeometryPtr geom(reinterpret_cast<Geometry*>(polygon));
-        reinterpret_cast<MultiPolygon*>(mp)->AddGeometry(std::move(geom));
+        PolygonPtr poly(reinterpret_cast<Polygon*>(polygon));
+        reinterpret_cast<MultiPolygon*>(mp)->AddPolygon(std::move(poly));
     }
 }
 
@@ -796,11 +800,11 @@ void ogc_geometry_collection_add_geometry(ogc_geometry_t* gc, ogc_geometry_t* ge
 }
 
 ogc_geometry_factory_t* ogc_geometry_factory_create(void) {
-    return reinterpret_cast<ogc_geometry_factory_t*>(new GeometryFactory());
+    return reinterpret_cast<ogc_geometry_factory_t*>(&GeometryFactory::GetInstance());
 }
 
 void ogc_geometry_factory_destroy(ogc_geometry_factory_t* factory) {
-    delete reinterpret_cast<GeometryFactory*>(factory);
+    // GeometryFactory is a singleton, no need to delete
 }
 
 ogc_geometry_t* ogc_geometry_factory_create_point(ogc_geometry_factory_t* factory, double x, double y) {
@@ -813,7 +817,7 @@ ogc_geometry_t* ogc_geometry_factory_create_point(ogc_geometry_factory_t* factor
 
 ogc_geometry_t* ogc_geometry_factory_create_linestring(ogc_geometry_factory_t* factory) {
     if (factory) {
-        GeometryPtr line = reinterpret_cast<GeometryFactory*>(factory)->CreateLineString();
+        GeometryPtr line = LineString::Create();
         return reinterpret_cast<ogc_geometry_t*>(line.release());
     }
     return nullptr;
@@ -821,7 +825,7 @@ ogc_geometry_t* ogc_geometry_factory_create_linestring(ogc_geometry_factory_t* f
 
 ogc_geometry_t* ogc_geometry_factory_create_polygon(ogc_geometry_factory_t* factory) {
     if (factory) {
-        GeometryPtr poly = reinterpret_cast<GeometryFactory*>(factory)->CreatePolygon();
+        GeometryPtr poly = Polygon::Create();
         return reinterpret_cast<ogc_geometry_t*>(poly.release());
     }
     return nullptr;
@@ -829,8 +833,10 @@ ogc_geometry_t* ogc_geometry_factory_create_polygon(ogc_geometry_factory_t* fact
 
 ogc_geometry_t* ogc_geometry_factory_create_from_wkt(ogc_geometry_factory_t* factory, const char* wkt) {
     if (factory && wkt) {
-        GeometryPtr geom = reinterpret_cast<GeometryFactory*>(factory)->CreateFromWKT(std::string(wkt));
-        return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        GeometryPtr geom;
+        if (reinterpret_cast<GeometryFactory*>(factory)->FromWKT(std::string(wkt), geom) == GeomResult::kSuccess) {
+            return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        }
     }
     return nullptr;
 }
@@ -838,16 +844,20 @@ ogc_geometry_t* ogc_geometry_factory_create_from_wkt(ogc_geometry_factory_t* fac
 ogc_geometry_t* ogc_geometry_factory_create_from_wkb(ogc_geometry_factory_t* factory, const unsigned char* wkb, size_t size) {
     if (factory && wkb && size > 0) {
         std::vector<uint8_t> data(wkb, wkb + size);
-        GeometryPtr geom = reinterpret_cast<GeometryFactory*>(factory)->CreateFromWKB(data);
-        return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        GeometryPtr geom;
+        if (reinterpret_cast<GeometryFactory*>(factory)->FromWKB(data, geom) == GeomResult::kSuccess) {
+            return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        }
     }
     return nullptr;
 }
 
 ogc_geometry_t* ogc_geometry_factory_create_from_geojson(ogc_geometry_factory_t* factory, const char* geojson) {
     if (factory && geojson) {
-        GeometryPtr geom = reinterpret_cast<GeometryFactory*>(factory)->CreateFromGeoJSON(std::string(geojson));
-        return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        GeometryPtr geom;
+        if (reinterpret_cast<GeometryFactory*>(factory)->FromGeoJSON(std::string(geojson), geom) == GeomResult::kSuccess) {
+            return reinterpret_cast<ogc_geometry_t*>(geom.release());
+        }
     }
     return nullptr;
 }

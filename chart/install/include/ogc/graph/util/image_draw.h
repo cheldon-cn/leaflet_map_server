@@ -4,7 +4,7 @@
 #include "ogc/graph/export.h"
 #include <ogc/draw/draw_result.h>
 #include <ogc/draw/color.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <string>
 #include <vector>
 #include <memory>

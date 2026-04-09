@@ -7,7 +7,7 @@
 #include <ogc/draw/draw_result.h>
 #include <ogc/draw/draw_types.h>
 #include <ogc/draw/draw_context.h>
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <memory>
 #include <string>
 #include <map>

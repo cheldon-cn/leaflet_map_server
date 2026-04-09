@@ -3,8 +3,8 @@
 
 #include "ogc/navi/export.h"
 #include "ogc/navi/track/track.h"
-#include "ogc/coordinate.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <string>
 #include <vector>

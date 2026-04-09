@@ -2,7 +2,7 @@
 #define OGC_SYMBOLOGY_FILTER_H
 
 #include "ogc/symbology/export.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include "ogc/feature/feature.h"
 #include <memory>
 #include <string>

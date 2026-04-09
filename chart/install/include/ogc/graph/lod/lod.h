@@ -2,7 +2,7 @@
 #define OGC_GRAPH_LOD_H
 
 #include "ogc/graph/export.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <string>
 #include <vector>

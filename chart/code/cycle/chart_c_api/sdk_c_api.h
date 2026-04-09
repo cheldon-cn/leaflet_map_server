@@ -259,7 +259,7 @@ void ogc_performance_stats_get(ogc_performance_stats_t* stats);
 /* 2.1 Coordinate */
 /* Java: cn.cycle.chart.api.geometry.Coordinate */
 /* C++:   ogc::geom::Coordinate */
-/* Header: ogc/coordinate.h */
+/* Header: ogc/geom/coordinate.h */
 
 /**
  * @brief Coordinate structure representing a 2D/3D point with optional measure.
@@ -315,7 +315,7 @@ double ogc_coordinate_distance(const ogc_coordinate_t* a, const ogc_coordinate_t
 /* 2.2 Envelope */
 /* Java: cn.cycle.chart.api.geometry.Envelope */
 /* C++:   ogc::geom::Envelope */
-/* Header: ogc/envelope.h */
+/* Header: ogc/geom/envelope.h */
 
 /**
  * @brief Opaque type representing a bounding box (envelope).
@@ -428,7 +428,7 @@ ogc_coordinate_t ogc_envelope_get_center(const ogc_envelope_t* env);
 /* 2.3 Geometry (Base Class) */
 /* Java: cn.cycle.chart.api.geometry.Geometry */
 /* C++:   ogc::geom::Geometry */
-/* Header: ogc/geometry.h */
+/* Header: ogc/geom/geometry.h */
 
 /**
  * @brief Opaque type representing a geometry object.
@@ -692,7 +692,7 @@ ogc_geometry_t* ogc_geometry_clone(const ogc_geometry_t* geom);
 /* 2.4 Point */
 /* Java: cn.cycle.chart.api.geometry.Point */
 /* C++:   ogc::geom::Point */
-/* Header: ogc/point.h */
+/* Header: ogc/geom/point.h */
 
 /**
  * @brief Create a 2D point.
@@ -784,7 +784,7 @@ ogc_coordinate_t ogc_point_get_coordinate(const ogc_geometry_t* point);
 /* 2.5 LineString */
 /* Java: cn.cycle.chart.api.geometry.LineString */
 /* C++:   ogc::geom::LineString */
-/* Header: ogc/linestring.h */
+/* Header: ogc/geom/linestring.h */
 
 /**
  * @brief Create an empty LineString.
@@ -851,7 +851,7 @@ ogc_geometry_t* ogc_linestring_get_point_geometry(const ogc_geometry_t* line, si
 /* 2.6 LinearRing */
 /* Java: cn.cycle.chart.api.geometry.LinearRing */
 /* C++:   ogc::geom::LinearRing */
-/* Header: ogc/linearring.h */
+/* Header: ogc/geom/linearring.h */
 
 /**
  * @brief Create an empty LinearRing.
@@ -877,7 +877,7 @@ int ogc_linearring_is_closed(const ogc_geometry_t* ring);
 /* 2.7 Polygon */
 /* Java: cn.cycle.chart.api.geometry.Polygon */
 /* C++:   ogc::geom::Polygon */
-/* Header: ogc/polygon.h */
+/* Header: ogc/geom/polygon.h */
 
 /**
  * @brief Create an empty Polygon.
@@ -939,7 +939,7 @@ int ogc_polygon_is_valid(const ogc_geometry_t* polygon);
 /* 2.8 MultiPoint */
 /* Java: cn.cycle.chart.api.geometry.MultiPoint */
 /* C++:   ogc::geom::MultiPoint */
-/* Header: ogc/multipoint.h */
+/* Header: ogc/geom/multipoint.h */
 
 /**
  * @brief Create an empty MultiPoint.
@@ -972,7 +972,7 @@ void ogc_multipoint_add_geometry(ogc_geometry_t* mp, ogc_geometry_t* point);
 /* 2.9 MultiLineString */
 /* Java: cn.cycle.chart.api.geometry.MultiLineString */
 /* C++:   ogc::geom::MultiLineString */
-/* Header: ogc/multilinestring.h */
+/* Header: ogc/geom/multilinestring.h */
 
 /**
  * @brief Create an empty MultiLineString.
@@ -1005,7 +1005,7 @@ void ogc_multilinestring_add_geometry(ogc_geometry_t* mls, ogc_geometry_t* lines
 /* 2.10 MultiPolygon */
 /* Java: cn.cycle.chart.api.geometry.MultiPolygon */
 /* C++:   ogc::geom::MultiPolygon */
-/* Header: ogc/multipolygon.h */
+/* Header: ogc/geom/multipolygon.h */
 
 /**
  * @brief Create an empty MultiPolygon.
@@ -1038,7 +1038,7 @@ void ogc_multipolygon_add_geometry(ogc_geometry_t* mp, ogc_geometry_t* polygon);
 /* 2.11 GeometryCollection */
 /* Java: cn.cycle.chart.api.geometry.GeometryCollection */
 /* C++:   ogc::geom::GeometryCollection */
-/* Header: ogc/geometrycollection.h */
+/* Header: ogc/geom/geometrycollection.h */
 
 /**
  * @brief Create an empty GeometryCollection.
@@ -1071,7 +1071,7 @@ void ogc_geometry_collection_add_geometry(ogc_geometry_t* gc, ogc_geometry_t* ge
 /* 2.12 GeometryFactory */
 /* Java: cn.cycle.chart.api.geometry.GeometryFactory */
 /* C++:   ogc::geom::GeometryFactory */
-/* Header: ogc/factory.h */
+/* Header: ogc/geom/factory.h */
 
 /**
  * @brief Opaque type representing a geometry factory.
@@ -1621,6 +1621,12 @@ ogc_layer_type_e ogc_layer_get_type(const ogc_layer_t* layer);
 /* Header: ogc/layer/vector_layer.h */
 
 /**
+ * @brief Opaque type representing a vector layer.
+ * @note This is an alias for ogc_layer_t.
+ */
+typedef ogc_layer_t ogc_vector_layer_t;
+
+/**
  * @brief Create a vector layer.
  * @param name Layer name.
  * @return Pointer to newly created layer, or NULL on failure.
@@ -1708,6 +1714,12 @@ int ogc_vector_layer_delete_feature(ogc_layer_t* layer, int64_t fid);
 /* Java: cn.cycle.chart.api.layer.RasterLayer */
 /* C++:   ogc::layer::CNRasterLayer */
 /* Header: ogc/layer/raster_layer.h */
+
+/**
+ * @brief Opaque type representing a raster layer.
+ * @note This is an alias for ogc_layer_t.
+ */
+typedef ogc_layer_t ogc_raster_layer_t;
 
 /**
  * @brief Create a raster layer from a file.
@@ -2232,6 +2244,18 @@ void ogc_font_set_italic(ogc_font_t* font, int italic);
 /* Header: ogc/draw/draw_style.h */
 
 /**
+ * @brief Pen style enumeration.
+ */
+typedef enum ogc_pen_style_e {
+    OGC_PEN_STYLE_SOLID = 0,       /**< Solid line */
+    OGC_PEN_STYLE_DASH = 1,        /**< Dashed line */
+    OGC_PEN_STYLE_DOT = 2,         /**< Dotted line */
+    OGC_PEN_STYLE_DASHDOT = 3,     /**< Dash-dot line */
+    OGC_PEN_STYLE_DASHDOTDOT = 4,  /**< Dash-dot-dot line */
+    OGC_PEN_STYLE_NONE = 5         /**< No line */
+} ogc_pen_style_e;
+
+/**
  * @brief Opaque type representing a pen (line style).
  */
 typedef struct ogc_pen_t ogc_pen_t;
@@ -2276,10 +2300,39 @@ void ogc_pen_set_color(ogc_pen_t* pen, ogc_color_t color);
  */
 void ogc_pen_set_width(ogc_pen_t* pen, double width);
 
+/**
+ * @brief Get the pen style.
+ * @param pen Pointer to the pen.
+ * @return Pen style enumeration value.
+ */
+ogc_pen_style_e ogc_pen_get_style(const ogc_pen_t* pen);
+
+/**
+ * @brief Set the pen style.
+ * @param pen Pointer to the pen.
+ * @param style Pen style enumeration value.
+ */
+void ogc_pen_set_style(ogc_pen_t* pen, ogc_pen_style_e style);
+
 /* 5.4 Brush */
 /* Java: cn.cycle.chart.api.draw.Brush */
 /* C++:   ogc::draw::Brush */
 /* Header: ogc/draw/draw_style.h */
+
+/**
+ * @brief Brush style enumeration.
+ */
+typedef enum ogc_brush_style_e {
+    OGC_BRUSH_STYLE_SOLID = 0,          /**< Solid fill */
+    OGC_BRUSH_STYLE_NONE = 1,           /**< No fill */
+    OGC_BRUSH_STYLE_HORIZONTAL = 2,     /**< Horizontal hatch */
+    OGC_BRUSH_STYLE_VERTICAL = 3,       /**< Vertical hatch */
+    OGC_BRUSH_STYLE_CROSS = 4,          /**< Cross hatch */
+    OGC_BRUSH_STYLE_BDIAGONAL = 5,      /**< Backward diagonal hatch */
+    OGC_BRUSH_STYLE_FDIAGONAL = 6,      /**< Forward diagonal hatch */
+    OGC_BRUSH_STYLE_DIAGONAL_CROSS = 7, /**< Diagonal cross hatch */
+    OGC_BRUSH_STYLE_TEXTURE = 8         /**< Texture fill */
+} ogc_brush_style_e;
 
 /**
  * @brief Opaque type representing a brush (fill style).
@@ -2311,6 +2364,20 @@ ogc_color_t ogc_brush_get_color(const ogc_brush_t* brush);
  * @param color Color to set.
  */
 void ogc_brush_set_color(ogc_brush_t* brush, ogc_color_t color);
+
+/**
+ * @brief Get the brush style.
+ * @param brush Pointer to the brush.
+ * @return Brush style enumeration value.
+ */
+ogc_brush_style_e ogc_brush_get_style(const ogc_brush_t* brush);
+
+/**
+ * @brief Set the brush style.
+ * @param brush Pointer to the brush.
+ * @param style Brush style enumeration value.
+ */
+void ogc_brush_set_style(ogc_brush_t* brush, ogc_brush_style_e style);
 
 /* 5.5 DrawStyle */
 /* Java: cn.cycle.chart.api.symbology.DrawStyle */
@@ -3999,6 +4066,15 @@ ogc_draw_style_t* ogc_symbolizer_get_style(ogc_symbolizer_t* symbolizer);
  */
 void ogc_symbolizer_set_style(ogc_symbolizer_t* symbolizer, ogc_draw_style_t* style);
 
+/**
+ * @brief Symbolize a feature to a drawing device.
+ * @param symbolizer Pointer to the symbolizer.
+ * @param feature Pointer to the feature to symbolize.
+ * @param device Pointer to the drawing device.
+ * @return Non-zero on success, zero on failure.
+ */
+int ogc_symbolizer_symbolize(ogc_symbolizer_t* symbolizer, const ogc_feature_t* feature, ogc_draw_device_t* device);
+
 /* 8.5 ComparisonFilter (Extended) */
 /* Java: cn.cycle.chart.api.symbology.ComparisonFilter */
 /* C++:   ogc::symbology::ComparisonFilter */
@@ -4095,11 +4171,12 @@ ogc_filter_t* ogc_symbolizer_rule_get_filter(const ogc_symbolizer_rule_t* rule);
 void ogc_symbolizer_rule_set_filter(ogc_symbolizer_rule_t* rule, ogc_filter_t* filter);
 
 /**
- * @brief Get the symbolizer of a symbolizer rule.
+ * @brief Get a symbolizer from a symbolizer rule by index.
  * @param rule Pointer to the rule.
+ * @param index Index of the symbolizer.
  * @return Pointer to the symbolizer.
  */
-ogc_symbolizer_t* ogc_symbolizer_rule_get_symbolizer(const ogc_symbolizer_rule_t* rule);
+ogc_symbolizer_t* ogc_symbolizer_rule_get_symbolizer(const ogc_symbolizer_rule_t* rule, size_t index);
 
 /**
  * @brief Set the symbolizer of a symbolizer rule.
@@ -4121,6 +4198,36 @@ double ogc_symbolizer_rule_get_min_scale(const ogc_symbolizer_rule_t* rule);
  * @return Maximum scale denominator.
  */
 double ogc_symbolizer_rule_get_max_scale(const ogc_symbolizer_rule_t* rule);
+
+/**
+ * @brief Set the minimum scale denominator of a symbolizer rule.
+ * @param rule Pointer to the rule.
+ * @param scale Minimum scale denominator.
+ */
+void ogc_symbolizer_rule_set_min_scale(ogc_symbolizer_rule_t* rule, double scale);
+
+/**
+ * @brief Set the maximum scale denominator of a symbolizer rule.
+ * @param rule Pointer to the rule.
+ * @param scale Maximum scale denominator.
+ */
+void ogc_symbolizer_rule_set_max_scale(ogc_symbolizer_rule_t* rule, double scale);
+
+/**
+ * @brief Add a symbolizer to a symbolizer rule.
+ * @param rule Pointer to the rule.
+ * @param symbolizer Pointer to the symbolizer to add.
+ */
+void ogc_symbolizer_rule_add_symbolizer(ogc_symbolizer_rule_t* rule, ogc_symbolizer_t* symbolizer);
+
+/**
+ * @brief Check if a symbolizer rule is applicable to a feature at a given scale.
+ * @param rule Pointer to the rule.
+ * @param feature Pointer to the feature.
+ * @param scale Current scale denominator.
+ * @return Non-zero if applicable, zero otherwise.
+ */
+int ogc_symbolizer_rule_is_applicable(const ogc_symbolizer_rule_t* rule, const ogc_feature_t* feature, double scale);
 
 /**
  * @brief Set the scale range of a symbolizer rule.

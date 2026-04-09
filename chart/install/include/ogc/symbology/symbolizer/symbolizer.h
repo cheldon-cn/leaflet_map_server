@@ -6,8 +6,8 @@
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/draw_types.h>
-#include "ogc/geometry.h"
-#include "ogc/common.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/common.h"
 #include <memory>
 #include <string>
 

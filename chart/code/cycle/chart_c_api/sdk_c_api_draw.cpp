@@ -14,6 +14,9 @@
 #include <ogc/draw/draw_device.h>
 #include <ogc/draw/draw_engine.h>
 #include <ogc/draw/draw_context.h>
+#include <ogc/draw/raster_image_device.h>
+#include <ogc/draw/svg_device.h>
+#include <ogc/draw/tile_device.h>
 
 #include <cstring>
 #include <cstdlib>
@@ -26,21 +29,11 @@ using namespace ogc::draw;
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
-char* AllocString(const std::string& str) {
-    char* result = static_cast<char*>(std::malloc(str.size() + 1));
-    if (result) {
-        std::memcpy(result, str.c_str(), str.size() + 1);
-    }
-    return result;
 }
-
-}  
 
 ogc_color_t ogc_color_from_rgb(uint8_t r, uint8_t g, uint8_t b) {
     ogc_color_t color;
@@ -60,24 +53,36 @@ ogc_color_t ogc_color_from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
     return color;
 }
 
-ogc_color_t ogc_color_from_hex(uint32_t hex) {
+ogc_color_t ogc_color_from_hex(unsigned int hex) {
     ogc_color_t color;
     color.r = static_cast<uint8_t>((hex >> 16) & 0xFF);
     color.g = static_cast<uint8_t>((hex >> 8) & 0xFF);
     color.b = static_cast<uint8_t>(hex & 0xFF);
-    color.a = 255;
+    color.a = static_cast<uint8_t>((hex >> 24) & 0xFF);
+    if (color.a == 0) color.a = 255;
     return color;
 }
 
-uint32_t ogc_color_to_hex(ogc_color_t color) {
-    return (static_cast<uint32_t>(color.r) << 16) |
-           (static_cast<uint32_t>(color.g) << 8) |
-           static_cast<uint32_t>(color.b);
+unsigned int ogc_color_to_hex(const ogc_color_t* color) {
+    if (color) {
+        return (static_cast<unsigned int>(color->r) << 16) |
+               (static_cast<unsigned int>(color->g) << 8) |
+               static_cast<unsigned int>(color->b);
+    }
+    return 0;
 }
 
-ogc_font_t* ogc_font_create(const char* family, int size) {
-    return reinterpret_cast<ogc_font_t*>(
-        Font::Create(SafeString(family), size).release());
+void ogc_color_to_rgba(const ogc_color_t* color, unsigned char* r, unsigned char* g, unsigned char* b, unsigned char* a) {
+    if (color) {
+        if (r) *r = color->r;
+        if (g) *g = color->g;
+        if (b) *b = color->b;
+        if (a) *a = color->a;
+    }
+}
+
+ogc_font_t* ogc_font_create(const char* family, double size) {
+    return reinterpret_cast<ogc_font_t*>(new Font(SafeString(family), size));
 }
 
 void ogc_font_destroy(ogc_font_t* font) {
@@ -86,7 +91,9 @@ void ogc_font_destroy(ogc_font_t* font) {
 
 const char* ogc_font_get_family(const ogc_font_t* font) {
     if (font) {
-        return reinterpret_cast<const Font*>(font)->GetFamily().c_str();
+        static thread_local std::string result;
+        result = reinterpret_cast<const Font*>(font)->GetFamily();
+        return result.c_str();
     }
     return "";
 }
@@ -96,23 +103,23 @@ void ogc_font_set_family(ogc_font_t* font, const char* family) {
         reinterpret_cast<Font*>(font)->SetFamily(SafeString(family));
     }
 }
-
-int ogc_font_get_size(const ogc_font_t* font) {
+double ogc_font_get_size(const ogc_font_t* font) {
     if (font) {
         return reinterpret_cast<const Font*>(font)->GetSize();
     }
-    return 0;
-}
-
-void ogc_font_set_size(ogc_font_t* font, int size) {
-    if (font) {
-        reinterpret_cast<Font*>(font)->SetSize(size);
-    }
+    return 0.0;
 }
 
 int ogc_font_is_bold(const ogc_font_t* font) {
     if (font) {
         return reinterpret_cast<const Font*>(font)->IsBold() ? 1 : 0;
+    }
+    return 0;
+}
+
+int ogc_font_is_italic(const ogc_font_t* font) {
+    if (font) {
+        return reinterpret_cast<const Font*>(font)->IsItalic() ? 1 : 0;
     }
     return 0;
 }
@@ -123,13 +130,6 @@ void ogc_font_set_bold(ogc_font_t* font, int bold) {
     }
 }
 
-int ogc_font_is_italic(const ogc_font_t* font) {
-    if (font) {
-        return reinterpret_cast<const Font*>(font)->IsItalic() ? 1 : 0;
-    }
-    return 0;
-}
-
 void ogc_font_set_italic(ogc_font_t* font, int italic) {
     if (font) {
         reinterpret_cast<Font*>(font)->SetItalic(italic != 0);
@@ -137,7 +137,7 @@ void ogc_font_set_italic(ogc_font_t* font, int italic) {
 }
 
 ogc_pen_t* ogc_pen_create(void) {
-    return reinterpret_cast<ogc_pen_t*>(Pen::Create().release());
+    return reinterpret_cast<ogc_pen_t*>(new Pen());
 }
 
 void ogc_pen_destroy(ogc_pen_t* pen) {
@@ -147,37 +147,37 @@ void ogc_pen_destroy(ogc_pen_t* pen) {
 ogc_color_t ogc_pen_get_color(const ogc_pen_t* pen) {
     ogc_color_t result = {0, 0, 0, 255};
     if (pen) {
-        Color c = reinterpret_cast<const Pen*>(pen)->GetColor();
-        result.r = c.GetRed();
-        result.g = c.GetGreen();
-        result.b = c.GetBlue();
-        result.a = c.GetAlpha();
+        const Pen* p = reinterpret_cast<const Pen*>(pen);
+        result.r = p->color.GetRed();
+        result.g = p->color.GetGreen();
+        result.b = p->color.GetBlue();
+        result.a = p->color.GetAlpha();
     }
     return result;
 }
 
-void ogc_pen_set_color(ogc_pen_t* pen, ogc_color_t color) {
-    if (pen) {
-        reinterpret_cast<Pen*>(pen)->SetColor(Color(color.r, color.g, color.b, color.a));
-    }
-}
-
 double ogc_pen_get_width(const ogc_pen_t* pen) {
     if (pen) {
-        return reinterpret_cast<const Pen*>(pen)->GetWidth();
+        return reinterpret_cast<const Pen*>(pen)->width;
     }
     return 1.0;
 }
 
+void ogc_pen_set_color(ogc_pen_t* pen, ogc_color_t color) {
+    if (pen) {
+        reinterpret_cast<Pen*>(pen)->color = Color(color.r, color.g, color.b, color.a);
+    }
+}
+
 void ogc_pen_set_width(ogc_pen_t* pen, double width) {
     if (pen) {
-        reinterpret_cast<Pen*>(pen)->SetWidth(width);
+        reinterpret_cast<Pen*>(pen)->width = width;
     }
 }
 
 ogc_pen_style_e ogc_pen_get_style(const ogc_pen_t* pen) {
     if (pen) {
-        auto style = reinterpret_cast<const Pen*>(pen)->GetStyle();
+        auto style = reinterpret_cast<const Pen*>(pen)->style;
         switch (style) {
             case PenStyle::kSolid: return OGC_PEN_STYLE_SOLID;
             case PenStyle::kDash: return OGC_PEN_STYLE_DASH;
@@ -202,12 +202,11 @@ void ogc_pen_set_style(ogc_pen_t* pen, ogc_pen_style_e style) {
             case OGC_PEN_STYLE_DASHDOTDOT: ps = PenStyle::kDashDotDot; break;
             case OGC_PEN_STYLE_NONE: ps = PenStyle::kNone; break;
         }
-        reinterpret_cast<Pen*>(pen)->SetStyle(ps);
+        reinterpret_cast<Pen*>(pen)->style = ps;
     }
 }
-
 ogc_brush_t* ogc_brush_create(void) {
-    return reinterpret_cast<ogc_brush_t*>(Brush::Create().release());
+    return reinterpret_cast<ogc_brush_t*>(new Brush());
 }
 
 void ogc_brush_destroy(ogc_brush_t* brush) {
@@ -217,31 +216,34 @@ void ogc_brush_destroy(ogc_brush_t* brush) {
 ogc_color_t ogc_brush_get_color(const ogc_brush_t* brush) {
     ogc_color_t result = {0, 0, 0, 255};
     if (brush) {
-        Color c = reinterpret_cast<const Brush*>(brush)->GetColor();
-        result.r = c.GetRed();
-        result.g = c.GetGreen();
-        result.b = c.GetBlue();
-        result.a = c.GetAlpha();
+        const Brush* b = reinterpret_cast<const Brush*>(brush);
+        result.r = b->color.GetRed();
+        result.g = b->color.GetGreen();
+        result.b = b->color.GetBlue();
+        result.a = b->color.GetAlpha();
     }
     return result;
 }
 
 void ogc_brush_set_color(ogc_brush_t* brush, ogc_color_t color) {
     if (brush) {
-        reinterpret_cast<Brush*>(brush)->SetColor(Color(color.r, color.g, color.b, color.a));
+        reinterpret_cast<Brush*>(brush)->color = Color(color.r, color.g, color.b, color.a);
     }
 }
 
 ogc_brush_style_e ogc_brush_get_style(const ogc_brush_t* brush) {
     if (brush) {
-        auto style = reinterpret_cast<const Brush*>(brush)->GetStyle();
+        auto style = reinterpret_cast<const Brush*>(brush)->style;
         switch (style) {
             case BrushStyle::kSolid: return OGC_BRUSH_STYLE_SOLID;
             case BrushStyle::kNone: return OGC_BRUSH_STYLE_NONE;
             case BrushStyle::kHorizontal: return OGC_BRUSH_STYLE_HORIZONTAL;
             case BrushStyle::kVertical: return OGC_BRUSH_STYLE_VERTICAL;
             case BrushStyle::kCross: return OGC_BRUSH_STYLE_CROSS;
-            case BrushStyle::kDiagonal: return OGC_BRUSH_STYLE_DIAGONAL;
+            case BrushStyle::kBDiagonal: return OGC_BRUSH_STYLE_BDIAGONAL;
+            case BrushStyle::kFDiagonal: return OGC_BRUSH_STYLE_FDIAGONAL;
+            case BrushStyle::kDiagonalCross: return OGC_BRUSH_STYLE_DIAGONAL_CROSS;
+            case BrushStyle::kTexture: return OGC_BRUSH_STYLE_TEXTURE;
             default: return OGC_BRUSH_STYLE_SOLID;
         }
     }
@@ -257,14 +259,16 @@ void ogc_brush_set_style(ogc_brush_t* brush, ogc_brush_style_e style) {
             case OGC_BRUSH_STYLE_HORIZONTAL: bs = BrushStyle::kHorizontal; break;
             case OGC_BRUSH_STYLE_VERTICAL: bs = BrushStyle::kVertical; break;
             case OGC_BRUSH_STYLE_CROSS: bs = BrushStyle::kCross; break;
-            case OGC_BRUSH_STYLE_DIAGONAL: bs = BrushStyle::kDiagonal; break;
+            case OGC_BRUSH_STYLE_BDIAGONAL: bs = BrushStyle::kBDiagonal; break;
+            case OGC_BRUSH_STYLE_FDIAGONAL: bs = BrushStyle::kFDiagonal; break;
+            case OGC_BRUSH_STYLE_DIAGONAL_CROSS: bs = BrushStyle::kDiagonalCross; break;
+            case OGC_BRUSH_STYLE_TEXTURE: bs = BrushStyle::kTexture; break;
         }
-        reinterpret_cast<Brush*>(brush)->SetStyle(bs);
+        reinterpret_cast<Brush*>(brush)->style = bs;
     }
 }
-
 ogc_draw_style_t* ogc_draw_style_create(void) {
-    return reinterpret_cast<ogc_draw_style_t*>(DrawStyle::Create().release());
+    return reinterpret_cast<ogc_draw_style_t*>(new DrawStyle());
 }
 
 void ogc_draw_style_destroy(ogc_draw_style_t* style) {
@@ -273,51 +277,45 @@ void ogc_draw_style_destroy(ogc_draw_style_t* style) {
 
 ogc_pen_t* ogc_draw_style_get_pen(ogc_draw_style_t* style) {
     if (style) {
-        return reinterpret_cast<ogc_pen_t*>(
-            reinterpret_cast<DrawStyle*>(style)->GetPen());
+        return reinterpret_cast<ogc_pen_t*>(&reinterpret_cast<DrawStyle*>(style)->pen);
     }
     return nullptr;
 }
 
 void ogc_draw_style_set_pen(ogc_draw_style_t* style, ogc_pen_t* pen) {
     if (style && pen) {
-        reinterpret_cast<DrawStyle*>(style)->SetPen(
-            PenPtr(reinterpret_cast<Pen*>(pen)));
+        reinterpret_cast<DrawStyle*>(style)->pen = *reinterpret_cast<Pen*>(pen);
     }
 }
 
 ogc_brush_t* ogc_draw_style_get_brush(ogc_draw_style_t* style) {
     if (style) {
-        return reinterpret_cast<ogc_brush_t*>(
-            reinterpret_cast<DrawStyle*>(style)->GetBrush());
+        return reinterpret_cast<ogc_brush_t*>(&reinterpret_cast<DrawStyle*>(style)->brush);
     }
     return nullptr;
 }
 
 void ogc_draw_style_set_brush(ogc_draw_style_t* style, ogc_brush_t* brush) {
     if (style && brush) {
-        reinterpret_cast<DrawStyle*>(style)->SetBrush(
-            BrushPtr(reinterpret_cast<Brush*>(brush)));
+        reinterpret_cast<DrawStyle*>(style)->brush = *reinterpret_cast<Brush*>(brush);
     }
 }
 
 ogc_font_t* ogc_draw_style_get_font(ogc_draw_style_t* style) {
     if (style) {
-        return reinterpret_cast<ogc_font_t*>(
-            reinterpret_cast<DrawStyle*>(style)->GetFont());
+        return reinterpret_cast<ogc_font_t*>(&reinterpret_cast<DrawStyle*>(style)->font);
     }
     return nullptr;
 }
 
 void ogc_draw_style_set_font(ogc_draw_style_t* style, ogc_font_t* font) {
     if (style && font) {
-        reinterpret_cast<DrawStyle*>(style)->SetFont(
-            FontPtr(reinterpret_cast<Font*>(font)));
+        reinterpret_cast<DrawStyle*>(style)->font = *reinterpret_cast<Font*>(font);
     }
 }
 
-ogc_image_t* ogc_image_create(int width, int height) {
-    return reinterpret_cast<ogc_image_t*>(Image::Create(width, height).release());
+ogc_image_t* ogc_image_create(int width, int height, int channels) {
+    return reinterpret_cast<ogc_image_t*>(new Image(width, height, channels));
 }
 
 void ogc_image_destroy(ogc_image_t* image) {
@@ -340,99 +338,65 @@ int ogc_image_get_height(const ogc_image_t* image) {
 
 int ogc_image_save(const ogc_image_t* image, const char* filepath, const char* format) {
     if (image && filepath) {
-        return reinterpret_cast<const Image*>(image)->Save(
-            SafeString(filepath), SafeString(format)) ? 1 : 0;
+        return reinterpret_cast<const Image*>(image)->SaveToFile(SafeString(filepath)) ? 1 : 0;
     }
     return 0;
 }
 
 ogc_image_t* ogc_image_load(const char* filepath) {
     if (filepath) {
-        return reinterpret_cast<ogc_image_t*>(Image::Load(SafeString(filepath)).release());
+        auto* img = new Image();
+        if (img->LoadFromFile(SafeString(filepath))) {
+            return reinterpret_cast<ogc_image_t*>(img);
+        }
+        delete img;
     }
     return nullptr;
 }
 
-ogc_draw_device_t* ogc_draw_device_create(int type) {
-    return reinterpret_cast<ogc_draw_device_t*>(DrawDevice::Create(type).release());
+
+ogc_draw_device_t* ogc_draw_device_create(ogc_device_type_e type, int width, int height) {
+    switch (type) {
+        case OGC_DEVICE_TYPE_RASTER_IMAGE:
+            return reinterpret_cast<ogc_draw_device_t*>(new RasterImageDevice(width, height));
+        case OGC_DEVICE_TYPE_SVG:
+            return reinterpret_cast<ogc_draw_device_t*>(new SvgDevice("output.svg", width, height));
+        case OGC_DEVICE_TYPE_TILE:
+            return reinterpret_cast<ogc_draw_device_t*>(new TileDevice(width, height));
+        default:
+            return reinterpret_cast<ogc_draw_device_t*>(new RasterImageDevice(width, height));
+    }
 }
 
 void ogc_draw_device_destroy(ogc_draw_device_t* device) {
     delete reinterpret_cast<DrawDevice*>(device);
 }
 
-int ogc_draw_device_begin_paint(ogc_draw_device_t* device) {
+int ogc_draw_device_get_width(const ogc_draw_device_t* device) {
     if (device) {
-        return reinterpret_cast<DrawDevice*>(device)->BeginPaint() ? 1 : 0;
+        return reinterpret_cast<const DrawDevice*>(device)->GetWidth();
     }
     return 0;
 }
 
-void ogc_draw_device_end_paint(ogc_draw_device_t* device) {
+int ogc_draw_device_get_height(const ogc_draw_device_t* device) {
     if (device) {
-        reinterpret_cast<DrawDevice*>(device)->EndPaint();
+        return reinterpret_cast<const DrawDevice*>(device)->GetHeight();
     }
+    return 0;
 }
 
-void ogc_draw_device_clear(ogc_draw_device_t* device, ogc_color_t color) {
+ogc_image_t* ogc_draw_device_get_image(ogc_draw_device_t* device) {
     if (device) {
-        reinterpret_cast<DrawDevice*>(device)->Clear(Color(color.r, color.g, color.b, color.a));
+        auto* drawDevice = reinterpret_cast<DrawDevice*>(device);
+        return reinterpret_cast<ogc_image_t*>(new Image(drawDevice->GetWidth(), drawDevice->GetHeight(), 4));
     }
+    return nullptr;
 }
 
-void ogc_draw_device_draw_point(ogc_draw_device_t* device, double x, double y, ogc_color_t color) {
-    if (device) {
-        reinterpret_cast<DrawDevice*>(device)->DrawPoint(x, y, Color(color.r, color.g, color.b, color.a));
-    }
-}
-
-void ogc_draw_device_draw_line(ogc_draw_device_t* device, double x1, double y1, double x2, double y2, ogc_pen_t* pen) {
-    if (device && pen) {
-        reinterpret_cast<DrawDevice*>(device)->DrawLine(x1, y1, x2, y2, *reinterpret_cast<Pen*>(pen));
-    }
-}
-
-void ogc_draw_device_draw_rect(ogc_draw_device_t* device, double x, double y, double width, double height, ogc_pen_t* pen) {
-    if (device && pen) {
-        reinterpret_cast<DrawDevice*>(device)->DrawRect(x, y, width, height, *reinterpret_cast<Pen*>(pen));
-    }
-}
-
-void ogc_draw_device_fill_rect(ogc_draw_device_t* device, double x, double y, double width, double height, ogc_brush_t* brush) {
-    if (device && brush) {
-        reinterpret_cast<DrawDevice*>(device)->FillRect(x, y, width, height, *reinterpret_cast<Brush*>(brush));
-    }
-}
-
-void ogc_draw_device_draw_circle(ogc_draw_device_t* device, double cx, double cy, double radius, ogc_pen_t* pen) {
-    if (device && pen) {
-        reinterpret_cast<DrawDevice*>(device)->DrawCircle(cx, cy, radius, *reinterpret_cast<Pen*>(pen));
-    }
-}
-
-void ogc_draw_device_fill_circle(ogc_draw_device_t* device, double cx, double cy, double radius, ogc_brush_t* brush) {
-    if (device && brush) {
-        reinterpret_cast<DrawDevice*>(device)->FillCircle(cx, cy, radius, *reinterpret_cast<Brush*>(brush));
-    }
-}
-
-void ogc_draw_device_draw_text(ogc_draw_device_t* device, const char* text, double x, double y, ogc_font_t* font, ogc_color_t color) {
-    if (device && text && font) {
-        reinterpret_cast<DrawDevice*>(device)->DrawText(SafeString(text), x, y, 
-            *reinterpret_cast<Font*>(font), Color(color.r, color.g, color.b, color.a));
-    }
-}
-
-void ogc_draw_device_draw_geometry(ogc_draw_device_t* device, const ogc_geometry_t* geom, ogc_draw_style_t* style) {
-    if (device && geom && style) {
-        reinterpret_cast<DrawDevice*>(device)->DrawGeometry(
-            *reinterpret_cast<const ogc::geom::Geometry*>(geom),
-            *reinterpret_cast<DrawStyle*>(style));
-    }
-}
-
-ogc_draw_engine_t* ogc_draw_engine_create(void) {
-    return reinterpret_cast<ogc_draw_engine_t*>(DrawEngine::Create().release());
+ogc_draw_engine_t* ogc_draw_engine_create(ogc_engine_type_e type) {
+    (void)type;
+    return nullptr;
 }
 
 void ogc_draw_engine_destroy(ogc_draw_engine_t* engine) {
@@ -441,22 +405,23 @@ void ogc_draw_engine_destroy(ogc_draw_engine_t* engine) {
 
 int ogc_draw_engine_initialize(ogc_draw_engine_t* engine, ogc_draw_device_t* device) {
     if (engine && device) {
-        return reinterpret_cast<DrawEngine*>(engine)->Initialize(
-            reinterpret_cast<DrawDevice*>(device)) ? 1 : 0;
+        (void)device;
+        return reinterpret_cast<DrawEngine*>(engine)->Begin() == DrawResult::kSuccess ? 1 : 0;
     }
     return 0;
 }
 
 void ogc_draw_engine_shutdown(ogc_draw_engine_t* engine) {
     if (engine) {
-        reinterpret_cast<DrawEngine*>(engine)->Shutdown();
+        reinterpret_cast<DrawEngine*>(engine)->End();
     }
 }
 
-ogc_draw_context_t* ogc_draw_context_create(ogc_draw_device_t* device) {
+ogc_draw_context_t* ogc_draw_context_create(ogc_draw_device_t* device, ogc_draw_engine_t* engine) {
     if (device) {
-        return reinterpret_cast<ogc_draw_context_t*>(
-            DrawContext::Create(reinterpret_cast<DrawDevice*>(device)).release());
+        (void)engine;
+        auto ctx = DrawContext::Create(reinterpret_cast<DrawDevice*>(device));
+        return reinterpret_cast<ogc_draw_context_t*>(ctx.release());
     }
     return nullptr;
 }
@@ -467,19 +432,19 @@ void ogc_draw_context_destroy(ogc_draw_context_t* ctx) {
 
 void ogc_draw_context_push_state(ogc_draw_context_t* ctx) {
     if (ctx) {
-        reinterpret_cast<DrawContext*>(ctx)->PushState();
+        reinterpret_cast<DrawContext*>(ctx)->Save();
     }
 }
 
 void ogc_draw_context_pop_state(ogc_draw_context_t* ctx) {
     if (ctx) {
-        reinterpret_cast<DrawContext*>(ctx)->PopState();
+        reinterpret_cast<DrawContext*>(ctx)->Restore();
     }
 }
 
-void ogc_draw_context_set_transform(ogc_draw_context_t* ctx, double m11, double m12, double m21, double m22, double dx, double dy) {
-    if (ctx) {
-        reinterpret_cast<DrawContext*>(ctx)->SetTransform(m11, m12, m21, m22, dx, dy);
+void ogc_draw_context_set_transform(ogc_draw_context_t* ctx, double* matrix) {
+    if (ctx && matrix) {
+        reinterpret_cast<DrawContext*>(ctx)->SetTransform(TransformMatrix(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]));
     }
 }
 
@@ -518,7 +483,6 @@ void ogc_draw_context_reset_clip(ogc_draw_context_t* ctx) {
         reinterpret_cast<DrawContext*>(ctx)->ResetClip();
     }
 }
-
 #ifdef __cplusplus
 }
 #endif

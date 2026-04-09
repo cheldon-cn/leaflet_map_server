@@ -3,8 +3,8 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/label/label_engine.h"
-#include "ogc/geometry.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <vector>
 

@@ -6,7 +6,7 @@
  */
 
 #include "ogc/feature/export.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <cstddef>
 #include <string>
 

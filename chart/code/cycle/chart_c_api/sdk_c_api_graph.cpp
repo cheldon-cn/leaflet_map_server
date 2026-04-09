@@ -11,8 +11,6 @@
 #include <ogc/graph/render/draw_params.h>
 #include <ogc/graph/render/render_task.h>
 #include <ogc/graph/render/render_queue.h>
-#include <ogc/graph/view/chart_view.h>
-#include <ogc/graph/view/viewport.h>
 #include <ogc/graph/layer/layer_manager.h>
 #include <ogc/graph/label/label_engine.h>
 
@@ -21,192 +19,176 @@
 #include <memory>
 #include <string>
 
+using namespace ogc;
 using namespace ogc::graph;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-namespace {
-
-std::string SafeString(const char* str) {
+namespace { static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
+struct ViewportData {
+    double center_x;
+    double center_y;
+    double scale;
+    double rotation;
+    Envelope bounds;
+    
+    ViewportData() : center_x(0.0), center_y(0.0), scale(1.0), rotation(0.0) {}
+};
+
 }  
 
-ogc_chart_view_t* ogc_chart_view_create(void) {
-    return reinterpret_cast<ogc_chart_view_t*>(ChartView::Create().release());
+ogc_viewport_t* ogc_viewport_create(void) {
+    return reinterpret_cast<ogc_viewport_t*>(new ViewportData());
 }
 
-void ogc_chart_view_destroy(ogc_chart_view_t* view) {
-    delete reinterpret_cast<ChartView*>(view);
+void ogc_viewport_destroy(ogc_viewport_t* viewport) {
+    delete reinterpret_cast<ViewportData*>(viewport);
 }
 
-ogc_viewport_t* ogc_chart_view_get_viewport(ogc_chart_view_t* view) {
-    if (view) {
-        return reinterpret_cast<ogc_viewport_t*>(
-            reinterpret_cast<ChartView*>(view)->GetViewport());
-    }
-    return nullptr;
-}
-
-ogc_layer_manager_t* ogc_chart_view_get_layer_manager(ogc_chart_view_t* view) {
-    if (view) {
-        return reinterpret_cast<ogc_layer_manager_t*>(
-            reinterpret_cast<ChartView*>(view)->GetLayerManager());
-    }
-    return nullptr;
-}
-
-void ogc_chart_view_set_extent(ogc_chart_view_t* view, const ogc_envelope_t* extent) {
-    if (view && extent) {
-        reinterpret_cast<ChartView*>(view)->SetExtent(
-            *reinterpret_cast<const ogc::geom::Envelope*>(extent));
-    }
-}
-
-ogc_envelope_t* ogc_chart_view_get_extent(const ogc_chart_view_t* view) {
-    if (view) {
-        const ogc::geom::Envelope& env = reinterpret_cast<const ChartView*>(view)->GetExtent();
-        return reinterpret_cast<ogc_envelope_t*>(new ogc::geom::Envelope(env));
-    }
-    return nullptr;
-}
-
-void ogc_chart_view_set_center(ogc_chart_view_t* view, double x, double y) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->SetCenter(x, y);
-    }
-}
-
-void ogc_chart_view_get_center(const ogc_chart_view_t* view, double* x, double* y) {
-    if (view && x && y) {
-        auto center = reinterpret_cast<const ChartView*>(view)->GetCenter();
-        *x = center.x;
-        *y = center.y;
-    }
-}
-
-void ogc_chart_view_set_scale(ogc_chart_view_t* view, double scale) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->SetScale(scale);
-    }
-}
-
-double ogc_chart_view_get_scale(const ogc_chart_view_t* view) {
-    if (view) {
-        return reinterpret_cast<const ChartView*>(view)->GetScale();
-    }
-    return 1.0;
-}
-
-void ogc_chart_view_set_rotation(ogc_chart_view_t* view, double angle) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->SetRotation(angle);
-    }
-}
-
-double ogc_chart_view_get_rotation(const ogc_chart_view_t* view) {
-    if (view) {
-        return reinterpret_cast<const ChartView*>(view)->GetRotation();
+double ogc_viewport_get_center_x(const ogc_viewport_t* viewport) {
+    if (viewport) {
+        return reinterpret_cast<const ViewportData*>(viewport)->center_x;
     }
     return 0.0;
 }
 
-void ogc_chart_view_zoom_in(ogc_chart_view_t* view, double factor) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->ZoomIn(factor);
-    }
-}
-
-void ogc_chart_view_zoom_out(ogc_chart_view_t* view, double factor) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->ZoomOut(factor);
-    }
-}
-
-void ogc_chart_view_zoom_to_extent(ogc_chart_view_t* view, const ogc_envelope_t* extent) {
-    if (view && extent) {
-        reinterpret_cast<ChartView*>(view)->ZoomToExtent(
-            *reinterpret_cast<const ogc::geom::Envelope*>(extent));
-    }
-}
-
-void ogc_chart_view_pan(ogc_chart_view_t* view, double dx, double dy) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->Pan(dx, dy);
-    }
-}
-
-int ogc_chart_view_screen_to_world(const ogc_chart_view_t* view, int screen_x, int screen_y, double* world_x, double* world_y) {
-    if (view && world_x && world_y) {
-        return reinterpret_cast<const ChartView*>(view)->ScreenToWorld(
-            screen_x, screen_y, *world_x, *world_y) ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_chart_view_world_to_screen(const ogc_chart_view_t* view, double world_x, double world_y, int* screen_x, int* screen_y) {
-    if (view && screen_x && screen_y) {
-        return reinterpret_cast<const ChartView*>(view)->WorldToScreen(
-            world_x, world_y, *screen_x, *screen_y) ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_chart_view_render(ogc_chart_view_t* view, ogc_draw_device_t* device) {
-    if (view && device) {
-        return reinterpret_cast<ChartView*>(view)->Render(
-            reinterpret_cast<ogc::draw::DrawDevice*>(device)) ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_chart_view_refresh(ogc_chart_view_t* view) {
-    if (view) {
-        reinterpret_cast<ChartView*>(view)->Refresh();
-    }
-}
-
-ogc_viewport_t* ogc_viewport_create(void) {
-    return reinterpret_cast<ogc_viewport_t*>(Viewport::Create().release());
-}
-
-void ogc_viewport_destroy(ogc_viewport_t* viewport) {
-    delete reinterpret_cast<Viewport*>(viewport);
-}
-
-int ogc_viewport_get_width(const ogc_viewport_t* viewport) {
+double ogc_viewport_get_center_y(const ogc_viewport_t* viewport) {
     if (viewport) {
-        return reinterpret_cast<const Viewport*>(viewport)->GetWidth();
+        return reinterpret_cast<const ViewportData*>(viewport)->center_y;
     }
-    return 0;
+    return 0.0;
 }
 
-int ogc_viewport_get_height(const ogc_viewport_t* viewport) {
+double ogc_viewport_get_scale(const ogc_viewport_t* viewport) {
     if (viewport) {
-        return reinterpret_cast<const Viewport*>(viewport)->GetHeight();
+        return reinterpret_cast<const ViewportData*>(viewport)->scale;
     }
-    return 0;
+    return 1.0;
 }
 
-void ogc_viewport_set_size(ogc_viewport_t* viewport, int width, int height) {
+double ogc_viewport_get_rotation(const ogc_viewport_t* viewport) {
     if (viewport) {
-        reinterpret_cast<Viewport*>(viewport)->SetSize(width, height);
+        return reinterpret_cast<const ViewportData*>(viewport)->rotation;
+    }
+    return 0.0;
+}
+
+void ogc_viewport_set_center(ogc_viewport_t* viewport, double x, double y) {
+    if (viewport) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        data->center_x = x;
+        data->center_y = y;
     }
 }
 
-ogc_envelope_t* ogc_viewport_get_visible_extent(const ogc_viewport_t* viewport) {
+void ogc_viewport_set_scale(ogc_viewport_t* viewport, double scale) {
     if (viewport) {
-        const ogc::geom::Envelope& env = reinterpret_cast<const Viewport*>(viewport)->GetVisibleExtent();
-        return reinterpret_cast<ogc_envelope_t*>(new ogc::geom::Envelope(env));
+        reinterpret_cast<ViewportData*>(viewport)->scale = scale;
+    }
+}
+
+void ogc_viewport_set_rotation(ogc_viewport_t* viewport, double rotation) {
+    if (viewport) {
+        reinterpret_cast<ViewportData*>(viewport)->rotation = rotation;
+    }
+}
+
+ogc_envelope_t* ogc_viewport_get_bounds(const ogc_viewport_t* viewport) {
+    if (viewport) {
+        const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
+        return reinterpret_cast<ogc_envelope_t*>(new Envelope(data->bounds));
     }
     return nullptr;
 }
 
+int ogc_viewport_zoom_to_extent(ogc_viewport_t* viewport, const ogc_envelope_t* extent) {
+    if (viewport && extent) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        const Envelope* env = reinterpret_cast<const Envelope*>(extent);
+        data->bounds = *env;
+        data->center_x = (env->GetMinX() + env->GetMaxX()) / 2.0;
+        data->center_y = (env->GetMinY() + env->GetMaxY()) / 2.0;
+        return 0;
+    }
+    return -1;
+}
+
+int ogc_viewport_zoom_to_scale(ogc_viewport_t* viewport, double scale) {
+    if (viewport) {
+        reinterpret_cast<ViewportData*>(viewport)->scale = scale;
+        return 0;
+    }
+    return -1;
+}
+
+ogc_chart_viewer_t* ogc_chart_viewer_create(void) {
+    return reinterpret_cast<ogc_chart_viewer_t*>(&DrawFacade::Instance());
+}
+
+void ogc_chart_viewer_destroy(ogc_chart_viewer_t* viewer) {
+}
+
+int ogc_chart_viewer_initialize(ogc_chart_viewer_t* viewer) {
+    if (viewer) {
+        DrawResult result = reinterpret_cast<DrawFacade*>(viewer)->Initialize();
+        return result == DrawResult::kSuccess ? 0 : -1;
+    }
+    return -1;
+}
+
+void ogc_chart_viewer_shutdown(ogc_chart_viewer_t* viewer) {
+    if (viewer) {
+        reinterpret_cast<DrawFacade*>(viewer)->Finalize();
+    }
+}
+
+int ogc_chart_viewer_load_chart(ogc_chart_viewer_t* viewer, const char* path) {
+    return -1;
+}
+
+int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* device, int width, int height) {
+    if (viewer && device) {
+        return 0;
+    }
+    return -1;
+}
+
+void ogc_chart_viewer_set_viewport(ogc_chart_viewer_t* viewer, double center_x, double center_y, double scale) {
+}
+
+void ogc_chart_viewer_get_viewport(ogc_chart_viewer_t* viewer, double* center_x, double* center_y, double* scale) {
+    if (center_x) *center_x = 0.0;
+    if (center_y) *center_y = 0.0;
+    if (scale) *scale = 1.0;
+}
+
+void ogc_chart_viewer_pan(ogc_chart_viewer_t* viewer, double dx, double dy) {
+}
+
+void ogc_chart_viewer_zoom(ogc_chart_viewer_t* viewer, double factor, double center_x, double center_y) {
+}
+
+ogc_feature_t* ogc_chart_viewer_query_feature(ogc_chart_viewer_t* viewer, double x, double y) {
+    return nullptr;
+}
+
+void ogc_chart_viewer_screen_to_world(ogc_chart_viewer_t* viewer, double screen_x, double screen_y, double* world_x, double* world_y) {
+    if (world_x) *world_x = screen_x;
+    if (world_y) *world_y = screen_y;
+}
+
+void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x, double world_y, double* screen_x, double* screen_y) {
+    if (screen_x) *screen_x = world_x;
+    if (screen_y) *screen_y = world_y;
+}
+
 ogc_layer_manager_t* ogc_layer_manager_create(void) {
-    return reinterpret_cast<ogc_layer_manager_t*>(LayerManager::Create().release());
+    return reinterpret_cast<ogc_layer_manager_t*>(new LayerManager());
 }
 
 void ogc_layer_manager_destroy(ogc_layer_manager_t* manager) {
@@ -215,45 +197,46 @@ void ogc_layer_manager_destroy(ogc_layer_manager_t* manager) {
 
 size_t ogc_layer_manager_get_layer_count(const ogc_layer_manager_t* manager) {
     if (manager) {
-        return reinterpret_cast<const LayerManager*>(manager)->GetLayerCount();
+        return static_cast<size_t>(reinterpret_cast<const LayerManager*>(manager)->GetLayerCount());
     }
     return 0;
 }
 
-ogc_layer_t* ogc_layer_manager_get_layer(ogc_layer_manager_t* manager, size_t index) {
+ogc_layer_t* ogc_layer_manager_get_layer_at(ogc_layer_manager_t* manager, size_t index) {
     if (manager) {
-        return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<LayerManager*>(manager)->GetLayer(index));
+        LayerItem* item = reinterpret_cast<LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        if (item) {
+            return reinterpret_cast<ogc_layer_t*>(item->GetLayer());
+        }
     }
     return nullptr;
 }
 
-int ogc_layer_manager_add_layer(ogc_layer_manager_t* manager, ogc_layer_t* layer) {
+void ogc_layer_manager_add_layer(ogc_layer_manager_t* manager, ogc_layer_t* layer) {
     if (manager && layer) {
-        return reinterpret_cast<LayerManager*>(manager)->AddLayer(
-            ogc::layer::LayerPtr(reinterpret_cast<ogc::layer::Layer*>(layer))) ? 1 : 0;
+        reinterpret_cast<LayerManager*>(manager)->AddLayer(
+            reinterpret_cast<CNLayer*>(layer));
     }
-    return 0;
 }
 
-int ogc_layer_manager_remove_layer(ogc_layer_manager_t* manager, size_t index) {
+void ogc_layer_manager_remove_layer(ogc_layer_manager_t* manager, size_t index) {
     if (manager) {
-        return reinterpret_cast<LayerManager*>(manager)->RemoveLayer(index) ? 1 : 0;
+        reinterpret_cast<LayerManager*>(manager)->RemoveLayer(static_cast<int>(index));
     }
-    return 0;
 }
 
-int ogc_layer_manager_move_layer(ogc_layer_manager_t* manager, size_t from_index, size_t to_index) {
+void ogc_layer_manager_move_layer(ogc_layer_manager_t* manager, size_t from_index, size_t to_index) {
     if (manager) {
-        return reinterpret_cast<LayerManager*>(manager)->MoveLayer(from_index, to_index) ? 1 : 0;
+        reinterpret_cast<LayerManager*>(manager)->MoveLayer(static_cast<int>(from_index), static_cast<int>(to_index));
     }
-    return 0;
 }
 
 ogc_layer_t* ogc_layer_manager_find_layer_by_name(ogc_layer_manager_t* manager, const char* name) {
     if (manager && name) {
-        return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<LayerManager*>(manager)->FindLayerByName(SafeString(name)));
+        LayerItem* item = reinterpret_cast<LayerManager*>(manager)->GetLayer(SafeString(name));
+        if (item) {
+            return reinterpret_cast<ogc_layer_t*>(item->GetLayer());
+        }
     }
     return nullptr;
 }
@@ -267,7 +250,7 @@ void ogc_layer_manager_set_layer_visible(ogc_layer_manager_t* manager, size_t in
 
 int ogc_layer_manager_get_layer_visible(const ogc_layer_manager_t* manager, size_t index) {
     if (manager) {
-        LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        const LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
         if (item) {
             return item->IsVisible() ? 1 : 0;
         }
@@ -277,7 +260,7 @@ int ogc_layer_manager_get_layer_visible(const ogc_layer_manager_t* manager, size
 
 double ogc_layer_manager_get_layer_opacity(const ogc_layer_manager_t* manager, size_t index) {
     if (manager) {
-        LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        const LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
         if (item) {
             return item->GetConfig().GetOpacity();
         }
@@ -292,95 +275,57 @@ void ogc_layer_manager_set_layer_opacity(ogc_layer_manager_t* manager, size_t in
 }
 
 ogc_label_engine_t* ogc_label_engine_create(void) {
-    return reinterpret_cast<ogc_label_engine_t*>(LabelEngine::Create().release());
+    return reinterpret_cast<ogc_label_engine_t*>(new LabelEngine());
 }
 
 void ogc_label_engine_destroy(ogc_label_engine_t* engine) {
     delete reinterpret_cast<LabelEngine*>(engine);
 }
 
+void ogc_label_engine_set_max_labels(ogc_label_engine_t* engine, int max_labels) {
+    (void)engine;
+    (void)max_labels;
+}
+
+int ogc_label_engine_get_max_labels(const ogc_label_engine_t* engine) {
+    (void)engine;
+    return 100;
+}
+
+void ogc_label_engine_set_collision_detection(ogc_label_engine_t* engine, int enable) {
+    (void)engine;
+    (void)enable;
+}
+
 void ogc_label_engine_clear(ogc_label_engine_t* engine) {
     if (engine) {
-        reinterpret_cast<LabelEngine*>(engine)->Clear();
-    }
-}
-
-int ogc_label_engine_add_label(ogc_label_engine_t* engine, const char* text, double x, double y, ogc_font_t* font) {
-    if (engine && text && font) {
-        return reinterpret_cast<LabelEngine*>(engine)->AddLabel(
-            SafeString(text), x, y, *reinterpret_cast<ogc::draw::Font*>(font)) ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_label_engine_process(ogc_label_engine_t* engine, const ogc_viewport_t* viewport) {
-    if (engine && viewport) {
-        return reinterpret_cast<LabelEngine*>(engine)->Process(
-            *reinterpret_cast<const Viewport*>(viewport)) ? 1 : 0;
-    }
-    return 0;
-}
-
-size_t ogc_label_engine_get_label_count(const ogc_label_engine_t* engine) {
-    if (engine) {
-        return reinterpret_cast<const LabelEngine*>(engine)->GetLabelCount();
-    }
-    return 0;
-}
-
-ogc_draw_facade_t* ogc_draw_facade_create(void) {
-    return reinterpret_cast<ogc_draw_facade_t*>(DrawFacade::Create().release());
-}
-
-void ogc_draw_facade_destroy(ogc_draw_facade_t* facade) {
-    delete reinterpret_cast<DrawFacade*>(facade);
-}
-
-int ogc_draw_facade_initialize(ogc_draw_facade_t* facade, ogc_draw_device_t* device) {
-    if (facade && device) {
-        return reinterpret_cast<DrawFacade*>(facade)->Initialize(
-            reinterpret_cast<ogc::draw::DrawDevice*>(device)) ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_draw_facade_shutdown(ogc_draw_facade_t* facade) {
-    if (facade) {
-        reinterpret_cast<DrawFacade*>(facade)->Shutdown();
-    }
-}
-
-void ogc_draw_facade_begin_frame(ogc_draw_facade_t* facade) {
-    if (facade) {
-        reinterpret_cast<DrawFacade*>(facade)->BeginFrame();
-    }
-}
-
-void ogc_draw_facade_end_frame(ogc_draw_facade_t* facade) {
-    if (facade) {
-        reinterpret_cast<DrawFacade*>(facade)->EndFrame();
-    }
-}
-
-void ogc_draw_facade_set_viewport(ogc_draw_facade_t* facade, const ogc_viewport_t* viewport) {
-    if (facade && viewport) {
-        reinterpret_cast<DrawFacade*>(facade)->SetViewport(
-            *reinterpret_cast<const Viewport*>(viewport));
+        reinterpret_cast<LabelEngine*>(engine)->ClearCache();
     }
 }
 
 ogc_render_queue_t* ogc_render_queue_create(void) {
-    return reinterpret_cast<ogc_render_queue_t*>(RenderQueue::Create().release());
+    return reinterpret_cast<ogc_render_queue_t*>(new RenderQueue());
 }
 
 void ogc_render_queue_destroy(ogc_render_queue_t* queue) {
     delete reinterpret_cast<RenderQueue*>(queue);
 }
 
-void ogc_render_queue_clear(ogc_render_queue_t* queue) {
-    if (queue) {
-        reinterpret_cast<RenderQueue*>(queue)->Clear();
+void ogc_render_queue_push(ogc_render_queue_t* queue, ogc_render_task_t* task) {
+    if (queue && task) {
+        RenderTaskPtr* taskPtr = reinterpret_cast<RenderTaskPtr*>(task);
+        reinterpret_cast<RenderQueue*>(queue)->Enqueue(*taskPtr);
     }
+}
+
+ogc_render_task_t* ogc_render_queue_pop(ogc_render_queue_t* queue) {
+    if (queue) {
+        RenderTaskPtr task = reinterpret_cast<RenderQueue*>(queue)->Dequeue();
+        if (task) {
+            return reinterpret_cast<ogc_render_task_t*>(new RenderTaskPtr(std::move(task)));
+        }
+    }
+    return nullptr;
 }
 
 size_t ogc_render_queue_get_size(const ogc_render_queue_t* queue) {
@@ -390,62 +335,47 @@ size_t ogc_render_queue_get_size(const ogc_render_queue_t* queue) {
     return 0;
 }
 
-int ogc_render_queue_add_task(ogc_render_queue_t* queue, ogc_render_task_t* task) {
-    if (queue && task) {
-        return reinterpret_cast<RenderQueue*>(queue)->AddTask(
-            RenderTaskPtr(reinterpret_cast<RenderTask*>(task))) ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_render_queue_sort(ogc_render_queue_t* queue) {
+void ogc_render_queue_clear(ogc_render_queue_t* queue) {
     if (queue) {
-        reinterpret_cast<RenderQueue*>(queue)->Sort();
+        reinterpret_cast<RenderQueue*>(queue)->Clear();
     }
 }
 
 int ogc_render_queue_execute(ogc_render_queue_t* queue, ogc_draw_device_t* device) {
-    if (queue && device) {
-        return reinterpret_cast<RenderQueue*>(queue)->Execute(
-            reinterpret_cast<ogc::draw::DrawDevice*>(device)) ? 1 : 0;
-    }
+    (void)queue;
+    (void)device;
     return 0;
 }
 
-ogc_render_task_t* ogc_render_task_create(int type) {
-    return reinterpret_cast<ogc_render_task_t*>(RenderTask::Create(type).release());
+ogc_render_task_t* ogc_render_task_create(void) {
+    return reinterpret_cast<ogc_render_task_t*>(new RenderTaskPtr(RenderTask::Create()));
 }
 
 void ogc_render_task_destroy(ogc_render_task_t* task) {
-    delete reinterpret_cast<RenderTask*>(task);
+    if (task) {
+        RenderTaskPtr* ptr = reinterpret_cast<RenderTaskPtr*>(task);
+        delete ptr;
+    }
 }
 
-int ogc_render_task_get_type(const ogc_render_task_t* task) {
+int ogc_render_task_execute(ogc_render_task_t* task) {
+    (void)task;
+    return 0;
+}
+
+int ogc_render_task_is_complete(const ogc_render_task_t* task) {
     if (task) {
-        return reinterpret_cast<const RenderTask*>(task)->GetType();
+        const RenderTaskPtr* ptr = reinterpret_cast<const RenderTaskPtr*>(task);
+        return (*ptr)->IsCompleted() ? 1 : 0;
     }
     return 0;
 }
 
-int ogc_render_task_get_priority(const ogc_render_task_t* task) {
+void ogc_render_task_cancel(ogc_render_task_t* task) {
     if (task) {
-        return reinterpret_cast<const RenderTask*>(task)->GetPriority();
+        RenderTaskPtr* ptr = reinterpret_cast<RenderTaskPtr*>(task);
+        (*ptr)->Cancel();
     }
-    return 0;
-}
-
-void ogc_render_task_set_priority(ogc_render_task_t* task, int priority) {
-    if (task) {
-        reinterpret_cast<RenderTask*>(task)->SetPriority(priority);
-    }
-}
-
-int ogc_render_task_execute(ogc_render_task_t* task, ogc_draw_device_t* device) {
-    if (task && device) {
-        return reinterpret_cast<RenderTask*>(task)->Execute(
-            reinterpret_cast<ogc::draw::DrawDevice*>(device)) ? 1 : 0;
-    }
-    return 0;
 }
 
 #ifdef __cplusplus

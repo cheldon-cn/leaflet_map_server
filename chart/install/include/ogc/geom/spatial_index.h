@@ -16,7 +16,7 @@
 namespace ogc {
 
 /**
- * @brief 空间索引接口类
+ * @brief 空间索引接口�?
  * @tparam T 索引项类
  */
 template<typename T>
@@ -62,7 +62,7 @@ public:
 };
 
 /**
- * @brief R-Tree空间索引类
+ * @brief R-Tree空间索引�?
  * @tparam T 索引项类
  */
 template<typename T>
@@ -189,7 +189,7 @@ private:
 };
 
 /**
- * @brief 网格空间索引类
+ * @brief 网格空间索引�?
  * @tparam T 索引项类
  */
 template<typename T>

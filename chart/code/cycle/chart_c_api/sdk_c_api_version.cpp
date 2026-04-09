@@ -19,9 +19,7 @@ using namespace ogc::base;
 extern "C" {
 #endif
 
-namespace {
-
-char* AllocString(const std::string& str) {
+namespace { static char* AllocString(const std::string& str) {
     char* result = static_cast<char*>(std::malloc(str.size() + 1));
     if (result) {
         std::memcpy(result, str.c_str(), str.size() + 1);

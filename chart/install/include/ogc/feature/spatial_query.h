@@ -5,7 +5,7 @@
  * @brief 空间查询构建�? */
 
 #include "export.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <memory>
 #include <vector>
 #include <string>

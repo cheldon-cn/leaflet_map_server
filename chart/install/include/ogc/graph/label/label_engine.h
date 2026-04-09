@@ -5,7 +5,7 @@
 #include "ogc/graph/label/label_info.h"
 #include <ogc/draw/draw_context.h>
 #include "ogc/feature/feature.h"
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 #include <memory>
 #include <vector>
 #include <string>

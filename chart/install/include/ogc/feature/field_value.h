@@ -2,12 +2,12 @@
 
 /**
  * @file field_value.h
- * @brief 字段值容�? */
+ * @brief 字段值容�? */
 
 #include "export.h"
 #include "ogc/feature/field_type.h"
 #include "ogc/feature/datetime.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <cstdint>
 #include <string>
 #include <vector>

@@ -3,7 +3,7 @@
 
 #include "export.h"
 #include "types.h"
-#include "ogc/geometry.h"
+#include "ogc/geom/geometry.h"
 #include <string>
 #include <vector>
 #include <map>
