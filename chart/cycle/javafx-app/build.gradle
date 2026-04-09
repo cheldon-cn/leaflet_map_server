@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'cn.cycle.app'
+version '1.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs '../FXRibbon-master/FXRibbon/temp'
+    }
+}
+
+dependencies {
+    implementation project(':javawrapper')
+    implementation name: 'fxribbon-1.2.2'
+    testImplementation 'junit:junit:4.12'
+}
+
+mainClassName = 'cn.cycle.app.MainApp'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+run {
+    jvmArgs = [
+        '-Djava.library.path=../../install/bin;../../install/lib'
+    ]
+}

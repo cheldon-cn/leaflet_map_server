@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    group = 'cn.cycle.chart'
+    version = '1.0.0'
+}
