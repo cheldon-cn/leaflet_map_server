@@ -202,9 +202,9 @@ size_t ogc_layer_manager_get_layer_count(const ogc_layer_manager_t* manager) {
     return 0;
 }
 
-ogc_layer_t* ogc_layer_manager_get_layer_at(ogc_layer_manager_t* manager, size_t index) {
+ogc_layer_t* ogc_layer_manager_get_layer(const ogc_layer_manager_t* manager, size_t index) {
     if (manager) {
-        LayerItem* item = reinterpret_cast<LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        LayerItem* item = reinterpret_cast<LayerManager*>(const_cast<ogc_layer_manager_t*>(manager))->GetLayer(static_cast<int>(index));
         if (item) {
             return reinterpret_cast<ogc_layer_t*>(item->GetLayer());
         }

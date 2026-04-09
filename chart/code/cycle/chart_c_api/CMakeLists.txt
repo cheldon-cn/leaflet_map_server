@@ -54,6 +54,7 @@ set(CHART_C_API_SOURCES
 
 set(CHART_C_API_HEADERS
     sdk_c_api.h
+    sdk_c_api_export.h
 )
 
 if(OGC_CHART_C_API_STATIC)

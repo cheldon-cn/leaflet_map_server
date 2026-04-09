@@ -82,6 +82,13 @@ ogc_geom_type_e ogc_layer_get_geom_type(const ogc_layer_t* layer) {
     return OGC_GEOM_TYPE_UNKNOWN;
 }
 
+ogc_layer_type_e ogc_layer_get_type(const ogc_layer_t* layer) {
+    if (layer) {
+        return OGC_LAYER_TYPE_VECTOR;
+    }
+    return OGC_LAYER_TYPE_UNKNOWN;
+}
+
 int ogc_layer_get_extent(ogc_layer_t* layer, ogc_envelope_t* extent) {
     if (layer && extent) {
         Envelope env;
