@@ -43,23 +43,23 @@ int ogc_version_get_patch(void) {
     return Version::GetPatch();
 }
 
-const char* ogc_version_get_string(void) {
+char* ogc_version_get_string(void) {
     return AllocString(Version::GetString());
 }
 
-const char* ogc_version_get_full_string(void) {
+char* ogc_version_get_full_string(void) {
     return AllocString(Version::GetFullString());
 }
 
-const char* ogc_version_get_build_date(void) {
+char* ogc_version_get_build_date(void) {
     return AllocString(Version::GetBuildDate());
 }
 
-const char* ogc_version_get_build_time(void) {
+char* ogc_version_get_build_time(void) {
     return AllocString(Version::GetBuildTime());
 }
 
-const char* ogc_version_get_compiler(void) {
+char* ogc_version_get_compiler(void) {
     return AllocString(Version::GetCompiler());
 }
 
@@ -79,7 +79,7 @@ void ogc_free_memory(void* ptr) {
     std::free(ptr);
 }
 
-const char* ogc_get_error_message(int error_code) {
+char* ogc_get_error_message(int error_code) {
     return AllocString(GetErrorMessage(error_code));
 }
 
@@ -95,7 +95,7 @@ int ogc_is_initialized(void) {
     return IsInitialized() ? 1 : 0;
 }
 
-const char* ogc_get_last_error(void) {
+char* ogc_get_last_error(void) {
     return AllocString(GetLastError());
 }
 
@@ -110,7 +110,7 @@ int ogc_set_option(const char* key, const char* value) {
     return 0;
 }
 
-const char* ogc_get_option(const char* key) {
+char* ogc_get_option(const char* key) {
     if (key) {
         return AllocString(GetOption(std::string(key)));
     }

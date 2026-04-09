@@ -101,6 +101,94 @@ CNFieldType FromCFieldType(ogc_field_type_e type) {
     }
 }
 
+const char* ogc_error_get_message(ogc_error_code_e code) {
+    switch (code) {
+        case OGC_SUCCESS: return "Success";
+        case OGC_ERROR_INVALID_PARAM: return "Invalid parameter";
+        case OGC_ERROR_NULL_POINTER: return "Null pointer";
+        case OGC_ERROR_OUT_OF_MEMORY: return "Out of memory";
+        case OGC_ERROR_NOT_FOUND: return "Not found";
+        case OGC_ERROR_OPERATION_FAILED: return "Operation failed";
+        case OGC_ERROR_INVALID_STATE: return "Invalid state";
+        case OGC_ERROR_IO_ERROR: return "I/O error";
+        case OGC_ERROR_PARSE_ERROR: return "Parse error";
+        case OGC_ERROR_UNSUPPORTED: return "Unsupported operation";
+        case OGC_ERROR_TIMEOUT: return "Timeout";
+        case OGC_ERROR_PERMISSION_DENIED: return "Permission denied";
+        default: return "Unknown error";
+    }
+}
+
+void ogc_geometry_array_destroy(ogc_geometry_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_geometry_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_feature_array_destroy(ogc_feature_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_feature_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_string_array_destroy(char** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            std::free(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_layer_array_destroy(ogc_layer_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_layer_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_alert_array_destroy(ogc_alert_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_alert_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_waypoint_array_destroy(ogc_waypoint_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_waypoint_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
+void ogc_ais_target_array_destroy(ogc_ais_target_t** array, size_t count) {
+    if (array == nullptr) return;
+    for (size_t i = 0; i < count; ++i) {
+        if (array[i] != nullptr) {
+            ogc_ais_target_destroy(array[i]);
+            array[i] = nullptr;
+        }
+    }
+}
+
 #ifdef __cplusplus
 }
 #endif

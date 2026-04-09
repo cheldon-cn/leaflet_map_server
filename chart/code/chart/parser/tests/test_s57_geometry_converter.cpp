@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/s57_geometry_converter.h"
+#include "parser/s57_geometry_converter.h"
 #include <ogr_geometry.h>
 
 using namespace chart::parser;

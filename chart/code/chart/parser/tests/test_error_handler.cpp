@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/error_handler.h"
+#include "parser/error_handler.h"
 #include <fstream>
 #include <cstdio>
 

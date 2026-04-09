@@ -1,8 +1,8 @@
-#include "chart_parser/s57_parser.h"
-#include "chart_parser/s57_geometry_converter.h"
-#include "chart_parser/s57_attribute_parser.h"
-#include "chart_parser/s57_feature_type_mapper.h"
-#include "chart_parser/error_handler.h"
+#include "parser/s57_parser.h"
+#include "parser/s57_geometry_converter.h"
+#include "parser/s57_attribute_parser.h"
+#include "parser/s57_feature_type_mapper.h"
+#include "parser/error_handler.h"
 
 #include <ogrsf_frmts.h>
 #include <chrono>

@@ -1,7 +1,7 @@
-#include "ogc/visitor.h"
-#include "ogc/geometry.h"
-#include "ogc/polygon.h"
-#include "ogc/multipolygon.h"
+#include "ogc/geom/visitor.h"
+#include "ogc/geom/geometry.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipolygon.h"
 
 namespace ogc {
 

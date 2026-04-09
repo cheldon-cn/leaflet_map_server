@@ -1,5 +1,5 @@
-#include "chart_parser/s57_geometry_converter.h"
-#include "chart_parser/error_handler.h"
+#include "parser/s57_geometry_converter.h"
+#include "parser/error_handler.h"
 
 #include <ogr_geometry.h>
 

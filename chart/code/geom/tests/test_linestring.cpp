@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/linestring.h"
+#include "ogc/geom/linestring.h"
 
 namespace ogc {
 namespace test {

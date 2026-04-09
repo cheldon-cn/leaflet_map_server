@@ -7,7 +7,7 @@
 
 #include "sdk_c_api.h"
 
-#include <ogc/alert/alert.h>
+#include <ogc/alert/types.h>
 #include <ogc/alert/alert_engine.h>
 #include <ogc/alert/cpa_calculator.h>
 #include <ogc/alert/ukc_calculator.h>
@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-using namespace ogc::alert;
+using namespace ogc;
 
 #ifdef __cplusplus
 extern "C" {

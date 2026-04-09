@@ -6,8 +6,8 @@
 #include "ogc/graph/render/render_queue.h"
 #include <ogc/draw/draw_context.h>
 #include <ogc/symbology/symbolizer/symbolizer.h>
-#include <ogc/geometry.h>
-#include <ogc/envelope.h>
+#include <ogc/geom/geometry.h>
+#include <ogc/geom/envelope.h>
 #include <functional>
 #include <memory>
 #include <string>

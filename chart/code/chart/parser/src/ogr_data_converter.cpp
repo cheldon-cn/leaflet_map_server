@@ -1,5 +1,5 @@
-#include "chart_parser/ogr_data_converter.h"
-#include "chart_parser/error_handler.h"
+#include "parser/ogr_data_converter.h"
+#include "parser/error_handler.h"
 
 #include <ogr_geometry.h>
 #include <ogr_feature.h>

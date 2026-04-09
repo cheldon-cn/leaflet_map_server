@@ -1,16 +1,16 @@
 #include <gtest/gtest.h>
 #include <chrono>
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/multipoint.h"
-#include "ogc/multilinestring.h"
-#include "ogc/multipolygon.h"
-#include "ogc/geometrycollection.h"
-#include "ogc/spatial_index.h"
-#include "ogc/geometry_pool.h"
-#include "ogc/factory.h"
-#include "ogc/common.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/multipoint.h"
+#include "ogc/geom/multilinestring.h"
+#include "ogc/geom/multipolygon.h"
+#include "ogc/geom/geometrycollection.h"
+#include "ogc/geom/spatial_index.h"
+#include "ogc/geom/geometry_pool.h"
+#include "ogc/geom/factory.h"
+#include "ogc/geom/common.h"
 
 namespace ogc {
 namespace test {

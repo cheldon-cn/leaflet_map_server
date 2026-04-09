@@ -2,9 +2,9 @@
 #define OGC_PROJ_COORDINATE_TRANSFORMER_H
 
 #include "export.h"
-#include <ogc/coordinate.h>
-#include <ogc/envelope.h>
-#include <ogc/geometry.h>
+#include <ogc/geom/coordinate.h>
+#include <ogc/geom/envelope.h>
+#include <ogc/geom/geometry.h>
 #include <memory>
 #include <string>
 #include <vector>

@@ -1,6 +1,6 @@
-#include "chart_parser/performance_benchmark.h"
-#include "chart_parser/s57_parser.h"
-#include "chart_parser/error_handler.h"
+#include "parser/performance_benchmark.h"
+#include "parser/s57_parser.h"
+#include "parser/error_handler.h"
 
 #include <fstream>
 #include <sstream>

@@ -1,5 +1,5 @@
-#include "chart_parser/s101_gml_parser.h"
-#include "chart_parser/error_handler.h"
+#include "parser/s101_gml_parser.h"
+#include "parser/error_handler.h"
 
 #include <ogr_geometry.h>
 #include <ogr_feature.h>

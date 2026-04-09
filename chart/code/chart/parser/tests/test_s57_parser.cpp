@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include "chart_parser/s57_parser.h"
-#include "chart_parser/chart_parser.h"
+#include "parser/s57_parser.h"
+#include "parser/chart_parser.h"
 
 using namespace chart::parser;
 

@@ -1,6 +1,6 @@
-#include "ogc/multilinestring.h"
-#include "ogc/visitor.h"
-#include "ogc/serialization_utils.h"
+#include "ogc/geom/multilinestring.h"
+#include "ogc/geom/visitor.h"
+#include "ogc/geom/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 

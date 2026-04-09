@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/parse_config.h"
+#include "parser/parse_config.h"
 
 using namespace chart::parser;
 

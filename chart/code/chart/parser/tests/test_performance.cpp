@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "chart_parser/chart_parser.h"
-#include "chart_parser/parse_cache.h"
-#include "chart_parser/performance_benchmark.h"
-#include "chart_parser/incremental_parser.h"
-#include "chart_parser/error_handler.h"
-#include "chart_parser/gdal_initializer.h"
+#include "parser/chart_parser.h"
+#include "parser/parse_cache.h"
+#include "parser/performance_benchmark.h"
+#include "parser/incremental_parser.h"
+#include "parser/error_handler.h"
+#include "parser/gdal_initializer.h"
 #include <chrono>
 #include <thread>
 

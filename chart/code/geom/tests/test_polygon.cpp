@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "ogc/polygon.h"
-#include "ogc/common.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/common.h"
 
 namespace ogc {
 namespace test {

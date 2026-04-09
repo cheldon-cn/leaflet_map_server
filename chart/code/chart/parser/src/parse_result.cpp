@@ -1,4 +1,4 @@
-#include "chart_parser/parse_result.h"
+#include "parser/parse_result.h"
 
 namespace chart {
 namespace parser {

@@ -1,4 +1,4 @@
-#include "ogc/geometry_pool.h"
+#include "ogc/geom/geometry_pool.h"
 
 namespace ogc {
 

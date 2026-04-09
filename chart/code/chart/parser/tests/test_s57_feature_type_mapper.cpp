@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/s57_feature_type_mapper.h"
+#include "parser/s57_feature_type_mapper.h"
 
 using namespace chart::parser;
 

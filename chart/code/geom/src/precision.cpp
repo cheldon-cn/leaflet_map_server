@@ -1,4 +1,4 @@
-#include "ogc/precision.h"
+#include "ogc/geom/precision.h"
 
 namespace ogc {
 

@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "chart_parser/chart_parser.h"
-#include "chart_parser/s57_parser.h"
-#include "chart_parser/s101_parser.h"
-#include "chart_parser/parse_cache.h"
-#include "chart_parser/incremental_parser.h"
-#include "chart_parser/data_converter.h"
-#include "chart_parser/ogr_data_converter.h"
+#include "parser/chart_parser.h"
+#include "parser/s57_parser.h"
+#include "parser/s101_parser.h"
+#include "parser/parse_cache.h"
+#include "parser/incremental_parser.h"
+#include "parser/data_converter.h"
+#include "parser/ogr_data_converter.h"
 #include <ogr_geometry.h>
 
 using namespace chart::parser;

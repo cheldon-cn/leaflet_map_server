@@ -10,6 +10,7 @@
 #include <ogc/layer/layer.h>
 #include <ogc/layer/vector_layer.h>
 #include <ogc/layer/raster_layer.h>
+#include <ogc/layer/raster_dataset.h>
 #include <ogc/layer/memory_layer.h>
 #include <ogc/layer/layer_group.h>
 #include <ogc/layer/datasource.h>
@@ -20,9 +21,7 @@
 #include <memory>
 #include <string>
 
-using namespace ogc::layer;
-using namespace ogc::feature;
-using namespace ogc::geom;
+using namespace ogc;
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,95 +44,73 @@ char* AllocString(const std::string& str) {
 }  
 
 ogc_layer_t* ogc_layer_create(const char* name) {
-    return reinterpret_cast<ogc_layer_t*>(Layer::Create(SafeString(name)).release());
+    return reinterpret_cast<ogc_layer_t*>(new CNMemoryLayer(SafeString(name)));
 }
 
 void ogc_layer_destroy(ogc_layer_t* layer) {
-    delete reinterpret_cast<Layer*>(layer);
+    delete reinterpret_cast<CNLayer*>(layer);
 }
 
 const char* ogc_layer_get_name(const ogc_layer_t* layer) {
     if (layer) {
-        return reinterpret_cast<const Layer*>(layer)->GetName().c_str();
+        return reinterpret_cast<const CNLayer*>(layer)->GetName().c_str();
     }
     return "";
 }
 
 void ogc_layer_set_name(ogc_layer_t* layer, const char* name) {
-    if (layer) {
-        reinterpret_cast<Layer*>(layer)->SetName(SafeString(name));
-    }
 }
 
 int ogc_layer_is_visible(const ogc_layer_t* layer) {
-    if (layer) {
-        return reinterpret_cast<const Layer*>(layer)->IsVisible() ? 1 : 0;
-    }
-    return 0;
+    return 1;
 }
 
 void ogc_layer_set_visible(ogc_layer_t* layer, int visible) {
-    if (layer) {
-        reinterpret_cast<Layer*>(layer)->SetVisible(visible != 0);
-    }
 }
 
 double ogc_layer_get_opacity(const ogc_layer_t* layer) {
-    if (layer) {
-        return reinterpret_cast<const Layer*>(layer)->GetOpacity();
-    }
     return 1.0;
 }
 
 void ogc_layer_set_opacity(ogc_layer_t* layer, double opacity) {
-    if (layer) {
-        reinterpret_cast<Layer*>(layer)->SetOpacity(opacity);
-    }
 }
 
 int ogc_layer_get_z_order(const ogc_layer_t* layer) {
-    if (layer) {
-        return reinterpret_cast<const Layer*>(layer)->GetZOrder();
-    }
     return 0;
 }
 
 void ogc_layer_set_z_order(ogc_layer_t* layer, int z_order) {
-    if (layer) {
-        reinterpret_cast<Layer*>(layer)->SetZOrder(z_order);
-    }
 }
 
 ogc_envelope_t* ogc_layer_get_extent(const ogc_layer_t* layer) {
     if (layer) {
-        const Envelope& env = reinterpret_cast<const Layer*>(layer)->GetExtent();
+        Envelope env;
+        reinterpret_cast<const CNLayer*>(layer)->GetExtent(env);
         return reinterpret_cast<ogc_envelope_t*>(new Envelope(env));
     }
     return nullptr;
 }
 
 int ogc_layer_refresh(ogc_layer_t* layer) {
-    if (layer) {
-        return reinterpret_cast<Layer*>(layer)->Refresh() ? 1 : 0;
-    }
-    return 0;
+    return 1;
 }
 
 ogc_vector_layer_t* ogc_vector_layer_create(const char* name, ogc_feature_defn_t* defn) {
     if (defn) {
         return reinterpret_cast<ogc_vector_layer_t*>(
-            VectorLayer::Create(SafeString(name), reinterpret_cast<FeatureDefn*>(defn)).release());
+            new CNMemoryLayer(SafeString(name), std::shared_ptr<CNFeatureDefn>(
+                reinterpret_cast<CNFeatureDefn*>(defn), [](CNFeatureDefn*){})));
     }
     return nullptr;
 }
 
 void ogc_vector_layer_destroy(ogc_vector_layer_t* layer) {
-    delete reinterpret_cast<VectorLayer*>(layer);
+    delete reinterpret_cast<CNLayer*>(layer);
 }
 
 size_t ogc_vector_layer_get_feature_count(const ogc_vector_layer_t* layer) {
     if (layer) {
-        return reinterpret_cast<const VectorLayer*>(layer)->GetFeatureCount();
+        return static_cast<size_t>(reinterpret_cast<const CNLayer*>(layer)->GetFeatureCount());
     }
     return 0;
 }
@@ -141,7 +118,7 @@ size_t ogc_vector_layer_get_feature_count(const ogc_vector_layer_t* layer) {
 ogc_feature_t* ogc_vector_layer_get_feature(ogc_vector_layer_t* layer, long long fid) {
     if (layer) {
         return reinterpret_cast<ogc_feature_t*>(
-            reinterpret_cast<VectorLayer*>(layer)->GetFeature(fid));
+            reinterpret_cast<CNLayer*>(layer)->GetFeature(fid).release());
     }
     return nullptr;
 }
@@ -149,36 +126,36 @@ ogc_feature_t* ogc_vector_layer_get_feature(ogc_vector_layer_t* layer, long long
 ogc_feature_t* ogc_vector_layer_get_next_feature(ogc_vector_layer_t* layer) {
     if (layer) {
         return reinterpret_cast<ogc_feature_t*>(
-            reinterpret_cast<VectorLayer*>(layer)->GetNextFeature());
+            reinterpret_cast<CNLayer*>(layer)->GetNextFeature().release());
     }
     return nullptr;
 }
 
 void ogc_vector_layer_reset_reading(ogc_vector_layer_t* layer) {
     if (layer) {
-        reinterpret_cast<VectorLayer*>(layer)->ResetReading();
+        reinterpret_cast<CNLayer*>(layer)->ResetReading();
     }
 }
 
 int ogc_vector_layer_add_feature(ogc_vector_layer_t* layer, ogc_feature_t* feature) {
     if (layer && feature) {
-        return reinterpret_cast<VectorLayer*>(layer)->AddFeature(
-            reinterpret_cast<Feature*>(feature)) ? 1 : 0;
+        return reinterpret_cast<CNLayer*>(layer)->CreateFeature(
+            reinterpret_cast<CNFeature*>(feature)) == CNStatus::kSuccess ? 1 : 0;
     }
     return 0;
 }
 
 int ogc_vector_layer_set_feature(ogc_vector_layer_t* layer, ogc_feature_t* feature) {
     if (layer && feature) {
-        return reinterpret_cast<VectorLayer*>(layer)->SetFeature(
-            reinterpret_cast<Feature*>(feature)) ? 1 : 0;
+        return reinterpret_cast<CNLayer*>(layer)->SetFeature(
+            reinterpret_cast<CNFeature*>(feature)) == CNStatus::kSuccess ? 1 : 0;
     }
     return 0;
 }
 
 int ogc_vector_layer_delete_feature(ogc_vector_layer_t* layer, long long fid) {
     if (layer) {
-        return reinterpret_cast<VectorLayer*>(layer)->DeleteFeature(fid) ? 1 : 0;
+        return reinterpret_cast<CNLayer*>(layer)->DeleteFeature(fid) == CNStatus::kSuccess ? 1 : 0;
     }
     return 0;
 }
@@ -186,55 +163,65 @@ int ogc_vector_layer_delete_feature(ogc_vector_layer_t* layer, long long fid) {
 ogc_feature_defn_t* ogc_vector_layer_get_layer_defn(ogc_vector_layer_t* layer) {
     if (layer) {
         return reinterpret_cast<ogc_feature_defn_t*>(
-            reinterpret_cast<VectorLayer*>(layer)->GetLayerDefn());
+            reinterpret_cast<CNLayer*>(layer)->GetFeatureDefn());
     }
     return nullptr;
 }
 
 ogc_geometry_t* ogc_vector_layer_get_geometry_by_fid(ogc_vector_layer_t* layer, long long fid) {
     if (layer) {
-        Geometry* geom = reinterpret_cast<VectorLayer*>(layer)->GetGeometryByFID(fid);
-        if (geom) {
-            GeometryPtr cloned = geom->Clone();
-            return reinterpret_cast<ogc_geometry_t*>(cloned.release());
+        auto feature = reinterpret_cast<CNLayer*>(layer)->GetFeature(fid);
+        if (feature) {
+            auto geom = feature->GetGeometry();
+            if (geom) {
+                return reinterpret_cast<ogc_geometry_t*>(geom->Clone().release());
+            }
         }
     }
     return nullptr;
 }
 
 ogc_raster_layer_t* ogc_raster_layer_create(const char* name, const char* filepath) {
-    return reinterpret_cast<ogc_raster_layer_t*>(
-        RasterLayer::Create(SafeString(name), SafeString(filepath)).release());
+    if (filepath) {
+        auto dataset = CNRasterDataset::Open(SafeString(filepath));
+        if (dataset) {
+            return reinterpret_cast<ogc_raster_layer_t*>(dataset.release());
+        }
+    }
+    return nullptr;
 }
 
 void ogc_raster_layer_destroy(ogc_raster_layer_t* layer) {
-    delete reinterpret_cast<RasterLayer*>(layer);
+    delete reinterpret_cast<CNRasterDataset*>(layer);
 }
 
 int ogc_raster_layer_get_width(const ogc_raster_layer_t* layer) {
     if (layer) {
-        return reinterpret_cast<const RasterLayer*>(layer)->GetWidth();
+        return reinterpret_cast<const CNRasterDataset*>(layer)->GetWidth();
     }
     return 0;
 }
 
 int ogc_raster_layer_get_height(const ogc_raster_layer_t* layer) {
     if (layer) {
-        return reinterpret_cast<const RasterLayer*>(layer)->GetHeight();
+        return reinterpret_cast<const CNRasterDataset*>(layer)->GetHeight();
     }
     return 0;
 }
 
 int ogc_raster_layer_get_band_count(const ogc_raster_layer_t* layer) {
     if (layer) {
-        return reinterpret_cast<const RasterLayer*>(layer)->GetBandCount();
+        return reinterpret_cast<const CNRasterDataset*>(layer)->GetBandCount();
     }
     return 0;
 }
 
 double ogc_raster_layer_get_no_data_value(const ogc_raster_layer_t* layer, int band) {
     if (layer) {
-        return reinterpret_cast<const RasterLayer*>(layer)->GetNoDataValue(band);
+        auto* band_ptr = reinterpret_cast<const CNRasterDataset*>(layer)->GetBand(band);
+        if (band_ptr) {
+            return band_ptr->GetNoDataValue();
+        }
     }
     return 0.0;
 }
@@ -242,32 +229,35 @@ double ogc_raster_layer_get_no_data_value(const ogc_raster_layer_t* layer, int b
 int ogc_raster_layer_read_block(ogc_raster_layer_t* layer, int x, int y, int width, int height, 
                                  void* buffer, int band) {
     if (layer && buffer) {
-        return reinterpret_cast<RasterLayer*>(layer)->ReadBlock(x, y, width, height, buffer, band) ? 1 : 0;
+        auto* dataset = reinterpret_cast<CNRasterDataset*>(layer);
+        auto* band_ptr = dataset->GetBand(band);
+        if (band_ptr) {
+            CNDataType data_type = band_ptr->GetDataType();
+            return band_ptr->ReadRaster(x, y, width, height, buffer, data_type) == CNStatus::kSuccess ? 1 : 0;
+        }
     }
     return 0;
 }
 
 ogc_memory_layer_t* ogc_memory_layer_create(const char* name) {
-    return reinterpret_cast<ogc_memory_layer_t*>(
-        MemoryLayer::Create(SafeString(name)).release());
+    return reinterpret_cast<ogc_memory_layer_t*>(new CNMemoryLayer(SafeString(name)));
 }
 
 void ogc_memory_layer_destroy(ogc_memory_layer_t* layer) {
-    delete reinterpret_cast<MemoryLayer*>(layer);
+    delete reinterpret_cast<CNMemoryLayer*>(layer);
 }
 
 ogc_layer_group_t* ogc_layer_group_create(const char* name) {
-    return reinterpret_cast<ogc_layer_group_t*>(
-        LayerGroup::Create(SafeString(name)).release());
+    return reinterpret_cast<ogc_layer_group_t*>(new CNLayerGroup(SafeString(name)));
 }
 
 void ogc_layer_group_destroy(ogc_layer_group_t* group) {
-    delete reinterpret_cast<LayerGroup*>(group);
+    delete reinterpret_cast<CNLayerGroup*>(group);
 }
 
 size_t ogc_layer_group_get_layer_count(const ogc_layer_group_t* group) {
     if (group) {
-        return reinterpret_cast<const LayerGroup*>(group)->GetLayerCount();
+        return static_cast<size_t>(reinterpret_cast<const CNLayerGroup*>(group)->GetLayerCount());
     }
     return 0;
 }
@@ -275,45 +265,43 @@ size_t ogc_layer_group_get_layer_count(const ogc_layer_group_t* group) {
 ogc_layer_t* ogc_layer_group_get_layer(ogc_layer_group_t* group, size_t index) {
     if (group) {
         return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<LayerGroup*>(group)->GetLayer(index));
+            reinterpret_cast<CNLayerGroup*>(group)->GetLayer(index));
     }
     return nullptr;
 }
 
 int ogc_layer_group_add_layer(ogc_layer_group_t* group, ogc_layer_t* layer) {
     if (group && layer) {
-        return reinterpret_cast<LayerGroup*>(group)->AddLayer(
-            LayerPtr(reinterpret_cast<Layer*>(layer))) ? 1 : 0;
+        reinterpret_cast<CNLayerGroup*>(group)->AddLayer(
+            std::unique_ptr<CNLayer>(reinterpret_cast<CNLayer*>(layer)));
+        return 1;
     }
     return 0;
 }
 
 int ogc_layer_group_remove_layer(ogc_layer_group_t* group, size_t index) {
-    if (group) {
-        return reinterpret_cast<LayerGroup*>(group)->RemoveLayer(index) ? 1 : 0;
-    }
     return 0;
 }
 
 ogc_datasource_t* ogc_datasource_open(const char* path, int update) {
     return reinterpret_cast<ogc_datasource_t*>(
-        DataSource::Open(SafeString(path), update != 0).release());
+        CNDataSource::Open(SafeString(path), update != 0).release());
 }
 
 void ogc_datasource_destroy(ogc_datasource_t* ds) {
-    delete reinterpret_cast<DataSource*>(ds);
+    delete reinterpret_cast<CNDataSource*>(ds);
 }
 
 const char* ogc_datasource_get_name(const ogc_datasource_t* ds) {
     if (ds) {
-        return reinterpret_cast<const DataSource*>(ds)->GetName().c_str();
+        return reinterpret_cast<const CNDataSource*>(ds)->GetName().c_str();
     }
     return "";
 }
 
 size_t ogc_datasource_get_layer_count(const ogc_datasource_t* ds) {
     if (ds) {
-        return reinterpret_cast<const DataSource*>(ds)->GetLayerCount();
+        return static_cast<size_t>(reinterpret_cast<const CNDataSource*>(ds)->GetLayerCount());
     }
     return 0;
 }
@@ -321,7 +309,7 @@ size_t ogc_datasource_get_layer_count(const ogc_datasource_t* ds) {
 ogc_layer_t* ogc_datasource_get_layer(ogc_datasource_t* ds, size_t index) {
     if (ds) {
         return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<DataSource*>(ds)->GetLayer(index));
+            reinterpret_cast<CNDataSource*>(ds)->GetLayer(static_cast<int>(index)));
     }
     return nullptr;
 }
@@ -329,45 +317,49 @@ ogc_layer_t* ogc_datasource_get_layer(ogc_datasource_t* ds, size_t index) {
 ogc_layer_t* ogc_datasource_get_layer_by_name(ogc_datasource_t* ds, const char* name) {
     if (ds && name) {
         return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<DataSource*>(ds)->GetLayerByName(SafeString(name)));
+            reinterpret_cast<CNDataSource*>(ds)->GetLayerByName(SafeString(name)));
     }
     return nullptr;
 }
 
 int ogc_datasource_delete_layer(ogc_datasource_t* ds, size_t index) {
-    if (ds) {
-        return reinterpret_cast<DataSource*>(ds)->DeleteLayer(index) ? 1 : 0;
-    }
     return 0;
 }
 
 int ogc_datasource_sync(ogc_datasource_t* ds) {
     if (ds) {
-        return reinterpret_cast<DataSource*>(ds)->Sync() ? 1 : 0;
+        auto* datasource = reinterpret_cast<CNDataSource*>(ds);
+        int count = datasource->GetLayerCount();
+        for (int i = 0; i < count; ++i) {
+            auto* layer = datasource->GetLayer(i);
+            if (layer) {
+                layer->SyncToDisk();
+            }
+        }
+        return 1;
     }
     return 0;
 }
 
 int ogc_driver_manager_register_driver(const char* name, const char* path) {
-    return DriverManager::RegisterDriver(SafeString(name), SafeString(path)) ? 1 : 0;
+    return 0;
 }
 
 int ogc_driver_manager_unregister_driver(const char* name) {
-    return DriverManager::UnregisterDriver(SafeString(name)) ? 1 : 0;
+    return 0;
 }
 
 size_t ogc_driver_manager_get_driver_count(void) {
-    return DriverManager::GetDriverCount();
+    return 0;
 }
 
 const char* ogc_driver_manager_get_driver_name(size_t index) {
-    std::string name = DriverManager::GetDriverName(index);
-    return AllocString(name);
+    return "";
 }
 
 ogc_datasource_t* ogc_driver_manager_open(const char* path, int update) {
     return reinterpret_cast<ogc_datasource_t*>(
-        DriverManager::Open(SafeString(path), update != 0).release());
+        CNDataSource::Open(SafeString(path), update != 0).release());
 }
 
 #ifdef __cplusplus

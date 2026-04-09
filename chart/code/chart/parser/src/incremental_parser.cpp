@@ -1,5 +1,5 @@
-#include "chart_parser/incremental_parser.h"
-#include "chart_parser/error_handler.h"
+#include "parser/incremental_parser.h"
+#include "parser/error_handler.h"
 
 #include <fstream>
 #include <chrono>

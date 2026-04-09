@@ -4,7 +4,7 @@
 #include <ogc/draw/tile_based_engine.h>
 #include <ogc/draw/draw_style.h>
 #include <ogc/draw/geometry.h>
-#include <ogc/point.h>
+#include <ogc/geom/point.h>
 #include <thread>
 #include <chrono>
 

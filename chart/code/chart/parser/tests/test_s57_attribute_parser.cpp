@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/s57_attribute_parser.h"
+#include "parser/s57_attribute_parser.h"
 #include <ogr_feature.h>
 
 using namespace chart::parser;

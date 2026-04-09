@@ -1,4 +1,4 @@
-#include "ogc/exception.h"
+#include "ogc/geom/exception.h"
 
 namespace ogc {
 

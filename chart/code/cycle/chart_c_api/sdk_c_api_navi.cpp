@@ -7,17 +7,17 @@
 
 #include "sdk_c_api.h"
 
-#include <ogc/navi/route.h>
-#include <ogc/navi/waypoint.h>
-#include <ogc/navi/ais_manager.h>
-#include <ogc/navi/navigation_engine.h>
+#include <ogc/navi/route/route.h>
+#include <ogc/navi/route/waypoint.h>
+#include <ogc/navi/ais/ais_manager.h>
+#include <ogc/navi/navigation/navigation_engine.h>
 
 #include <cstring>
 #include <cstdlib>
 #include <memory>
 #include <string>
 
-using namespace ogc::navi;
+using namespace ogc;
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,7 +1,7 @@
 /**
  * @file sdk_c_api_parser.cpp
  * @brief OGC Chart SDK C API - Chart Parser Module Implementation
- * @version v1.0
+ * @version v3.0
  * @date 2026-04-09
  */
 
@@ -10,13 +10,18 @@
 #include <ogc/parser/chart_parser.h>
 #include <ogc/parser/s57_parser.h>
 #include <ogc/parser/incremental_parser.h>
+#include <ogc/parser/iparser.h>
+#include <ogc/parser/parse_result.h>
+#include <ogc/parser/parse_config.h>
+#include <ogc/parser/chart_format.h>
 
 #include <cstring>
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <vector>
 
-using namespace ogc::parser;
+using namespace chart::parser;
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,235 +33,226 @@ std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
+ogc_chart_format_e ToCFormat(ChartFormat format) {
+    switch (format) {
+        case ChartFormat::S57: return OGC_CHART_FORMAT_S57;
+        case ChartFormat::S100: return OGC_CHART_FORMAT_S100;
+        case ChartFormat::S101: return OGC_CHART_FORMAT_S101;
+        case ChartFormat::S102: return OGC_CHART_FORMAT_S102;
+        case ChartFormat::S111: return OGC_CHART_FORMAT_UNKNOWN;
+        case ChartFormat::S112: return OGC_CHART_FORMAT_UNKNOWN;
+        default: return OGC_CHART_FORMAT_UNKNOWN;
+    }
+}
+
+ChartFormat FromCFormat(ogc_chart_format_e format) {
+    switch (format) {
+        case OGC_CHART_FORMAT_S57: return ChartFormat::S57;
+        case OGC_CHART_FORMAT_S100: return ChartFormat::S100;
+        case OGC_CHART_FORMAT_S101: return ChartFormat::S101;
+        case OGC_CHART_FORMAT_S102: return ChartFormat::S102;
+        case OGC_CHART_FORMAT_GML: return ChartFormat::Unknown;
+        default: return ChartFormat::Unknown;
+    }
+}
+
 }  
 
-ogc_chart_parser_t* ogc_chart_parser_create(void) {
-    return reinterpret_cast<ogc_chart_parser_t*>(ChartParser::Create().release());
+ogc_chart_parser_t* ogc_chart_parser_get_instance(void) {
+    return reinterpret_cast<ogc_chart_parser_t*>(&ChartParser::Instance());
 }
 
-void ogc_chart_parser_destroy(ogc_chart_parser_t* parser) {
-    delete reinterpret_cast<ChartParser*>(parser);
+int ogc_chart_parser_initialize(ogc_chart_parser_t* parser) {
+    if (parser) {
+        return reinterpret_cast<ChartParser*>(parser)->Initialize() ? 0 : -1;
+    }
+    return -1;
 }
 
-int ogc_chart_parser_open(ogc_chart_parser_t* parser, const char* filepath) {
-    if (parser && filepath) {
-        return reinterpret_cast<ChartParser*>(parser)->Open(SafeString(filepath)) ? 1 : 0;
+void ogc_chart_parser_shutdown(ogc_chart_parser_t* parser) {
+    if (parser) {
+        reinterpret_cast<ChartParser*>(parser)->Shutdown();
+    }
+}
+
+int ogc_chart_parser_get_supported_formats(const ogc_chart_parser_t* parser, ogc_chart_format_e* formats, int max_count) {
+    if (parser && formats && max_count > 0) {
+        auto kernelFormats = reinterpret_cast<const ChartParser*>(parser)->GetSupportedFormats();
+        int count = 0;
+        for (const auto& f : kernelFormats) {
+            if (count >= max_count) break;
+            formats[count++] = ToCFormat(f);
+        }
+        return count;
     }
     return 0;
 }
 
-void ogc_chart_parser_close(ogc_chart_parser_t* parser) {
-    if (parser) {
-        reinterpret_cast<ChartParser*>(parser)->Close();
-    }
+ogc_iparser_t* ogc_iparser_create(ogc_chart_format_e format) {
+    auto& instance = ChartParser::Instance();
+    IParser* parser = instance.CreateParser(FromCFormat(format));
+    return reinterpret_cast<ogc_iparser_t*>(parser);
 }
 
-int ogc_chart_parser_is_open(const ogc_chart_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const ChartParser*>(parser)->IsOpen() ? 1 : 0;
-    }
+void ogc_iparser_destroy(ogc_iparser_t* parser) {
+    delete reinterpret_cast<IParser*>(parser);
+}
+
+int ogc_iparser_open(ogc_iparser_t* parser, const char* path) {
     return 0;
 }
 
-const char* ogc_chart_parser_get_format(const ogc_chart_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const ChartParser*>(parser)->GetFormat().c_str();
-    }
-    return "";
+void ogc_iparser_close(ogc_iparser_t* parser) {
 }
 
-size_t ogc_chart_parser_get_layer_count(const ogc_chart_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const ChartParser*>(parser)->GetLayerCount();
-    }
-    return 0;
-}
-
-ogc_layer_t* ogc_chart_parser_get_layer(ogc_chart_parser_t* parser, size_t index) {
-    if (parser) {
-        return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<ChartParser*>(parser)->GetLayer(index));
-    }
+ogc_parse_result_t* ogc_iparser_parse(ogc_iparser_t* parser) {
     return nullptr;
 }
 
-ogc_layer_t* ogc_chart_parser_get_layer_by_name(ogc_chart_parser_t* parser, const char* name) {
-    if (parser && name) {
-        return reinterpret_cast<ogc_layer_t*>(
-            reinterpret_cast<ChartParser*>(parser)->GetLayerByName(SafeString(name)));
-    }
+ogc_parse_result_t* ogc_iparser_parse_incremental(ogc_iparser_t* parser, int batch_size) {
     return nullptr;
 }
 
-ogc_envelope_t* ogc_chart_parser_get_extent(const ogc_chart_parser_t* parser) {
+ogc_chart_format_e ogc_iparser_get_format(const ogc_chart_t* parser) {
     if (parser) {
-        const ogc::geom::Envelope& env = reinterpret_cast<const ChartParser*>(parser)->GetExtent();
-        return reinterpret_cast<ogc_envelope_t*>(new ogc::geom::Envelope(env));
+        auto formats = reinterpret_cast<const IParser*>(parser)->GetSupportedFormats();
+        if (!formats.empty()) {
+            return ToCFormat(formats[0]);
+        }
     }
-    return nullptr;
-}
-
-int ogc_chart_parser_read_feature(ogc_chart_parser_t* parser, ogc_feature_t** feature) {
-    if (parser && feature) {
-        return reinterpret_cast<ChartParser*>(parser)->ReadFeature(
-            reinterpret_cast<ogc::feature::Feature**>(feature)) ? 1 : 0;
-    }
-    return 0;
-}
-
-void ogc_chart_parser_reset_reading(ogc_chart_parser_t* parser) {
-    if (parser) {
-        reinterpret_cast<ChartParser*>(parser)->ResetReading();
-    }
-}
-
-size_t ogc_chart_parser_get_feature_count(const ogc_chart_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const ChartParser*>(parser)->GetFeatureCount();
-    }
-    return 0;
-}
-
-int ogc_chart_parser_parse_all(ogc_chart_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<ChartParser*>(parser)->ParseAll() ? 1 : 0;
-    }
-    return 0;
+    return OGC_CHART_FORMAT_UNKNOWN;
 }
 
 ogc_s57_parser_t* ogc_s57_parser_create(void) {
-    return reinterpret_cast<ogc_s57_parser_t*>(S57Parser::Create().release());
+    return reinterpret_cast<ogc_s57_parser_t*>(new S57Parser());
 }
 
 void ogc_s57_parser_destroy(ogc_s57_parser_t* parser) {
     delete reinterpret_cast<S57Parser*>(parser);
 }
 
-int ogc_s57_parser_open(ogc_s57_parser_t* parser, const char* filepath) {
-    if (parser && filepath) {
-        return reinterpret_cast<S57Parser*>(parser)->Open(SafeString(filepath)) ? 1 : 0;
-    }
+int ogc_s57_parser_open(ogc_s57_parser_t* parser, const char* path) {
     return 0;
 }
 
-void ogc_s57_parser_close(ogc_s57_parser_t* parser) {
+ogc_parse_result_t* ogc_s57_parser_parse(ogc_s57_parser_t* parser) {
     if (parser) {
-        reinterpret_cast<S57Parser*>(parser)->Close();
-    }
-}
-
-int ogc_s57_parser_is_open(const ogc_s57_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->IsOpen() ? 1 : 0;
-    }
-    return 0;
-}
-
-const char* ogc_s57_parser_get_edition(const ogc_s57_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->GetEdition().c_str();
-    }
-    return "";
-}
-
-const char* ogc_s57_parser_get_update_number(const ogc_s57_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->GetUpdateNumber().c_str();
-    }
-    return "";
-}
-
-const char* ogc_s57_parser_get_producer(const ogc_s57_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->GetProducer().c_str();
-    }
-    return "";
-}
-
-size_t ogc_s57_parser_get_object_class_count(const ogc_s57_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->GetObjectClassCount();
-    }
-    return 0;
-}
-
-const char* ogc_s57_parser_get_object_class_name(const ogc_s57_parser_t* parser, size_t index) {
-    if (parser) {
-        return reinterpret_cast<const S57Parser*>(parser)->GetObjectName(index).c_str();
-    }
-    return "";
-}
-
-ogc_feature_t* ogc_s57_parser_get_feature_by_id(ogc_s57_parser_t* parser, long long id) {
-    if (parser) {
-        return reinterpret_cast<ogc_feature_t*>(
-            reinterpret_cast<S57Parser*>(parser)->GetFeatureById(id));
+        ParseResult result = reinterpret_cast<S57Parser*>(parser)->ParseChart("");
+        if (result.success) {
+            return reinterpret_cast<ogc_parse_result_t*>(new ParseResult(std::move(result)));
+        }
     }
     return nullptr;
+}
+
+void ogc_s57_parser_set_feature_filter(ogc_s57_parser_t* parser, const char** features, int count) {
+}
+
+void ogc_s57_parser_set_spatial_filter(ogc_s57_parser_t* parser, const ogc_envelope_t* bounds) {
 }
 
 ogc_incremental_parser_t* ogc_incremental_parser_create(void) {
-    return reinterpret_cast<ogc_incremental_parser_t*>(IncrementalParser::Create().release());
+    return reinterpret_cast<ogc_incremental_parser_t*>(&IncrementalParser::Instance());
 }
 
 void ogc_incremental_parser_destroy(ogc_incremental_parser_t* parser) {
-    delete reinterpret_cast<IncrementalParser*>(parser);
 }
 
-int ogc_incremental_parser_initialize(ogc_incremental_parser_t* parser, const char* base_path) {
-    if (parser && base_path) {
-        return reinterpret_cast<IncrementalParser*>(parser)->Initialize(SafeString(base_path)) ? 1 : 0;
+void ogc_incremental_parser_start(ogc_incremental_parser_t* parser, const char* path, int batch_size) {
+    if (parser && path) {
+        ParseConfig config;
+        reinterpret_cast<IncrementalParser*>(parser)->ParseIncremental(SafeString(path), config);
     }
-    return 0;
 }
 
-void ogc_incremental_parser_shutdown(ogc_incremental_parser_t* parser) {
+void ogc_incremental_parser_pause(ogc_incremental_parser_t* parser) {
+}
+
+void ogc_incremental_parser_resume(ogc_incremental_parser_t* parser) {
+}
+
+void ogc_incremental_parser_cancel(ogc_incremental_parser_t* parser) {
     if (parser) {
-        reinterpret_cast<IncrementalParser*>(parser)->Shutdown();
+        reinterpret_cast<IncrementalParser*>(parser)->ClearAllStates();
     }
 }
 
-int ogc_incremental_parser_add_update_file(ogc_incremental_parser_t* parser, const char* filepath) {
-    if (parser && filepath) {
-        return reinterpret_cast<IncrementalParser*>(parser)->AddUpdateFile(SafeString(filepath)) ? 1 : 0;
+ogc_parse_result_t* ogc_incremental_parser_parse_next(ogc_incremental_parser_t* parser) {
+    return nullptr;
+}
+
+int ogc_incremental_parser_has_more(const ogc_incremental_parser_t* parser) {
+    return 0;
+}
+
+float ogc_incremental_parser_get_progress(const ogc_incremental_parser_t* parser) {
+    return 0.0f;
+}
+
+int ogc_incremental_parser_has_file_changed(const ogc_incremental_parser_t* parser, const char* path) {
+    if (parser && path) {
+        return reinterpret_cast<const IncrementalParser*>(parser)->HasFileChanged(SafeString(path)) ? 1 : 0;
     }
     return 0;
 }
 
-int ogc_incremental_parser_remove_update_file(ogc_incremental_parser_t* parser, const char* filepath) {
-    if (parser && filepath) {
-        return reinterpret_cast<IncrementalParser*>(parser)->RemoveUpdateFile(SafeString(filepath)) ? 1 : 0;
+void ogc_incremental_parser_mark_processed(ogc_incremental_parser_t* parser, const char* path) {
+    if (parser && path) {
+        reinterpret_cast<IncrementalParser*>(parser)->MarkFileProcessed(SafeString(path));
     }
-    return 0;
 }
 
-size_t ogc_incremental_parser_get_update_count(const ogc_incremental_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<const IncrementalParser*>(parser)->GetUpdateCount();
+void ogc_incremental_parser_clear_state(ogc_incremental_parser_t* parser, const char* path) {
+    if (parser && path) {
+        reinterpret_cast<IncrementalParser*>(parser)->ClearFileState(SafeString(path));
     }
-    return 0;
 }
 
-int ogc_incremental_parser_apply_updates(ogc_incremental_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<IncrementalParser*>(parser)->ApplyUpdates() ? 1 : 0;
-    }
-    return 0;
-}
-
-int ogc_incremental_parser_rollback_updates(ogc_incremental_parser_t* parser) {
-    if (parser) {
-        return reinterpret_cast<IncrementalParser*>(parser)->RollbackUpdates() ? 1 : 0;
-    }
-    return 0;
-}
-
-ogc_feature_t* ogc_incremental_parser_get_updated_feature(ogc_incremental_parser_t* parser, size_t index) {
-    if (parser) {
-        return reinterpret_cast<ogc_feature_t*>(
-            reinterpret_cast<IncrementalParser*>(parser)->GetUpdatedFeature(index));
+ogc_parse_result_t* ogc_s57_parser_parse_file(ogc_s57_parser_t* parser, const char* path, const ogc_parse_config_t* config) {
+    if (parser && path) {
+        ParseConfig cfg;
+        if (config) {
+            cfg.validateGeometry = config->validate_geometry != 0;
+            cfg.validateAttributes = config->validate_attributes != 0;
+            cfg.strictMode = config->strict_mode != 0;
+            cfg.includeMetadata = config->include_metadata != 0;
+            cfg.maxFeatureCount = config->max_feature_count;
+            cfg.coordinateSystem = SafeString(config->coordinate_system);
+            cfg.tolerance = config->tolerance;
+        }
+        ParseResult result = reinterpret_cast<S57Parser*>(parser)->ParseChart(SafeString(path), cfg);
+        if (result.success) {
+            return reinterpret_cast<ogc_parse_result_t*>(new ParseResult(std::move(result)));
+        }
     }
     return nullptr;
+}
+
+ogc_incremental_parse_result_t* ogc_incremental_parser_parse_incremental(ogc_incremental_parser_t* parser, const char* path, const ogc_parse_config_t* config) {
+    if (parser && path) {
+        ParseConfig cfg;
+        if (config) {
+            cfg.validateGeometry = config->validate_geometry != 0;
+            cfg.validateAttributes = config->validate_attributes != 0;
+            cfg.strictMode = config->strict_mode != 0;
+            cfg.includeMetadata = config->include_metadata != 0;
+            cfg.maxFeatureCount = config->max_feature_count;
+            cfg.coordinateSystem = SafeString(config->coordinate_system);
+            cfg.tolerance = config->tolerance;
+        }
+        IncrementalParseResult result = reinterpret_cast<IncrementalParser*>(parser)->ParseIncremental(SafeString(path), cfg);
+        ogc_incremental_parse_result_t* c_result = static_cast<ogc_incremental_parse_result_t*>(std::malloc(sizeof(ogc_incremental_parse_result_t)));
+        if (c_result) {
+            c_result->has_changes = result.hasChanges ? 1 : 0;
+            c_result->parse_time_ms = result.parseTimeMs;
+        }
+        return c_result;
+    }
+    return nullptr;
+}
+
+void ogc_incremental_parse_result_destroy(ogc_incremental_parse_result_t* result) {
+    std::free(result);
 }
 
 #ifdef __cplusplus

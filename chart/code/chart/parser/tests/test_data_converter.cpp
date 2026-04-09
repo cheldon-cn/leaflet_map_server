@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "chart_parser/data_converter.h"
-#include "chart_parser/ogr_data_converter.h"
+#include "parser/data_converter.h"
+#include "parser/ogr_data_converter.h"
 
 using namespace chart::parser;
 

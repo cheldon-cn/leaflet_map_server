@@ -1,4 +1,4 @@
-#include "ogc/coordinate.h"
+#include "ogc/geom/coordinate.h"
 #include <sstream>
 #include <iomanip>
 

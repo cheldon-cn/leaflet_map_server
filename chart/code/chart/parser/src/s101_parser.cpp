@@ -1,6 +1,6 @@
-#include "chart_parser/s101_parser.h"
-#include "chart_parser/s101_gml_parser.h"
-#include "chart_parser/error_handler.h"
+#include "parser/s101_parser.h"
+#include "parser/s101_gml_parser.h"
+#include "parser/error_handler.h"
 
 #include <ogrsf_frmts.h>
 #include <chrono>

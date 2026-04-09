@@ -3,7 +3,7 @@
 
 #include "ogc/draw/export.h"
 #include "ogc/draw/draw_style.h"
-#include <ogc/geometry.h>
+#include <ogc/geom/geometry.h>
 #include <vector>
 #include <memory>
 

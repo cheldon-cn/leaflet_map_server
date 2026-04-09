@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "ogc/envelope.h"
+#include "ogc/geom/envelope.h"
 
 namespace ogc {
 namespace test {

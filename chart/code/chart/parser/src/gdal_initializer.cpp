@@ -1,5 +1,5 @@
-#include "chart_parser/gdal_initializer.h"
-#include "chart_parser/error_handler.h"
+#include "parser/gdal_initializer.h"
+#include "parser/error_handler.h"
 
 #include <ogrsf_frmts.h>
 #include <gdal_priv.h>

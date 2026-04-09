@@ -4,9 +4,9 @@
 #include <ogc/draw/export.h>
 #include <ogc/draw/draw_types.h>
 #include <ogc/draw/transform_matrix.h>
-#include <ogc/polygon.h>
-#include <ogc/point.h>
-#include <ogc/linestring.h>
+#include <ogc/geom/polygon.h>
+#include <ogc/geom/point.h>
+#include <ogc/geom/linestring.h>
 #include <vector>
 #include <memory>
 

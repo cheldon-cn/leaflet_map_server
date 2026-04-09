@@ -7,20 +7,16 @@
 
 #include "sdk_c_api.h"
 
-#include <ogc/plugin/plugin_manager.h>
-#include <ogc/plugin/plugin_interface.h>
-#include <ogc/base/error_recovery.h>
-#include <ogc/base/health_check.h>
-#include <ogc/base/library_loader.h>
-#include <ogc/base/exception.h>
+#include <ogc/draw/plugin_manager.h>
+#include <ogc/draw/draw_engine_plugin.h>
+#include <ogc/draw/draw_device_plugin.h>
 
 #include <cstring>
 #include <cstdlib>
 #include <memory>
 #include <string>
 
-using namespace ogc::plugin;
-using namespace ogc::base;
+using namespace ogc::draw;
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,5 +1,5 @@
-#include "chart_parser/s57_feature_type_mapper.h"
-#include "chart_parser/error_handler.h"
+#include "parser/s57_feature_type_mapper.h"
+#include "parser/error_handler.h"
 
 namespace chart {
 namespace parser {

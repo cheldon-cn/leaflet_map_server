@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include "ogc/geometry_pool.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/common.h"
+#include "ogc/geom/geometry_pool.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/common.h"
 
 namespace ogc {
 namespace test {

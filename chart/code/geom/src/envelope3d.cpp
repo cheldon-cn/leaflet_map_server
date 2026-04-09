@@ -1,5 +1,5 @@
-#include "ogc/envelope3d.h"
-#include "ogc/common.h"
+#include "ogc/geom/envelope3d.h"
+#include "ogc/geom/common.h"
 #include <sstream>
 #include <iomanip>
 

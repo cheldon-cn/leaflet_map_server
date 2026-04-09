@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "chart_parser/parse_result.h"
-#include "chart_parser/error_codes.h"
-#include "chart_parser/chart_format.h"
+#include "parser/parse_result.h"
+#include "parser/error_codes.h"
+#include "parser/chart_format.h"
 
 using namespace chart::parser;
 

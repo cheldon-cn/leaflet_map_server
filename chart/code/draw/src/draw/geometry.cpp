@@ -1,6 +1,6 @@
 #include "ogc/draw/geometry.h"
-#include <ogc/visitor.h>
-#include <ogc/linearring.h>
+#include <ogc/geom/visitor.h>
+#include <ogc/geom/linearring.h>
 #include <cmath>
 
 #ifndef M_PI

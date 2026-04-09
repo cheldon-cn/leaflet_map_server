@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "chart_parser/gdal_initializer.h"
+#include "parser/gdal_initializer.h"
 
 using namespace chart::parser;
 

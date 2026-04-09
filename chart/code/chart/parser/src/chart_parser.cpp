@@ -1,9 +1,9 @@
-#include "chart_parser/chart_parser.h"
-#include "chart_parser/s57_parser.h"
-#include "chart_parser/error_handler.h"
+#include "parser/chart_parser.h"
+#include "parser/s57_parser.h"
+#include "parser/error_handler.h"
 
 #ifdef HAS_LIBXML2
-#include "chart_parser/s101_parser.h"
+#include "parser/s101_parser.h"
 #endif
 
 namespace chart {

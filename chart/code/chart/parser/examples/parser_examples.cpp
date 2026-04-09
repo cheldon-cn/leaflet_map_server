@@ -1,9 +1,9 @@
-#include <chart_parser/chart_parser.h>
-#include <chart_parser/s57_parser.h>
-#include <chart_parser/s102_parser.h>
-#include <chart_parser/parse_cache.h>
-#include <chart_parser/incremental_parser.h>
-#include <chart_parser/performance_benchmark.h>
+#include <parser/chart_parser.h>
+#include <parser/s57_parser.h>
+#include <parser/s102_parser.h>
+#include <parser/parse_cache.h>
+#include <parser/incremental_parser.h>
+#include <parser/performance_benchmark.h>
 #include <iostream>
 #include <iomanip>
 

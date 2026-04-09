@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "chart_parser/s100_parser.h"
-#include "chart_parser/s102_parser.h"
+#include "parser/s100_parser.h"
+#include "parser/s102_parser.h"
 
 using namespace chart::parser;
 

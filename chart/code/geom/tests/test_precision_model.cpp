@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "ogc/precision.h"
-#include "ogc/coordinate.h"
-#include "ogc/common.h"
+#include "ogc/geom/precision.h"
+#include "ogc/geom/coordinate.h"
+#include "ogc/geom/common.h"
 
 namespace ogc {
 namespace test {

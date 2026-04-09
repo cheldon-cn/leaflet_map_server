@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "ogc/point.h"
-#include "ogc/common.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/common.h"
 
 namespace ogc {
 namespace test {

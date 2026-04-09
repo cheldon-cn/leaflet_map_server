@@ -1,9 +1,9 @@
-#include "ogc/geometrycollection.h"
-#include "ogc/point.h"
-#include "ogc/linestring.h"
-#include "ogc/polygon.h"
-#include "ogc/visitor.h"
-#include "ogc/serialization_utils.h"
+#include "ogc/geom/geometrycollection.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/linestring.h"
+#include "ogc/geom/polygon.h"
+#include "ogc/geom/visitor.h"
+#include "ogc/geom/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 #include <functional>

@@ -2,7 +2,7 @@
 #define OGC_CACHE_TILE_KEY_H
 
 #include <ogc/cache/export.h>
-#include <ogc/envelope.h>
+#include <ogc/geom/envelope.h>
 #include <cstdint>
 #include <string>
 #include <functional>

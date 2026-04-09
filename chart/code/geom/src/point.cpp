@@ -1,6 +1,6 @@
-#include "ogc/point.h"
-#include "ogc/visitor.h"
-#include "ogc/serialization_utils.h"
+#include "ogc/geom/point.h"
+#include "ogc/geom/visitor.h"
+#include "ogc/geom/serialization_utils.h"
 #include <sstream>
 #include <iomanip>
 

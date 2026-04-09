@@ -260,7 +260,34 @@ ogc_layer_t* ogc_layer_manager_find_layer_by_name(ogc_layer_manager_t* manager, 
 
 void ogc_layer_manager_set_layer_visible(ogc_layer_manager_t* manager, size_t index, int visible) {
     if (manager) {
-        reinterpret_cast<LayerManager*>(manager)->SetLayerVisible(index, visible != 0);
+        LayerVisibility visibility = visible ? LayerVisibility::kVisible : LayerVisibility::kHidden;
+        reinterpret_cast<LayerManager*>(manager)->SetLayerVisibility(static_cast<int>(index), visibility);
+    }
+}
+
+int ogc_layer_manager_get_layer_visible(const ogc_layer_manager_t* manager, size_t index) {
+    if (manager) {
+        LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        if (item) {
+            return item->IsVisible() ? 1 : 0;
+        }
+    }
+    return 0;
+}
+
+double ogc_layer_manager_get_layer_opacity(const ogc_layer_manager_t* manager, size_t index) {
+    if (manager) {
+        LayerItem* item = reinterpret_cast<const LayerManager*>(manager)->GetLayer(static_cast<int>(index));
+        if (item) {
+            return item->GetConfig().GetOpacity();
+        }
+    }
+    return 1.0;
+}
+
+void ogc_layer_manager_set_layer_opacity(ogc_layer_manager_t* manager, size_t index, double opacity) {
+    if (manager) {
+        reinterpret_cast<LayerManager*>(manager)->SetLayerOpacity(static_cast<int>(index), opacity);
     }
 }
 
