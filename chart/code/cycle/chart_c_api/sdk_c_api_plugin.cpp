@@ -36,6 +36,22 @@ char* AllocString(const std::string& str) {
     return result;
 }
 
+class Exception {
+public:
+    static int GetLastCode() { return s_lastCode; }
+    static std::string GetLastMessage() { return s_lastMessage; }
+    static void Clear() { s_lastCode = 0; s_lastMessage.clear(); }
+    static bool HasError() { return s_lastCode != 0; }
+    static void SetError(int code, const std::string& msg) { s_lastCode = code; s_lastMessage = msg; }
+
+private:
+    static int s_lastCode;
+    static std::string s_lastMessage;
+};
+
+int Exception::s_lastCode = 0;
+std::string Exception::s_lastMessage;
+
 }  
 
 ogc_plugin_manager_t* ogc_plugin_manager_get_instance(void) {

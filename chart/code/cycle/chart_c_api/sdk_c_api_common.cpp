@@ -21,10 +21,6 @@ using namespace ogc;
 using namespace ogc::geom;
 using namespace ogc::feature;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 namespace {
 
 std::string SafeString(const char* str) {
@@ -39,7 +35,11 @@ char* AllocString(const std::string& str) {
     return result;
 }
 
-}  
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ogc_geom_type_e ToCType(GeomType type) {
     switch (type) {
@@ -69,35 +69,35 @@ GeomType FromCType(ogc_geom_type_e type) {
 
 ogc_field_type_e ToCFieldType(CNFieldType type) {
     switch (type) {
-        case CNFieldType::Integer: return OGC_FIELD_TYPE_INTEGER;
-        case CNFieldType::Integer64: return OGC_FIELD_TYPE_INTEGER64;
-        case CNFieldType::Real: return OGC_FIELD_TYPE_REAL;
-        case CNFieldType::String: return OGC_FIELD_TYPE_STRING;
-        case CNFieldType::Binary: return OGC_FIELD_TYPE_BINARY;
-        case CNFieldType::Date: return OGC_FIELD_TYPE_DATE;
-        case CNFieldType::Time: return OGC_FIELD_TYPE_TIME;
-        case CNFieldType::DateTime: return OGC_FIELD_TYPE_DATETIME;
-        case CNFieldType::IntegerList: return OGC_FIELD_TYPE_INTEGER_LIST;
-        case CNFieldType::RealList: return OGC_FIELD_TYPE_REAL_LIST;
-        case CNFieldType::StringList: return OGC_FIELD_TYPE_STRING_LIST;
+        case CNFieldType::kInteger: return OGC_FIELD_TYPE_INTEGER;
+        case CNFieldType::kInteger64: return OGC_FIELD_TYPE_INTEGER64;
+        case CNFieldType::kReal: return OGC_FIELD_TYPE_REAL;
+        case CNFieldType::kString: return OGC_FIELD_TYPE_STRING;
+        case CNFieldType::kBinary: return OGC_FIELD_TYPE_BINARY;
+        case CNFieldType::kDate: return OGC_FIELD_TYPE_DATE;
+        case CNFieldType::kTime: return OGC_FIELD_TYPE_TIME;
+        case CNFieldType::kDateTime: return OGC_FIELD_TYPE_DATETIME;
+        case CNFieldType::kIntegerList: return OGC_FIELD_TYPE_INTEGER_LIST;
+        case CNFieldType::kRealList: return OGC_FIELD_TYPE_REAL_LIST;
+        case CNFieldType::kStringList: return OGC_FIELD_TYPE_STRING_LIST;
         default: return OGC_FIELD_TYPE_STRING;
     }
 }
 
 CNFieldType FromCFieldType(ogc_field_type_e type) {
     switch (type) {
-        case OGC_FIELD_TYPE_INTEGER: return CNFieldType::Integer;
-        case OGC_FIELD_TYPE_INTEGER64: return CNFieldType::Integer64;
-        case OGC_FIELD_TYPE_REAL: return CNFieldType::Real;
-        case OGC_FIELD_TYPE_STRING: return CNFieldType::String;
-        case OGC_FIELD_TYPE_BINARY: return CNFieldType::Binary;
-        case OGC_FIELD_TYPE_DATE: return CNFieldType::Date;
-        case OGC_FIELD_TYPE_TIME: return CNFieldType::Time;
-        case OGC_FIELD_TYPE_DATETIME: return CNFieldType::DateTime;
-        case OGC_FIELD_TYPE_INTEGER_LIST: return CNFieldType::IntegerList;
-        case OGC_FIELD_TYPE_REAL_LIST: return CNFieldType::RealList;
-        case OGC_FIELD_TYPE_STRING_LIST: return CNFieldType::StringList;
-        default: return CNFieldType::String;
+        case OGC_FIELD_TYPE_INTEGER: return CNFieldType::kInteger;
+        case OGC_FIELD_TYPE_INTEGER64: return CNFieldType::kInteger64;
+        case OGC_FIELD_TYPE_REAL: return CNFieldType::kReal;
+        case OGC_FIELD_TYPE_STRING: return CNFieldType::kString;
+        case OGC_FIELD_TYPE_BINARY: return CNFieldType::kBinary;
+        case OGC_FIELD_TYPE_DATE: return CNFieldType::kDate;
+        case OGC_FIELD_TYPE_TIME: return CNFieldType::kTime;
+        case OGC_FIELD_TYPE_DATETIME: return CNFieldType::kDateTime;
+        case OGC_FIELD_TYPE_INTEGER_LIST: return CNFieldType::kIntegerList;
+        case OGC_FIELD_TYPE_REAL_LIST: return CNFieldType::kRealList;
+        case OGC_FIELD_TYPE_STRING_LIST: return CNFieldType::kStringList;
+        default: return CNFieldType::kString;
     }
 }
 

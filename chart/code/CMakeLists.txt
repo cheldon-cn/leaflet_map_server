@@ -69,7 +69,7 @@ add_library(ogc_geometry
     geom/src/spatial_index.cpp
 )
 
-target_compile_definitions(ogc_geometry PRIVATE OGC_GEOMETRY_EXPORTS)
+target_compile_definitions(ogc_geometry PRIVATE OGC_GEOM_EXPORTS)
 
 target_include_directories(ogc_geometry
     PUBLIC
