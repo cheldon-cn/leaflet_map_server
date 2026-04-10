@@ -41,6 +41,7 @@ set_target_properties(sdk_c_api_tests PROPERTIES
 )
 
 target_link_libraries(sdk_c_api_tests
+    ogc_chart_c_api
     ${GTEST_LIBRARY}
     ${GTEST_MAIN_LIBRARY}
 )

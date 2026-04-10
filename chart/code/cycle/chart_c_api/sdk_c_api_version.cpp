@@ -69,6 +69,26 @@ int ogc_version_check_compatibility(int major, int minor, int patch) {
     return Version::CheckCompatibility(major, minor, patch) ? 1 : 0;
 }
 
+char* ogc_sdk_get_version(void) {
+    return AllocString(Version::GetString());
+}
+
+char* ogc_sdk_get_build_date(void) {
+    return AllocString(Version::GetBuildDate());
+}
+
+int ogc_sdk_get_version_major(void) {
+    return Version::GetMajor();
+}
+
+int ogc_sdk_get_version_minor(void) {
+    return Version::GetMinor();
+}
+
+int ogc_sdk_get_version_patch(void) {
+    return Version::GetPatch();
+}
+
 void ogc_free_string(char* str) {
     std::free(str);
 }
