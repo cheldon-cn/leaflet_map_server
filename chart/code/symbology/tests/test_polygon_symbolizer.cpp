@@ -4,6 +4,7 @@
 #include "ogc/geom/common.h"
 
 using namespace ogc::symbology;
+using namespace ogc::draw;
 using namespace ogc;
 
 class PolygonSymbolizerTest : public ::testing::Test {

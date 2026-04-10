@@ -5,6 +5,7 @@
 #include <memory>
 
 using namespace ogc::symbology;
+using namespace ogc::draw;
 using namespace ogc;
 
 class RasterSymbolizerTest : public ::testing::Test {
