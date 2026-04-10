@@ -3,6 +3,7 @@ package cn.cycle.chart.api.core;
 import cn.cycle.chart.jni.JniBridge;
 import cn.cycle.chart.jni.NativeObject;
 import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.api.geometry.Envelope;
 
 public final class Viewport extends NativeObject {
 
@@ -58,13 +59,45 @@ public final class Viewport extends NativeObject {
         return new Coordinate(getCenterX(), getCenterY());
     }
 
+    public Envelope getExtent() {
+        checkNotDisposed();
+        double[] extent = new double[4];
+        nativeGetExtent(getNativePtr(), extent);
+        return new Envelope(extent[0], extent[1], extent[2], extent[3]);
+    }
+
+    public void setExtent(Envelope extent) {
+        if (extent == null) {
+            throw new IllegalArgumentException("extent must not be null");
+        }
+        checkNotDisposed();
+        nativeSetExtent(getNativePtr(), 
+            extent.getMinX(), extent.getMinY(), 
+            extent.getMaxX(), extent.getMaxY());
+    }
+
+    public void pan(double dx, double dy) {
+        checkNotDisposed();
+        nativePan(getNativePtr(), dx, dy);
+    }
+
+    public void zoom(double factor) {
+        checkNotDisposed();
+        nativeZoom(getNativePtr(), factor);
+    }
+
+    public void zoom(double factor, double centerX, double centerY) {
+        checkNotDisposed();
+        nativeZoomAt(getNativePtr(), factor, centerX, centerY);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
     }
 
-    private native long nativeCreate();
-    private native void nativeDestroy(long ptr);
+    private native static long nativeCreate();
+    private native static void nativeDestroy(long ptr);
     private native double nativeGetCenterX(long ptr);
     private native double nativeGetCenterY(long ptr);
     private native double nativeGetScale(long ptr);
@@ -72,4 +105,9 @@ public final class Viewport extends NativeObject {
     private native void nativeSetCenter(long ptr, double x, double y);
     private native void nativeSetScale(long ptr, double scale);
     private native void nativeSetRotation(long ptr, double rotation);
+    private native void nativeGetExtent(long ptr, double[] outExtent);
+    private native void nativeSetExtent(long ptr, double minX, double minY, double maxX, double maxY);
+    private native void nativePan(long ptr, double dx, double dy);
+    private native void nativeZoom(long ptr, double factor);
+    private native void nativeZoomAt(long ptr, double factor, double centerX, double centerY);
 }

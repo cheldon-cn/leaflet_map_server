@@ -83,6 +83,35 @@ public abstract class Geometry extends NativeObject {
         return nativeAsGeoJSON(getNativePtr());
     }
 
+    public Envelope getEnvelope() {
+        checkNotDisposed();
+        double[] coords = nativeGetEnvelope(getNativePtr());
+        if (coords == null || coords.length < 4) {
+            return null;
+        }
+        return new Envelope(coords[0], coords[1], coords[2], coords[3]);
+    }
+
+    public long getNumPoints() {
+        checkNotDisposed();
+        return nativeGetNumPoints(getNativePtr());
+    }
+
+    public boolean isSimple() {
+        checkNotDisposed();
+        return nativeIsSimple(getNativePtr());
+    }
+
+    public boolean is3D() {
+        checkNotDisposed();
+        return nativeIs3D(getNativePtr());
+    }
+
+    public boolean isMeasured() {
+        checkNotDisposed();
+        return nativeIsMeasured(getNativePtr());
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -97,4 +126,9 @@ public abstract class Geometry extends NativeObject {
     static native void nativeSetSRID(long ptr, int srid);
     static native String nativeAsText(long ptr);
     static native String nativeAsGeoJSON(long ptr);
+    static native double[] nativeGetEnvelope(long ptr);
+    static native long nativeGetNumPoints(long ptr);
+    static native boolean nativeIsSimple(long ptr);
+    static native boolean nativeIs3D(long ptr);
+    static native boolean nativeIsMeasured(long ptr);
 }

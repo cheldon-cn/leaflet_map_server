@@ -61,6 +61,18 @@ Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetFeatureCount
 }
 
 JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetFeature
+  (JNIEnv* env, jobject obj, jlong ptr, jlong fid) {
+    ogc_layer_t* layer =
+        static_cast<ogc_layer_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!layer) {
+        return 0;
+    }
+    ogc_feature_t* feature = ogc_layer_get_feature(layer, static_cast<long long>(fid));
+    return JniConverter::ToJLongPtr(feature);
+}
+
+JNIEXPORT jlong JNICALL
 Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetNextFeature
   (JNIEnv* env, jobject obj, jlong ptr) {
     ogc_layer_t* layer =
@@ -70,6 +82,43 @@ Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetNextFeature
     }
     ogc_feature_t* feature = ogc_vector_layer_get_next_feature(layer);
     return JniConverter::ToJLongPtr(feature);
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_layer_VectorLayer_nativeSetSpatialFilterRect
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble minX, jdouble minY, jdouble maxX, jdouble maxY) {
+    ogc_layer_t* layer =
+        static_cast<ogc_layer_t*>(JniConverter::FromJLongPtr(ptr));
+    if (layer) {
+        ogc_layer_set_spatial_filter_rect(layer, minX, minY, maxX, maxY);
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetExtent
+  (JNIEnv* env, jobject obj, jlong ptr, jdoubleArray extent) {
+    ogc_layer_t* layer =
+        static_cast<ogc_layer_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!layer || !extent) {
+        return JNI_FALSE;
+    }
+    ogc_envelope_t* env_ = ogc_envelope_create();
+    if (!env_) {
+        return JNI_FALSE;
+    }
+    int result = ogc_layer_get_extent(layer, env_);
+    if (result == 0) {
+        jdouble buf[4];
+        buf[0] = ogc_envelope_get_min_x(env_);
+        buf[1] = ogc_envelope_get_min_y(env_);
+        buf[2] = ogc_envelope_get_max_x(env_);
+        buf[3] = ogc_envelope_get_max_y(env_);
+        env->SetDoubleArrayRegion(extent, 0, 4, buf);
+        ogc_envelope_destroy(env_);
+        return JNI_TRUE;
+    }
+    ogc_envelope_destroy(env_);
+    return JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL
@@ -180,6 +229,17 @@ Java_cn_cycle_chart_api_layer_LayerManager_nativeRemoveLayer
         static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
     if (mgr) {
         ogc_layer_manager_remove_layer(mgr, static_cast<size_t>(index));
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_layer_LayerManager_nativeMoveLayer
+  (JNIEnv* env, jobject obj, jlong ptr, jlong fromIndex, jlong toIndex) {
+    ogc_layer_manager_t* mgr =
+        static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
+    if (mgr) {
+        ogc_layer_manager_move_layer(mgr, static_cast<size_t>(fromIndex),
+                                     static_cast<size_t>(toIndex));
     }
 }
 

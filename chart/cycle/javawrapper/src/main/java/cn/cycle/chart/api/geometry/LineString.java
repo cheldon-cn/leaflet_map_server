@@ -2,7 +2,7 @@ package cn.cycle.chart.api.geometry;
 
 import cn.cycle.chart.jni.JniBridge;
 
-public final class LineString extends Geometry {
+public class LineString extends Geometry {
 
     static {
         JniBridge.initialize();
@@ -16,9 +16,15 @@ public final class LineString extends Geometry {
         setNativePtr(nativePtr);
     }
 
-    public long getNumPoints() {
+    public Coordinate getCoordinateN(int index) {
         checkNotDisposed();
-        return nativeGetNumPoints(getNativePtr());
+        double[] coord = nativeGetPointN(getNativePtr(), index);
+        return new Coordinate(coord[0], coord[1]);
+    }
+
+    public double getLength() {
+        checkNotDisposed();
+        return nativeGetLength(getNativePtr());
     }
 
     public void addPoint(double x, double y) {
@@ -39,7 +45,8 @@ public final class LineString extends Geometry {
         return Type.LINESTRING;
     }
 
-    private native long nativeCreate();
-    private native long nativeGetNumPoints(long ptr);
+    private native static long nativeCreate();
+    private native double[] nativeGetPointN(long ptr, int index);
+    private native double nativeGetLength(long ptr);
     private native void nativeAddPoint(long ptr, double x, double y);
 }

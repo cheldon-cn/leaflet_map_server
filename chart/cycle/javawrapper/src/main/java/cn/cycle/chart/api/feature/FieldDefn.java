@@ -20,7 +20,7 @@ public final class FieldDefn extends NativeObject {
         setNativePtr(nativeCreate(name, type));
     }
 
-    FieldDefn(long nativePtr) {
+    public FieldDefn(long nativePtr) {
         setNativePtr(nativePtr);
     }
 
@@ -34,6 +34,26 @@ public final class FieldDefn extends NativeObject {
         return nativeGetType(getNativePtr());
     }
 
+    public int getWidth() {
+        checkNotDisposed();
+        return nativeGetWidth(getNativePtr());
+    }
+
+    public void setWidth(int width) {
+        checkNotDisposed();
+        nativeSetWidth(getNativePtr(), width);
+    }
+
+    public int getPrecision() {
+        checkNotDisposed();
+        return nativeGetPrecision(getNativePtr());
+    }
+
+    public void setPrecision(int precision) {
+        checkNotDisposed();
+        nativeSetPrecision(getNativePtr(), precision);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -43,4 +63,8 @@ public final class FieldDefn extends NativeObject {
     private native void nativeDestroy(long ptr);
     private native String nativeGetName(long ptr);
     private native int nativeGetType(long ptr);
+    private native int nativeGetWidth(long ptr);
+    private native void nativeSetWidth(long ptr, int width);
+    private native int nativeGetPrecision(long ptr);
+    private native void nativeSetPrecision(long ptr, int precision);
 }

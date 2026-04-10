@@ -60,8 +60,8 @@ public final class Point extends Geometry {
         return Type.POINT;
     }
 
-    private native long nativeCreate(double x, double y);
-    private native long nativeCreate3D(double x, double y, double z);
+    private native static long nativeCreate(double x, double y);
+    private native static long nativeCreate3D(double x, double y, double z);
     private native double nativeGetX(long ptr);
     private native double nativeGetY(long ptr);
     private native double nativeGetZ(long ptr);

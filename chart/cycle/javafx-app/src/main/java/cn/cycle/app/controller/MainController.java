@@ -1,12 +1,49 @@
 package cn.cycle.app.controller;
 
 import cn.cycle.chart.api.core.ChartViewer;
+import cn.cycle.chart.api.core.Viewport;
+import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.api.geometry.Envelope;
+import cn.cycle.chart.api.layer.LayerManager;
+import cn.cycle.app.view.AlertPanel;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 public class MainController {
 
     private ChartViewer chartViewer;
+    private LayerManager layerManager;
+    private AlertPanel alertPanel;
+    
+    private final BooleanProperty layerPanelVisible = new SimpleBooleanProperty(true);
+    private final BooleanProperty alertPanelVisible = new SimpleBooleanProperty(false);
+    private final DoubleProperty currentZoom = new SimpleDoubleProperty(1.0);
+    
+    private ToolType currentTool = ToolType.SELECT;
+    private MeasureMode measureMode = MeasureMode.NONE;
+    private double measureStartX;
+    private double measureStartY;
+
+    public enum ToolType {
+        SELECT,
+        PAN,
+        ZOOM_IN,
+        ZOOM_OUT,
+        DISTANCE_MEASURE,
+        AREA_MEASURE,
+        ROUTE_PLANNING
+    }
+
+    public enum MeasureMode {
+        NONE,
+        DISTANCE,
+        AREA
+    }
 
     public MainController(ChartViewer chartViewer) {
         this.chartViewer = chartViewer;
@@ -14,6 +51,14 @@ public class MainController {
 
     public void setChartViewer(ChartViewer viewer) {
         this.chartViewer = viewer;
+    }
+
+    public void setLayerManager(LayerManager manager) {
+        this.layerManager = manager;
+    }
+
+    public void setAlertPanel(AlertPanel panel) {
+        this.alertPanel = panel;
     }
 
     public void openChart() {
@@ -29,49 +74,201 @@ public class MainController {
         );
 
         Stage stage = new Stage();
-        java.io.File selectedFile = fileChooser.showOpenDialog(stage);
-        if (selectedFile != null) {
-            int result = chartViewer.loadChart(selectedFile.getAbsolutePath());
-            if (result != 0) {
-                System.err.println("Failed to load chart: " + selectedFile.getAbsolutePath());
+        java.io.File file = fileChooser.showOpenDialog(stage);
+        if (file != null) {
+            try {
+                chartViewer.loadChart(file.getAbsolutePath());
+                if (alertPanel != null) {
+                    alertPanel.addInfo("已打开海图: " + file.getName());
+                }
+            } catch (Exception e) {
+                if (alertPanel != null) {
+                    alertPanel.addError("打开海图失败: " + e.getMessage());
+                }
             }
         }
     }
 
-    public void copySelection() {
+    public void saveChart() {
+        if (chartViewer == null || chartViewer.isDisposed()) {
+            return;
+        }
+        System.out.println("保存海图功能暂未实现");
+        if (alertPanel != null) {
+            alertPanel.addInfo("保存海图功能暂未实现");
+        }
+    }
+
+    public void closeChart() {
+        if (chartViewer != null && !chartViewer.isDisposed()) {
+            chartViewer.dispose();
+            if (alertPanel != null) {
+                alertPanel.addInfo("已关闭海图");
+            }
+        }
     }
 
     public void zoomIn() {
         if (chartViewer == null || chartViewer.isDisposed()) {
             return;
         }
-        chartViewer.zoom(1.5, 0, 0);
+        Viewport viewport = chartViewer.getViewportObject();
+        if (viewport != null) {
+            viewport.zoom(1.5);
+            currentZoom.set(currentZoom.get() * 1.5);
+        }
     }
 
     public void zoomOut() {
         if (chartViewer == null || chartViewer.isDisposed()) {
             return;
         }
-        chartViewer.zoom(0.67, 0, 0);
+        Viewport viewport = chartViewer.getViewportObject();
+        if (viewport != null) {
+            viewport.zoom(1.0 / 1.5);
+            currentZoom.set(currentZoom.get() / 1.5);
+        }
     }
 
     public void fitToWindow() {
         if (chartViewer == null || chartViewer.isDisposed()) {
             return;
         }
-        double[] viewport = chartViewer.getViewport();
-        chartViewer.setViewport(viewport[0], viewport[1], 1.0);
+        Viewport viewport = chartViewer.getViewportObject();
+        if (viewport != null) {
+            Envelope extent = chartViewer.getFullExtent();
+            if (extent != null) {
+                viewport.setExtent(extent);
+                currentZoom.set(1.0);
+            }
+        }
     }
 
     public void toggleLayerPanel() {
+        layerPanelVisible.set(!layerPanelVisible.get());
+    }
+
+    public void copySelection() {
+        System.out.println("复制选择...");
     }
 
     public void startDistanceMeasure() {
+        currentTool = ToolType.DISTANCE_MEASURE;
+        measureMode = MeasureMode.DISTANCE;
+        if (alertPanel != null) {
+            alertPanel.addInfo("距离测量模式已启用，点击地图开始测量");
+        }
     }
 
     public void startAreaMeasure() {
+        currentTool = ToolType.AREA_MEASURE;
+        measureMode = MeasureMode.AREA;
+        if (alertPanel != null) {
+            alertPanel.addInfo("面积测量模式已启用，点击地图开始测量");
+        }
     }
 
     public void openRoutePlanner() {
+        currentTool = ToolType.ROUTE_PLANNING;
+        if (alertPanel != null) {
+            alertPanel.addInfo("航线规划模式已启用");
+        }
+    }
+
+    public void openSettings() {
+        System.out.println("打开设置...");
+    }
+
+    public void showAbout() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("关于");
+        alert.setHeaderText("Cycle Chart Viewer");
+        alert.setContentText("版本: 1.0.0\n\n基于OGC标准的海图显示系统");
+        alert.showAndWait();
+    }
+
+    public void onMouseClick(double screenX, double screenY) {
+        switch (currentTool) {
+            case DISTANCE_MEASURE:
+                handleDistanceMeasure(screenX, screenY);
+                break;
+            case AREA_MEASURE:
+                handleAreaMeasure(screenX, screenY);
+                break;
+            case ROUTE_PLANNING:
+                handleRoutePlanning(screenX, screenY);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handleDistanceMeasure(double x, double y) {
+        if (measureStartX == 0 && measureStartY == 0) {
+            measureStartX = x;
+            measureStartY = y;
+            if (alertPanel != null) {
+                alertPanel.addInfo("起点已设置，点击终点完成测量");
+            }
+        } else {
+            double distance = calculateDistance(measureStartX, measureStartY, x, y);
+            if (alertPanel != null) {
+                alertPanel.addInfo(String.format("测量距离: %.2f 米", distance));
+            }
+            measureStartX = 0;
+            measureStartY = 0;
+            measureMode = MeasureMode.NONE;
+        }
+    }
+
+    private void handleAreaMeasure(double x, double y) {
+        System.out.println("面积测量: " + x + ", " + y);
+    }
+
+    private void handleRoutePlanning(double x, double y) {
+        System.out.println("航线规划: " + x + ", " + y);
+    }
+
+    private double calculateDistance(double x1, double y1, double x2, double y2) {
+        if (chartViewer != null) {
+            Coordinate coord1 = chartViewer.screenToWorld(x1, y1);
+            Coordinate coord2 = chartViewer.screenToWorld(x2, y2);
+            if (coord1 != null && coord2 != null) {
+                return coord1.distance(coord2);
+            }
+        }
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    public boolean isLayerPanelVisible() {
+        return layerPanelVisible.get();
+    }
+
+    public BooleanProperty layerPanelVisibleProperty() {
+        return layerPanelVisible;
+    }
+
+    public boolean isAlertPanelVisible() {
+        return alertPanelVisible.get();
+    }
+
+    public BooleanProperty alertPanelVisibleProperty() {
+        return alertPanelVisible;
+    }
+
+    public double getCurrentZoom() {
+        return currentZoom.get();
+    }
+
+    public DoubleProperty currentZoomProperty() {
+        return currentZoom;
+    }
+
+    public ToolType getCurrentTool() {
+        return currentTool;
+    }
+
+    public void setCurrentTool(ToolType tool) {
+        this.currentTool = tool;
     }
 }

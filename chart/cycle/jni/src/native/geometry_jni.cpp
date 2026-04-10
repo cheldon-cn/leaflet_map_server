@@ -8,183 +8,6 @@ using namespace ogc::jni;
 
 extern "C" {
 
-/* ===== Coordinate ===== */
-
-JNIEXPORT jlong JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeCreate
-  (JNIEnv* env, jclass clazz, jdouble x, jdouble y) {
-    try {
-        ogc_coordinate_t* coord = ogc_coordinate_create(x, y);
-        return JniConverter::ToJLongPtr(coord);
-    } catch (const std::exception& e) {
-        JniException::TranslateAndThrow(env, e);
-        return 0;
-    }
-}
-
-JNIEXPORT jlong JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeCreate3D
-  (JNIEnv* env, jclass clazz, jdouble x, jdouble y, jdouble z) {
-    try {
-        ogc_coordinate_t* coord = ogc_coordinate_create_3d(x, y, z);
-        return JniConverter::ToJLongPtr(coord);
-    } catch (const std::exception& e) {
-        JniException::TranslateAndThrow(env, e);
-        return 0;
-    }
-}
-
-JNIEXPORT void JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeDestroy
-  (JNIEnv* env, jclass clazz, jlong ptr) {
-    try {
-        ogc_coordinate_t* coord =
-            static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptr));
-        if (coord) {
-            ogc_coordinate_destroy(coord);
-        }
-    } catch (const std::exception& e) {
-        JniException::TranslateAndThrow(env, e);
-    }
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeGetX
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_coordinate_t* coord =
-        static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptr));
-    return coord ? coord->x : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeGetY
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_coordinate_t* coord =
-        static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptr));
-    return coord ? coord->y : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeGetZ
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_coordinate_t* coord =
-        static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptr));
-    return coord ? coord->z : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Coordinate_nativeDistance
-  (JNIEnv* env, jclass clazz, jlong ptrA, jlong ptrB) {
-    ogc_coordinate_t* a =
-        static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptrA));
-    ogc_coordinate_t* b =
-        static_cast<ogc_coordinate_t*>(JniConverter::FromJLongPtr(ptrB));
-    if (!a || !b) {
-        return 0.0;
-    }
-    return ogc_coordinate_distance(a, b);
-}
-
-/* ===== Envelope ===== */
-
-JNIEXPORT jlong JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeCreate
-  (JNIEnv* env, jclass clazz, jdouble minX, jdouble minY, jdouble maxX, jdouble maxY) {
-    try {
-        ogc_envelope_t* env_ = ogc_envelope_create_from_coords(minX, minY, maxX, maxY);
-        return JniConverter::ToJLongPtr(env_);
-    } catch (const std::exception& e) {
-        JniException::TranslateAndThrow(env, e);
-        return 0;
-    }
-}
-
-JNIEXPORT void JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeDestroy
-  (JNIEnv* env, jclass clazz, jlong ptr) {
-    try {
-        ogc_envelope_t* env_ =
-            static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-        if (env_) {
-            ogc_envelope_destroy(env_);
-        }
-    } catch (const std::exception& e) {
-        JniException::TranslateAndThrow(env, e);
-    }
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetMinX
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_min_x(env_) : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetMinY
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_min_y(env_) : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetMaxX
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_max_x(env_) : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetMaxY
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_max_y(env_) : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetWidth
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_width(env_) : 0.0;
-}
-
-JNIEXPORT jdouble JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeGetHeight
-  (JNIEnv* env, jobject obj, jlong ptr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    return env_ ? ogc_envelope_get_height(env_) : 0.0;
-}
-
-JNIEXPORT jboolean JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeContains
-  (JNIEnv* env, jobject obj, jlong ptr, jdouble x, jdouble y) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    if (!env_) {
-        return JNI_FALSE;
-    }
-    return ogc_envelope_contains(env_, x, y) ? JNI_TRUE : JNI_FALSE;
-}
-
-JNIEXPORT jboolean JNICALL
-Java_cn_cycle_chart_api_geometry_Envelope_nativeIntersects
-  (JNIEnv* env, jobject obj, jlong ptr, jlong otherPtr) {
-    ogc_envelope_t* env_ =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(ptr));
-    ogc_envelope_t* other =
-        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(otherPtr));
-    if (!env_ || !other) {
-        return JNI_FALSE;
-    }
-    return ogc_envelope_intersects(env_, other) ? JNI_TRUE : JNI_FALSE;
-}
-
 /* ===== Geometry (Point) ===== */
 
 JNIEXPORT jlong JNICALL
@@ -372,6 +195,64 @@ Java_cn_cycle_chart_api_geometry_Geometry_nativeAsGeoJSON
     return result;
 }
 
+JNIEXPORT jdoubleArray JNICALL
+Java_cn_cycle_chart_api_geometry_Geometry_nativeGetEnvelope
+  (JNIEnv* env, jclass clazz, jlong ptr) {
+    ogc_geometry_t* geom =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!geom) {
+        return nullptr;
+    }
+    ogc_envelope_t* env_ = ogc_geometry_get_envelope(geom);
+    if (!env_) {
+        return nullptr;
+    }
+    jdoubleArray result = env->NewDoubleArray(4);
+    if (result) {
+        jdouble vals[4] = { 
+            ogc_envelope_get_min_x(env_),
+            ogc_envelope_get_min_y(env_),
+            ogc_envelope_get_max_x(env_),
+            ogc_envelope_get_max_y(env_)
+        };
+        env->SetDoubleArrayRegion(result, 0, 4, vals);
+    }
+    ogc_envelope_destroy(env_);
+    return result;
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_geometry_Geometry_nativeGetNumPoints
+  (JNIEnv* env, jclass clazz, jlong ptr) {
+    ogc_geometry_t* geom =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return geom ? static_cast<jlong>(ogc_geometry_get_num_points(geom)) : 0;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_cn_cycle_chart_api_geometry_Geometry_nativeIsSimple
+  (JNIEnv* env, jclass clazz, jlong ptr) {
+    ogc_geometry_t* geom =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return geom ? (ogc_geometry_is_simple(geom) ? JNI_TRUE : JNI_FALSE) : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_cn_cycle_chart_api_geometry_Geometry_nativeIs3D
+  (JNIEnv* env, jclass clazz, jlong ptr) {
+    ogc_geometry_t* geom =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return geom ? (ogc_geometry_is_3d(geom) ? JNI_TRUE : JNI_FALSE) : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_cn_cycle_chart_api_geometry_Geometry_nativeIsMeasured
+  (JNIEnv* env, jclass clazz, jlong ptr) {
+    ogc_geometry_t* geom =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return geom ? (ogc_geometry_is_measured(geom) ? JNI_TRUE : JNI_FALSE) : JNI_FALSE;
+}
+
 /* ===== LineString ===== */
 
 JNIEXPORT jlong JNICALL
@@ -392,6 +273,32 @@ Java_cn_cycle_chart_api_geometry_LineString_nativeGetNumPoints
     ogc_geometry_t* line =
         static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
     return line ? static_cast<jlong>(ogc_linestring_get_num_points(line)) : 0;
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_cn_cycle_chart_api_geometry_LineString_nativeGetPointN
+  (JNIEnv* env, jobject obj, jlong ptr, jint index) {
+    ogc_geometry_t* line =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!line) {
+        return nullptr;
+    }
+
+    ogc_coordinate_t coord = ogc_linestring_get_point_n(line, static_cast<size_t>(index));
+    jdoubleArray result = env->NewDoubleArray(2);
+    if (result) {
+        jdouble vals[2] = { coord.x, coord.y };
+        env->SetDoubleArrayRegion(result, 0, 2, vals);
+    }
+    return result;
+}
+
+JNIEXPORT jdouble JNICALL
+Java_cn_cycle_chart_api_geometry_LineString_nativeGetLength
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_geometry_t* line =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return line ? ogc_geometry_get_length(line) : 0.0;
 }
 
 JNIEXPORT void JNICALL
@@ -424,6 +331,90 @@ Java_cn_cycle_chart_api_geometry_Polygon_nativeGetNumInteriorRings
     ogc_geometry_t* polygon =
         static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
     return polygon ? static_cast<jlong>(ogc_polygon_get_num_interior_rings(polygon)) : 0;
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_geometry_Polygon_nativeGetExteriorRing
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_geometry_t* polygon =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!polygon) {
+        return 0;
+    }
+    ogc_geometry_t* ring = ogc_polygon_get_exterior_ring(polygon);
+    return JniConverter::ToJLongPtr(ring);
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_geometry_Polygon_nativeGetInteriorRingN
+  (JNIEnv* env, jobject obj, jlong ptr, jint index) {
+    ogc_geometry_t* polygon =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!polygon) {
+        return 0;
+    }
+    ogc_geometry_t* ring = ogc_polygon_get_interior_ring_n(polygon, static_cast<size_t>(index));
+    return JniConverter::ToJLongPtr(ring);
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_geometry_Polygon_nativeAddInteriorRing
+  (JNIEnv* env, jobject obj, jlong ptr, jlong ringPtr) {
+    ogc_geometry_t* polygon =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    ogc_geometry_t* ring =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ringPtr));
+    if (polygon && ring) {
+        ogc_polygon_add_interior_ring(polygon, ring);
+    }
+}
+
+JNIEXPORT jdouble JNICALL
+Java_cn_cycle_chart_api_geometry_Polygon_nativeGetArea
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_geometry_t* polygon =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return polygon ? ogc_geometry_get_area(polygon) : 0.0;
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_cn_cycle_chart_api_geometry_Polygon_nativeGetCentroid
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_geometry_t* polygon =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!polygon) {
+        return nullptr;
+    }
+
+    ogc_coordinate_t coord = ogc_geometry_get_centroid(polygon);
+    jdoubleArray result = env->NewDoubleArray(2);
+    if (result) {
+        jdouble vals[2] = { coord.x, coord.y };
+        env->SetDoubleArrayRegion(result, 0, 2, vals);
+    }
+    return result;
+}
+
+/* ===== LinearRing ===== */
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_geometry_LinearRing_nativeCreate
+  (JNIEnv* env, jclass clazz) {
+    try {
+        ogc_geometry_t* ring = ogc_linearring_create();
+        return JniConverter::ToJLongPtr(ring);
+    } catch (const std::exception& e) {
+        JniException::TranslateAndThrow(env, e);
+        return 0;
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_cn_cycle_chart_api_geometry_LinearRing_nativeIsClosed
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_geometry_t* ring =
+        static_cast<ogc_geometry_t*>(JniConverter::FromJLongPtr(ptr));
+    return ring ? (ogc_linearring_is_closed(ring) ? JNI_TRUE : JNI_FALSE) : JNI_FALSE;
 }
 
 }

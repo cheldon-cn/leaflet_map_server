@@ -19,7 +19,7 @@ public abstract class NativeObject implements AutoCloseable {
     }
 
     public final boolean isDisposed() {
-        return disposed;
+        return disposed || nativePtr == 0;
     }
 
     protected final void checkNotDisposed() {

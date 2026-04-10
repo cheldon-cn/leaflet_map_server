@@ -22,6 +22,7 @@ set(JNI_SOURCES
     src/jni_reference_cache.cpp
     src/jni_onload.cpp
     src/native/chart_viewer_jni.cpp
+    src/native/viewport_jni.cpp
     src/native/geometry_jni.cpp
     src/native/feature_jni.cpp
     src/native/layer_jni.cpp
@@ -33,7 +34,7 @@ target_include_directories(ogc_chart_jni
     PRIVATE
         ${JNI_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        "${OGC_INSTALL_DIR}/include/ogc/capi"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../code/cycle/chart_c_api"
 )
 
 target_link_libraries(ogc_chart_jni

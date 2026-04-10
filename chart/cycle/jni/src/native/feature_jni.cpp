@@ -56,26 +56,26 @@ Java_cn_cycle_chart_api_feature_FeatureInfo_nativeGetFieldCount
     return static_cast<jlong>(ogc_feature_get_field_count(feature));
 }
 
-JNIEXPORT jint JNICALL
+JNIEXPORT jboolean JNICALL
 Java_cn_cycle_chart_api_feature_FeatureInfo_nativeIsFieldSet
   (JNIEnv* env, jobject obj, jlong ptr, jlong index) {
     ogc_feature_t* feature =
         static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptr));
     if (!feature) {
-        return 0;
+        return JNI_FALSE;
     }
-    return ogc_feature_is_field_set(feature, static_cast<size_t>(index));
+    return ogc_feature_is_field_set(feature, static_cast<size_t>(index)) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jint JNICALL
+JNIEXPORT jboolean JNICALL
 Java_cn_cycle_chart_api_feature_FeatureInfo_nativeIsFieldNull
   (JNIEnv* env, jobject obj, jlong ptr, jlong index) {
     ogc_feature_t* feature =
         static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptr));
     if (!feature) {
-        return 1;
+        return JNI_TRUE;
     }
-    return ogc_feature_is_field_null(feature, static_cast<size_t>(index));
+    return ogc_feature_is_field_null(feature, static_cast<size_t>(index)) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jint JNICALL
@@ -233,6 +233,42 @@ Java_cn_cycle_chart_api_feature_FieldDefn_nativeGetType
         return 0;
     }
     return static_cast<jint>(ogc_field_defn_get_type(defn));
+}
+
+JNIEXPORT jint JNICALL
+Java_cn_cycle_chart_api_feature_FieldDefn_nativeGetWidth
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_field_defn_t* defn =
+        static_cast<ogc_field_defn_t*>(JniConverter::FromJLongPtr(ptr));
+    return defn ? ogc_field_defn_get_width(defn) : 0;
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_feature_FieldDefn_nativeSetWidth
+  (JNIEnv* env, jobject obj, jlong ptr, jint width) {
+    ogc_field_defn_t* defn =
+        static_cast<ogc_field_defn_t*>(JniConverter::FromJLongPtr(ptr));
+    if (defn) {
+        ogc_field_defn_set_width(defn, width);
+    }
+}
+
+JNIEXPORT jint JNICALL
+Java_cn_cycle_chart_api_feature_FieldDefn_nativeGetPrecision
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_field_defn_t* defn =
+        static_cast<ogc_field_defn_t*>(JniConverter::FromJLongPtr(ptr));
+    return defn ? ogc_field_defn_get_precision(defn) : 0;
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_feature_FieldDefn_nativeSetPrecision
+  (JNIEnv* env, jobject obj, jlong ptr, jint precision) {
+    ogc_field_defn_t* defn =
+        static_cast<ogc_field_defn_t*>(JniConverter::FromJLongPtr(ptr));
+    if (defn) {
+        ogc_field_defn_set_precision(defn, precision);
+    }
 }
 
 }

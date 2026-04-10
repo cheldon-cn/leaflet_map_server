@@ -52,8 +52,8 @@ public final class ChartConfig extends NativeObject {
         nativeDestroy(ptr);
     }
 
-    private native long nativeCreate();
-    private native void nativeDestroy(long ptr);
+    private native static long nativeCreate();
+    private native static void nativeDestroy(long ptr);
     private native int nativeGetDisplayMode(long ptr);
     private native void nativeSetDisplayMode(long ptr, int mode);
     private native boolean nativeGetShowGrid(long ptr);

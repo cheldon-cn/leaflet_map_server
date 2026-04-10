@@ -2,6 +2,21 @@ package cn.cycle.chart.api.style;
 
 public final class Color {
 
+    public static final Color BLACK = new Color(0, 0, 0);
+    public static final Color WHITE = new Color(255, 255, 255);
+    public static final Color RED = new Color(255, 0, 0);
+    public static final Color GREEN = new Color(0, 255, 0);
+    public static final Color BLUE = new Color(0, 0, 255);
+    public static final Color YELLOW = new Color(255, 255, 0);
+    public static final Color CYAN = new Color(0, 255, 255);
+    public static final Color MAGENTA = new Color(255, 0, 255);
+    public static final Color ORANGE = new Color(255, 165, 0);
+    public static final Color GRAY = new Color(128, 128, 128);
+    public static final Color LIGHT_GRAY = new Color(192, 192, 192);
+    public static final Color DARK_GRAY = new Color(64, 64, 64);
+    public static final Color PINK = new Color(255, 175, 175);
+    public static final Color TRANSPARENT = new Color(0, 0, 0, 0);
+
     private int red;
     private int green;
     private int blue;
@@ -62,17 +77,25 @@ public final class Color {
         return new Color(r, g, b, a);
     }
 
-    public javafx.scene.paint.Color toJavaFXColor() {
-        return new javafx.scene.paint.Color(
-            red / 255.0, green / 255.0, blue / 255.0, alpha / 255.0);
+    public String getHex() {
+        return String.format("#%02X%02X%02X", red, green, blue);
     }
 
-    public static Color fromJavaFXColor(javafx.scene.paint.Color fxColor) {
-        return new Color(
-            (int) (fxColor.getRed() * 255),
-            (int) (fxColor.getGreen() * 255),
-            (int) (fxColor.getBlue() * 255),
-            (int) (fxColor.getOpacity() * 255));
+    public int getARGB() {
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
+    public static Color fromHex(String hex) {
+        if (hex == null || hex.isEmpty()) {
+            throw new IllegalArgumentException("hex string must not be null or empty");
+        }
+        if (hex.startsWith("#")) {
+            hex = hex.substring(1);
+        }
+        int r = Integer.parseInt(hex.substring(0, 2), 16);
+        int g = Integer.parseInt(hex.substring(2, 4), 16);
+        int b = Integer.parseInt(hex.substring(4, 6), 16);
+        return new Color(r, g, b);
     }
 
     private static int clamp(int value) {

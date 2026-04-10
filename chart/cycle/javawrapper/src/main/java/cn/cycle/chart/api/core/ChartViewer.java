@@ -3,6 +3,11 @@ package cn.cycle.chart.api.core;
 import cn.cycle.chart.jni.JniBridge;
 import cn.cycle.chart.jni.NativeObject;
 import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.api.geometry.Envelope;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 public final class ChartViewer extends NativeObject {
 
@@ -10,8 +15,17 @@ public final class ChartViewer extends NativeObject {
         JniBridge.initialize();
     }
 
+    private Viewport viewport;
+    private ExecutorService asyncExecutor;
+    private volatile boolean loading = false;
+
     public ChartViewer() {
         setNativePtr(nativeCreate());
+        int result = initialize();
+        if (result != 0) {
+            throw new RuntimeException("Failed to initialize ChartViewer, error code: " + result);
+        }
+        this.asyncExecutor = Executors.newSingleThreadExecutor();
     }
 
     public int initialize() {
@@ -32,6 +46,61 @@ public final class ChartViewer extends NativeObject {
         return nativeLoadChart(getNativePtr(), filePath);
     }
 
+    public CompletableFuture<Integer> loadChartAsync(String filePath) {
+        checkNotDisposed();
+        if (filePath == null) {
+            CompletableFuture<Integer> future = new CompletableFuture<>();
+            future.completeExceptionally(new IllegalArgumentException("filePath must not be null"));
+            return future;
+        }
+        if (loading) {
+            CompletableFuture<Integer> future = new CompletableFuture<>();
+            future.completeExceptionally(new IllegalStateException("Another load operation is in progress"));
+            return future;
+        }
+        
+        loading = true;
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return nativeLoadChart(getNativePtr(), filePath);
+            } finally {
+                loading = false;
+            }
+        }, asyncExecutor);
+    }
+
+    public void loadChartAsync(String filePath, Consumer<Integer> callback) {
+        loadChartAsync(filePath).thenAccept(callback);
+    }
+
+    public void loadChartAsync(String filePath, Consumer<Integer> onSuccess, Consumer<Throwable> onError) {
+        loadChartAsync(filePath)
+            .thenAccept(onSuccess)
+            .exceptionally(e -> {
+                onError.accept(e);
+                return null;
+            });
+    }
+
+    public boolean isLoading() {
+        return loading;
+    }
+
+    public CompletableFuture<Envelope> getFullExtentAsync() {
+        checkNotDisposed();
+        return CompletableFuture.supplyAsync(() -> getFullExtent(), asyncExecutor);
+    }
+
+    public CompletableFuture<Coordinate> screenToWorldAsync(double screenX, double screenY) {
+        checkNotDisposed();
+        return CompletableFuture.supplyAsync(() -> screenToWorld(screenX, screenY), asyncExecutor);
+    }
+
+    public CompletableFuture<Coordinate> worldToScreenAsync(double worldX, double worldY) {
+        checkNotDisposed();
+        return CompletableFuture.supplyAsync(() -> worldToScreen(worldX, worldY), asyncExecutor);
+    }
+
     public int render(long devicePtr, int width, int height) {
         checkNotDisposed();
         return nativeRender(getNativePtr(), devicePtr, width, height);
@@ -46,6 +115,17 @@ public final class ChartViewer extends NativeObject {
         checkNotDisposed();
         double[] viewport = new double[3];
         nativeGetViewport(getNativePtr(), viewport);
+        return viewport;
+    }
+
+    public Viewport getViewportObject() {
+        checkNotDisposed();
+        if (viewport == null || viewport.isDisposed()) {
+            long viewportPtr = nativeGetViewportPtr(getNativePtr());
+            if (viewportPtr != 0) {
+                viewport = new Viewport(viewportPtr);
+            }
+        }
         return viewport;
     }
 
@@ -78,8 +158,23 @@ public final class ChartViewer extends NativeObject {
         return new Coordinate(coord[0], coord[1]);
     }
 
+    public Envelope getFullExtent() {
+        checkNotDisposed();
+        double[] extent = new double[4];
+        nativeGetFullExtent(getNativePtr(), extent);
+        return new Envelope(extent[0], extent[1], extent[2], extent[3]);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
+        if (viewport != null) {
+            viewport.dispose();
+            viewport = null;
+        }
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdown();
+            asyncExecutor = null;
+        }
         nativeDisposeImpl(ptr);
     }
 
@@ -91,9 +186,11 @@ public final class ChartViewer extends NativeObject {
     private native int nativeRender(long ptr, long devicePtr, int width, int height);
     private native void nativeSetViewport(long ptr, double centerX, double centerY, double scale);
     private native void nativeGetViewport(long ptr, double[] outViewport);
+    private native long nativeGetViewportPtr(long ptr);
     private native void nativePan(long ptr, double dx, double dy);
     private native void nativeZoom(long ptr, double factor, double centerX, double centerY);
     private native long nativeQueryFeature(long ptr, double x, double y);
     private native void nativeScreenToWorld(long ptr, double screenX, double screenY, double[] outCoord);
     private native void nativeWorldToScreen(long ptr, double worldX, double worldY, double[] outCoord);
+    private native void nativeGetFullExtent(long ptr, double[] outExtent);
 }

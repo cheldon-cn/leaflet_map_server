@@ -35,6 +35,21 @@ public final class LayerManager extends NativeObject {
         return new Layer(layerPtr);
     }
 
+    public Layer getLayerByName(String name) {
+        checkNotDisposed();
+        if (name == null) {
+            throw new IllegalArgumentException("name must not be null");
+        }
+        long count = getLayerCount();
+        for (long i = 0; i < count; i++) {
+            Layer layer = getLayer(i);
+            if (layer != null && name.equals(layer.getName())) {
+                return layer;
+            }
+        }
+        return null;
+    }
+
     public void addLayer(Layer layer) {
         checkNotDisposed();
         if (layer == null) {
@@ -46,6 +61,19 @@ public final class LayerManager extends NativeObject {
     public void removeLayer(long index) {
         checkNotDisposed();
         nativeRemoveLayer(getNativePtr(), index);
+    }
+
+    public void moveLayer(long fromIndex, long toIndex) {
+        checkNotDisposed();
+        nativeMoveLayer(getNativePtr(), fromIndex, toIndex);
+    }
+
+    public void clearLayers() {
+        checkNotDisposed();
+        long count = getLayerCount();
+        for (long i = count - 1; i >= 0; i--) {
+            removeLayer(i);
+        }
     }
 
     public boolean getLayerVisible(long index) {
@@ -80,6 +108,7 @@ public final class LayerManager extends NativeObject {
     private native int nativeGetLayerType(long ptr, long index);
     private native void nativeAddLayer(long ptr, long layerPtr);
     private native void nativeRemoveLayer(long ptr, long index);
+    private native void nativeMoveLayer(long ptr, long fromIndex, long toIndex);
     private native boolean nativeGetLayerVisible(long ptr, long index);
     private native void nativeSetLayerVisible(long ptr, long index, boolean visible);
     private native double nativeGetLayerOpacity(long ptr, long index);

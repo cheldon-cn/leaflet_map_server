@@ -11,14 +11,10 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
-    flatDir {
-        dirs '../FXRibbon-master/FXRibbon/temp'
-    }
 }
 
 dependencies {
     implementation project(':javawrapper')
-    implementation name: 'fxribbon-1.2.2'
     testImplementation 'junit:junit:4.12'
 }
 
