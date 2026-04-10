@@ -11,4 +11,36 @@ allprojects {
 subprojects {
     group = 'cn.cycle.chart'
     version = '1.0.0'
+    
+    buildDir = new File(rootDir, 'build/cycle/' + project.name)
+    
+    ext {
+        outputDir = new File(rootDir, 'build/test')
+        installDir = new File(rootDir, 'install/bin')
+    }
+}
+
+task cleanAll(type: Delete) {
+    delete 'build'
+    delete 'install'
+}
+
+task install(type: Copy, dependsOn: [':javawrapper:jar', ':javafx-app:jar']) {
+    from('javawrapper/build/libs') {
+        include '*.jar'
+    }
+    from('javafx-app/build/libs') {
+        include '*.jar'
+    }
+    into 'install/bin'
+}
+
+task copyNativeLibs(type: Copy) {
+    from('jni/build/Release') {
+        include '*.dll'
+    }
+    into 'install/bin'
+    onlyIf {
+        file('jni/build/Release').exists()
+    }
 }

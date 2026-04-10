@@ -14,6 +14,12 @@ set(JNI_INCLUDE_DIRS
 )
 
 set(OGC_INSTALL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../install")
+set(CYCLE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build")
+set(CYCLE_TEST_DIR "${CYCLE_BUILD_DIR}/test")
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CYCLE_TEST_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CYCLE_TEST_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CYCLE_BUILD_DIR}/cycle/jni/lib)
 
 set(JNI_SOURCES
     src/jni_env_manager.cpp
@@ -26,6 +32,7 @@ set(JNI_SOURCES
     src/native/geometry_jni.cpp
     src/native/feature_jni.cpp
     src/native/layer_jni.cpp
+    src/native/chart_config_jni.cpp
 )
 
 add_library(ogc_chart_jni SHARED ${JNI_SOURCES})
@@ -44,17 +51,23 @@ target_link_libraries(ogc_chart_jni
 
 if(MSVC)
     set_target_properties(ogc_chart_jni PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${OGC_INSTALL_DIR}/bin"
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${OGC_INSTALL_DIR}/bin"
-        LIBRARY_OUTPUT_DIRECTORY_RELEASE "${OGC_INSTALL_DIR}/bin"
-        LIBRARY_OUTPUT_DIRECTORY_DEBUG "${OGC_INSTALL_DIR}/bin"
-        ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${OGC_INSTALL_DIR}/lib"
-        ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${OGC_INSTALL_DIR}/lib"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CYCLE_TEST_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CYCLE_TEST_DIR}"
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CYCLE_TEST_DIR}"
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CYCLE_TEST_DIR}"
+        ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CYCLE_BUILD_DIR}/cycle/jni/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CYCLE_BUILD_DIR}/cycle/jni/lib"
     )
 else()
     set_target_properties(ogc_chart_jni PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY "${OGC_INSTALL_DIR}/bin"
+        LIBRARY_OUTPUT_DIRECTORY "${CYCLE_TEST_DIR}"
     )
 endif()
 
 target_compile_definitions(ogc_chart_jni PRIVATE OGC_CHART_C_API_EXPORTS)
+
+install(TARGETS ogc_chart_jni
+    RUNTIME DESTINATION ${OGC_INSTALL_DIR}/bin
+    LIBRARY DESTINATION ${OGC_INSTALL_DIR}/bin
+    ARCHIVE DESTINATION ${OGC_INSTALL_DIR}/lib
+)

@@ -24,8 +24,29 @@ tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
+jar {
+    destinationDir = new File(rootDir, 'build/test')
+    manifest {
+        attributes(
+            'Implementation-Title': 'Cycle Chart JavaFX App',
+            'Implementation-Version': version,
+            'Main-Class': mainClassName
+        )
+    }
+    from {
+        configurations.runtimeClasspath.findAll { it.exists() }.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+test {
+    workingDir = new File(rootDir, 'install/bin')
+    jvmArgs = ['-Djava.library.path=' + new File(rootDir, 'install/bin').absolutePath]
+}
+
 run {
+    workingDir = new File(rootDir, 'install/bin')
     jvmArgs = [
-        '-Djava.library.path=../../install/bin;../../install/lib'
+        '-Djava.library.path=' + new File(rootDir, 'install/bin').absolutePath
     ]
 }
