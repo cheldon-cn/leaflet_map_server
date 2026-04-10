@@ -1,0 +1,129 @@
+{
+    "version": "1.0.0",
+    "description": "SDK API Index and Validation Tool Configuration",
+    
+    "sdk": {
+        "include_dirs": [
+            "install/include/ogc/base",
+            "code/cycle/chart_c_api"
+        ],
+        "header_patterns": [
+            "*.h",
+            "sdk_c_api*.h"
+        ],
+        "exclude_patterns": [
+            "*_export.h",
+            "*_internal.h"
+        ]
+    },
+    
+    "tests": {
+        "test_dirs": [
+            "code/cycle/chart_c_api/tests",
+            "code/*/tests"
+        ],
+        "test_patterns": [
+            "test_*.cpp",
+            "*_test.cpp"
+        ],
+        "exclude_patterns": [
+            "*/pending_tests/*"
+        ]
+    },
+    
+    "index": {
+        "output_dir": "install/bin/clang_tool/index",
+        "output_filename": "api_index.json",
+        "structure": {
+            "functions": {
+                "include_signature": true,
+                "include_return_type": true,
+                "include_parameters": true,
+                "include_location": true
+            },
+            "types": {
+                "include_enums": true,
+                "include_structs": true,
+                "include_typedefs": true
+            },
+            "examples": {
+                "include_context": true,
+                "max_examples_per_api": 5,
+                "min_example_lines": 3
+            }
+        }
+    },
+    
+    "validation": {
+        "mismatch_criteria": {
+            "function_name_mismatch": true,
+            "parameter_count_mismatch": true,
+            "parameter_type_mismatch": true,
+            "return_type_mismatch": true,
+            "missing_api": true,
+            "deprecated_api": false
+        },
+        "type_equivalence": {
+            "int32_t": ["int", "int32_t"],
+            "uint32_t": ["unsigned int", "uint32_t"],
+            "int64_t": ["long long", "int64_t"],
+            "uint64_t": ["unsigned long long", "uint64_t"],
+            "size_t": ["size_t", "unsigned long"],
+            "const char*": ["const char*", "char*"],
+            "double": ["double", "float"]
+        },
+        "strict_mode": false,
+        "allow_implicit_cast": true
+    },
+    
+    "report": {
+        "output_dir": "install/bin/clang_tool/reports",
+        "output_filename": "api_validation_report.md",
+        "categories": {
+            "critical": {
+                "description": "Critical issues that will cause compilation or runtime errors",
+                "action": "Must fix immediately",
+                "color": "red"
+            },
+            "warning": {
+                "description": "Potential issues that may cause unexpected behavior",
+                "action": "Should fix before release",
+                "color": "yellow"
+            },
+            "info": {
+                "description": "Informational findings that may improve code quality",
+                "action": "Consider fixing",
+                "color": "blue"
+            },
+            "suggestion": {
+                "description": "Best practice suggestions",
+                "action": "Optional improvement",
+                "color": "green"
+            }
+        },
+        "include_examples": true,
+        "include_fix_suggestions": true,
+        "max_issues_per_category": 50
+    },
+    
+    "clang": {
+        "libclang_path": null,
+        "compilation_args": [
+            "-std=c11",
+            "-Iinstall/include",
+            "-Iinstall/include/ogc/capi"
+        ],
+        "parse_options": {
+            "detailed_preprocessing_record": true,
+            "skip_function_bodies": false,
+            "include_brief_comments": true
+        }
+    },
+    
+    "output": {
+        "log_level": "INFO",
+        "log_file": "install/bin/clang_tool/clang_tool.log",
+        "verbose": false,
+        "quiet": false
+    }
+}

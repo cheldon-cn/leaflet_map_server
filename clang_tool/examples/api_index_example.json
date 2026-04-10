@@ -1,0 +1,182 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "total_functions": 3,
+    "total_enums": 1,
+    "total_structs": 1,
+    "total_typedefs": 1,
+    "generated_at": "2026-04-10T17:38:00",
+    "description": "Sample API index for demonstration purposes"
+  },
+  "functions": {
+    "ogc_coordinate_create": {
+      "name": "ogc_coordinate_create",
+      "return_type": "ogc_coordinate_t*",
+      "parameters": [
+        {
+          "name": "x",
+          "type_name": "double",
+          "is_pointer": false,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        },
+        {
+          "name": "y",
+          "type_name": "double",
+          "is_pointer": false,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        }
+      ],
+      "is_variadic": false,
+      "is_inline": false,
+      "is_static": false,
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 125,
+        "column": 1
+      },
+      "brief_comment": "Creates a 2D coordinate with x and y values"
+    },
+    "ogc_coordinate_create_3d": {
+      "name": "ogc_coordinate_create_3d",
+      "return_type": "ogc_coordinate_t*",
+      "parameters": [
+        {
+          "name": "x",
+          "type_name": "double",
+          "is_pointer": false,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        },
+        {
+          "name": "y",
+          "type_name": "double",
+          "is_pointer": false,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        },
+        {
+          "name": "z",
+          "type_name": "double",
+          "is_pointer": false,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        }
+      ],
+      "is_variadic": false,
+      "is_inline": false,
+      "is_static": false,
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 140,
+        "column": 1
+      },
+      "brief_comment": "Creates a 3D coordinate with x, y, and z values"
+    },
+    "ogc_coordinate_destroy": {
+      "name": "ogc_coordinate_destroy",
+      "return_type": "void",
+      "parameters": [
+        {
+          "name": "coord",
+          "type_name": "ogc_coordinate_t*",
+          "is_pointer": true,
+          "is_const": false,
+          "is_array": false,
+          "array_size": null
+        }
+      ],
+      "is_variadic": false,
+      "is_inline": false,
+      "is_static": false,
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 155,
+        "column": 1
+      },
+      "brief_comment": "Destroys a coordinate object and frees memory"
+    }
+  },
+  "enums": {
+    "ogc_error_code_e": {
+      "name": "ogc_error_code_e",
+      "values": [
+        {
+          "name": "OGC_SUCCESS",
+          "value": 0
+        },
+        {
+          "name": "OGC_ERROR_INVALID_PARAM",
+          "value": -1
+        },
+        {
+          "name": "OGC_ERROR_NULL_POINTER",
+          "value": -2
+        },
+        {
+          "name": "OGC_ERROR_OUT_OF_MEMORY",
+          "value": -3
+        }
+      ],
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 45
+      },
+      "brief_comment": "Standardized error codes for consistent error handling"
+    }
+  },
+  "structs": {
+    "ogc_coordinate_t": {
+      "name": "ogc_coordinate_t",
+      "fields": [
+        {
+          "name": "x",
+          "type_name": "double",
+          "offset": 0,
+          "is_pointer": false
+        },
+        {
+          "name": "y",
+          "type_name": "double",
+          "offset": 8,
+          "is_pointer": false
+        },
+        {
+          "name": "z",
+          "type_name": "double",
+          "offset": 16,
+          "is_pointer": false
+        },
+        {
+          "name": "m",
+          "type_name": "double",
+          "offset": 24,
+          "is_pointer": false
+        }
+      ],
+      "size": 32,
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 110
+      },
+      "brief_comment": "Coordinate structure representing a point in 2D or 3D space"
+    }
+  },
+  "typedefs": {
+    "ogc_geometry_t": {
+      "name": "ogc_geometry_t",
+      "underlying_type": "struct ogc_geometry_impl_s",
+      "location": {
+        "file": "install/include/ogc/capi/sdk_c_api.h",
+        "line": 200
+      },
+      "brief_comment": "Opaque handle to a geometry object"
+    }
+  }
+}

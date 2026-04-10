@@ -1,0 +1,17 @@
+2026-04-10 17:56:21,350 - __main__ - INFO - ============================================================
+2026-04-10 17:56:21,350 - __main__ - INFO - Step 1: Building API Index from SDK Headers
+2026-04-10 17:56:21,350 - __main__ - INFO - ============================================================
+2026-04-10 17:56:21,777 - api_indexer - WARNING - Include directory not found: install\include\ogc\capi
+2026-04-10 17:56:21,777 - api_indexer - WARNING - Include directory not found: code\cycle\chart_c_api
+2026-04-10 17:56:21,777 - api_indexer - INFO - Found 0 header files to parse
+2026-04-10 17:56:21,777 - api_indexer - INFO - Index built: 0 functions, 0 enums, 0 structs, 0 typedefs
+2026-04-10 17:56:21,778 - api_indexer - INFO - Index saved to: install\bin\clang_tool\index\api_index.json
+2026-04-10 17:56:21,778 - __main__ - INFO - API Index built successfully: 0 functions
+2026-04-10 17:56:22,006 - __main__ - INFO - ============================================================
+2026-04-10 17:56:22,006 - __main__ - INFO - Step 3: Validating API Usage in Test Files
+2026-04-10 17:56:22,006 - __main__ - INFO - ============================================================
+2026-04-10 17:56:22,006 - __main__ - ERROR - API index not available. Run build_api_index() first.
+2026-04-10 17:56:22,105 - __main__ - INFO - ============================================================
+2026-04-10 17:56:22,105 - __main__ - INFO - Step 4: Generating Analysis Report
+2026-04-10 17:56:22,105 - __main__ - INFO - ============================================================
+2026-04-10 17:56:22,105 - __main__ - ERROR - Validation results not available. Run validate_apis() first.

@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "total_apis": 3,
+    "total_examples": 6,
+    "generated_at": "2026-04-10T17:38:00",
+    "description": "Sample API usage examples for demonstration purposes"
+  },
+  "examples": {
+    "ogc_coordinate_create": [
+      {
+        "api_name": "ogc_coordinate_create",
+        "code_snippet": "ogc_coordinate_t* coord = ogc_coordinate_create(1.0, 2.0);",
+        "context_before": "TEST_F(SdkCApiGeomTest, Coordinate_Create2D) {",
+        "context_after": "ASSERT_NE(coord, nullptr);\n    EXPECT_DOUBLE_EQ(coord->x, 1.0);",
+        "location": {
+          "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+          "line": 23,
+          "column": 5
+        },
+        "test_name": "SdkCApiGeomTest_Coordinate_Create2D_Test",
+        "description": "Creates a 2D coordinate and verifies its values"
+      },
+      {
+        "api_name": "ogc_coordinate_create",
+        "code_snippet": "ogc_coordinate_t* origin = ogc_coordinate_create(0.0, 0.0);",
+        "context_before": "TEST_F(SdkCApiGeomTest, Coordinate_Distance) {",
+        "context_after": "ogc_coordinate_t* point = ogc_coordinate_create(3.0, 4.0);",
+        "location": {
+          "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+          "line": 45,
+          "column": 5
+        },
+        "test_name": "SdkCApiGeomTest_Coordinate_Distance_Test",
+        "description": "Creates origin point for distance calculation test"
+      }
+    ],
+    "ogc_coordinate_create_3d": [
+      {
+        "api_name": "ogc_coordinate_create_3d",
+        "code_snippet": "ogc_coordinate_t* coord = ogc_coordinate_create_3d(1.0, 2.0, 3.0);",
+        "context_before": "TEST_F(SdkCApiGeomTest, Coordinate_Create3D) {",
+        "context_after": "ASSERT_NE(coord, nullptr);\n    EXPECT_DOUBLE_EQ(coord->z, 3.0);",
+        "location": {
+          "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+          "line": 30,
+          "column": 5
+        },
+        "test_name": "SdkCApiGeomTest_Coordinate_Create3D_Test",
+        "description": "Creates a 3D coordinate and verifies z value"
+      }
+    ],
+    "ogc_coordinate_destroy": [
+      {
+        "api_name": "ogc_coordinate_destroy",
+        "code_snippet": "ogc_coordinate_destroy(coord);",
+        "context_before": "EXPECT_DOUBLE_EQ(coord->y, 2.0);",
+        "context_after": "}",
+        "location": {
+          "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+          "line": 27,
+          "column": 5
+        },
+        "test_name": "SdkCApiGeomTest_Coordinate_Create2D_Test",
+        "description": "Destroys coordinate after use"
+      },
+      {
+        "api_name": "ogc_coordinate_destroy",
+        "code_snippet": "ogc_coordinate_destroy(nullptr);",
+        "context_before": "TEST_F(SdkCApiGeomTest, Coordinate_DestroyNull) {",
+        "context_after": "}",
+        "location": {
+          "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+          "line": 42,
+          "column": 5
+        },
+        "test_name": "SdkCApiGeomTest_Coordinate_DestroyNull_Test",
+        "description": "Tests that destroying nullptr is safe"
+      }
+    ]
+  }
+}

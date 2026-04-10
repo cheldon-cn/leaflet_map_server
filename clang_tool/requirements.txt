@@ -1,0 +1,19 @@
+# SDK API Index and Validation Tool - Python Dependencies
+
+# Core dependency: libclang for parsing C/C++ code
+libclang>=14.0.0
+
+# Optional dependencies for enhanced functionality
+# Uncomment if needed:
+
+# For better JSON handling
+# orjson>=3.8.0
+
+# For colored console output
+# colorama>=0.4.6
+
+# For progress bars
+# tqdm>=4.64.0
+
+# For YAML config support (if using .yaml instead of .json)
+# pyyaml>=6.0

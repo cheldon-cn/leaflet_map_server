@@ -1,0 +1,126 @@
+{
+  "statistics": {
+    "total_issues": 5,
+    "by_severity": {
+      "critical": 2,
+      "warning": 2,
+      "info": 1,
+      "suggestion": 0
+    },
+    "by_type": {
+      "parameter_count_mismatch": 2,
+      "parameter_type_mismatch": 1,
+      "missing_api": 1,
+      "undeclared_api": 1
+    }
+  },
+  "issues": [
+    {
+      "mismatch_type": "parameter_count_mismatch",
+      "severity": "critical",
+      "api_name": "ogc_point_create",
+      "location": {
+        "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+        "line": 85,
+        "column": 5
+      },
+      "description": "Parameter count mismatch for 'ogc_point_create'",
+      "expected": "2 parameters",
+      "actual": "3 parameters",
+      "parameter_mismatches": [],
+      "suggestion": "Expected 2 parameters, got 3. Check function signature: ogc_geometry_t* ogc_point_create(double x, double y)"
+    },
+    {
+      "mismatch_type": "missing_api",
+      "severity": "critical",
+      "api_name": "ogc_point_create_ex",
+      "location": {
+        "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+        "line": 120,
+        "column": 5
+      },
+      "description": "Function 'ogc_point_create_ex' not found in SDK API index",
+      "expected": null,
+      "actual": null,
+      "parameter_mismatches": [],
+      "suggestion": "Check if 'ogc_point_create_ex' is a valid SDK API or if the API index needs to be updated"
+    },
+    {
+      "mismatch_type": "parameter_type_mismatch",
+      "severity": "warning",
+      "api_name": "ogc_coordinate_create",
+      "location": {
+        "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+        "line": 45,
+        "column": 5
+      },
+      "description": "Parameter type mismatch for 'ogc_coordinate_create'",
+      "expected": "double, double",
+      "actual": "int, int",
+      "parameter_mismatches": [
+        {
+          "position": 1,
+          "expected_type": "double",
+          "actual_type": "int"
+        },
+        {
+          "position": 2,
+          "expected_type": "double",
+          "actual_type": "int"
+        }
+      ],
+      "suggestion": "Check parameter types for 'ogc_coordinate_create'. Expected types: double, double"
+    },
+    {
+      "mismatch_type": "parameter_type_mismatch",
+      "severity": "warning",
+      "api_name": "ogc_envelope_create_from_coords",
+      "location": {
+        "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+        "line": 67,
+        "column": 5
+      },
+      "description": "Parameter type mismatch for 'ogc_envelope_create_from_coords'",
+      "expected": "double, double, double, double",
+      "actual": "float, float, float, float",
+      "parameter_mismatches": [
+        {
+          "position": 1,
+          "expected_type": "double",
+          "actual_type": "float"
+        },
+        {
+          "position": 2,
+          "expected_type": "double",
+          "actual_type": "float"
+        },
+        {
+          "position": 3,
+          "expected_type": "double",
+          "actual_type": "float"
+        },
+        {
+          "position": 4,
+          "expected_type": "double",
+          "actual_type": "float"
+        }
+      ],
+      "suggestion": "Check parameter types for 'ogc_envelope_create_from_coords'. Expected types: double, double, double, double"
+    },
+    {
+      "mismatch_type": "undeclared_api",
+      "severity": "info",
+      "api_name": "ogc_internal_helper",
+      "location": {
+        "file": "code/cycle/chart_c_api/tests/test_sdk_c_api_geom.cpp",
+        "line": 150,
+        "column": 5
+      },
+      "description": "API 'ogc_internal_helper' may not be properly declared",
+      "expected": null,
+      "actual": null,
+      "parameter_mismatches": [],
+      "suggestion": "Include the appropriate header file for 'ogc_internal_helper'"
+    }
+  ]
+}
