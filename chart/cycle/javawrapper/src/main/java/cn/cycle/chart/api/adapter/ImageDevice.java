@@ -15,7 +15,10 @@ public class ImageDevice extends NativeObject {
     public ImageDevice(int width, int height) {
         this.width = width;
         this.height = height;
-        setNativePtr(nativeCreate(width, height));
+        System.out.println("[DEBUG] ImageDevice.create() - size: " + width + "x" + height);
+        long ptr = nativeCreate(width, height);
+        System.out.println("[DEBUG] ImageDevice created - nativePtr: " + ptr);
+        setNativePtr(ptr);
     }
 
     public int getWidth() {
@@ -30,6 +33,7 @@ public class ImageDevice extends NativeObject {
         if (this.width != width || this.height != height) {
             this.width = width;
             this.height = height;
+            System.out.println("[DEBUG] ImageDevice.resize() - size: " + width + "x" + height);
             nativeResize(getNativePtr(), width, height);
         }
     }
@@ -41,7 +45,10 @@ public class ImageDevice extends NativeObject {
 
     public byte[] getPixels() {
         checkNotDisposed();
-        return nativeGetPixels(getNativePtr());
+        System.out.println("[DEBUG] ImageDevice.getPixels() - nativePtr: " + getNativePtr());
+        byte[] pixels = nativeGetPixels(getNativePtr());
+        System.out.println("[DEBUG] getPixels() returned: " + (pixels != null ? "length=" + pixels.length : "null"));
+        return pixels;
     }
 
     @Override

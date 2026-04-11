@@ -36,12 +36,33 @@
     -fx-background-color: #e8e8e8;
 }
 
+.ribbon .outer-container {
+    -fx-background-color: #e8e8e8;
+}
+
+.ribbon .tab-pane {
+    -fx-background-color: #e8e8e8;
+    -fx-border-color: transparent;
+}
+
 .ribbon .tab-header-area {
+    -fx-background-color: #e8e8e8;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.ribbon .tab-header-area .headers-region {
+    -fx-background-color: #e8e8e8;
+}
+
+.ribbon .tab-header-area .tab-header-background {
     -fx-background-color: #e8e8e8;
 }
 
 .ribbon .tab {
     -fx-background-color: #e8e8e8;
+    -fx-text-fill: #333333;
+    -fx-border-color: transparent;
 }
 
 .ribbon .tab:hover {
@@ -50,6 +71,16 @@
 
 .ribbon .tab:selected {
     -fx-background-color: #f5f5f5;
+    -fx-border-color: #2196f3;
+    -fx-border-width: 0 0 2 0;
+}
+
+.ribbon .tab .tab-container {
+    -fx-background-color: transparent;
+}
+
+.ribbon .tab .tab-label {
+    -fx-text-fill: #333333;
 }
 
 .ribbon-button {

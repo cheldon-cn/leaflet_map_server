@@ -20,6 +20,8 @@ public class SplashScreen {
     private Label statusLabel;
     private ProgressBar progressBar;
     private Label progressLabel;
+    private static final int MIN_WIDTH = 256;
+    private static final int MAX_WIDTH = 768;
     
     public SplashScreen() {
         createSplashStage();
@@ -43,12 +45,35 @@ public class SplashScreen {
         );
         
         ImageView logoView = new ImageView();
+        double imageWidth = 400;
+        double imageHeight = 300;
+        
         try {
             Image logoImage = new Image(getClass().getResourceAsStream("/control/splashlogo.png"));
             logoView.setImage(logoImage);
-            logoView.setFitWidth(400);
+            
+            double originalWidth = logoImage.getWidth();
+            double originalHeight = logoImage.getHeight();
+            double aspectRatio = originalWidth / originalHeight;
+            
+            if (originalWidth < MIN_WIDTH) {
+                imageWidth = MIN_WIDTH;
+            } else if (originalWidth > MAX_WIDTH) {
+                imageWidth = MAX_WIDTH;
+            } else {
+                imageWidth = originalWidth;
+            }
+            
+            imageHeight = imageWidth / aspectRatio;
+            
+            logoView.setFitWidth(imageWidth);
             logoView.setPreserveRatio(true);
+            
+            System.out.println("[DEBUG] Splash image original size: " + originalWidth + "x" + originalHeight);
+            System.out.println("[DEBUG] Splash image display size: " + imageWidth + "x" + imageHeight);
+            
         } catch (Exception e) {
+            System.out.println("[WARNING] Failed to load splash image: " + e.getMessage());
             Label placeholderLogo = new Label("Cycle Chart");
             placeholderLogo.setStyle("-fx-font-size: 32px; -fx-text-fill: white; -fx-font-weight: bold;");
             container.getChildren().add(placeholderLogo);
@@ -63,7 +88,7 @@ public class SplashScreen {
         statusLabel.setAlignment(Pos.CENTER);
         
         progressBar = new ProgressBar(0);
-        progressBar.setPrefWidth(350);
+        progressBar.setPrefWidth(imageWidth - 50);
         progressBar.setStyle(
             "-fx-accent: #27ae60;" +
             "-fx-background-color: rgba(255,255,255,0.3);"
@@ -76,7 +101,10 @@ public class SplashScreen {
         container.getChildren().addAll(statusLabel, progressBar, progressLabel);
         root.getChildren().add(container);
         
-        Scene scene = new Scene(root, 500, 350);
+        double sceneWidth = imageWidth + 40;
+        double sceneHeight = imageHeight + 120;
+        
+        Scene scene = new Scene(root, sceneWidth, sceneHeight);
         scene.setFill(Color.TRANSPARENT);
         stage.setScene(scene);
         

@@ -5,9 +5,11 @@ import cn.cycle.chart.api.adapter.PanHandler;
 import cn.cycle.chart.api.adapter.ZoomHandler;
 import cn.cycle.chart.api.core.ChartViewer;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.layout.Pane;
 
-public class ChartCanvas extends Canvas {
+public class ChartCanvas extends Pane {
 
+    private Canvas canvas;
     private ChartViewer chartViewer;
     private CanvasAdapter canvasAdapter;
     private PanHandler panHandler;
@@ -15,24 +17,28 @@ public class ChartCanvas extends Canvas {
 
     public ChartCanvas(ChartViewer chartViewer) {
         this.chartViewer = chartViewer;
-        setWidth(800);
-        setHeight(600);
+        this.canvas = new Canvas();
+        getChildren().add(canvas);
+        
+        canvas.widthProperty().bind(widthProperty());
+        canvas.heightProperty().bind(heightProperty());
+        
+        widthProperty().addListener(obs -> render());
+        heightProperty().addListener(obs -> render());
 
         setupAdapter();
+        setStyle("-fx-background-color: white;");
     }
 
     private void setupAdapter() {
-        if (chartViewer != null) {
-            canvasAdapter = new CanvasAdapter(this, chartViewer);
+        if (chartViewer != null && canvas != null) {
+            canvasAdapter = new CanvasAdapter(canvas, chartViewer);
             
             panHandler = new PanHandler();
             zoomHandler = new ZoomHandler();
             
             canvasAdapter.addHandler(panHandler);
             canvasAdapter.addHandler(zoomHandler);
-
-            widthProperty().addListener(obs -> render());
-            heightProperty().addListener(obs -> render());
         }
     }
 

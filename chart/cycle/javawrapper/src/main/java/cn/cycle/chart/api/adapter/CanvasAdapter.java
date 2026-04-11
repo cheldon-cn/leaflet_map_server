@@ -172,34 +172,69 @@ public class CanvasAdapter {
     }
 
     public void render() {
+        System.out.println("[DEBUG] CanvasAdapter.render() called");
+        
         if (disposed) {
+            System.out.println("[WARNING] CanvasAdapter is disposed, skipping render");
             return;
         }
 
         int width = (int) canvas.getWidth();
         int height = (int) canvas.getHeight();
+        System.out.println("[DEBUG] Canvas size: " + width + " x " + height);
 
         if (width <= 0 || height <= 0) {
+            System.out.println("[WARNING] Invalid canvas size, skipping render");
             return;
         }
 
         if (device == null) {
+            System.out.println("[DEBUG] Creating new ImageDevice...");
             device = new ImageDevice(width, height);
         } else {
+            System.out.println("[DEBUG] Resizing ImageDevice...");
             device.resize(width, height);
         }
 
-        viewer.render(device.getNativePtr(), width, height);
+        System.out.println("[DEBUG] Calling viewer.render()...");
+        long devicePtr = device.getNativePtr();
+        System.out.println("[DEBUG] Device pointer: " + devicePtr);
+        
+        int renderResult = viewer.render(devicePtr, width, height);
+        System.out.println("[DEBUG] viewer.render() returned: " + renderResult);
 
+        System.out.println("[DEBUG] Getting pixels from device...");
         byte[] pixels = device.getPixels();
+        System.out.println("[DEBUG] Pixels array: " + (pixels != null ? "length=" + pixels.length : "null"));
+        
         if (pixels != null && pixels.length >= width * height * 4) {
+            System.out.println("[DEBUG] Drawing image to canvas...");
+            
             GraphicsContext gc = canvas.getGraphicsContext2D();
+            gc.clearRect(0, 0, width, height);
+            
             javafx.scene.image.WritableImage image = 
                 new javafx.scene.image.WritableImage(width, height);
             PixelWriter writer = image.getPixelWriter();
             WritablePixelFormat<ByteBuffer> format = WritablePixelFormat.getByteBgraPreInstance();
             writer.setPixels(0, 0, width, height, format, ByteBuffer.wrap(pixels), width * 4);
+            
+            boolean hasNonZeroPixels = false;
+            int nonZeroCount = 0;
+            for (int i = 0; i < pixels.length; i++) {
+                if (pixels[i] != 0) {
+                    hasNonZeroPixels = true;
+                    nonZeroCount++;
+                    if (nonZeroCount > 10) break;
+                }
+            }
+            System.out.println("[DEBUG] Non-zero pixel count: " + nonZeroCount + " / " + pixels.length);
+            System.out.println("[DEBUG] Has non-zero pixels: " + hasNonZeroPixels);
+            
             gc.drawImage(image, 0, 0);
+            System.out.println("[DEBUG] Image drawn successfully");
+        } else {
+            System.out.println("[WARNING] No valid pixel data to draw");
         }
     }
 

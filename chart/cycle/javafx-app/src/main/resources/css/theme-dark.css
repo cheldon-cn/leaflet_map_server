@@ -36,12 +36,33 @@
     -fx-background-color: #252526;
 }
 
+.ribbon .outer-container {
+    -fx-background-color: #252526;
+}
+
+.ribbon .tab-pane {
+    -fx-background-color: #252526;
+    -fx-border-color: transparent;
+}
+
 .ribbon .tab-header-area {
+    -fx-background-color: #252526;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.ribbon .tab-header-area .headers-region {
+    -fx-background-color: #252526;
+}
+
+.ribbon .tab-header-area .tab-header-background {
     -fx-background-color: #252526;
 }
 
 .ribbon .tab {
     -fx-background-color: #252526;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: transparent;
 }
 
 .ribbon .tab:hover {
@@ -50,6 +71,16 @@
 
 .ribbon .tab:selected {
     -fx-background-color: #2d2d2d;
+    -fx-border-color: #4fc3f7;
+    -fx-border-width: 0 0 2 0;
+}
+
+.ribbon .tab .tab-container {
+    -fx-background-color: transparent;
+}
+
+.ribbon .tab .tab-label {
+    -fx-text-fill: #e0e0e0;
 }
 
 .ribbon-button {

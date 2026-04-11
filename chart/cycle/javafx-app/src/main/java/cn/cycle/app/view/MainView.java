@@ -116,21 +116,21 @@ public class MainView extends BorderPane implements LifecycleComponent {
         controls.setStyle("-fx-background-color: derive(-fx-base, -20%);");
         controls.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         
-        Button settingsBtn = createWindowButton("设置", "应用程序设置", "icons8_Tool_32px.png");
+        Button settingsBtn = createWindowButton("设置", "应用程序设置", "Png_online_16.png");
         settingsBtn.setOnAction(e -> showSettings());
         
-        Button loginBtn = createWindowButton("登录", "用户登录", "icons8_Lock_16px.png");
+        Button loginBtn = createWindowButton("登录", "用户登录", "Png_img_16.png");
         loginBtn.setOnAction(e -> showLogin());
         
-        Button minimizeBtn = createWindowButton("", "最小化", "DockRootBottom_32.png");
+        Button minimizeBtn = createWindowButton("", "最小化", "Png_ZoomIn_16.png");
         minimizeBtn.setPrefWidth(40);
         minimizeBtn.setOnAction(e -> minimizeWindow());
         
-        Button maximizeBtn = createWindowButton("", "最大化/还原", "DockCenter_32.png");
+        Button maximizeBtn = createWindowButton("", "最大化/还原", "Png_show_16.png");
         maximizeBtn.setPrefWidth(40);
         maximizeBtn.setOnAction(e -> maximizeWindow());
         
-        Button closeBtn = createWindowButton("", "关闭", "icons8_close_32px.png");
+        Button closeBtn = createWindowButton("", "关闭", "close.png");
         closeBtn.setPrefWidth(40);
         closeBtn.setStyle(closeBtn.getStyle() + "-fx-background-color: transparent;");
         closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"));
@@ -141,6 +141,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
         controls.getChildren().addAll(settingsBtn, loginBtn, spacer, minimizeBtn, maximizeBtn, closeBtn);
+        controls.setPrefHeight(16);
+        controls.setMinHeight(16);
+        controls.setMaxHeight(16);
         
         return controls;
     }

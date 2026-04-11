@@ -717,13 +717,6 @@ SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* d
     ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
     *size = data->width * data->height * 4;
     
-    if (data->device) {
-        const uint8_t* raw_pixels = data->device->GetPixelData();
-        if (raw_pixels && data->pixels) {
-            std::memcpy(data->pixels, raw_pixels, *size);
-            return data->pixels;
-        }
-    }
     
     return data->pixels;
 }

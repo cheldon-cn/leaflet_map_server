@@ -43,7 +43,11 @@ public final class ChartViewer extends NativeObject {
         if (filePath == null) {
             throw new IllegalArgumentException("filePath must not be null");
         }
-        return nativeLoadChart(getNativePtr(), filePath);
+        System.out.println("[DEBUG] ChartViewer.loadChart() - nativePtr: " + getNativePtr());
+        System.out.println("[DEBUG] Loading chart from: " + filePath);
+        int result = nativeLoadChart(getNativePtr(), filePath);
+        System.out.println("[DEBUG] nativeLoadChart() returned: " + result);
+        return result;
     }
 
     public CompletableFuture<Integer> loadChartAsync(String filePath) {
@@ -103,7 +107,10 @@ public final class ChartViewer extends NativeObject {
 
     public int render(long devicePtr, int width, int height) {
         checkNotDisposed();
-        return nativeRender(getNativePtr(), devicePtr, width, height);
+        System.out.println("[DEBUG] ChartViewer.render() - nativePtr: " + getNativePtr() + ", devicePtr: " + devicePtr + ", size: " + width + "x" + height);
+        int result = nativeRender(getNativePtr(), devicePtr, width, height);
+        System.out.println("[DEBUG] nativeRender() returned: " + result);
+        return result;
     }
 
     public void setViewport(double centerX, double centerY, double scale) {
