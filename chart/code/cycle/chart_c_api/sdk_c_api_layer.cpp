@@ -72,7 +72,7 @@ const char* ogc_layer_get_name(const ogc_layer_t* layer) {
         result = reinterpret_cast<const CNLayer*>(layer)->GetName();
         return result.c_str();
     }
-    return "";
+    return nullptr;
 }
 
 ogc_geom_type_e ogc_layer_get_geom_type(const ogc_layer_t* layer) {
@@ -258,6 +258,61 @@ int ogc_memory_layer_add_feature(ogc_layer_t* layer, ogc_feature_t* feature) {
     return -1;
 }
 
+int ogc_memory_layer_remove_feature(ogc_layer_t* layer, int64_t fid) {
+    if (layer) {
+        CNStatus status = reinterpret_cast<CNLayer*>(layer)->DeleteFeature(fid);
+        return status == CNStatus::kSuccess ? 0 : -1;
+    }
+    return -1;
+}
+
+void ogc_memory_layer_clear(ogc_layer_t* layer) {
+    if (layer) {
+        CNMemoryLayer* memLayer = dynamic_cast<CNMemoryLayer*>(reinterpret_cast<CNLayer*>(layer));
+        if (memLayer) {
+            memLayer->Clear();
+        }
+    }
+}
+
+int64_t ogc_memory_layer_get_feature_count(const ogc_layer_t* layer) {
+    if (layer) {
+        return reinterpret_cast<const CNLayer*>(layer)->GetFeatureCount();
+    }
+    return 0;
+}
+
+int ogc_vector_layer_create_feature(ogc_layer_t* layer, ogc_feature_t* feature) {
+    if (layer && feature) {
+        CNStatus status = reinterpret_cast<CNLayer*>(layer)->CreateFeature(
+            reinterpret_cast<CNFeature*>(feature));
+        return status == CNStatus::kSuccess ? 0 : -1;
+    }
+    return -1;
+}
+
+ogc_feature_defn_t* ogc_vector_layer_get_feature_defn(ogc_layer_t* layer) {
+    if (layer) {
+        return reinterpret_cast<ogc_feature_defn_t*>(
+            reinterpret_cast<CNLayer*>(layer)->GetFeatureDefn());
+    }
+    return nullptr;
+}
+
+ogc_geometry_t* ogc_vector_layer_get_spatial_filter(ogc_layer_t* layer) {
+    if (layer) {
+        const CNGeometry* geom = reinterpret_cast<CNLayer*>(layer)->GetSpatialFilter();
+        if (geom) {
+            return reinterpret_cast<ogc_geometry_t*>(geom->Clone().release());
+        }
+    }
+    return nullptr;
+}
+
+const char* ogc_vector_layer_get_attribute_filter(const ogc_layer_t* layer) {
+    (void)layer;
+    return "";
+}
 
 ogc_geometry_t* ogc_vector_layer_get_geometry_by_fid(ogc_vector_layer_t* layer, long long fid) {
     if (layer) {
@@ -311,7 +366,7 @@ const char* ogc_layer_group_get_name(const ogc_layer_group_t* group) {
     if (group) {
         return reinterpret_cast<const CNLayerGroup*>(group)->GetName().c_str();
     }
-    return "";
+    return nullptr;
 }
 
 size_t ogc_layer_group_get_layer_count(const ogc_layer_group_t* group) {
@@ -340,6 +395,41 @@ void ogc_layer_group_remove_layer(ogc_layer_group_t* group, size_t index) {
     if (group) {
         auto child = reinterpret_cast<CNLayerGroup*>(group)->RemoveChild(index);
         (void)child;
+    }
+}
+
+int ogc_layer_group_is_visible(const ogc_layer_group_t* group) {
+    if (group) {
+        return reinterpret_cast<const CNLayerGroup*>(group)->IsVisible() ? 1 : 0;
+    }
+    return 0;
+}
+
+void ogc_layer_group_set_visible(ogc_layer_group_t* group, int visible) {
+    if (group) {
+        reinterpret_cast<CNLayerGroup*>(group)->SetVisible(visible != 0);
+    }
+}
+
+double ogc_layer_group_get_opacity(const ogc_layer_group_t* group) {
+    return 1.0;
+}
+
+void ogc_layer_group_set_opacity(ogc_layer_group_t* group, double opacity) {
+    (void)group;
+    (void)opacity;
+}
+
+int ogc_layer_group_get_z_order(const ogc_layer_group_t* group) {
+    if (group) {
+        return reinterpret_cast<const CNLayerGroup*>(group)->GetZOrder();
+    }
+    return 0;
+}
+
+void ogc_layer_group_set_z_order(ogc_layer_group_t* group, int z_order) {
+    if (group) {
+        reinterpret_cast<CNLayerGroup*>(group)->SetZOrder(z_order);
     }
 }
 

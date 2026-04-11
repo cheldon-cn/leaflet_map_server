@@ -241,6 +241,10 @@ ogc_layer_t* ogc_layer_manager_find_layer_by_name(ogc_layer_manager_t* manager, 
     return nullptr;
 }
 
+ogc_layer_t* ogc_layer_manager_get_layer_by_name(const ogc_layer_manager_t* manager, const char* name) {
+    return ogc_layer_manager_find_layer_by_name(const_cast<ogc_layer_manager_t*>(manager), name);
+}
+
 void ogc_layer_manager_set_layer_visible(ogc_layer_manager_t* manager, size_t index, int visible) {
     if (manager) {
         LayerVisibility visibility = visible ? LayerVisibility::kVisible : LayerVisibility::kHidden;
@@ -271,6 +275,25 @@ double ogc_layer_manager_get_layer_opacity(const ogc_layer_manager_t* manager, s
 void ogc_layer_manager_set_layer_opacity(ogc_layer_manager_t* manager, size_t index, double opacity) {
     if (manager) {
         reinterpret_cast<LayerManager*>(manager)->SetLayerOpacity(static_cast<int>(index), opacity);
+    }
+}
+
+int ogc_layer_manager_get_layer_z_order(const ogc_layer_manager_t* manager, size_t index) {
+    if (manager) {
+        return reinterpret_cast<const LayerManager*>(manager)->GetLayerZOrder(static_cast<int>(index));
+    }
+    return 0;
+}
+
+void ogc_layer_manager_set_layer_z_order(ogc_layer_manager_t* manager, size_t index, int z_order) {
+    if (manager) {
+        reinterpret_cast<LayerManager*>(manager)->SetLayerZOrder(static_cast<int>(index), z_order);
+    }
+}
+
+void ogc_layer_manager_sort_by_z_order(ogc_layer_manager_t* manager) {
+    if (manager) {
+        reinterpret_cast<LayerManager*>(manager)->SortLayersByZOrder();
     }
 }
 

@@ -80,6 +80,9 @@ public:
     
     bool IsVisibleAtScale(double scale) const;
     
+    int GetZOrder() const { return m_zOrder; }
+    void SetZOrder(int zOrder) { m_zOrder = zOrder; }
+    
     void SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer);
     std::shared_ptr<Symbolizer> GetSymbolizer() const { return m_symbolizer; }
     
@@ -97,6 +100,7 @@ private:
     double m_opacity;
     bool m_selectable;
     bool m_editable;
+    int m_zOrder;
     std::shared_ptr<Symbolizer> m_symbolizer;
     std::vector<std::shared_ptr<SymbolizerRule>> m_rules;
 };
@@ -161,6 +165,9 @@ public:
     void SetLayerVisibility(int index, LayerVisibility visibility);
     void SetLayerOpacity(int index, double opacity);
     void SetLayerScaleRange(int index, double minScale, double maxScale);
+    void SetLayerZOrder(int index, int zOrder);
+    int GetLayerZOrder(int index) const;
+    void SortLayersByZOrder();
     
     std::vector<LayerItem*> GetVisibleLayers() const;
     std::vector<LayerItem*> GetVisibleLayersAtScale(double scale) const;

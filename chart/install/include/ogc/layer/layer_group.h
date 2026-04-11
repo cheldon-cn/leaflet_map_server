@@ -27,6 +27,9 @@ public:
     virtual CNLayerNode* GetParent() = 0;
     virtual const CNLayerNode* GetParent() const = 0;
     virtual void SetParent(CNLayerNode* parent) = 0;
+
+    virtual int GetZOrder() const { return 0; }
+    virtual void SetZOrder(int z_order) { (void)z_order; }
 };
 
 class OGC_LAYER_API CNLayerWrapper : public CNLayerNode {
@@ -53,10 +56,14 @@ public:
     
     CNLayer* GetLayer();
     const CNLayer* GetLayer() const;
+
+    int GetZOrder() const override { return z_order_; }
+    void SetZOrder(int z_order) override { z_order_ = z_order; }
     
 private:
     std::unique_ptr<CNLayer> layer_;
     bool visible_ = true;
+    int z_order_ = 0;
     CNLayerNode* parent_ = nullptr;
 };
 
@@ -107,9 +114,15 @@ public:
     CNStatus CommitTransaction();
     CNStatus RollbackTransaction();
 
+    int GetZOrder() const override { return z_order_; }
+    void SetZOrder(int z_order) override { z_order_ = z_order; }
+
+    void SortByZOrder();
+
 private:
     std::string name_;
     bool visible_ = true;
+    int z_order_ = 0;
     CNLayerNode* parent_ = nullptr;
     std::vector<std::unique_ptr<CNLayerWrapper>> layers_;
     std::vector<std::unique_ptr<CNLayerGroup>> groups_;

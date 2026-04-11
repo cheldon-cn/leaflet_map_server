@@ -1,5 +1,7 @@
 #include "ogc/layer/layer_group.h"
 
+#include <algorithm>
+
 namespace ogc {
 
 CNLayerWrapper::CNLayerWrapper(std::unique_ptr<CNLayer> layer)
@@ -287,6 +289,22 @@ CNStatus CNLayerGroup::RollbackTransaction() {
         }
     }
     return CNStatus::kSuccess;
+}
+
+void CNLayerGroup::SortByZOrder() {
+    std::stable_sort(layers_.begin(), layers_.end(),
+        [](const std::unique_ptr<CNLayerWrapper>& a,
+           const std::unique_ptr<CNLayerWrapper>& b) {
+            return a->GetZOrder() < b->GetZOrder();
+        });
+    std::stable_sort(groups_.begin(), groups_.end(),
+        [](const std::unique_ptr<CNLayerGroup>& a,
+           const std::unique_ptr<CNLayerGroup>& b) {
+            return a->GetZOrder() < b->GetZOrder();
+        });
+    for (auto& group : groups_) {
+        group->SortByZOrder();
+    }
 }
 
 } // namespace ogc

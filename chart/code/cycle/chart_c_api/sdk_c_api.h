@@ -1904,6 +1904,20 @@ SDK_C_API double ogc_layer_group_get_opacity(const ogc_layer_group_t* group);
  */
 SDK_C_API void ogc_layer_group_set_opacity(ogc_layer_group_t* group, double opacity);
 
+/**
+ * @brief Get the Z-order of a layer group.
+ * @param group Pointer to the layer group.
+ * @return Z-order value.
+ */
+SDK_C_API int ogc_layer_group_get_z_order(const ogc_layer_group_t* group);
+
+/**
+ * @brief Set the Z-order of a layer group.
+ * @param group Pointer to the layer group.
+ * @param z_order Z-order value.
+ */
+SDK_C_API void ogc_layer_group_set_z_order(ogc_layer_group_t* group, int z_order);
+
 /* 4.7 DataSource */
 /* Java: cn.cycle.chart.api.layer.DataSource */
 /* C++:   ogc::layer::CNDataSource */
@@ -3133,6 +3147,28 @@ SDK_C_API double ogc_layer_manager_get_layer_opacity(const ogc_layer_manager_t* 
  * @param opacity Opacity value (0.0 to 1.0).
  */
 SDK_C_API void ogc_layer_manager_set_layer_opacity(ogc_layer_manager_t* mgr, size_t index, double opacity);
+
+/**
+ * @brief Get the Z-order of a layer.
+ * @param mgr Pointer to the manager.
+ * @param index Layer index.
+ * @return Z-order value.
+ */
+SDK_C_API int ogc_layer_manager_get_layer_z_order(const ogc_layer_manager_t* mgr, size_t index);
+
+/**
+ * @brief Set the Z-order of a layer.
+ * @param mgr Pointer to the manager.
+ * @param index Layer index.
+ * @param z_order Z-order value.
+ */
+SDK_C_API void ogc_layer_manager_set_layer_z_order(ogc_layer_manager_t* mgr, size_t index, int z_order);
+
+/**
+ * @brief Sort layers by Z-order.
+ * @param mgr Pointer to the manager.
+ */
+SDK_C_API void ogc_layer_manager_sort_by_z_order(ogc_layer_manager_t* mgr);
 
 /* 6.5 LabelEngine */
 /* Java: cn.cycle.chart.api.graph.LabelEngine */

@@ -12,6 +12,7 @@ LayerConfig::LayerConfig()
     , m_opacity(1.0)
     , m_selectable(true)
     , m_editable(false)
+    , m_zOrder(0)
 {
 }
 
@@ -23,6 +24,7 @@ LayerConfig::LayerConfig(const std::string& name)
     , m_opacity(1.0)
     , m_selectable(true)
     , m_editable(false)
+    , m_zOrder(0)
 {
 }
 
@@ -308,6 +310,38 @@ void LayerManager::SetLayerScaleRange(int index, double minScale, double maxScal
         m_layers[index]->GetConfig().SetMaxScale(maxScale);
         NotifyLayerChanged(index);
     }
+}
+
+void LayerManager::SetLayerZOrder(int index, int zOrder)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    if (index >= 0 && index < static_cast<int>(m_layers.size())) {
+        m_layers[index]->GetConfig().SetZOrder(zOrder);
+        NotifyLayerChanged(index);
+    }
+}
+
+int LayerManager::GetLayerZOrder(int index) const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    if (index >= 0 && index < static_cast<int>(m_layers.size())) {
+        return m_layers[index]->GetConfig().GetZOrder();
+    }
+    return 0;
+}
+
+void LayerManager::SortLayersByZOrder()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    std::stable_sort(m_layers.begin(), m_layers.end(),
+        [](const LayerItemPtr& a, const LayerItemPtr& b) {
+            return a->GetConfig().GetZOrder() < b->GetConfig().GetZOrder();
+        });
+    
+    NotifyLayerChanged(-1);
 }
 
 std::vector<LayerItem*> LayerManager::GetVisibleLayers() const
