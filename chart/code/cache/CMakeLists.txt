@@ -9,6 +9,7 @@ set(SOURCES
     src/offline/offline_storage_manager.cpp
     src/offline/offline_sync_manager.cpp
     src/offline/data_encryption.cpp
+    src/cache_manager.cpp
 )
 
 set(HEADERS
@@ -21,6 +22,7 @@ set(HEADERS
     include/ogc/cache/offline/offline_storage_manager.h
     include/ogc/cache/offline/offline_sync_manager.h
     include/ogc/cache/offline/data_encryption.h
+    include/ogc/cache/cache_manager.h
 )
 
 add_library(ogc_cache SHARED ${SOURCES} ${HEADERS})

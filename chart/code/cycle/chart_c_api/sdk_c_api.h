@@ -1522,6 +1522,59 @@ SDK_C_API void ogc_feature_set_field_string(ogc_feature_t* feature, size_t index
  */
 SDK_C_API void ogc_feature_set_field_null(ogc_feature_t* feature, size_t index);
 
+/* Field access by name (convenience methods) */
+
+/**
+ * @brief Get field value as string by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @return String value, or empty string if field not found.
+ */
+SDK_C_API const char* ogc_feature_get_field_as_string_by_name(const ogc_feature_t* feature, const char* name);
+
+/**
+ * @brief Set field value as string by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @param value String value to set.
+ * @return 0 on success, -1 if field not found.
+ */
+SDK_C_API int ogc_feature_set_field_string_by_name(ogc_feature_t* feature, const char* name, const char* value);
+
+/**
+ * @brief Get field value as integer by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @return Integer value, or 0 if field not found.
+ */
+SDK_C_API int ogc_feature_get_field_as_integer_by_name(const ogc_feature_t* feature, const char* name);
+
+/**
+ * @brief Set field value as integer by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @param value Integer value to set.
+ * @return 0 on success, -1 if field not found.
+ */
+SDK_C_API int ogc_feature_set_field_integer_by_name(ogc_feature_t* feature, const char* name, int value);
+
+/**
+ * @brief Get field value as real by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @return Real value, or 0.0 if field not found.
+ */
+SDK_C_API double ogc_feature_get_field_as_real_by_name(const ogc_feature_t* feature, const char* name);
+
+/**
+ * @brief Set field value as real by field name.
+ * @param feature Pointer to the feature.
+ * @param name Field name.
+ * @param value Real value to set.
+ * @return 0 on success, -1 if field not found.
+ */
+SDK_C_API int ogc_feature_set_field_real_by_name(ogc_feature_t* feature, const char* name, double value);
+
 /**
  * @brief Get the geometry of a feature.
  * @param feature Pointer to the feature.
@@ -1711,6 +1764,35 @@ SDK_C_API int ogc_vector_layer_update_feature(ogc_layer_t* layer, const ogc_feat
  */
 SDK_C_API int ogc_vector_layer_delete_feature(ogc_layer_t* layer, int64_t fid);
 
+/**
+ * @brief Create a new feature in a vector layer.
+ * @param layer Pointer to the vector layer.
+ * @param feature Pointer to the feature to create.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_vector_layer_create_feature(ogc_layer_t* layer, ogc_feature_t* feature);
+
+/**
+ * @brief Get the feature definition of a vector layer.
+ * @param layer Pointer to the vector layer.
+ * @return Pointer to the feature definition, or NULL on failure.
+ */
+SDK_C_API ogc_feature_defn_t* ogc_vector_layer_get_feature_defn(ogc_layer_t* layer);
+
+/**
+ * @brief Get the spatial filter geometry of a vector layer.
+ * @param layer Pointer to the vector layer.
+ * @return Pointer to the spatial filter geometry, or NULL if not set.
+ */
+SDK_C_API ogc_geometry_t* ogc_vector_layer_get_spatial_filter(ogc_layer_t* layer);
+
+/**
+ * @brief Get the attribute filter string of a vector layer.
+ * @param layer Pointer to the vector layer.
+ * @return Attribute filter string, or empty string if not set.
+ */
+SDK_C_API const char* ogc_vector_layer_get_attribute_filter(const ogc_layer_t* layer);
+
 /* 4.4 RasterLayer */
 /* Java: cn.cycle.chart.api.layer.RasterLayer */
 /* C++:   ogc::layer::CNRasterLayer */
@@ -1808,6 +1890,13 @@ SDK_C_API int ogc_memory_layer_remove_feature(ogc_layer_t* layer, int64_t fid);
  * @param layer Pointer to the memory layer.
  */
 SDK_C_API void ogc_memory_layer_clear(ogc_layer_t* layer);
+
+/**
+ * @brief Get the feature count of a memory layer.
+ * @param layer Pointer to the memory layer.
+ * @return Number of features in the layer.
+ */
+SDK_C_API int64_t ogc_memory_layer_get_feature_count(const ogc_layer_t* layer);
 
 /* 4.6 LayerGroup */
 /* Java: cn.cycle.chart.api.layer.LayerGroup */
@@ -3764,6 +3853,27 @@ SDK_C_API size_t ogc_tile_cache_get_max_size(const ogc_tile_cache_t* cache);
  */
 SDK_C_API void ogc_tile_cache_set_max_size(ogc_tile_cache_t* cache, size_t max_size);
 
+/**
+ * @brief Get the number of tiles in the cache.
+ * @param cache Pointer to the cache.
+ * @return Number of cached tiles.
+ */
+SDK_C_API size_t ogc_tile_cache_get_count(const ogc_tile_cache_t* cache);
+
+/**
+ * @brief Get the cache capacity (alias for ogc_tile_cache_get_max_size).
+ * @param cache Pointer to the cache.
+ * @return Cache capacity in bytes.
+ */
+SDK_C_API size_t ogc_tile_cache_get_capacity(const ogc_tile_cache_t* cache);
+
+/**
+ * @brief Set the cache capacity (alias for ogc_tile_cache_set_max_size).
+ * @param cache Pointer to the cache.
+ * @param capacity Cache capacity in bytes.
+ */
+SDK_C_API void ogc_tile_cache_set_capacity(ogc_tile_cache_t* cache, size_t capacity);
+
 /* 7.3 MemoryTileCache */
 /* Java: cn.cycle.chart.api.cache.MemoryTileCache */
 /* C++:   ogc::cache::MemoryTileCache */
@@ -3775,6 +3885,13 @@ SDK_C_API void ogc_tile_cache_set_max_size(ogc_tile_cache_t* cache, size_t max_s
  * @return Pointer to newly created cache, or NULL on failure.
  */
 SDK_C_API ogc_tile_cache_t* ogc_memory_tile_cache_create(size_t max_size_bytes);
+
+/**
+ * @brief Get the current memory usage of a memory tile cache.
+ * @param cache Pointer to the memory tile cache.
+ * @return Current memory usage in bytes.
+ */
+SDK_C_API size_t ogc_memory_tile_cache_get_memory_usage(const ogc_tile_cache_t* cache);
 
 /* 7.4 DiskTileCache */
 /* Java: cn.cycle.chart.api.cache.DiskTileCache */
@@ -3876,11 +3993,105 @@ SDK_C_API size_t ogc_offline_storage_get_region_count(const ogc_offline_storage_
 SDK_C_API ogc_offline_region_t* ogc_offline_storage_get_region(const ogc_offline_storage_t* storage, size_t index);
 
 /**
+ * @brief Get an offline region by ID.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return Pointer to the region, or NULL if not found.
+ */
+SDK_C_API ogc_offline_region_t* ogc_offline_storage_get_region_by_id(const ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Get the ID of an offline region.
+ * @param region Pointer to the region.
+ * @return Region ID string, or NULL on failure.
+ */
+SDK_C_API const char* ogc_offline_region_get_id(const ogc_offline_region_t* region);
+
+/**
+ * @brief Get the name of an offline region.
+ * @param region Pointer to the region.
+ * @return Region name string, or NULL on failure.
+ */
+SDK_C_API const char* ogc_offline_region_get_name(const ogc_offline_region_t* region);
+
+/**
  * @brief Remove an offline region.
  * @param storage Pointer to the storage.
  * @param index Region index to remove.
  */
 SDK_C_API void ogc_offline_storage_remove_region(ogc_offline_storage_t* storage, size_t index);
+
+/**
+ * @brief Remove an offline region by ID.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_remove_region_by_id(ogc_offline_storage_t* storage, const char* region_id);
+
+/* Offline Region Download Control */
+
+/**
+ * @brief Start downloading an offline region by ID.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_start_download(ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Pause downloading an offline region.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_pause_download(ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Resume downloading an offline region.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_resume_download(ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Cancel downloading an offline region.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_cancel_download(ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Check if an offline region is downloading.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return 1 if downloading, 0 if not, -1 on error.
+ */
+SDK_C_API int ogc_offline_storage_is_downloading(const ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Get the download progress of an offline region by ID.
+ * @param storage Pointer to the storage.
+ * @param region_id Region ID string.
+ * @return Progress value (0.0 to 1.0), or -1.0 on error.
+ */
+SDK_C_API double ogc_offline_storage_get_download_progress(const ogc_offline_storage_t* storage, const char* region_id);
+
+/**
+ * @brief Get the total storage size in bytes.
+ * @param storage Pointer to the storage.
+ * @return Total storage size in bytes.
+ */
+SDK_C_API size_t ogc_offline_storage_get_storage_size(const ogc_offline_storage_t* storage);
+
+/**
+ * @brief Get the used storage size in bytes.
+ * @param storage Pointer to the storage.
+ * @return Used storage size in bytes.
+ */
+SDK_C_API size_t ogc_offline_storage_get_used_size(const ogc_offline_storage_t* storage);
 
 /* 7.7 DataEncryption */
 /* Java: cn.cycle.chart.api.cache.DataEncryption */
@@ -3926,6 +4137,106 @@ SDK_C_API int ogc_data_encryption_encrypt(ogc_data_encryption_t* encryption, con
  * @return 0 on success, non-zero on failure.
  */
 SDK_C_API int ogc_data_encryption_decrypt(ogc_data_encryption_t* encryption, const void* input, size_t input_size, void* output, size_t* output_size);
+
+/* 7.8 CacheManager */
+/* Java: cn.cycle.chart.api.cache.CacheManager */
+/* C++:   ogc::cache::CacheManager */
+/* Header: ogc/cache/cache_manager.h */
+
+/**
+ * @brief Opaque type representing a cache manager.
+ */
+typedef struct ogc_cache_manager_t ogc_cache_manager_t;
+
+/**
+ * @brief Create a cache manager.
+ * @return Pointer to newly created cache manager, or NULL on failure.
+ */
+SDK_C_API ogc_cache_manager_t* ogc_cache_manager_create(void);
+
+/**
+ * @brief Destroy a cache manager.
+ * @param mgr Pointer to the cache manager to destroy.
+ */
+SDK_C_API void ogc_cache_manager_destroy(ogc_cache_manager_t* mgr);
+
+/**
+ * @brief Get the number of managed caches.
+ * @param mgr Pointer to the cache manager.
+ * @return Number of caches.
+ */
+SDK_C_API size_t ogc_cache_manager_get_cache_count(const ogc_cache_manager_t* mgr);
+
+/**
+ * @brief Get a managed cache by name.
+ * @param mgr Pointer to the cache manager.
+ * @param name Cache name.
+ * @return Pointer to the cache, or NULL if not found.
+ */
+SDK_C_API ogc_tile_cache_t* ogc_cache_manager_get_cache(ogc_cache_manager_t* mgr, const char* name);
+
+/**
+ * @brief Add a cache to the manager.
+ * @param mgr Pointer to the cache manager.
+ * @param name Cache name.
+ * @param cache Pointer to the cache to add.
+ */
+SDK_C_API void ogc_cache_manager_add_cache(ogc_cache_manager_t* mgr, const char* name, ogc_tile_cache_t* cache);
+
+/**
+ * @brief Remove a cache from the manager.
+ * @param mgr Pointer to the cache manager.
+ * @param name Cache name to remove.
+ */
+SDK_C_API void ogc_cache_manager_remove_cache(ogc_cache_manager_t* mgr, const char* name);
+
+/**
+ * @brief Clear all managed caches.
+ * @param mgr Pointer to the cache manager.
+ */
+SDK_C_API void ogc_cache_manager_clear_all(ogc_cache_manager_t* mgr);
+
+/**
+ * @brief Get a tile from a named cache.
+ * @param mgr Pointer to the cache manager.
+ * @param cache_name Name of the cache.
+ * @param key Pointer to the tile key.
+ * @param output Buffer to store tile data.
+ * @param output_size Pointer to store output size (in: buffer size, out: actual size).
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_cache_manager_get_tile(ogc_cache_manager_t* mgr, const char* cache_name, const ogc_tile_key_t* key, void* output, size_t* output_size);
+
+/**
+ * @brief Put a tile into a named cache.
+ * @param mgr Pointer to the cache manager.
+ * @param cache_name Name of the cache.
+ * @param key Pointer to the tile key.
+ * @param data Tile data.
+ * @param size Size of tile data.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_cache_manager_put_tile(ogc_cache_manager_t* mgr, const char* cache_name, const ogc_tile_key_t* key, const void* data, size_t size);
+
+/**
+ * @brief Get total size of all managed caches.
+ * @param mgr Pointer to the cache manager.
+ * @return Total size in bytes.
+ */
+SDK_C_API size_t ogc_cache_manager_get_total_size(const ogc_cache_manager_t* mgr);
+
+/**
+ * @brief Get total tile count across all managed caches.
+ * @param mgr Pointer to the cache manager.
+ * @return Total tile count.
+ */
+SDK_C_API size_t ogc_cache_manager_get_total_tile_count(const ogc_cache_manager_t* mgr);
+
+/**
+ * @brief Flush all managed caches.
+ * @param mgr Pointer to the cache manager.
+ */
+SDK_C_API void ogc_cache_manager_flush_all(ogc_cache_manager_t* mgr);
 
 /* ============================================================================
  * 8. Symbology Module (ogc_symbology)
@@ -4381,6 +4692,72 @@ SDK_C_API ogc_coordinate_t ogc_alert_get_position(const ogc_alert_t* alert);
  */
 SDK_C_API void ogc_alert_set_position(ogc_alert_t* alert, const ogc_coordinate_t* pos);
 
+/**
+ * @brief Alert severity enumeration.
+ */
+typedef enum ogc_alert_severity_e {
+    OGC_ALERT_SEVERITY_LOW = 0,
+    OGC_ALERT_SEVERITY_MEDIUM = 1,
+    OGC_ALERT_SEVERITY_HIGH = 2,
+    OGC_ALERT_SEVERITY_CRITICAL = 3
+} ogc_alert_severity_e;
+
+/**
+ * @brief Set the ID of an alert.
+ * @param alert Pointer to the alert.
+ * @param id Alert ID.
+ */
+SDK_C_API void ogc_alert_set_id(ogc_alert_t* alert, int64_t id);
+
+/**
+ * @brief Get the ID of an alert.
+ * @param alert Pointer to the alert.
+ * @return Alert ID.
+ */
+SDK_C_API int64_t ogc_alert_get_id(const ogc_alert_t* alert);
+
+/**
+ * @brief Set the severity of an alert.
+ * @param alert Pointer to the alert.
+ * @param severity Alert severity.
+ */
+SDK_C_API void ogc_alert_set_severity(ogc_alert_t* alert, ogc_alert_severity_e severity);
+
+/**
+ * @brief Get the severity of an alert.
+ * @param alert Pointer to the alert.
+ * @return Alert severity.
+ */
+SDK_C_API ogc_alert_severity_e ogc_alert_get_severity(const ogc_alert_t* alert);
+
+/**
+ * @brief Set the message of an alert.
+ * @param alert Pointer to the alert.
+ * @param message Alert message.
+ */
+SDK_C_API void ogc_alert_set_message(ogc_alert_t* alert, const char* message);
+
+/**
+ * @brief Set the timestamp of an alert.
+ * @param alert Pointer to the alert.
+ * @param timestamp Timestamp in seconds since epoch.
+ */
+SDK_C_API void ogc_alert_set_timestamp(ogc_alert_t* alert, int64_t timestamp);
+
+/**
+ * @brief Set whether an alert is acknowledged.
+ * @param alert Pointer to the alert.
+ * @param acknowledged Non-zero if acknowledged, zero otherwise.
+ */
+SDK_C_API void ogc_alert_set_acknowledged(ogc_alert_t* alert, int acknowledged);
+
+/**
+ * @brief Check if an alert is acknowledged.
+ * @param alert Pointer to the alert.
+ * @return Non-zero if acknowledged, zero otherwise.
+ */
+SDK_C_API int ogc_alert_is_acknowledged(const ogc_alert_t* alert);
+
 /* 9.4 AlertEngine */
 /* Java: cn.cycle.chart.api.alert.AlertEngine */
 /* C++:   ogc::alert::AlertEngine */
@@ -4442,6 +4819,37 @@ SDK_C_API void ogc_alert_engine_free_alerts(ogc_alert_t** alerts);
  * @param alert Pointer to the alert to acknowledge.
  */
 SDK_C_API void ogc_alert_engine_acknowledge_alert(ogc_alert_engine_t* engine, const ogc_alert_t* alert);
+
+/**
+ * @brief Add an alert to the engine.
+ * @param engine Pointer to the engine.
+ * @param alert Pointer to the alert to add.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_alert_engine_add_alert(ogc_alert_engine_t* engine, ogc_alert_t* alert);
+
+/**
+ * @brief Remove an alert from the engine.
+ * @param engine Pointer to the engine.
+ * @param id ID of the alert to remove.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_alert_engine_remove_alert(ogc_alert_engine_t* engine, int64_t id);
+
+/**
+ * @brief Get an alert from the engine by ID.
+ * @param engine Pointer to the engine.
+ * @param id Alert ID.
+ * @return Pointer to the alert, or NULL if not found.
+ */
+SDK_C_API ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, int64_t id);
+
+/**
+ * @brief Get the number of active alerts.
+ * @param engine Pointer to the engine.
+ * @return Number of active alerts.
+ */
+SDK_C_API size_t ogc_alert_engine_get_alert_count(const ogc_alert_engine_t* engine);
 
 /* 9.5 CpaCalculator */
 /* Java: cn.cycle.chart.api.navi.CpaCalculator */
@@ -4606,6 +5014,65 @@ SDK_C_API int ogc_waypoint_is_arrival(const ogc_waypoint_t* wp);
  */
 SDK_C_API void ogc_waypoint_set_arrival_radius(ogc_waypoint_t* wp, double radius);
 
+/**
+ * @brief Get the arrival radius of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @return Arrival radius in nautical miles.
+ */
+SDK_C_API double ogc_waypoint_get_arrival_radius(const ogc_waypoint_t* wp);
+
+/**
+ * @brief Set the turn radius of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @param radius Turn radius in nautical miles.
+ */
+SDK_C_API void ogc_waypoint_set_turn_radius(ogc_waypoint_t* wp, double radius);
+
+/**
+ * @brief Get the turn radius of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @return Turn radius in nautical miles.
+ */
+SDK_C_API double ogc_waypoint_get_turn_radius(const ogc_waypoint_t* wp);
+
+/**
+ * @brief Waypoint type enumeration.
+ */
+typedef enum ogc_waypoint_type_e {
+    OGC_WAYPOINT_TYPE_NORMAL = 0,
+    OGC_WAYPOINT_TYPE_TURN = 1,
+    OGC_WAYPOINT_TYPE_ARRIVAL = 2,
+    OGC_WAYPOINT_TYPE_DEPARTURE = 3
+} ogc_waypoint_type_e;
+
+/**
+ * @brief Set the type of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @param type Waypoint type.
+ */
+SDK_C_API void ogc_waypoint_set_type(ogc_waypoint_t* wp, ogc_waypoint_type_e type);
+
+/**
+ * @brief Get the type of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @return Waypoint type.
+ */
+SDK_C_API ogc_waypoint_type_e ogc_waypoint_get_type(const ogc_waypoint_t* wp);
+
+/**
+ * @brief Set the description of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @param description Waypoint description.
+ */
+SDK_C_API void ogc_waypoint_set_description(ogc_waypoint_t* wp, const char* description);
+
+/**
+ * @brief Get the description of a waypoint.
+ * @param wp Pointer to the waypoint.
+ * @return Waypoint description string.
+ */
+SDK_C_API const char* ogc_waypoint_get_description(const ogc_waypoint_t* wp);
+
 /* 10.4 Route */
 /* Java: cn.cycle.chart.api.navi.Route */
 /* C++:   ogc::navi::Route */
@@ -4705,6 +5172,33 @@ SDK_C_API ogc_waypoint_t* ogc_route_get_current_waypoint(const ogc_route_t* rout
  * @return 0 on success, non-zero if no more waypoints.
  */
 SDK_C_API int ogc_route_advance_to_next_waypoint(ogc_route_t* route);
+
+/**
+ * @brief Insert a waypoint at a specific index.
+ * @param route Pointer to the route.
+ * @param index Index to insert at.
+ * @param wp Pointer to the waypoint to insert.
+ */
+SDK_C_API void ogc_route_insert_waypoint(ogc_route_t* route, size_t index, ogc_waypoint_t* wp);
+
+/**
+ * @brief Clear all waypoints from a route.
+ * @param route Pointer to the route.
+ */
+SDK_C_API void ogc_route_clear(ogc_route_t* route);
+
+/**
+ * @brief Reverse the order of waypoints in a route.
+ * @param route Pointer to the route.
+ */
+SDK_C_API void ogc_route_reverse(ogc_route_t* route);
+
+/**
+ * @brief Get the ETA (estimated time of arrival) for a route.
+ * @param route Pointer to the route.
+ * @return ETA in seconds from now, or -1 if not available.
+ */
+SDK_C_API int64_t ogc_route_get_eta(const ogc_route_t* route);
 
 /* 10.5 RouteManager */
 /* Java: cn.cycle.chart.api.navi.RouteManager */
@@ -4972,6 +5466,29 @@ SDK_C_API void ogc_ais_manager_free_targets(ogc_ais_target_t** targets);
  * @return Array of target pointers (caller must free with ogc_ais_manager_free_targets).
  */
 ogc_ais_target_t** ogc_ais_manager_get_targets_in_range(ogc_ais_manager_t* mgr, double lat, double lon, double range_nm, int* count);
+
+/**
+ * @brief Get the number of AIS targets.
+ * @param mgr Pointer to the manager.
+ * @return Number of targets.
+ */
+SDK_C_API int ogc_ais_manager_get_target_count(ogc_ais_manager_t* mgr);
+
+/**
+ * @brief Add an AIS target to the manager.
+ * @param mgr Pointer to the manager.
+ * @param target Pointer to the target to add.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_ais_manager_add_target(ogc_ais_manager_t* mgr, ogc_ais_target_t* target);
+
+/**
+ * @brief Remove an AIS target from the manager.
+ * @param mgr Pointer to the manager.
+ * @param mmsi MMSI number of the target to remove.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_ais_manager_remove_target(ogc_ais_manager_t* mgr, uint32_t mmsi);
 
 /* 10.9 NavigationEngine */
 /* Java: cn.cycle.chart.api.navi.NavigationEngine */
@@ -6861,8 +7378,8 @@ SDK_C_API void ogc_ais_target_array_destroy(ogc_ais_target_t** array, size_t cou
  * ============================================================================
  */
 
-#define OGC_SDK_VERSION_MAJOR 1
-#define OGC_SDK_VERSION_MINOR 1
+#define OGC_SDK_VERSION_MAJOR 2
+#define OGC_SDK_VERSION_MINOR 3
 #define OGC_SDK_VERSION_PATCH 0
 
 /**
