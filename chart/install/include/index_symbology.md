@@ -36,6 +36,7 @@ ogc_symbology 是 OGC 图表系统的**符号化库**，提供样式解析、过
 | [filter/logical_filter.h](ogc/symbology/filter/logical_filter.h) | 逻辑过滤器 | `LogicalFilter`, `LogicalOperator` |
 | [filter/spatial_filter.h](ogc/symbology/filter/spatial_filter.h) | 空间过滤器 | `SpatialFilter`, `SpatialOperator` |
 | [filter/symbolizer_rule.h](ogc/symbology/filter/symbolizer_rule.h) | 符号化规则 | `SymbolizerRule` |
+| [filter/rule_engine.h](ogc/symbology/filter/rule_engine.h) | 规则引擎 | `RuleEngine` |
 
 ### 符号化器
 

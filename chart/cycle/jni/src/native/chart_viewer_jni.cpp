@@ -2,7 +2,7 @@
 #include "jni_converter.h"
 #include "jni_exception.h"
 #include "jni_memory.h"
-#include "sdk_c_api.h"
+#include "ogc/capi/sdk_c_api.h"
 
 using namespace ogc::jni;
 
@@ -278,6 +278,54 @@ Java_cn_cycle_chart_api_core_ChartViewer_nativeWorldToScreen
 
         jdouble coord[2] = {screenX, screenY};
         env->SetDoubleArrayRegion(outCoord, 0, 2, coord);
+    } catch (const std::exception& e) {
+        JniException::TranslateAndThrow(env, e);
+    }
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_core_ChartViewer_nativeGetViewportPtr
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    JniLocalRefScope scope(env);
+    if (!scope.Success()) {
+        JniException::ThrowOutOfMemoryError(env, "Failed to create local frame");
+        return 0;
+    }
+
+    try {
+        ogc_chart_viewer_t* viewer =
+            static_cast<ogc_chart_viewer_t*>(JniConverter::FromJLongPtr(ptr));
+        if (!viewer) {
+            JniException::ThrowNullPointerException(env, "ChartViewer is null");
+            return 0;
+        }
+
+        ogc_viewport_t* viewport = ogc_chart_viewer_get_viewport_ptr(viewer);
+        return JniConverter::ToJLongPtr(viewport);
+    } catch (const std::exception& e) {
+        JniException::TranslateAndThrow(env, e);
+        return 0;
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_ChartViewer_nativeGetFullExtent
+  (JNIEnv* env, jobject obj, jlong ptr, jdoubleArray outExtent) {
+    JniLocalRefScope scope(env);
+
+    try {
+        ogc_chart_viewer_t* viewer =
+            static_cast<ogc_chart_viewer_t*>(JniConverter::FromJLongPtr(ptr));
+        if (!viewer) {
+            JniException::ThrowNullPointerException(env, "ChartViewer is null");
+            return;
+        }
+
+        double min_x, min_y, max_x, max_y;
+        ogc_chart_viewer_get_full_extent(viewer, &min_x, &min_y, &max_x, &max_y);
+
+        jdouble extent[4] = {min_x, min_y, max_x, max_y};
+        env->SetDoubleArrayRegion(outExtent, 0, 4, extent);
     } catch (const std::exception& e) {
         JniException::TranslateAndThrow(env, e);
     }

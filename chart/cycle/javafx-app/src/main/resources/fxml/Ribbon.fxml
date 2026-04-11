@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.cycle.control.Ribbon?>
+<?import com.cycle.control.ribbon.RibbonTab?>
+
+<Ribbon fx:id="ribbon" xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1">
+</Ribbon>

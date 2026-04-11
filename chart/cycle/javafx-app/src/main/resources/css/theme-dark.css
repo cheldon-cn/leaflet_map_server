@@ -1,0 +1,120 @@
+.root {
+    -fx-base: #2d2d2d;
+    -fx-background: #1e1e1e;
+    -fx-control-inner-background: #2d2d2d;
+    -fx-control-inner-alt: #3d3d3d;
+    -fx-text-fill: #e0e0e0;
+    -fx-text-background-color: #e0e0e0;
+    -fx-accent: #4fc3f7;
+    -fx-focus-color: #4fc3f7;
+    -fx-faint-focus-color: rgba(79, 195, 247, 0.2);
+}
+
+.sidebar {
+    -fx-background-color: #252526;
+    -fx-border-color: #3c3c3c;
+}
+
+.top-container {
+    -fx-background-color: #252526;
+}
+
+.window-controls {
+    -fx-background-color: #252526;
+}
+
+.window-control-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e0e0e0;
+}
+
+.window-control-button:hover {
+    -fx-background-color: #3c3c3c;
+}
+
+.ribbon {
+    -fx-background-color: #252526;
+}
+
+.ribbon .tab-header-area {
+    -fx-background-color: #252526;
+}
+
+.ribbon .tab {
+    -fx-background-color: #252526;
+}
+
+.ribbon .tab:hover {
+    -fx-background-color: #3c3c3c;
+}
+
+.ribbon .tab:selected {
+    -fx-background-color: #2d2d2d;
+}
+
+.ribbon-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.ribbon-button:hover {
+    -fx-background-color: #3c3c3c;
+    -fx-border-color: #555555;
+}
+
+.status-bar {
+    -fx-background-color: #007acc;
+    -fx-border-color: #1e1e1e;
+}
+
+.button {
+    -fx-background-color: #3d3d3d;
+    -fx-border-color: #555555;
+    -fx-text-fill: #e0e0e0;
+}
+
+.button:hover {
+    -fx-background-color: #505050;
+    -fx-border-color: #4fc3f7;
+}
+
+.button:pressed {
+    -fx-background-color: #606060;
+}
+
+.label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.text-field {
+    -fx-background-color: #3d3d3d;
+    -fx-border-color: #555555;
+    -fx-text-fill: #e0e0e0;
+}
+
+.text-field:focused {
+    -fx-border-color: #4fc3f7;
+}
+
+.tab-pane {
+    -fx-background-color: #252526;
+}
+
+.tab {
+    -fx-background-color: #2d2d2d;
+    -fx-text-fill: #e0e0e0;
+}
+
+.tab:selected {
+    -fx-background-color: #1e1e1e;
+}
+
+.tree-view {
+    -fx-background-color: #252526;
+    -fx-text-fill: #e0e0e0;
+}
+
+.tree-cell:selected {
+    -fx-background-color: #094771;
+    -fx-text-fill: #ffffff;
+}

@@ -14,12 +14,21 @@ set(JNI_INCLUDE_DIRS
 )
 
 set(OGC_INSTALL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../install")
-set(CYCLE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build")
-set(CYCLE_TEST_DIR "${CYCLE_BUILD_DIR}/test")
+set(CODE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../code/build")
+set(CODE_TEST_DIR "${CODE_BUILD_DIR}/test")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CYCLE_TEST_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CYCLE_TEST_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CYCLE_BUILD_DIR}/cycle/jni/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CODE_TEST_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CODE_TEST_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CODE_BUILD_DIR}/lib)
+
+if(MSVC)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CODE_TEST_DIR}" CACHE PATH "" FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CODE_TEST_DIR}" CACHE PATH "" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CODE_BUILD_DIR}/lib" CACHE PATH "" FORCE)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CODE_TEST_DIR}" CACHE PATH "" FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CODE_TEST_DIR}" CACHE PATH "" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CODE_BUILD_DIR}/lib" CACHE PATH "" FORCE)
+endif()
 
 set(JNI_SOURCES
     src/jni_env_manager.cpp
@@ -33,6 +42,7 @@ set(JNI_SOURCES
     src/native/feature_jni.cpp
     src/native/layer_jni.cpp
     src/native/chart_config_jni.cpp
+    src/native/adapter_jni.cpp
 )
 
 add_library(ogc_chart_jni SHARED ${JNI_SOURCES})
@@ -41,28 +51,19 @@ target_include_directories(ogc_chart_jni
     PRIVATE
         ${JNI_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../code/cycle/chart_c_api"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../install/include"
+)
+
+target_link_directories(ogc_chart_jni
+    PRIVATE
+        ${CODE_BUILD_DIR}/lib
+        ${OGC_INSTALL_DIR}/lib
 )
 
 target_link_libraries(ogc_chart_jni
     PRIVATE
-        "${OGC_INSTALL_DIR}/lib/ogc_chart_c_api.lib"
+        ogc_chart_c_api
 )
-
-if(MSVC)
-    set_target_properties(ogc_chart_jni PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CYCLE_TEST_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CYCLE_TEST_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CYCLE_TEST_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CYCLE_TEST_DIR}"
-        ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CYCLE_BUILD_DIR}/cycle/jni/lib"
-        ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CYCLE_BUILD_DIR}/cycle/jni/lib"
-    )
-else()
-    set_target_properties(ogc_chart_jni PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY "${CYCLE_TEST_DIR}"
-    )
-endif()
 
 target_compile_definitions(ogc_chart_jni PRIVATE OGC_CHART_C_API_EXPORTS)
 

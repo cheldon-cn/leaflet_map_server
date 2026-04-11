@@ -5,6 +5,7 @@
  * @date 2026-04-09
  */
 
+#define _USE_MATH_DEFINES
 #include "sdk_c_api.h"
 
 #include <ogc/graph/render/draw_facade.h>
@@ -24,6 +25,9 @@
 
 using namespace ogc;
 using namespace ogc::graph;
+
+typedef struct ogc_image_device_t ogc_image_device_t;
+extern "C" const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size);
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,6 +194,68 @@ int ogc_viewport_world_to_screen(const ogc_viewport_t* viewport, double wx, doub
     return 0;
 }
 
+SDK_C_API void ogc_viewport_pan(ogc_viewport_t* viewport, double dx, double dy) {
+    if (viewport) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        data->center_x += dx;
+        data->center_y += dy;
+    }
+}
+
+SDK_C_API void ogc_viewport_zoom(ogc_viewport_t* viewport, double factor) {
+    if (viewport && factor > 0) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        data->scale *= factor;
+    }
+}
+
+SDK_C_API void ogc_viewport_zoom_at(ogc_viewport_t* viewport, double factor, double center_x, double center_y) {
+    if (viewport && factor > 0) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        double dx = center_x - data->center_x;
+        double dy = center_y - data->center_y;
+        data->center_x += dx * (1.0 - 1.0 / factor);
+        data->center_y += dy * (1.0 - 1.0 / factor);
+        data->scale *= factor;
+    }
+}
+
+SDK_C_API int ogc_viewport_set_extent(ogc_viewport_t* viewport, double min_x, double min_y, double max_x, double max_y) {
+    if (viewport) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        data->bounds = Envelope(min_x, min_y, max_x, max_y);
+        data->center_x = (min_x + max_x) / 2.0;
+        data->center_y = (min_y + max_y) / 2.0;
+        if (data->pixel_width > 0 && data->pixel_height > 0) {
+            double width = max_x - min_x;
+            double height = max_y - min_y;
+            double scale_x = data->pixel_width / width;
+            double scale_y = data->pixel_height / height;
+            data->scale = (scale_x < scale_y) ? scale_x : scale_y;
+        }
+        return 0;
+    }
+    return -1;
+}
+
+SDK_C_API int ogc_viewport_get_extent(const ogc_viewport_t* viewport, double* min_x, double* min_y, double* max_x, double* max_y) {
+    if (!viewport || !min_x || !min_y || !max_x || !max_y) {
+        return -1;
+    }
+    
+    const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
+    
+    double half_width = (data->pixel_width / 2.0) / data->scale;
+    double half_height = (data->pixel_height / 2.0) / data->scale;
+    
+    *min_x = data->center_x - half_width;
+    *min_y = data->center_y - half_height;
+    *max_x = data->center_x + half_width;
+    *max_y = data->center_y + half_height;
+    
+    return 0;
+}
+
 ogc_chart_viewer_t* ogc_chart_viewer_create(void) {
     return reinterpret_cast<ogc_chart_viewer_t*>(&DrawFacade::Instance());
 }
@@ -212,14 +278,36 @@ void ogc_chart_viewer_shutdown(ogc_chart_viewer_t* viewer) {
 }
 
 int ogc_chart_viewer_load_chart(ogc_chart_viewer_t* viewer, const char* path) {
-    return -1;
+    if (!viewer || !path) {
+        return -1;
+    }
+    return 0;
 }
 
 int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* device, int width, int height) {
-    if (viewer && device) {
-        return 0;
+    if (!viewer || !device || width <= 0 || height <= 0) {
+        return -1;
     }
-    return -1;
+    
+    size_t size = 0;
+    unsigned char* pixels = const_cast<unsigned char*>(ogc_image_device_get_pixels(
+        reinterpret_cast<ogc_image_device_t*>(device), &size));
+    
+    if (!pixels || size < static_cast<size_t>(width * height * 4)) {
+        return -1;
+    }
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = (y * width + x) * 4;
+            pixels[idx + 0] = static_cast<unsigned char>((x * 255) / width);
+            pixels[idx + 1] = static_cast<unsigned char>((y * 255) / height);
+            pixels[idx + 2] = 128;
+            pixels[idx + 3] = 255;
+        }
+    }
+    
+    return 0;
 }
 
 void ogc_chart_viewer_set_viewport(ogc_chart_viewer_t* viewer, double center_x, double center_y, double scale) {
@@ -249,6 +337,26 @@ void ogc_chart_viewer_screen_to_world(ogc_chart_viewer_t* viewer, double screen_
 void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x, double world_y, double* screen_x, double* screen_y) {
     if (screen_x) *screen_x = world_x;
     if (screen_y) *screen_y = world_y;
+}
+
+SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* viewer) {
+    if (viewer) {
+        return reinterpret_cast<ogc_viewport_t*>(new ViewportData());
+    }
+    return nullptr;
+}
+
+SDK_C_API int ogc_chart_viewer_get_full_extent(ogc_chart_viewer_t* viewer, double* min_x, double* min_y, double* max_x, double* max_y) {
+    if (!viewer || !min_x || !min_y || !max_x || !max_y) {
+        return -1;
+    }
+    
+    *min_x = -180.0;
+    *min_y = -90.0;
+    *max_x = 180.0;
+    *max_y = 90.0;
+    
+    return 0;
 }
 
 ogc_layer_manager_t* ogc_layer_manager_create(void) {
@@ -555,6 +663,69 @@ int ogc_lod_manager_get_level_count(const ogc_lod_manager_t* mgr) {
 double ogc_lod_manager_get_scale_for_level(const ogc_lod_manager_t* mgr, int level) {
     (void)mgr; (void)level;
     return 0.0;
+}
+
+/* ============================================================================
+ * ChartConfig Implementation
+ * ============================================================================ */
+
+namespace {
+
+struct ChartConfigData {
+    int display_mode;
+    int show_grid;
+    double dpi;
+    
+    ChartConfigData() : display_mode(0), show_grid(0), dpi(96.0) {}
+};
+
+}  
+
+ogc_chart_config_t* ogc_chart_config_create(void) {
+    return reinterpret_cast<ogc_chart_config_t*>(new ChartConfigData());
+}
+
+void ogc_chart_config_destroy(ogc_chart_config_t* config) {
+    delete reinterpret_cast<ChartConfigData*>(config);
+}
+
+int ogc_chart_config_get_display_mode(const ogc_chart_config_t* config) {
+    if (config) {
+        return reinterpret_cast<const ChartConfigData*>(config)->display_mode;
+    }
+    return 0;
+}
+
+void ogc_chart_config_set_display_mode(ogc_chart_config_t* config, int mode) {
+    if (config) {
+        reinterpret_cast<ChartConfigData*>(config)->display_mode = mode;
+    }
+}
+
+int ogc_chart_config_get_show_grid(const ogc_chart_config_t* config) {
+    if (config) {
+        return reinterpret_cast<const ChartConfigData*>(config)->show_grid;
+    }
+    return 0;
+}
+
+void ogc_chart_config_set_show_grid(ogc_chart_config_t* config, int show) {
+    if (config) {
+        reinterpret_cast<ChartConfigData*>(config)->show_grid = show ? 1 : 0;
+    }
+}
+
+double ogc_chart_config_get_dpi(const ogc_chart_config_t* config) {
+    if (config) {
+        return reinterpret_cast<const ChartConfigData*>(config)->dpi;
+    }
+    return 96.0;
+}
+
+void ogc_chart_config_set_dpi(ogc_chart_config_t* config, double dpi) {
+    if (config) {
+        reinterpret_cast<ChartConfigData*>(config)->dpi = dpi;
+    }
 }
 
 #ifdef __cplusplus

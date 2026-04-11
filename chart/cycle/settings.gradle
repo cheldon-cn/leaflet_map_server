@@ -2,6 +2,8 @@ rootProject.name = 'cycle-chart'
 
 include 'javawrapper'
 include 'javafx-app'
+include 'fxribbon'
 
 project(':javawrapper').projectDir = file('javawrapper')
 project(':javafx-app').projectDir = file('javafx-app')
+project(':fxribbon').projectDir = file('fxribbon')

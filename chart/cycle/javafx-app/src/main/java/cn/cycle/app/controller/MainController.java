@@ -19,6 +19,8 @@ public class MainController {
     private ChartViewer chartViewer;
     private LayerManager layerManager;
     private AlertPanel alertPanel;
+    private Runnable renderCallback;
+    private Runnable statusUpdateCallback;
     
     private final BooleanProperty layerPanelVisible = new SimpleBooleanProperty(true);
     private final BooleanProperty alertPanelVisible = new SimpleBooleanProperty(false);
@@ -60,9 +62,35 @@ public class MainController {
     public void setAlertPanel(AlertPanel panel) {
         this.alertPanel = panel;
     }
+    
+    public void setRenderCallback(Runnable callback) {
+        this.renderCallback = callback;
+    }
+    
+    public void setStatusUpdateCallback(Runnable callback) {
+        this.statusUpdateCallback = callback;
+    }
+    
+    private void requestRender() {
+        if (renderCallback != null) {
+            renderCallback.run();
+        }
+    }
+    
+    private void updateStatus() {
+        if (statusUpdateCallback != null) {
+            statusUpdateCallback.run();
+        }
+    }
 
     public void openChart() {
-        if (chartViewer == null || chartViewer.isDisposed()) {
+        System.out.println("[DEBUG] openChart() called");
+        if (chartViewer == null) {
+            System.out.println("[ERROR] chartViewer is null");
+            return;
+        }
+        if (chartViewer.isDisposed()) {
+            System.out.println("[ERROR] chartViewer is disposed");
             return;
         }
 
@@ -76,16 +104,47 @@ public class MainController {
         Stage stage = new Stage();
         java.io.File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
+            System.out.println("[DEBUG] Selected file: " + file.getAbsolutePath());
             try {
-                chartViewer.loadChart(file.getAbsolutePath());
-                if (alertPanel != null) {
-                    alertPanel.addInfo("已打开海图: " + file.getName());
+                System.out.println("[DEBUG] Calling chartViewer.loadChart()...");
+                int result = chartViewer.loadChart(file.getAbsolutePath());
+                System.out.println("[DEBUG] loadChart() returned: " + result);
+                
+                if (result == 0) {
+                    System.out.println("[DEBUG] Chart loaded successfully");
+                    if (alertPanel != null) {
+                        alertPanel.addInfo("已打开海图: " + file.getName());
+                    }
+                    
+                    System.out.println("[DEBUG] Getting full extent...");
+                    Envelope extent = chartViewer.getFullExtent();
+                    if (extent != null) {
+                        System.out.println("[DEBUG] Full extent: " + extent.getMinX() + ", " + extent.getMinY() + ", " + extent.getMaxX() + ", " + extent.getMaxY());
+                    } else {
+                        System.out.println("[WARNING] Full extent is null");
+                    }
+                    
+                    System.out.println("[DEBUG] Calling fitToWindow()...");
+                    fitToWindow();
+                    
+                    System.out.println("[DEBUG] Requesting render...");
+                    requestRender();
+                    updateStatus();
+                } else {
+                    System.out.println("[ERROR] loadChart() failed with code: " + result);
+                    if (alertPanel != null) {
+                        alertPanel.addError("打开海图失败，错误码: " + result);
+                    }
                 }
             } catch (Exception e) {
+                System.out.println("[ERROR] Exception in openChart: " + e.getMessage());
+                e.printStackTrace();
                 if (alertPanel != null) {
                     alertPanel.addError("打开海图失败: " + e.getMessage());
                 }
             }
+        } else {
+            System.out.println("[DEBUG] No file selected");
         }
     }
 
@@ -187,6 +246,13 @@ public class MainController {
         alert.showAndWait();
     }
 
+    public void exitApplication() {
+        if (chartViewer != null && !chartViewer.isDisposed()) {
+            chartViewer.dispose();
+        }
+        System.exit(0);
+    }
+
     public void onMouseClick(double screenX, double screenY) {
         switch (currentTool) {
             case DISTANCE_MEASURE:
@@ -270,5 +336,51 @@ public class MainController {
 
     public void setCurrentTool(ToolType tool) {
         this.currentTool = tool;
+    }
+
+    public void setZoomRatio(double ratio) {
+        if (chartViewer == null || chartViewer.isDisposed()) {
+            return;
+        }
+        Viewport viewport = chartViewer.getViewportObject();
+        if (viewport != null) {
+            viewport.setScale(ratio);
+            currentZoom.set(ratio);
+        }
+    }
+
+    public void setTheme(String theme) {
+        System.out.println("设置主题: " + theme);
+        if (alertPanel != null) {
+            alertPanel.addInfo("已切换到" + theme + "主题");
+        }
+    }
+    
+    public void undo() {
+        System.out.println("撤销操作");
+        if (alertPanel != null) {
+            alertPanel.addInfo("撤销操作");
+        }
+    }
+    
+    public void redo() {
+        System.out.println("重做操作");
+        if (alertPanel != null) {
+            alertPanel.addInfo("重做操作");
+        }
+    }
+
+    public void showHelp() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("帮助");
+        alert.setHeaderText("Cycle Chart Viewer 帮助");
+        alert.setContentText("快捷键:\n" +
+            "Ctrl+O: 打开海图\n" +
+            "Ctrl+S: 保存海图\n" +
+            "+: 放大\n" +
+            "-: 缩小\n" +
+            "F: 适应窗口\n\n" +
+            "详细帮助请访问: https://cycle.cn/help");
+        alert.showAndWait();
     }
 }

@@ -21,7 +21,7 @@ tasks.withType(JavaCompile) {
 }
 
 jar {
-    destinationDir = new File(rootDir, 'build/test')
+    destinationDir = new File(rootDir, '../code/build/test')
     manifest {
         attributes(
             'Implementation-Title': 'Cycle Chart Java Wrapper',
@@ -31,6 +31,6 @@ jar {
 }
 
 test {
-    workingDir = new File(rootDir, 'install/bin')
-    jvmArgs = ['-Djava.library.path=' + new File(rootDir, 'install/bin').absolutePath]
+    workingDir = new File(rootDir, '../code/build/test')
+    jvmArgs = ['-Djava.library.path=' + new File(rootDir, '../code/build/test').absolutePath]
 }

@@ -23,19 +23,27 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <vector>
+#include <algorithm>
 
 using namespace ogc::draw;
 using ogc::Geometry;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct ImageDeviceImpl {
+    RasterImageDevice* device;
+    DrawContext* context;
+    size_t width;
+    size_t height;
+    unsigned char* pixels;
+};
 
-namespace { static std::string SafeString(const char* str) {
+static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
-}
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ogc_color_t ogc_color_from_rgb(uint8_t r, uint8_t g, uint8_t b) {
     ogc_color_t color;
@@ -605,6 +613,133 @@ void ogc_render_stats_reset(ogc_render_stats_t* stats) {
 void ogc_render_exception_destroy(ogc_render_exception_t* ex) {
     (void)ex;
 }
+
 #ifdef __cplusplus
 }
 #endif
+
+/* ============================================================================
+ * ImageDevice Implementation (for JavaFX integration)
+ * Note: This section uses C++ types, so it's outside the extern "C" block.
+ * The function signatures are declared in sdk_c_api.h with extern "C" linkage.
+ * ============================================================================ */
+
+/* Forward declaration for the opaque type */
+typedef struct ogc_image_device_t ogc_image_device_t;
+
+extern "C" {
+
+SDK_C_API ogc_image_device_t* ogc_image_device_create(size_t width, size_t height) {
+    if (width == 0 || height == 0) {
+        return nullptr;
+    }
+    
+    ImageDeviceImpl* data = new ImageDeviceImpl();
+    data->width = width;
+    data->height = height;
+    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height));
+    data->context = DrawContext::Create(data->device).release();
+    data->pixels = new unsigned char[width * height * 4];
+    
+    if (!data->device || !data->context || !data->pixels) {
+        delete[] data->pixels;
+        delete data->context;
+        delete data->device;
+        delete data;
+        return nullptr;
+    }
+    
+    std::memset(data->pixels, 0, width * height * 4);
+    
+    return reinterpret_cast<ogc_image_device_t*>(data);
+}
+
+SDK_C_API void ogc_image_device_destroy(ogc_image_device_t* device) {
+    if (device) {
+        ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+        delete[] data->pixels;
+        delete data->context;
+        delete data->device;
+        delete data;
+    }
+}
+
+SDK_C_API int ogc_image_device_resize(ogc_image_device_t* device, size_t width, size_t height) {
+    if (!device || width == 0 || height == 0) {
+        return -1;
+    }
+    
+    ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+    
+    if (data->width == width && data->height == height) {
+        return 0;
+    }
+    
+    delete data->context;
+    delete data->device;
+    delete[] data->pixels;
+    
+    data->width = width;
+    data->height = height;
+    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height));
+    data->context = DrawContext::Create(data->device).release();
+    data->pixels = new unsigned char[width * height * 4];
+    
+    if (!data->device || !data->context || !data->pixels) {
+        return -1;
+    }
+    
+    std::memset(data->pixels, 0, width * height * 4);
+    return 0;
+}
+
+SDK_C_API void ogc_image_device_clear(ogc_image_device_t* device) {
+    if (device) {
+        ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+        if (data->context) {
+            Color transparent(0, 0, 0, 0);
+            data->context->Begin();
+            data->context->Clear(transparent);
+            data->context->End();
+        }
+        if (data->pixels) {
+            std::memset(data->pixels, 0, data->width * data->height * 4);
+        }
+    }
+}
+
+SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size) {
+    if (!device || !size) {
+        if (size) *size = 0;
+        return nullptr;
+    }
+    
+    ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+    *size = data->width * data->height * 4;
+    
+    if (data->device) {
+        const uint8_t* raw_pixels = data->device->GetPixelData();
+        if (raw_pixels && data->pixels) {
+            std::memcpy(data->pixels, raw_pixels, *size);
+            return data->pixels;
+        }
+    }
+    
+    return data->pixels;
+}
+
+SDK_C_API int ogc_image_device_get_width(const ogc_image_device_t* device) {
+    if (device) {
+        return static_cast<int>(reinterpret_cast<const ImageDeviceImpl*>(device)->width);
+    }
+    return 0;
+}
+
+SDK_C_API int ogc_image_device_get_height(const ogc_image_device_t* device) {
+    if (device) {
+        return static_cast<int>(reinterpret_cast<const ImageDeviceImpl*>(device)->height);
+    }
+    return 0;
+}
+
+}  /* extern "C" */

@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+}
+
+group 'com.cycle'
+version '1.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.openjfx:javafx-controls:11:win'
+    implementation 'org.openjfx:javafx-graphics:11:win'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    destinationDir = new File(rootDir, '../code/build/test')
+    manifest {
+        attributes(
+            'Implementation-Title': 'Cycle FXRibbon',
+            'Implementation-Version': version,
+            'Automatic-Module-Name': 'com.cycle.control'
+        )
+    }
+}

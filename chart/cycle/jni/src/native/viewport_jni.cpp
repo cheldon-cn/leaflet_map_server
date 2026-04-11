@@ -2,7 +2,7 @@
 #include "jni_converter.h"
 #include "jni_exception.h"
 #include "jni_memory.h"
-#include "sdk_c_api.h"
+#include "ogc/capi/sdk_c_api.h"
 
 using namespace ogc::jni;
 
@@ -107,6 +107,62 @@ Java_cn_cycle_chart_api_core_Viewport_nativeSetRotation
         static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
     if (viewport) {
         ogc_viewport_set_rotation(viewport, rotation);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeGetExtent
+  (JNIEnv* env, jobject obj, jlong ptr, jdoubleArray outExtent) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!viewport || !outExtent) {
+        return;
+    }
+    
+    double min_x, min_y, max_x, max_y;
+    ogc_viewport_get_extent(viewport, &min_x, &min_y, &max_x, &max_y);
+    
+    jdouble extent[4] = {min_x, min_y, max_x, max_y};
+    env->SetDoubleArrayRegion(outExtent, 0, 4, extent);
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeSetExtent
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble minX, jdouble minY, jdouble maxX, jdouble maxY) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (viewport) {
+        ogc_viewport_set_extent(viewport, minX, minY, maxX, maxY);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativePan
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble dx, jdouble dy) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (viewport) {
+        ogc_viewport_pan(viewport, dx, dy);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeZoom
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble factor) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (viewport) {
+        ogc_viewport_zoom(viewport, factor);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeZoomAt
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble factor, jdouble centerX, jdouble centerY) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (viewport) {
+        ogc_viewport_zoom_at(viewport, factor, centerX, centerY);
     }
 }
 

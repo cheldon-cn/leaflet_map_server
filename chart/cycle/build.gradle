@@ -12,35 +12,35 @@ subprojects {
     group = 'cn.cycle.chart'
     version = '1.0.0'
     
-    buildDir = new File(rootDir, 'build/cycle/' + project.name)
+    buildDir = new File(rootDir, '../code/build/cycle/' + project.name)
     
     ext {
-        outputDir = new File(rootDir, 'build/test')
+        outputDir = new File(rootDir, '../code/build/test')
         installDir = new File(rootDir, 'install/bin')
     }
 }
 
 task cleanAll(type: Delete) {
     delete 'build'
-    delete 'install'
+    delete '../code/build/cycle'
 }
 
 task install(type: Copy, dependsOn: [':javawrapper:jar', ':javafx-app:jar']) {
-    from('javawrapper/build/libs') {
+    from('../code/build/cycle/javawrapper/libs') {
         include '*.jar'
     }
-    from('javafx-app/build/libs') {
+    from('../code/build/cycle/javafx-app/libs') {
         include '*.jar'
     }
     into 'install/bin'
 }
 
 task copyNativeLibs(type: Copy) {
-    from('jni/build/Release') {
+    from('../code/build/test') {
         include '*.dll'
     }
     into 'install/bin'
     onlyIf {
-        file('jni/build/Release').exists()
+        file('../code/build/test').exists()
     }
 }

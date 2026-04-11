@@ -2,7 +2,7 @@
 #include "jni_converter.h"
 #include "jni_exception.h"
 #include "jni_memory.h"
-#include "sdk_c_api.h"
+#include "ogc/capi/sdk_c_api.h"
 
 using namespace ogc::jni;
 

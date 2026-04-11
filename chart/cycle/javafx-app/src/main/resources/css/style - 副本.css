@@ -1,0 +1,21 @@
+.root {
+    -fx-font-size: 12px;
+}
+
+.ribbon {
+    -fx-background-color: #f0f0f0;
+}
+
+.ribbon-tab {
+    -fx-padding: 5 10 5 10;
+}
+
+.ribbon-group {
+    -fx-border-color: #d0d0d0;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 5;
+}
+
+.chart-canvas {
+    -fx-background-color: white;
+}

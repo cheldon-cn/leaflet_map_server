@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file sdk_c_api.h
  * @brief OGC Chart SDK C API Header File
  * @version v1.0
@@ -1793,6 +1793,23 @@ SDK_C_API ogc_geometry_t* ogc_vector_layer_get_spatial_filter(ogc_layer_t* layer
  */
 SDK_C_API const char* ogc_vector_layer_get_attribute_filter(const ogc_layer_t* layer);
 
+/**
+ * @brief Create a vector layer from an array of features.
+ * @param name Layer name.
+ * @param features Array of feature pointers.
+ * @param count Number of features.
+ * @return Pointer to newly created layer, or NULL on failure.
+ */
+SDK_C_API ogc_layer_t* ogc_vector_layer_create_from_features(const char* name, ogc_feature_t** features, size_t count);
+
+/**
+ * @brief Set the style for a vector layer.
+ * @param layer Pointer to the layer.
+ * @param style_name Style name or JSON style string.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_vector_layer_set_style(ogc_layer_t* layer, const char* style_name);
+
 /* 4.4 RasterLayer */
 /* Java: cn.cycle.chart.api.layer.RasterLayer */
 /* C++:   ogc::layer::CNRasterLayer */
@@ -2855,6 +2872,72 @@ SDK_C_API void ogc_draw_context_clip(ogc_draw_context_t* ctx, const ogc_geometry
  */
 SDK_C_API void ogc_draw_context_reset_clip(ogc_draw_context_t* ctx);
 
+/* 5.10 ImageDevice (for JavaFX integration) */
+/* Java: cn.cycle.chart.api.adapter.ImageDevice */
+/* C++:   ogc::draw::ImageDevice (wrapper of DrawDevice) */
+/* Header: ogc/draw/image_device.h */
+
+/**
+ * @brief Opaque type representing an image device for JavaFX rendering.
+ * 
+ * ImageDevice is a convenience wrapper around DrawDevice specifically
+ * designed for JavaFX Canvas rendering. It provides simplified API for
+ * common operations needed by the JavaFX adapter layer.
+ */
+typedef struct ogc_image_device_t ogc_image_device_t;
+
+/**
+ * @brief Create an image device.
+ * @param width Device width in pixels.
+ * @param height Device height in pixels.
+ * @return Pointer to newly created device, or NULL on failure.
+ */
+SDK_C_API ogc_image_device_t* ogc_image_device_create(size_t width, size_t height);
+
+/**
+ * @brief Destroy an image device.
+ * @param device Pointer to the device to destroy.
+ */
+SDK_C_API void ogc_image_device_destroy(ogc_image_device_t* device);
+
+/**
+ * @brief Resize an image device.
+ * @param device Pointer to the device.
+ * @param width New width in pixels.
+ * @param height New height in pixels.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_image_device_resize(ogc_image_device_t* device, size_t width, size_t height);
+
+/**
+ * @brief Clear an image device with transparent color.
+ * @param device Pointer to the device.
+ */
+SDK_C_API void ogc_image_device_clear(ogc_image_device_t* device);
+
+/**
+ * @brief Get the pixel data from an image device.
+ * @param device Pointer to the device.
+ * @param size Pointer to store the size of pixel data (width * height * 4).
+ * @return Pointer to pixel data in BGRA format, or NULL on failure.
+ * @note The returned pointer is valid until the next operation on the device.
+ */
+SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size);
+
+/**
+ * @brief Get the width of an image device.
+ * @param device Pointer to the device.
+ * @return Width in pixels.
+ */
+SDK_C_API int ogc_image_device_get_width(const ogc_image_device_t* device);
+
+/**
+ * @brief Get the height of an image device.
+ * @param device Pointer to the device.
+ * @return Height in pixels.
+ */
+SDK_C_API int ogc_image_device_get_height(const ogc_image_device_t* device);
+
 /* ============================================================================
  * 6. Graph Module (ogc_graph)
  * ============================================================================
@@ -2871,6 +2954,11 @@ SDK_C_API void ogc_draw_context_reset_clip(ogc_draw_context_t* ctx);
  * @brief Opaque type representing a chart viewer.
  */
 typedef struct ogc_chart_viewer_t ogc_chart_viewer_t;
+
+/**
+ * @brief Opaque type representing a viewport.
+ */
+typedef struct ogc_viewport_t ogc_viewport_t;
 
 /**
  * @brief Create a chart viewer.
@@ -2979,15 +3067,29 @@ SDK_C_API void ogc_chart_viewer_screen_to_world(ogc_chart_viewer_t* viewer, doub
  */
 SDK_C_API void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x, double world_y, double* screen_x, double* screen_y);
 
+/**
+ * @brief Get the viewport object from the viewer.
+ * @param viewer Pointer to the viewer.
+ * @return Pointer to the viewport, or NULL on failure.
+ * @note The returned viewport is owned by the viewer and should not be destroyed.
+ */
+SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* viewer);
+
+/**
+ * @brief Get the full extent of the chart.
+ * @param viewer Pointer to the viewer.
+ * @param min_x Pointer to store minimum X coordinate.
+ * @param min_y Pointer to store minimum Y coordinate.
+ * @param max_x Pointer to store maximum X coordinate.
+ * @param max_y Pointer to store maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_chart_viewer_get_full_extent(ogc_chart_viewer_t* viewer, double* min_x, double* min_y, double* max_x, double* max_y);
+
 /* 6.2 Viewport */
 /* Java: cn.cycle.chart.api.core.Viewport */
 /* C++:   ogc::graph::Viewport (in DrawFacade) */
 /* Header: ogc/graph/render/draw_facade.h */
-
-/**
- * @brief Opaque type representing a viewport.
- */
-typedef struct ogc_viewport_t ogc_viewport_t;
 
 /**
  * @brief Create a viewport.
@@ -3073,6 +3175,74 @@ SDK_C_API int ogc_viewport_zoom_to_extent(ogc_viewport_t* viewport, const ogc_en
  * @return 0 on success, non-zero on failure.
  */
 SDK_C_API int ogc_viewport_zoom_to_scale(ogc_viewport_t* viewport, double scale);
+
+/**
+ * @brief Convert screen coordinates to world coordinates.
+ * @param viewport Pointer to the viewport.
+ * @param sx Screen X coordinate (pixels).
+ * @param sy Screen Y coordinate (pixels).
+ * @param wx Pointer to store world X coordinate.
+ * @param wy Pointer to store world Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_screen_to_world(const ogc_viewport_t* viewport, double sx, double sy, double* wx, double* wy);
+
+/**
+ * @brief Convert world coordinates to screen coordinates.
+ * @param viewport Pointer to the viewport.
+ * @param wx World X coordinate.
+ * @param wy World Y coordinate.
+ * @param sx Pointer to store screen X coordinate (pixels).
+ * @param sy Pointer to store screen Y coordinate (pixels).
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_world_to_screen(const ogc_viewport_t* viewport, double wx, double wy, double* sx, double* sy);
+
+/**
+ * @brief Pan the viewport by a delta.
+ * @param viewport Pointer to the viewport.
+ * @param dx Pan distance in X direction (world units).
+ * @param dy Pan distance in Y direction (world units).
+ */
+SDK_C_API void ogc_viewport_pan(ogc_viewport_t* viewport, double dx, double dy);
+
+/**
+ * @brief Zoom the viewport by a factor.
+ * @param viewport Pointer to the viewport.
+ * @param factor Zoom factor (>1 to zoom in, <1 to zoom out).
+ */
+SDK_C_API void ogc_viewport_zoom(ogc_viewport_t* viewport, double factor);
+
+/**
+ * @brief Zoom the viewport by a factor centered at a point.
+ * @param viewport Pointer to the viewport.
+ * @param factor Zoom factor (>1 to zoom in, <1 to zoom out).
+ * @param center_x Zoom center X coordinate (world units).
+ * @param center_y Zoom center Y coordinate (world units).
+ */
+SDK_C_API void ogc_viewport_zoom_at(ogc_viewport_t* viewport, double factor, double center_x, double center_y);
+
+/**
+ * @brief Set the viewport extent.
+ * @param viewport Pointer to the viewport.
+ * @param min_x Minimum X coordinate.
+ * @param min_y Minimum Y coordinate.
+ * @param max_x Maximum X coordinate.
+ * @param max_y Maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_set_extent(ogc_viewport_t* viewport, double min_x, double min_y, double max_x, double max_y);
+
+/**
+ * @brief Get the viewport extent.
+ * @param viewport Pointer to the viewport.
+ * @param min_x Pointer to store minimum X coordinate.
+ * @param min_y Pointer to store minimum Y coordinate.
+ * @param max_x Pointer to store maximum X coordinate.
+ * @param max_y Pointer to store maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_get_extent(const ogc_viewport_t* viewport, double* min_x, double* min_y, double* max_x, double* max_y);
 
 /* 6.3 ChartConfig */
 /* Java: cn.cycle.chart.api.core.ChartConfig */
@@ -3503,25 +3673,6 @@ SDK_C_API void ogc_transform_manager_destroy(ogc_transform_manager_t* mgr);
  * @param rotation Rotation angle in degrees.
  */
 SDK_C_API void ogc_transform_manager_set_viewport(ogc_transform_manager_t* mgr, double center_x, double center_y, double scale, double rotation);
-
-/**
- * @brief Convert screen coordinates to world coordinates.
- * @param mgr Pointer to the manager.
- * @param sx Screen X coordinate.
- * @param sy Screen Y coordinate.
- * @param wx Pointer to store world X coordinate.
- * @param wy Pointer to store world Y coordinate.
- */
-SDK_C_API void ogc_transform_manager_screen_to_world(const ogc_transform_manager_t* mgr, double sx, double sy, double* wx, double* wy);
-/**
- * @brief Convert world coordinates to screen coordinates.
- * @param mgr Pointer to the manager.
- * @param wx World X coordinate.
- * @param wy World Y coordinate.
- * @param sx Pointer to store screen X coordinate.
- * @param sy Pointer to store screen Y coordinate.
- */
-SDK_C_API void ogc_transform_manager_world_to_screen(const ogc_transform_manager_t* mgr, double wx, double wy, double* sx, double* sy);
 
 /**
  * @brief Get the transformation matrix.
@@ -4092,6 +4243,39 @@ SDK_C_API size_t ogc_offline_storage_get_storage_size(const ogc_offline_storage_
  * @return Used storage size in bytes.
  */
 SDK_C_API size_t ogc_offline_storage_get_used_size(const ogc_offline_storage_t* storage);
+
+/**
+ * @brief Store chart data in offline storage.
+ * @param storage Pointer to the storage.
+ * @param chart_id Chart identifier.
+ * @param data Chart data bytes.
+ * @param size Data size in bytes.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_store_chart(ogc_offline_storage_t* storage, const char* chart_id, const void* data, size_t size);
+
+/**
+ * @brief Get chart data path from offline storage.
+ * @param storage Pointer to the storage.
+ * @param chart_id Chart identifier.
+ * @return Chart file path, or NULL on failure. Caller must NOT free.
+ */
+SDK_C_API const char* ogc_offline_storage_get_chart_path(ogc_offline_storage_t* storage, const char* chart_id);
+
+/**
+ * @brief Remove chart data from offline storage.
+ * @param storage Pointer to the storage.
+ * @param chart_id Chart identifier.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_offline_storage_remove_chart(ogc_offline_storage_t* storage, const char* chart_id);
+
+/**
+ * @brief Get the number of stored charts.
+ * @param storage Pointer to the storage.
+ * @return Number of stored charts.
+ */
+SDK_C_API size_t ogc_offline_storage_get_chart_count(const ogc_offline_storage_t* storage);
 
 /* 7.7 DataEncryption */
 /* Java: cn.cycle.chart.api.cache.DataEncryption */
@@ -4851,6 +5035,22 @@ SDK_C_API ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, in
  */
 SDK_C_API size_t ogc_alert_engine_get_alert_count(const ogc_alert_engine_t* engine);
 
+/**
+ * @brief Clear all active alerts from the engine.
+ * @param engine Pointer to the engine.
+ */
+SDK_C_API void ogc_alert_engine_clear_alerts(ogc_alert_engine_t* engine);
+
+/**
+ * @brief Set a callback for alert events.
+ * @param engine Pointer to the engine.
+ * @param callback Function pointer called when an alert is triggered.
+ * @param user_data User data passed to the callback.
+ */
+SDK_C_API void ogc_alert_engine_set_callback(ogc_alert_engine_t* engine,
+    void (*callback)(int alert_type, int alert_level, const char* message, void* user_data),
+    void* user_data);
+
 /* 9.5 CpaCalculator */
 /* Java: cn.cycle.chart.api.navi.CpaCalculator */
 /* C++:   ogc::alert::CpaCalculator */
@@ -5343,9 +5543,11 @@ SDK_C_API uint32_t ogc_ais_target_get_mmsi(const ogc_ais_target_t* target);
 /**
  * @brief Get the name of an AIS target.
  * @param target Pointer to the target.
- * @return Target name string.
+ * @param buffer Buffer to store the name string.
+ * @param buffer_size Size of the buffer in bytes.
+ * @return Length of the name string, or -1 on error.
  */
-SDK_C_API const char* ogc_ais_target_get_name(const ogc_ais_target_t* target);
+SDK_C_API int ogc_ais_target_get_name(const ogc_ais_target_t* target, char* buffer, size_t buffer_size);
 
 /**
  * @brief Get the latitude of an AIS target.
@@ -5489,6 +5691,17 @@ SDK_C_API int ogc_ais_manager_add_target(ogc_ais_manager_t* mgr, ogc_ais_target_
  * @return 0 on success, non-zero on failure.
  */
 SDK_C_API int ogc_ais_manager_remove_target(ogc_ais_manager_t* mgr, uint32_t mmsi);
+
+/**
+ * @brief Set a callback for AIS target updates.
+ * @param mgr Pointer to the manager.
+ * @param callback Function pointer called when a target is updated.
+ * @param user_data User data passed to the callback.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_ais_manager_set_callback(ogc_ais_manager_t* mgr,
+    void (*callback)(uint32_t mmsi, int event_type, void* user_data),
+    void* user_data);
 
 /* 10.9 NavigationEngine */
 /* Java: cn.cycle.chart.api.navi.NavigationEngine */
@@ -5682,6 +5895,35 @@ SDK_C_API int ogc_position_manager_get_fix_quality(const ogc_position_manager_t*
  */
 SDK_C_API int ogc_position_manager_get_satellite_count(const ogc_position_manager_t* mgr);
 
+/**
+ * @brief Set the current position manually.
+ * @param mgr Pointer to the manager.
+ * @param latitude Latitude in degrees.
+ * @param longitude Longitude in degrees.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_position_manager_set_position(ogc_position_manager_t* mgr, double latitude, double longitude);
+
+/**
+ * @brief Get the current position.
+ * @param mgr Pointer to the manager.
+ * @param latitude Output latitude in degrees.
+ * @param longitude Output longitude in degrees.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_position_manager_get_position(const ogc_position_manager_t* mgr, double* latitude, double* longitude);
+
+/**
+ * @brief Set a callback for position updates.
+ * @param mgr Pointer to the manager.
+ * @param callback Function pointer called on position updates.
+ * @param user_data User data passed to the callback.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_position_manager_set_callback(ogc_position_manager_t* mgr,
+    void (*callback)(double lat, double lon, double speed, double course, void* user_data),
+    void* user_data);
+
 /* 10.11 Track */
 /* Java: cn.cycle.chart.api.navi.Track */
 /* C++:   ogc::navi::Track */
@@ -5712,16 +5954,20 @@ SDK_C_API void ogc_track_destroy(ogc_track_t* track);
 /**
  * @brief Get the ID of a track.
  * @param track Pointer to the track.
- * @return Track ID string.
+ * @param buffer Buffer to store the ID string.
+ * @param buffer_size Size of the buffer in bytes.
+ * @return Length of the ID string, or -1 on error.
  */
-SDK_C_API const char* ogc_track_get_id(const ogc_track_t* track);
+SDK_C_API int ogc_track_get_id(const ogc_track_t* track, char* buffer, size_t buffer_size);
 
 /**
  * @brief Get the name of a track.
  * @param track Pointer to the track.
- * @return Track name string.
+ * @param buffer Buffer to store the name string.
+ * @param buffer_size Size of the buffer in bytes.
+ * @return Length of the name string, or -1 on error.
  */
-SDK_C_API const char* ogc_track_get_name(const ogc_track_t* track);
+SDK_C_API int ogc_track_get_name(const ogc_track_t* track, char* buffer, size_t buffer_size);
 
 /**
  * @brief Set the name of a track.

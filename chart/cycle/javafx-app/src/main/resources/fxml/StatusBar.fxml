@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+
+<HBox fx:id="statusBarContainer" xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1"
+      alignment="CENTER_LEFT" spacing="16" 
+      style="-fx-background-color: #f0f0f0; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0; -fx-padding: 4 8 4 8;">
+    
+    <Label fx:id="serviceStatus" text="● 已连接" tooltip="服务状态"/>
+    <Label fx:id="region" text="-" tooltip="显示区域"/>
+    <Label fx:id="position" text="-" tooltip="鼠标位置"/>
+    <Label fx:id="tileLevel" text="Level -" tooltip="瓦片级数"/>
+    <Label fx:id="zoom" text="1:-" tooltip="缩放比例"/>
+    <Label fx:id="message" text="就绪" tooltip="提示信息"/>
+    
+</HBox>

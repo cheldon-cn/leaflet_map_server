@@ -26,4 +26,12 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
     JniEnvManager::GetInstance()->Shutdown();
 }
 
+JNIEXPORT void JNICALL Java_cn_cycle_chart_jni_JniBridge_nativeInitialize
+  (JNIEnv* env, jclass clazz) {
+}
+
+JNIEXPORT void JNICALL Java_cn_cycle_chart_jni_JniBridge_nativeShutdown
+  (JNIEnv* env, jclass clazz) {
+}
+
 }

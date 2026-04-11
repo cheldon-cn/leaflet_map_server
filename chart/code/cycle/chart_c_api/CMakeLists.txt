@@ -20,6 +20,18 @@ set(OGC_CHART_C_API_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 if(NOT DEFINED INSTALL_INCLUDE_DIR)
     set(INSTALL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../install/include)
 endif()
+if(NOT DEFINED INSTALL_LIB_DIR)
+    set(INSTALL_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../install/lib)
+endif()
+
+set(POSTGRESQL_ROOT "E:/Program Files/postgresql/16" CACHE PATH "PostgreSQL root directory")
+set(SQLITE3_ROOT "E:/xspace/3rd/sqlite3-3.35.5" CACHE PATH "SQLite3 root directory")
+set(GEOS_ROOT "E:/xspace/3rd/GEOS3.10" CACHE PATH "GEOS root directory")
+set(PROJ_ROOT "E:/xspace/3rd/PROJ" CACHE PATH "PROJ root directory")
+set(CURL_ROOT "E:/xspace/3rd/libcurl_x64" CACHE PATH "cURL library root directory")
+set(GTEST_ROOT "E:/xspace/3rd/googletest" CACHE PATH "GoogleTest root directory")
+set(GDAL_ROOT "E:/xspace/3rd/gdal-3.9.3" CACHE PATH "GDAL root directory")
+set(LIBXML2_ROOT "E:/xspace/3rd/libxml2" CACHE PATH "libxml2 root directory")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../../build/test")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../../build/test")
@@ -72,6 +84,14 @@ target_include_directories(ogc_chart_c_api
         ${INSTALL_INCLUDE_DIR}
 )
 
+set(OGC_LIB_DIR ${CMAKE_SOURCE_DIR}/../../build/lib)
+set(GDAL_LIB_DIR "${GDAL_ROOT}/lib")
+target_link_directories(ogc_chart_c_api PRIVATE 
+    ${OGC_LIB_DIR}
+    ${INSTALL_LIB_DIR}
+    ${GDAL_LIB_DIR}
+)
+
 target_link_libraries(ogc_chart_c_api
     PRIVATE
         ogc_base
@@ -86,6 +106,7 @@ target_link_libraries(ogc_chart_c_api
         ogc_navi
         ogc_proj
         chart_parser
+        gdal
 )
 
 set_target_properties(ogc_chart_c_api PROPERTIES
