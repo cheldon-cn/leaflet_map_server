@@ -510,6 +510,29 @@ void ogc_feature_set_geometry_directly(ogc_feature_t* feature, ogc_geometry_t* g
     }
 }
 
+ogc_geometry_t* ogc_feature_steal_geometry(ogc_feature_t* feature) {
+    if (feature) {
+        auto* f = reinterpret_cast<CNFeature*>(feature);
+        if (f->GetGeomFieldCount() > 0) {
+            GeometryPtr geom = f->StealGeometry();
+            if (geom) {
+                return reinterpret_cast<ogc_geometry_t*>(geom.release());
+            }
+        }
+    }
+    return nullptr;
+}
+
+ogc_envelope_t* ogc_feature_get_envelope(const ogc_feature_t* feature) {
+    if (feature) {
+        auto env = reinterpret_cast<const CNFeature*>(feature)->GetEnvelope();
+        if (env) {
+            return reinterpret_cast<ogc_envelope_t*>(env.release());
+        }
+    }
+    return nullptr;
+}
+
 ogc_feature_t* ogc_feature_clone(const ogc_feature_t* feature) {
     if (feature) {
         return reinterpret_cast<ogc_feature_t*>(
@@ -525,6 +548,54 @@ int ogc_feature_equal(const ogc_feature_t* a, const ogc_feature_t* b) {
     }
     return 0;
 }
+
+const char* ogc_feature_get_field_as_string_by_name(const ogc_feature_t* feature, const char* name) {
+    if (feature && name) {
+        static thread_local std::string result;
+        result = reinterpret_cast<const CNFeature*>(feature)->GetFieldAsString(name);
+        return result.c_str();
+    }
+    return "";
+}
+
+int ogc_feature_set_field_string_by_name(ogc_feature_t* feature, const char* name, const char* value) {
+    if (feature && name) {
+        reinterpret_cast<CNFeature*>(feature)->SetFieldString(name, value);
+        return 0;
+    }
+    return -1;
+}
+
+int ogc_feature_get_field_as_integer_by_name(const ogc_feature_t* feature, const char* name) {
+    if (feature && name) {
+        return reinterpret_cast<const CNFeature*>(feature)->GetFieldAsInteger(name);
+    }
+    return 0;
+}
+
+int ogc_feature_set_field_integer_by_name(ogc_feature_t* feature, const char* name, int value) {
+    if (feature && name) {
+        reinterpret_cast<CNFeature*>(feature)->SetFieldInteger(name, value);
+        return 0;
+    }
+    return -1;
+}
+
+double ogc_feature_get_field_as_real_by_name(const ogc_feature_t* feature, const char* name) {
+    if (feature && name) {
+        return reinterpret_cast<const CNFeature*>(feature)->GetFieldAsReal(name);
+    }
+    return 0.0;
+}
+
+int ogc_feature_set_field_real_by_name(ogc_feature_t* feature, const char* name, double value) {
+    if (feature && name) {
+        reinterpret_cast<CNFeature*>(feature)->SetFieldReal(name, value);
+        return 0;
+    }
+    return -1;
+}
+
 #ifdef __cplusplus
 }
 #endif

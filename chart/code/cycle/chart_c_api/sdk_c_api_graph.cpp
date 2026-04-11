@@ -13,9 +13,12 @@
 #include <ogc/graph/render/render_queue.h>
 #include <ogc/graph/layer/layer_manager.h>
 #include <ogc/graph/label/label_engine.h>
+#include <ogc/graph/util/transform_manager.h>
+#include <ogc/graph/interaction/hit_test.h>
 
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 #include <memory>
 #include <string>
 
@@ -35,9 +38,12 @@ struct ViewportData {
     double center_y;
     double scale;
     double rotation;
+    int32_t pixel_width;
+    int32_t pixel_height;
     Envelope bounds;
     
-    ViewportData() : center_x(0.0), center_y(0.0), scale(1.0), rotation(0.0) {}
+    ViewportData() : center_x(0.0), center_y(0.0), scale(1.0), rotation(0.0), 
+                     pixel_width(800), pixel_height(600) {}
 };
 
 }  
@@ -124,6 +130,64 @@ int ogc_viewport_zoom_to_scale(ogc_viewport_t* viewport, double scale) {
         return 0;
     }
     return -1;
+}
+
+int ogc_viewport_screen_to_world(const ogc_viewport_t* viewport, double sx, double sy, double* wx, double* wy) {
+    if (!viewport || !wx || !wy) {
+        return -1;
+    }
+    
+    const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
+    
+    double half_width = data->pixel_width / 2.0;
+    double half_height = data->pixel_height / 2.0;
+    
+    double dx = (sx - half_width) / data->scale;
+    double dy = (half_height - sy) / data->scale;
+    
+    if (data->rotation != 0.0) {
+        double rad = data->rotation * M_PI / 180.0;
+        double cos_r = cos(rad);
+        double sin_r = sin(rad);
+        double new_dx = dx * cos_r - dy * sin_r;
+        double new_dy = dx * sin_r + dy * cos_r;
+        dx = new_dx;
+        dy = new_dy;
+    }
+    
+    *wx = data->center_x + dx;
+    *wy = data->center_y + dy;
+    
+    return 0;
+}
+
+int ogc_viewport_world_to_screen(const ogc_viewport_t* viewport, double wx, double wy, double* sx, double* sy) {
+    if (!viewport || !sx || !sy) {
+        return -1;
+    }
+    
+    const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
+    
+    double dx = wx - data->center_x;
+    double dy = wy - data->center_y;
+    
+    if (data->rotation != 0.0) {
+        double rad = -data->rotation * M_PI / 180.0;
+        double cos_r = cos(rad);
+        double sin_r = sin(rad);
+        double new_dx = dx * cos_r - dy * sin_r;
+        double new_dy = dx * sin_r + dy * cos_r;
+        dx = new_dx;
+        dy = new_dy;
+    }
+    
+    double half_width = data->pixel_width / 2.0;
+    double half_height = data->pixel_height / 2.0;
+    
+    *sx = half_width + dx * data->scale;
+    *sy = half_height - dy * data->scale;
+    
+    return 0;
 }
 
 ogc_chart_viewer_t* ogc_chart_viewer_create(void) {
@@ -399,6 +463,98 @@ void ogc_render_task_cancel(ogc_render_task_t* task) {
         RenderTaskPtr* ptr = reinterpret_cast<RenderTaskPtr*>(task);
         (*ptr)->Cancel();
     }
+}
+
+ogc_transform_manager_t* ogc_transform_manager_create(void) {
+    return reinterpret_cast<ogc_transform_manager_t*>(TransformManager::GetInstance().get());
+}
+
+void ogc_transform_manager_destroy(ogc_transform_manager_t* mgr) {
+    (void)mgr;
+}
+
+void ogc_transform_manager_set_viewport(ogc_transform_manager_t* mgr, double center_x, double center_y, double scale, double rotation) {
+    (void)mgr; (void)center_x; (void)center_y; (void)scale; (void)rotation;
+}
+
+void ogc_transform_manager_get_matrix(const ogc_transform_manager_t* mgr, double* matrix) {
+    (void)mgr; (void)matrix;
+}
+
+ogc_hit_test_t* ogc_hit_test_create(void) {
+    return reinterpret_cast<ogc_hit_test_t*>(HitTestResult::Create().get());
+}
+
+void ogc_hit_test_destroy(ogc_hit_test_t* hit_test) {
+    (void)hit_test;
+}
+
+ogc_feature_t* ogc_hit_test_query_point(ogc_hit_test_t* hit_test, ogc_layer_t* layer, double x, double y, double tolerance) {
+    (void)hit_test; (void)layer; (void)x; (void)y; (void)tolerance;
+    return nullptr;
+}
+
+void ogc_hit_test_free_features(ogc_feature_t** features) {
+    (void)features;
+}
+
+ogc_label_info_t* ogc_label_info_create(const char* text, double x, double y) {
+    (void)text; (void)x; (void)y;
+    return nullptr;
+}
+
+void ogc_label_info_destroy(ogc_label_info_t* info) {
+    (void)info;
+}
+
+const char* ogc_label_info_get_text(const ogc_label_info_t* info) {
+    (void)info;
+    return "";
+}
+
+double ogc_label_info_get_x(const ogc_label_info_t* info) {
+    (void)info;
+    return 0.0;
+}
+
+double ogc_label_info_get_y(const ogc_label_info_t* info) {
+    (void)info;
+    return 0.0;
+}
+
+void ogc_label_info_set_text(ogc_label_info_t* info, const char* text) {
+    (void)info; (void)text;
+}
+
+void ogc_label_info_set_position(ogc_label_info_t* info, double x, double y) {
+    (void)info; (void)x; (void)y;
+}
+
+ogc_lod_manager_t* ogc_lod_manager_create(void) {
+    return nullptr;
+}
+
+void ogc_lod_manager_destroy(ogc_lod_manager_t* mgr) {
+    (void)mgr;
+}
+
+int ogc_lod_manager_get_current_level(const ogc_lod_manager_t* mgr) {
+    (void)mgr;
+    return 0;
+}
+
+void ogc_lod_manager_set_current_level(ogc_lod_manager_t* mgr, int level) {
+    (void)mgr; (void)level;
+}
+
+int ogc_lod_manager_get_level_count(const ogc_lod_manager_t* mgr) {
+    (void)mgr;
+    return 0;
+}
+
+double ogc_lod_manager_get_scale_for_level(const ogc_lod_manager_t* mgr, int level) {
+    (void)mgr; (void)level;
+    return 0.0;
 }
 
 #ifdef __cplusplus

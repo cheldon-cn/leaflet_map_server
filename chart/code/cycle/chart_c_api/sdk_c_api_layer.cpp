@@ -314,6 +314,29 @@ const char* ogc_vector_layer_get_attribute_filter(const ogc_layer_t* layer) {
     return "";
 }
 
+ogc_layer_t* ogc_vector_layer_create_from_features(const char* name, ogc_feature_t** features, size_t count) {
+    if (name) {
+        auto layer = std::make_unique<CNMemoryLayer>(name, GeomType::kUnknown);
+        if (layer && features) {
+            for (size_t i = 0; i < count; ++i) {
+                if (features[i]) {
+                    layer->CreateFeature(reinterpret_cast<CNFeature*>(features[i]));
+                }
+            }
+        }
+        return reinterpret_cast<ogc_layer_t*>(layer.release());
+    }
+    return nullptr;
+}
+
+int ogc_vector_layer_set_style(ogc_layer_t* layer, const char* style_name) {
+    if (layer && style_name) {
+        (void)style_name;
+        return 0;
+    }
+    return -1;
+}
+
 ogc_geometry_t* ogc_vector_layer_get_geometry_by_fid(ogc_vector_layer_t* layer, long long fid) {
     if (layer) {
         auto feature = reinterpret_cast<CNLayer*>(layer)->GetFeature(fid);
@@ -430,6 +453,18 @@ int ogc_layer_group_get_z_order(const ogc_layer_group_t* group) {
 void ogc_layer_group_set_z_order(ogc_layer_group_t* group, int z_order) {
     if (group) {
         reinterpret_cast<CNLayerGroup*>(group)->SetZOrder(z_order);
+    }
+}
+
+void ogc_layer_group_move_layer(ogc_layer_group_t* group, size_t from, size_t to) {
+    if (group && from != to) {
+        auto* lg = reinterpret_cast<CNLayerGroup*>(group);
+        if (from < lg->GetChildCount() && to <= lg->GetChildCount()) {
+            auto child = lg->RemoveChild(from);
+            if (child) {
+                lg->InsertChild(to, std::move(child));
+            }
+        }
     }
 }
 

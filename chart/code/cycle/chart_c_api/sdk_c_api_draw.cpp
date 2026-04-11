@@ -17,6 +17,7 @@
 #include <ogc/draw/raster_image_device.h>
 #include <ogc/draw/svg_device.h>
 #include <ogc/draw/tile_device.h>
+#include <ogc/geom/geometry.h>
 
 #include <cstring>
 #include <cstdlib>
@@ -24,6 +25,7 @@
 #include <string>
 
 using namespace ogc::draw;
+using ogc::Geometry;
 
 #ifdef __cplusplus
 extern "C" {
@@ -482,6 +484,126 @@ void ogc_draw_context_reset_clip(ogc_draw_context_t* ctx) {
     if (ctx) {
         reinterpret_cast<DrawContext*>(ctx)->ResetClip();
     }
+}
+
+void ogc_draw_context_begin_draw(ogc_draw_context_t* ctx) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->Begin();
+    }
+}
+
+void ogc_draw_context_end_draw(ogc_draw_context_t* ctx) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->End();
+    }
+}
+
+void ogc_draw_context_clear(ogc_draw_context_t* ctx, ogc_color_t color) {
+    if (ctx) {
+        ogc::draw::Color c(color.r, color.g, color.b, color.a);
+        reinterpret_cast<DrawContext*>(ctx)->Clear(c);
+    }
+}
+
+void ogc_draw_context_draw_geometry(ogc_draw_context_t* ctx, const ogc_geometry_t* geom, const ogc_draw_style_t* style) {
+    if (ctx && geom) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawGeometry(
+            reinterpret_cast<const Geometry*>(geom));
+    }
+}
+
+void ogc_draw_context_draw_point(ogc_draw_context_t* ctx, double x, double y, const ogc_draw_style_t* style) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawPoint(x, y);
+    }
+}
+
+void ogc_draw_context_draw_line(ogc_draw_context_t* ctx, double x1, double y1, double x2, double y2, const ogc_draw_style_t* style) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawLine(x1, y1, x2, y2);
+    }
+}
+
+void ogc_draw_context_draw_rect(ogc_draw_context_t* ctx, double x, double y, double w, double h, const ogc_draw_style_t* style) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawRect(x, y, w, h, false);
+    }
+}
+
+void ogc_draw_context_fill_rect(ogc_draw_context_t* ctx, double x, double y, double w, double h, const ogc_draw_style_t* style) {
+    if (ctx) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawRect(x, y, w, h, true);
+    }
+}
+
+void ogc_draw_context_draw_text(ogc_draw_context_t* ctx, const char* text, double x, double y, const ogc_draw_style_t* style) {
+    if (ctx && text) {
+        reinterpret_cast<DrawContext*>(ctx)->DrawText(x, y, text);
+    }
+}
+
+void ogc_draw_context_clip(ogc_draw_context_t* ctx, const ogc_geometry_t* geom) {
+    if (ctx && geom) {
+        reinterpret_cast<DrawContext*>(ctx)->SetClipRegion(
+            ogc::draw::Region());
+    }
+}
+
+void ogc_draw_engine_finalize(ogc_draw_engine_t* engine) {
+    if (engine) {
+        reinterpret_cast<DrawEngine*>(engine)->End();
+    }
+}
+
+int ogc_image_get_channels(const ogc_image_t* image) {
+    if (image) {
+        return reinterpret_cast<const ogc::draw::Image*>(image)->GetChannels();
+    }
+    return 0;
+}
+
+int ogc_image_save_to_file(const ogc_image_t* image, const char* path) {
+    if (image && path) {
+        return reinterpret_cast<const ogc::draw::Image*>(image)->SaveToFile(path) ? 0 : -1;
+    }
+    return -1;
+}
+
+ogc_render_optimizer_t* ogc_render_optimizer_create(void) {
+    return nullptr;
+}
+
+void ogc_render_optimizer_destroy(ogc_render_optimizer_t* optimizer) {
+    (void)optimizer;
+}
+
+void ogc_render_optimizer_set_cache_enabled(ogc_render_optimizer_t* optimizer, int enable) {
+    (void)optimizer; (void)enable;
+}
+
+int ogc_render_optimizer_is_cache_enabled(const ogc_render_optimizer_t* optimizer) {
+    (void)optimizer;
+    return 0;
+}
+
+void ogc_render_optimizer_clear_cache(ogc_render_optimizer_t* optimizer) {
+    (void)optimizer;
+}
+
+void ogc_render_stats_reset(ogc_render_stats_t* stats) {
+    if (stats) {
+        stats->total_frames = 0;
+        stats->total_render_time_ms = 0.0;
+        stats->avg_render_time_ms = 0.0;
+        stats->feature_count = 0;
+        stats->label_count = 0;
+        stats->cache_hits = 0;
+        stats->cache_misses = 0;
+    }
+}
+
+void ogc_render_exception_destroy(ogc_render_exception_t* ex) {
+    (void)ex;
 }
 #ifdef __cplusplus
 }

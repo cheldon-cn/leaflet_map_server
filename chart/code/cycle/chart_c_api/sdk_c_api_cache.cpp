@@ -11,6 +11,7 @@
 #include <ogc/cache/tile/tile_cache.h>
 #include <ogc/cache/tile/tile_key.h>
 #include <ogc/cache/offline/offline_storage_manager.h>
+#include <ogc/cache/offline/data_encryption.h>
 #include <ogc/cache/cache_manager.h>
 #include <ogc/geom/envelope.h>
 
@@ -352,6 +353,48 @@ size_t ogc_offline_storage_get_used_size(const ogc_offline_storage_t* storage) {
     return 0;
 }
 
+int ogc_offline_storage_store_chart(ogc_offline_storage_t* storage, const char* chart_id, const void* data, size_t size) {
+    if (storage && chart_id && data && size > 0) {
+        OfflineStorageManager* manager = reinterpret_cast<OfflineStorageManager*>(storage);
+        TileKey key(0, 0, 0);
+        std::vector<uint8_t> vec_data(static_cast<const uint8_t*>(data),
+                                       static_cast<const uint8_t*>(data) + size);
+        if (manager->StoreTile(std::string(chart_id), key, vec_data)) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+const char* ogc_offline_storage_get_chart_path(ogc_offline_storage_t* storage, const char* chart_id) {
+    if (storage && chart_id) {
+        OfflineStorageManager* manager = reinterpret_cast<OfflineStorageManager*>(storage);
+        static thread_local std::string result;
+        result = manager->GetStoragePath() + "/" + std::string(chart_id);
+        return result.c_str();
+    }
+    return nullptr;
+}
+
+int ogc_offline_storage_remove_chart(ogc_offline_storage_t* storage, const char* chart_id) {
+    if (storage && chart_id) {
+        OfflineStorageManager* manager = reinterpret_cast<OfflineStorageManager*>(storage);
+        TileKey key(0, 0, 0);
+        if (manager->DeleteTile(std::string(chart_id), key)) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+size_t ogc_offline_storage_get_chart_count(const ogc_offline_storage_t* storage) {
+    if (storage) {
+        OfflineStorageManager* manager = reinterpret_cast<OfflineStorageManager*>(const_cast<ogc_offline_storage_t*>(storage));
+        return manager->GetRegionCount();
+    }
+    return 0;
+}
+
 ogc_offline_region_t* ogc_offline_storage_get_region_by_id(const ogc_offline_storage_t* storage, const char* region_id) {
     if (storage && region_id) {
         OfflineStorageManager* manager = reinterpret_cast<OfflineStorageManager*>(const_cast<ogc_offline_storage_t*>(storage));
@@ -538,6 +581,51 @@ void ogc_cache_manager_flush_all(ogc_cache_manager_t* mgr) {
     if (mgr) {
         reinterpret_cast<CacheManager*>(mgr)->FlushAll();
     }
+}
+
+ogc_data_encryption_t* ogc_data_encryption_create(const char* password) {
+    (void)password;
+    auto encryption = DataEncryption::Create();
+    if (encryption) {
+        return reinterpret_cast<ogc_data_encryption_t*>(encryption.release());
+    }
+    return nullptr;
+}
+
+void ogc_data_encryption_destroy(ogc_data_encryption_t* encryption) {
+    if (encryption) {
+        delete reinterpret_cast<DataEncryption*>(encryption);
+    }
+}
+
+int ogc_data_encryption_encrypt(ogc_data_encryption_t* encryption, const void* input, size_t input_size, void* output, size_t* output_size) {
+    if (encryption && input && output && output_size) {
+        const unsigned char* inputBytes = static_cast<const unsigned char*>(input);
+        unsigned char* outputBytes = static_cast<unsigned char*>(output);
+        std::vector<unsigned char> result = reinterpret_cast<DataEncryption*>(encryption)->Encrypt(
+            std::vector<unsigned char>(inputBytes, inputBytes + input_size));
+        if (result.size() <= *output_size) {
+            memcpy(outputBytes, result.data(), result.size());
+            *output_size = result.size();
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int ogc_data_encryption_decrypt(ogc_data_encryption_t* encryption, const void* input, size_t input_size, void* output, size_t* output_size) {
+    if (encryption && input && output && output_size) {
+        const unsigned char* inputBytes = static_cast<const unsigned char*>(input);
+        unsigned char* outputBytes = static_cast<unsigned char*>(output);
+        std::vector<unsigned char> result = reinterpret_cast<DataEncryption*>(encryption)->Decrypt(
+            std::vector<unsigned char>(inputBytes, inputBytes + input_size));
+        if (result.size() <= *output_size) {
+            memcpy(outputBytes, result.data(), result.size());
+            *output_size = result.size();
+            return 0;
+        }
+    }
+    return -1;
 }
 
 #ifdef __cplusplus

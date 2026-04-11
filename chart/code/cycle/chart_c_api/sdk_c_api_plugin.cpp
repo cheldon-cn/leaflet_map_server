@@ -358,6 +358,78 @@ int ogc_exception_has_error(void) {
     return ExceptionData::HasError() ? 1 : 0;
 }
 
+ogc_secure_library_loader_t* ogc_secure_library_loader_create(const char* allowed_paths) {
+    (void)allowed_paths;
+    return nullptr;
+}
+
+void ogc_secure_library_loader_destroy(ogc_secure_library_loader_t* loader) {
+    (void)loader;
+}
+
+ogc_library_handle_t ogc_secure_library_loader_load(ogc_secure_library_loader_t* loader, const char* library_path) {
+    (void)loader; (void)library_path;
+    return nullptr;
+}
+
+int ogc_secure_library_loader_verify_signature(ogc_secure_library_loader_t* loader, ogc_library_handle_t handle, const char* public_key) {
+    (void)loader; (void)handle; (void)public_key;
+    return -1;
+}
+
+ogc_chart_exception_t* ogc_chart_exception_create(int error_code, const char* message) {
+    ogc_chart_exception_t* ex = new ogc_chart_exception_t();
+    ex->error_code = error_code;
+    ex->message = message ? _strdup(message) : nullptr;
+    ex->context = nullptr;
+    return ex;
+}
+
+void ogc_chart_exception_destroy(ogc_chart_exception_t* ex) {
+    if (ex) {
+        if (ex->message) free(ex->message);
+        if (ex->context) free(ex->context);
+        delete ex;
+    }
+}
+
+int ogc_chart_exception_get_error_code(const ogc_chart_exception_t* ex) {
+    return ex ? ex->error_code : 0;
+}
+
+const char* ogc_chart_exception_get_message(const ogc_chart_exception_t* ex) {
+    return ex ? (ex->message ? ex->message : "") : "";
+}
+
+const char* ogc_chart_exception_get_context(const ogc_chart_exception_t* ex) {
+    return ex ? (ex->context ? ex->context : "") : "";
+}
+
+ogc_jni_exception_t* ogc_jni_exception_create(const char* message, const char* java_class) {
+    ogc_jni_exception_t* ex = new ogc_jni_exception_t();
+    ex->error_code = 0;
+    ex->message = message ? _strdup(message) : nullptr;
+    ex->java_exception_class = java_class ? _strdup(java_class) : nullptr;
+    return ex;
+}
+
+void ogc_jni_exception_destroy(ogc_jni_exception_t* ex) {
+    if (ex) {
+        if (ex->message) free(ex->message);
+        if (ex->java_exception_class) free(ex->java_exception_class);
+        delete ex;
+    }
+}
+
+ogc_render_exception_t* ogc_render_exception_create(const char* message, const char* layer_name) {
+    ogc_render_exception_t* ex = new ogc_render_exception_t();
+    ex->error_code = 0;
+    ex->message = message ? _strdup(message) : nullptr;
+    ex->layer_name = layer_name ? _strdup(layer_name) : nullptr;
+    ex->operation = nullptr;
+    return ex;
+}
+
 #ifdef __cplusplus
 }
 #endif

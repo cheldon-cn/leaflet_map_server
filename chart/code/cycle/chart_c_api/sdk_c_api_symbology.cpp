@@ -9,6 +9,7 @@
 
 #include <ogc/feature/feature.h>
 #include <ogc/symbology/filter/filter.h>
+#include <ogc/symbology/filter/comparison_filter.h>
 #include <ogc/symbology/symbolizer/symbolizer.h>
 #include <ogc/symbology/filter/symbolizer_rule.h>
 
@@ -256,6 +257,48 @@ int ogc_symbolizer_rule_is_applicable(const ogc_symbolizer_rule_t* rule, const o
                (*ptr)->IsScaleInRange(scale) ? 1 : 0;
     }
     return 0;
+}
+
+void ogc_comparison_filter_destroy(ogc_comparison_filter_t* filter) {
+    if (filter) {
+        FilterPtr* ptr = reinterpret_cast<FilterPtr*>(filter);
+        delete ptr;
+    }
+}
+
+int ogc_comparison_filter_evaluate(const ogc_comparison_filter_t* filter, const ogc_feature_t* feature) {
+    if (filter && feature) {
+        const FilterPtr* ptr = reinterpret_cast<const FilterPtr*>(filter);
+        return (*ptr)->Evaluate(reinterpret_cast<const CNFeature*>(feature)) ? 1 : 0;
+    }
+    return 0;
+}
+
+ogc_comparison_operator_e ogc_comparison_filter_get_operator(const ogc_comparison_filter_t* filter) {
+    if (filter) {
+        const FilterPtr* ptr = reinterpret_cast<const FilterPtr*>(filter);
+        auto* cf = dynamic_cast<const ComparisonFilter*>(ptr->get());
+        if (cf) {
+            return static_cast<ogc_comparison_operator_e>(cf->GetOperator());
+        }
+    }
+    return OGC_COMPARISON_EQUAL;
+}
+
+void ogc_symbolizer_rule_set_symbolizer(ogc_symbolizer_rule_t* rule, ogc_symbolizer_t* symbolizer) {
+    if (rule && symbolizer) {
+        SymbolizerRulePtr* rulePtr = reinterpret_cast<SymbolizerRulePtr*>(rule);
+        SymbolizerPtr* symPtr = reinterpret_cast<SymbolizerPtr*>(symbolizer);
+        (*rulePtr)->AddSymbolizer(*symPtr);
+    }
+}
+
+void ogc_symbolizer_rule_set_scale_range(ogc_symbolizer_rule_t* rule, double min_scale, double max_scale) {
+    if (rule) {
+        SymbolizerRulePtr* ptr = reinterpret_cast<SymbolizerRulePtr*>(rule);
+        (*ptr)->SetMinScaleDenominator(min_scale);
+        (*ptr)->SetMaxScaleDenominator(max_scale);
+    }
 }
 
 #ifdef __cplusplus

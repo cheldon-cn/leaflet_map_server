@@ -77,6 +77,9 @@ ogc_alert_level_e ToCAlertLevel(AlertLevel level) {
 struct AlertWrapper {
     AlertEvent event;
     std::string message;
+    int64_t id;
+    ogc_alert_severity_e severity;
+    bool acknowledged;
 };
 
 }  
@@ -86,6 +89,9 @@ ogc_alert_t* ogc_alert_create(ogc_alert_type_e type, ogc_alert_level_e level, co
     wrapper->event.event_type = "alert";
     wrapper->event.priority = static_cast<int>(FromCAlertLevel(level));
     wrapper->message = SafeString(message);
+    wrapper->id = 0;
+    wrapper->severity = OGC_ALERT_SEVERITY_MEDIUM;
+    wrapper->acknowledged = false;
     return reinterpret_cast<ogc_alert_t*>(wrapper);
 }
 
@@ -144,6 +150,58 @@ void ogc_alert_set_position(ogc_alert_t* alert, const ogc_coordinate_t* pos) {
     }
 }
 
+void ogc_alert_set_id(ogc_alert_t* alert, int64_t id) {
+    if (alert) {
+        reinterpret_cast<AlertWrapper*>(alert)->id = id;
+    }
+}
+
+int64_t ogc_alert_get_id(const ogc_alert_t* alert) {
+    if (alert) {
+        return reinterpret_cast<const AlertWrapper*>(alert)->id;
+    }
+    return 0;
+}
+
+void ogc_alert_set_severity(ogc_alert_t* alert, ogc_alert_severity_e severity) {
+    if (alert) {
+        reinterpret_cast<AlertWrapper*>(alert)->severity = severity;
+    }
+}
+
+ogc_alert_severity_e ogc_alert_get_severity(const ogc_alert_t* alert) {
+    if (alert) {
+        return reinterpret_cast<const AlertWrapper*>(alert)->severity;
+    }
+    return OGC_ALERT_SEVERITY_LOW;
+}
+
+void ogc_alert_set_message(ogc_alert_t* alert, const char* message) {
+    if (alert) {
+        reinterpret_cast<AlertWrapper*>(alert)->message = SafeString(message);
+    }
+}
+
+void ogc_alert_set_timestamp(ogc_alert_t* alert, int64_t timestamp) {
+    if (alert) {
+        AlertWrapper* wrapper = reinterpret_cast<AlertWrapper*>(alert);
+        wrapper->event.timestamp = DateTime::FromTimestamp(timestamp);
+    }
+}
+
+void ogc_alert_set_acknowledged(ogc_alert_t* alert, int acknowledged) {
+    if (alert) {
+        reinterpret_cast<AlertWrapper*>(alert)->acknowledged = (acknowledged != 0);
+    }
+}
+
+int ogc_alert_is_acknowledged(const ogc_alert_t* alert) {
+    if (alert) {
+        return reinterpret_cast<const AlertWrapper*>(alert)->acknowledged ? 1 : 0;
+    }
+    return 0;
+}
+
 ogc_alert_engine_t* ogc_alert_engine_create(void) {
     return reinterpret_cast<ogc_alert_engine_t*>(IAlertEngine::Create().release());
 }
@@ -195,10 +253,16 @@ int ogc_alert_engine_add_alert(ogc_alert_engine_t* engine, ogc_alert_t* alert) {
     return 0;
 }
 
-int ogc_alert_engine_remove_alert(ogc_alert_engine_t* engine, const ogc_alert_t* alert) {
+int ogc_alert_engine_remove_alert(ogc_alert_engine_t* engine, int64_t id) {
     (void)engine;
-    (void)alert;
+    (void)id;
     return 0;
+}
+
+ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, int64_t id) {
+    (void)engine;
+    (void)id;
+    return nullptr;
 }
 
 size_t ogc_alert_engine_get_alert_count(const ogc_alert_engine_t* engine) {
@@ -209,14 +273,17 @@ size_t ogc_alert_engine_get_alert_count(const ogc_alert_engine_t* engine) {
     return 0;
 }
 
-ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, size_t index) {
-    (void)engine;
-    (void)index;
-    return nullptr;
-}
-
 void ogc_alert_engine_clear_alerts(ogc_alert_engine_t* engine) {
     (void)engine;
+}
+
+void ogc_alert_engine_set_callback(ogc_alert_engine_t* engine,
+    void (*callback)(int alert_type, int alert_level, const char* message, void* user_data),
+    void* user_data) {
+    if (engine && callback) {
+        (void)callback;
+        (void)user_data;
+    }
 }
 
 size_t ogc_alert_engine_get_active_alert_count(const ogc_alert_engine_t* engine) {
