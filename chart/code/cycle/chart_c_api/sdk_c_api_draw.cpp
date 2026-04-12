@@ -637,7 +637,7 @@ SDK_C_API ogc_image_device_t* ogc_image_device_create(size_t width, size_t heigh
     ImageDeviceImpl* data = new ImageDeviceImpl();
     data->width = width;
     data->height = height;
-    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height));
+    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height), ogc::draw::PixelFormat::kBGRA8888);
     data->context = DrawContext::Create(data->device).release();
     data->pixels = new unsigned char[width * height * 4];
     
@@ -681,7 +681,7 @@ SDK_C_API int ogc_image_device_resize(ogc_image_device_t* device, size_t width, 
     
     data->width = width;
     data->height = height;
-    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height));
+    data->device = new RasterImageDevice(static_cast<int>(width), static_cast<int>(height), ogc::draw::PixelFormat::kBGRA8888);
     data->context = DrawContext::Create(data->device).release();
     data->pixels = new unsigned char[width * height * 4];
     

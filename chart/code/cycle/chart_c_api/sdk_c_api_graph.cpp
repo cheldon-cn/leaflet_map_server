@@ -20,6 +20,8 @@
 #include <ogc/layer/memory_layer.h>
 #include <ogc/geom/envelope.h>
 #include <ogc/geom/coordinate.h>
+#include <ogc/geom/spatial_index.h>
+#include <ogc/base/log.h>
 
 #include <ogc/draw/draw_context.h>
 #include <ogc/draw/draw_style.h>
@@ -42,6 +44,7 @@
 
 using namespace ogc;
 using namespace ogc::graph;
+using namespace ogc::base;
 using namespace chart::parser;
 
 typedef struct ogc_image_device_t ogc_image_device_t;
@@ -65,17 +68,48 @@ static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
+static thread_local std::vector<ogc::draw::Point> g_points_pool;
+static const size_t POINTS_POOL_INITIAL_CAPACITY = 1000;
+
+static std::vector<ogc::draw::Point>& GetPointsPool() {
+    if (g_points_pool.capacity() < POINTS_POOL_INITIAL_CAPACITY) {
+        g_points_pool.reserve(POINTS_POOL_INITIAL_CAPACITY);
+    }
+    g_points_pool.clear();
+    return g_points_pool;
+}
+
 struct ViewportData {
     double center_x;
     double center_y;
     double scale;
+    double scale_x;
+    double scale_y;
     double rotation;
     int32_t pixel_width;
     int32_t pixel_height;
     Envelope bounds;
+    Envelope requested_extent;
+    bool extent_pending;
     
-    ViewportData() : center_x(0.0), center_y(0.0), scale(1.0), rotation(0.0), 
-                     pixel_width(800), pixel_height(600) {}
+    ViewportData() : center_x(0.0), center_y(0.0), scale(1.0), scale_x(1.0), scale_y(1.0), 
+                     rotation(0.0), pixel_width(800), pixel_height(600), extent_pending(false) {}
+};
+
+struct FeatureBounds {
+    size_t index;
+    double min_x, min_y, max_x, max_y;
+    chart::parser::GeometryType type;
+    
+    FeatureBounds() : index(0), min_x(0), min_y(0), max_x(0), max_y(0), 
+                      type(chart::parser::GeometryType::Point) {}
+    
+    FeatureBounds(size_t idx, double mx, double my, double Mx, double My, chart::parser::GeometryType t)
+        : index(idx), min_x(mx), min_y(my), max_x(Mx), max_y(My), type(t) {}
+    
+    bool Intersects(double vx_min, double vy_min, double vx_max, double vy_max) const {
+        return !(max_x < vx_min || min_x > vx_max || max_y < vy_min || min_y > vy_max);
+    }
 };
 
 struct ChartViewerData {
@@ -86,9 +120,11 @@ struct ChartViewerData {
     std::string chart_path;
     bool chart_loaded;
     std::vector<chart::parser::Feature> features;
+    std::vector<FeatureBounds> feature_bounds;
+    std::unique_ptr<RTree<size_t>> spatial_index;
     
     ChartViewerData() : facade(nullptr), layer_manager(nullptr), viewport(nullptr), 
-                         chart_loaded(false) {
+                         chart_loaded(false), spatial_index(nullptr) {
         facade = &DrawFacade::Instance();
         layer_manager = new LayerManager();
         viewport = new ViewportData();
@@ -188,6 +224,14 @@ void ogc_viewport_set_rotation(ogc_viewport_t* viewport, double rotation) {
     }
 }
 
+SDK_C_API void ogc_viewport_set_size(ogc_viewport_t* viewport, int width, int height) {
+    if (viewport && width > 0 && height > 0) {
+        ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        data->pixel_width = width;
+        data->pixel_height = height;
+    }
+}
+
 ogc_envelope_t* ogc_viewport_get_bounds(const ogc_viewport_t* viewport) {
     if (viewport) {
         const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
@@ -226,8 +270,8 @@ int ogc_viewport_screen_to_world(const ogc_viewport_t* viewport, double sx, doub
     double half_width = data->pixel_width / 2.0;
     double half_height = data->pixel_height / 2.0;
     
-    double dx = (sx - half_width) / data->scale;
-    double dy = (half_height - sy) / data->scale;
+    double dx = (sx - half_width) / data->scale_x;
+    double dy = (half_height - sy) / data->scale_y;
     
     if (data->rotation != 0.0) {
         double rad = data->rotation * M_PI / 180.0;
@@ -268,8 +312,8 @@ int ogc_viewport_world_to_screen(const ogc_viewport_t* viewport, double wx, doub
     double half_width = data->pixel_width / 2.0;
     double half_height = data->pixel_height / 2.0;
     
-    *sx = half_width + dx * data->scale;
-    *sy = half_height - dy * data->scale;
+    *sx = half_width + dx * data->scale_x;
+    *sy = half_height - dy * data->scale_y;
     
     return 0;
 }
@@ -286,35 +330,65 @@ SDK_C_API void ogc_viewport_zoom(ogc_viewport_t* viewport, double factor) {
     if (viewport && factor > 0) {
         ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
         data->scale *= factor;
+        data->scale_x *= factor;
+        data->scale_y *= factor;
     }
 }
 
 SDK_C_API void ogc_viewport_zoom_at(ogc_viewport_t* viewport, double factor, double center_x, double center_y) {
     if (viewport && factor > 0) {
         ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        LOG_DEBUG_FMT("[ZOOM_AT] factor=%.2f, center=(%.2f, %.2f)", factor, center_x, center_y);
         double dx = center_x - data->center_x;
         double dy = center_y - data->center_y;
         data->center_x += dx * (1.0 - 1.0 / factor);
         data->center_y += dy * (1.0 - 1.0 / factor);
         data->scale *= factor;
+        data->scale_x *= factor;
+        data->scale_y *= factor;
+    } else {
+        LOG_ERROR_FMT("[ZOOM_AT] ERROR: viewport is null or factor <= 0");
     }
 }
 
 SDK_C_API int ogc_viewport_set_extent(ogc_viewport_t* viewport, double min_x, double min_y, double max_x, double max_y) {
     if (viewport) {
         ViewportData* data = reinterpret_cast<ViewportData*>(viewport);
+        LOG_DEBUG_FMT("[SET_EXTENT] extent=(%.2f, %.2f) - (%.2f, %.2f)", min_x, min_y, max_x, max_y);
+        
+        data->requested_extent = Envelope(min_x, min_y, max_x, max_y);
+        data->extent_pending = true;
+        
         data->bounds = Envelope(min_x, min_y, max_x, max_y);
         data->center_x = (min_x + max_x) / 2.0;
         data->center_y = (min_y + max_y) / 2.0;
+        
+        double width = max_x - min_x;
+        double height = max_y - min_y;
+        
         if (data->pixel_width > 0 && data->pixel_height > 0) {
-            double width = max_x - min_x;
-            double height = max_y - min_y;
-            double scale_x = data->pixel_width / width;
-            double scale_y = data->pixel_height / height;
-            data->scale = (scale_x < scale_y) ? scale_x : scale_y;
+            double ext_width = max_x - min_x;
+            double ext_height = max_y - min_y;
+            data->scale_x = data->pixel_width / ext_width;
+            data->scale_y = data->pixel_height / ext_height;
+            data->scale = (data->scale_x < data->scale_y) ? data->scale_x : data->scale_y;
+            data->extent_pending = false;
+        } else {
+            double aspect_ratio = width / height;
+            double pixel_aspect = 800.0 / 600.0;
+            if (aspect_ratio > pixel_aspect) {
+                data->scale_x = 800.0 / width;
+                data->scale_y = data->scale_x;
+            } else {
+                data->scale_y = 600.0 / height;
+                data->scale_x = data->scale_y;
+            }
+            data->scale = data->scale_x;
         }
+        
         return 0;
     }
+    LOG_ERROR_FMT("[SET_EXTENT] ERROR: viewport is null");
     return -1;
 }
 
@@ -325,8 +399,8 @@ SDK_C_API int ogc_viewport_get_extent(const ogc_viewport_t* viewport, double* mi
     
     const ViewportData* data = reinterpret_cast<const ViewportData*>(viewport);
     
-    double half_width = (data->pixel_width / 2.0) / data->scale;
-    double half_height = (data->pixel_height / 2.0) / data->scale;
+    double half_width = (data->pixel_width / 2.0) / data->scale_x;
+    double half_height = (data->pixel_height / 2.0) / data->scale_y;
     
     *min_x = data->center_x - half_width;
     *min_y = data->center_y - half_height;
@@ -389,39 +463,82 @@ int ogc_chart_viewer_load_chart(ogc_chart_viewer_t* viewer, const char* path) {
     data->chart_path = path;
     data->chart_loaded = true;
     
-    std::cout << "[DEBUG] Loaded " << data->features.size() << " features" << std::endl;
+    LOG_DEBUG_FMT("[DEBUG] Loaded %zu features", data->features.size());
     
     double min_x = std::numeric_limits<double>::max();
     double min_y = std::numeric_limits<double>::max();
     double max_x = std::numeric_limits<double>::lowest();
     double max_y = std::numeric_limits<double>::lowest();
     
-    for (const auto& feature : data->features) {
-        const auto& geom = feature.geometry;
-        for (const auto& pt : geom.points) {
-            min_x = std::min(min_x, pt.x);
-            min_y = std::min(min_y, pt.y);
-            max_x = std::max(max_x, pt.x);
-            max_y = std::max(max_y, pt.y);
-        }
-        for (const auto& ring : geom.rings) {
-            for (const auto& pt : ring) {
-                min_x = std::min(min_x, pt.x);
-                min_y = std::min(min_y, pt.y);
-                max_x = std::max(max_x, pt.x);
-                max_y = std::max(max_y, pt.y);
+    data->feature_bounds.clear();
+    data->feature_bounds.reserve(data->features.size());
+    
+    for (size_t i = 0; i < data->features.size(); i++) {
+        const auto& feature = data->features[i];
+        double f_min_x = std::numeric_limits<double>::max();
+        double f_min_y = std::numeric_limits<double>::max();
+        double f_max_x = std::numeric_limits<double>::lowest();
+        double f_max_y = std::numeric_limits<double>::lowest();
+        
+        if (feature.geometry.type == chart::parser::GeometryType::Point ||
+            feature.geometry.type == chart::parser::GeometryType::Line) {
+            for (const auto& pt : feature.geometry.points) {
+                if (pt.x < f_min_x) f_min_x = pt.x;
+                if (pt.y < f_min_y) f_min_y = pt.y;
+                if (pt.x > f_max_x) f_max_x = pt.x;
+                if (pt.y > f_max_y) f_max_y = pt.y;
+                if (pt.x < min_x) min_x = pt.x;
+                if (pt.y < min_y) min_y = pt.y;
+                if (pt.x > max_x) max_x = pt.x;
+                if (pt.y > max_y) max_y = pt.y;
             }
+        } else if (feature.geometry.type == chart::parser::GeometryType::Area) {
+            for (const auto& ring : feature.geometry.rings) {
+                for (const auto& pt : ring) {
+                    if (pt.x < f_min_x) f_min_x = pt.x;
+                    if (pt.y < f_min_y) f_min_y = pt.y;
+                    if (pt.x > f_max_x) f_max_x = pt.x;
+                    if (pt.y > f_max_y) f_max_y = pt.y;
+                    if (pt.x < min_x) min_x = pt.x;
+                    if (pt.y < min_y) min_y = pt.y;
+                    if (pt.x > max_x) max_x = pt.x;
+                    if (pt.y > max_y) max_y = pt.y;
+                }
+            }
+        }
+        
+        if (f_min_x <= f_max_x && f_min_y <= f_max_y) {
+            data->feature_bounds.push_back(
+                FeatureBounds(i, f_min_x, f_min_y, f_max_x, f_max_y, feature.geometry.type));
         }
     }
     
-    std::cout << "[DEBUG] Calculated extent: " << min_x << ", " << min_y << " - " << max_x << ", " << max_y << std::endl;
+    LOG_DEBUG_FMT("[DEBUG] Calculated extent: %.2f, %.2f - %.2f, %.2f", min_x, min_y, max_x, max_y);
+    LOG_DEBUG_FMT("[DEBUG] Calculated %zu feature bounds", data->feature_bounds.size());
+    
+    RTree<size_t>::Config rtree_config;
+    rtree_config.maxEntries = 16;
+    rtree_config.minEntries = 4;
+    rtree_config.splitStrategy = RTree<size_t>::SplitStrategy::RStar;
+    data->spatial_index = std::unique_ptr<RTree<size_t>>(new RTree<size_t>(rtree_config));
+    
+    std::vector<std::pair<Envelope, size_t>> rtree_items;
+    rtree_items.reserve(data->feature_bounds.size());
+    for (const auto& bounds : data->feature_bounds) {
+        Envelope env(bounds.min_x, bounds.min_y, bounds.max_x, bounds.max_y);
+        rtree_items.push_back(std::make_pair(env, bounds.index));
+    }
+    
+    if (!rtree_items.empty()) {
+        data->spatial_index->BulkLoad(rtree_items);
+        LOG_DEBUG_FMT("[DEBUG] Built RTree with %zu entries", rtree_items.size());
+    }
     
     if (min_x < max_x && min_y < max_y) {
         data->full_extent = Envelope(min_x, min_y, max_x, max_y);
         if (data->viewport) {
-            data->viewport->bounds = data->full_extent;
-            data->viewport->center_x = (min_x + max_x) / 2.0;
-            data->viewport->center_y = (min_y + max_y) / 2.0;
+            ogc_viewport_set_extent(reinterpret_cast<ogc_viewport_t*>(data->viewport),
+                                    min_x, min_y, max_x, max_y);
         }
     }
     
@@ -430,11 +547,13 @@ int ogc_chart_viewer_load_chart(ogc_chart_viewer_t* viewer, const char* path) {
 
 int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* device, int width, int height) {
     if (!viewer || !device || width <= 0 || height <= 0) {
+        LOG_ERROR_FMT("[RENDER] ERROR: Invalid parameters");
         return -1;
     }
     
     ChartViewerData* data = GetChartViewerData(viewer);
     if (!data) {
+        LOG_ERROR_FMT("[RENDER] ERROR: data is null");
         return -1;
     }
     
@@ -442,12 +561,9 @@ int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* devic
         reinterpret_cast<ogc_image_device_t*>(device));
     
     if (!context) {
-        std::cerr << "[ERROR] Failed to get DrawContext" << std::endl;
+        LOG_ERROR_FMT("[ERROR] Failed to get DrawContext");
         return -1;
     }
-    
-    ogc::draw::RasterImageDevice* raster_device = ogc_image_device_get_raster_device(
-        reinterpret_cast<ogc_image_device_t*>(device));
     
     if (!data->chart_loaded || data->features.empty()) {
         if (context->Begin() == ogc::draw::DrawResult::kSuccess) {
@@ -460,55 +576,104 @@ int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* devic
     
     ViewportData* vp = data->viewport;
     if (!vp) {
+        LOG_ERROR_FMT("[RENDER] ERROR: viewport is null");
         return 0;
     }
     
-    double extent_width = data->full_extent.GetWidth();
-    double extent_height = data->full_extent.GetHeight();
+    bool pixel_changed = (vp->pixel_width != width || vp->pixel_height != height);
+    vp->pixel_width = width;
+    vp->pixel_height = height;
     
-    if (extent_width <= 0 || extent_height <= 0) {
-        return 0;
+    if (vp->extent_pending && pixel_changed) {
+        double ext_width = vp->requested_extent.GetMaxX() - vp->requested_extent.GetMinX();
+        double ext_height = vp->requested_extent.GetMaxY() - vp->requested_extent.GetMinY();
+        vp->scale_x = width / ext_width;
+        vp->scale_y = height / ext_height;
+        vp->scale = (vp->scale_x < vp->scale_y) ? vp->scale_x : vp->scale_y;
+        vp->extent_pending = false;
     }
-    
-    double scale_x = width / extent_width;
-    double scale_y = height / extent_height;
-    double scale = (scale_x < scale_y) ? scale_x : scale_y;
-    
-    double offset_x = (width - extent_width * scale) / 2.0;
-    double offset_y = (height - extent_height * scale) / 2.0;
-    
-    std::cout << "[DEBUG] Extent: " << data->full_extent.GetMinX() << ", " << data->full_extent.GetMinY() 
-              << " - " << data->full_extent.GetMaxX() << ", " << data->full_extent.GetMaxY() << std::endl;
-    std::cout << "[DEBUG] Extent size: " << extent_width << " x " << extent_height << std::endl;
-    std::cout << "[DEBUG] Canvas size: " << width << " x " << height << std::endl;
-    std::cout << "[DEBUG] Scale: " << scale << std::endl;
-    std::cout << "[DEBUG] Offset: " << offset_x << ", " << offset_y << std::endl;
     
     if (context->Begin() != ogc::draw::DrawResult::kSuccess) {
-        std::cerr << "[ERROR] DrawContext::Begin() failed" << std::endl;
+        LOG_ERROR_FMT("[ERROR] DrawContext::Begin() failed");
         return -1;
     }
     
     ogc::draw::Color bg_color(240, 248, 255, 255);
     context->Clear(bg_color);
     
+    double half_width = width / 2.0;
+    double half_height = height / 2.0;
+    
     ogc::draw::TransformMatrix transform;
-    transform = ogc::draw::TransformMatrix::Translate(offset_x, offset_y);
-    transform = transform * ogc::draw::TransformMatrix::Scale(scale, scale);
-    transform = transform * ogc::draw::TransformMatrix::Translate(-data->full_extent.GetMinX(), -data->full_extent.GetMinY());
-    
-    ogc::draw::TransformMatrix flip_y;
-    flip_y.m[0][0] = 1.0;
-    flip_y.m[1][1] = -1.0;
-    flip_y.m[1][2] = height;
-    
-    transform = flip_y * transform;
+    transform = ogc::draw::TransformMatrix::Translate(half_width, half_height);
+    transform = transform * ogc::draw::TransformMatrix::Scale(vp->scale_x, -vp->scale_y);
+    transform = transform * ogc::draw::TransformMatrix::Translate(-vp->center_x, -vp->center_y);
     
     context->SetTransform(transform);
     
-    int point_count = 0;
-    int line_count = 0;
-    int area_count = 0;
+    double world_half_width = half_width / vp->scale_x;
+    double world_half_height = half_height / vp->scale_y;
+    double margin_x = world_half_width * 0.1;
+    double margin_y = world_half_height * 0.1;
+    double view_min_x = vp->center_x - world_half_width - margin_x;
+    double view_max_x = vp->center_x + world_half_width + margin_x;
+    double view_min_y = vp->center_y - world_half_height - margin_y;
+    double view_max_y = vp->center_y + world_half_height + margin_y;
+    
+    std::vector<size_t> visible_areas;
+    std::vector<size_t> visible_lines;
+    std::vector<size_t> visible_points;
+    
+    if (data->spatial_index && !data->spatial_index->IsEmpty()) {
+        Envelope view_extent(view_min_x, view_min_y, view_max_x, view_max_y);
+        std::vector<size_t> visible_indices = data->spatial_index->Query(view_extent);
+        
+        visible_areas.reserve(visible_indices.size() * 0.4);
+        visible_lines.reserve(visible_indices.size() * 0.3);
+        visible_points.reserve(visible_indices.size() * 0.3);
+        
+        for (size_t idx : visible_indices) {
+            if (idx >= data->feature_bounds.size()) continue;
+            const auto& bounds = data->feature_bounds[idx];
+            
+            switch (bounds.type) {
+                case chart::parser::GeometryType::Area:
+                    visible_areas.push_back(bounds.index);
+                    break;
+                case chart::parser::GeometryType::Line:
+                    visible_lines.push_back(bounds.index);
+                    break;
+                case chart::parser::GeometryType::Point:
+                    visible_points.push_back(bounds.index);
+                    break;
+            }
+        }
+    } else {
+        visible_areas.reserve(data->feature_bounds.size() * 0.4);
+        visible_lines.reserve(data->feature_bounds.size() * 0.3);
+        visible_points.reserve(data->feature_bounds.size() * 0.3);
+        
+        for (const auto& bounds : data->feature_bounds) {
+            if (!bounds.Intersects(view_min_x, view_min_y, view_max_x, view_max_y)) {
+                continue;
+            }
+            
+            switch (bounds.type) {
+                case chart::parser::GeometryType::Area:
+                    visible_areas.push_back(bounds.index);
+                    break;
+                case chart::parser::GeometryType::Line:
+                    visible_lines.push_back(bounds.index);
+                    break;
+                case chart::parser::GeometryType::Point:
+                    visible_points.push_back(bounds.index);
+                    break;
+            }
+        }
+    }
+    
+    LOG_DEBUG_FMT("[RENDER] Visible: Areas=%zu, Lines=%zu, Points=%zu", 
+                  visible_areas.size(), visible_lines.size(), visible_points.size());
     
     ogc::draw::Color area_colors[3] = {
         ogc::draw::Color(173, 216, 230, 180),
@@ -522,84 +687,71 @@ int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* devic
     };
     
     int area_idx = 0;
-    for (const auto& feature : data->features) {
-        if (feature.geometry.type == chart::parser::GeometryType::Area) {
-            area_count++;
-            int color_idx = (area_idx / 2) % 3;
-            ogc::draw::Pen area_pen(area_stroke_colors[color_idx], 1.0);
-            ogc::draw::Brush area_brush(area_colors[color_idx]);
-            context->SetPen(area_pen);
-            context->SetBrush(area_brush);
-            if (!feature.geometry.rings.empty() && feature.geometry.rings[0].size() >= 3) {
-                std::vector<ogc::draw::Point> points;
-                for (const auto& pt : feature.geometry.rings[0]) {
-                    points.push_back(ogc::draw::Point(pt.x, pt.y));
-                }
-                context->DrawPolygon(points, true);
+    for (size_t idx : visible_areas) {
+        const auto& feature = data->features[idx];
+        int color_idx = (area_idx / 2) % 3;
+        ogc::draw::Pen area_pen(area_stroke_colors[color_idx], 1.0);
+        ogc::draw::Brush area_brush(area_colors[color_idx]);
+        context->SetPen(area_pen);
+        context->SetBrush(area_brush);
+        if (!feature.geometry.rings.empty() && feature.geometry.rings[0].size() >= 3) {
+            std::vector<ogc::draw::Point>& points = GetPointsPool();
+            for (const auto& pt : feature.geometry.rings[0]) {
+                points.push_back(ogc::draw::Point(pt.x, pt.y));
             }
-            area_idx++;
+            context->DrawPolygon(points, true);
         }
+        area_idx++;
     }
     
     double line_width_pixels = 2.0 * 96.0 / 25.4;
-    for (const auto& feature : data->features) {
-        if (feature.geometry.type == chart::parser::GeometryType::Line) {
-            line_count++;
-            uint32_t color_value = GetFeatureColor(feature.type);
-            ogc::draw::Color stroke_color(
-                (color_value >> 16) & 0xFF,
-                (color_value >> 8) & 0xFF,
-                (color_value >> 0) & 0xFF,
-                255
-            );
-            ogc::draw::Pen pen(stroke_color, line_width_pixels / scale);
-            context->SetPen(pen);
-            if (feature.geometry.points.size() >= 2) {
-                std::vector<ogc::draw::Point> points;
-                for (const auto& pt : feature.geometry.points) {
-                    points.push_back(ogc::draw::Point(pt.x, pt.y));
-                }
-                context->DrawLineString(points);
+    for (size_t idx : visible_lines) {
+        const auto& feature = data->features[idx];
+        uint32_t color_value = GetFeatureColor(feature.type);
+        ogc::draw::Color stroke_color(
+            (color_value >> 16) & 0xFF,
+            (color_value >> 8) & 0xFF,
+            (color_value >> 0) & 0xFF,
+            255
+        );
+        ogc::draw::Pen pen(stroke_color, line_width_pixels / vp->scale);
+        context->SetPen(pen);
+        if (feature.geometry.points.size() >= 2) {
+            std::vector<ogc::draw::Point>& points = GetPointsPool();
+            for (const auto& pt : feature.geometry.points) {
+                points.push_back(ogc::draw::Point(pt.x, pt.y));
             }
+            context->DrawLineString(points);
         }
     }
     
     double point_radius_pixels = 1.5 * 96.0 / 25.4;
-    for (const auto& feature : data->features) {
-        if (feature.geometry.type == chart::parser::GeometryType::Point) {
-            point_count++;
-            uint32_t color_value = GetFeatureColor(feature.type);
-            ogc::draw::Color stroke_color(
-                (color_value >> 16) & 0xFF,
-                (color_value >> 8) & 0xFF,
-                (color_value >> 0) & 0xFF,
-                255
-            );
-            ogc::draw::Color fill_color(
-                ((color_value >> 16) & 0xFF) * 0.7,
-                ((color_value >> 8) & 0xFF) * 0.7,
-                ((color_value >> 0) & 0xFF) * 0.7,
-                200
-            );
-            ogc::draw::Pen pen(stroke_color, 1.0);
-            ogc::draw::Brush brush(fill_color);
-            context->SetPen(pen);
-            context->SetBrush(brush);
-            if (!feature.geometry.points.empty()) {
-                const auto& pt = feature.geometry.points[0];
-                context->DrawCircle(pt.x, pt.y, point_radius_pixels / scale, true);
-            }
+    for (size_t idx : visible_points) {
+        const auto& feature = data->features[idx];
+        uint32_t color_value = GetFeatureColor(feature.type);
+        ogc::draw::Color stroke_color(
+            (color_value >> 16) & 0xFF,
+            (color_value >> 8) & 0xFF,
+            (color_value >> 0) & 0xFF,
+            255
+        );
+        ogc::draw::Color fill_color(
+            ((color_value >> 16) & 0xFF) * 0.7,
+            ((color_value >> 8) & 0xFF) * 0.7,
+            ((color_value >> 0) & 0xFF) * 0.7,
+            200
+        );
+        ogc::draw::Pen pen(stroke_color, 1.0);
+        ogc::draw::Brush brush(fill_color);
+        context->SetPen(pen);
+        context->SetBrush(brush);
+        if (!feature.geometry.points.empty()) {
+            const auto& pt = feature.geometry.points[0];
+            context->DrawCircle(pt.x, pt.y, point_radius_pixels / vp->scale, true);
         }
     }
     
     context->End();
-    
-    std::cout << "========== chart render statistics ==========" << std::endl;
-    std::cout << "Total point count: " << point_count << std::endl;
-    std::cout << "Total line count: " << line_count << std::endl;
-    std::cout << "Total area count: " << area_count << std::endl;
-    std::cout << "Total feature count: " << (point_count + line_count + area_count) << std::endl;
-    std::cout << "=================================" << std::endl;
     
     return 0;
 }
@@ -629,8 +781,12 @@ void ogc_chart_viewer_get_viewport(ogc_chart_viewer_t* viewer, double* center_x,
 void ogc_chart_viewer_pan(ogc_chart_viewer_t* viewer, double dx, double dy) {
     ChartViewerData* data = GetChartViewerData(viewer);
     if (data && data->viewport) {
-        data->viewport->center_x += dx;
-        data->viewport->center_y += dy;
+        double world_dx = dx / data->viewport->scale_x;
+        double world_dy = dy / data->viewport->scale_y;
+        data->viewport->center_x += world_dx;
+        data->viewport->center_y -= world_dy;
+    } else {
+        LOG_ERROR_FMT("[PAN] ERROR: data or viewport is null");
     }
 }
 
@@ -642,6 +798,8 @@ void ogc_chart_viewer_zoom(ogc_chart_viewer_t* viewer, double factor, double cen
         data->viewport->center_x += dx * (1.0 - 1.0 / factor);
         data->viewport->center_y += dy * (1.0 - 1.0 / factor);
         data->viewport->scale *= factor;
+    } else {
+        LOG_ERROR_FMT("[ZOOM] ERROR: data or viewport is null");
     }
 }
 
@@ -650,13 +808,26 @@ ogc_feature_t* ogc_chart_viewer_query_feature(ogc_chart_viewer_t* viewer, double
 }
 
 void ogc_chart_viewer_screen_to_world(ogc_chart_viewer_t* viewer, double screen_x, double screen_y, double* world_x, double* world_y) {
-    if (world_x) *world_x = screen_x;
-    if (world_y) *world_y = screen_y;
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        ogc_viewport_screen_to_world(reinterpret_cast<ogc_viewport_t*>(data->viewport), 
+                                      screen_x, screen_y, world_x, world_y);
+    } else {
+        LOG_ERROR_FMT("[S2W] ERROR: data or viewport is null");
+        if (world_x) *world_x = screen_x;
+        if (world_y) *world_y = screen_y;
+    }
 }
 
 void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x, double world_y, double* screen_x, double* screen_y) {
-    if (screen_x) *screen_x = world_x;
-    if (screen_y) *screen_y = world_y;
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        ogc_viewport_world_to_screen(reinterpret_cast<ogc_viewport_t*>(data->viewport), 
+                                      world_x, world_y, screen_x, screen_y);
+    } else {
+        if (screen_x) *screen_x = world_x;
+        if (screen_y) *screen_y = world_y;
+    }
 }
 
 SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* viewer) {

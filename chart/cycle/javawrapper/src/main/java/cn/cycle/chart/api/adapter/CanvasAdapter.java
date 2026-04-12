@@ -4,6 +4,7 @@ import cn.cycle.chart.api.core.ChartViewer;
 import cn.cycle.chart.api.core.Viewport;
 import cn.cycle.chart.api.geometry.Coordinate;
 import cn.cycle.chart.api.geometry.Envelope;
+import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelWriter;
@@ -12,6 +13,8 @@ import javafx.scene.image.WritablePixelFormat;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class CanvasAdapter {
 
@@ -20,6 +23,18 @@ public class CanvasAdapter {
     private final List<ChartEventHandler> handlers;
     private ImageDevice device;
     private boolean disposed;
+    private javafx.scene.image.WritableImage bufferImage;
+    private int lastWidth = 0;
+    private int lastHeight = 0;
+
+    private final AtomicBoolean isRendering = new AtomicBoolean(false);
+    private final AtomicBoolean renderPending = new AtomicBoolean(false);
+    private final AtomicLong lastRenderTime = new AtomicLong(0);
+    private static final long MIN_RENDER_INTERVAL_MS = 16;
+    private static final long THROTTLE_DELAY_MS = 8;
+    private volatile byte[] pendingPixels = null;
+    private volatile int pendingWidth = 0;
+    private volatile int pendingHeight = 0;
 
     public CanvasAdapter(Canvas canvas, ChartViewer viewer) {
         this.canvas = canvas;
@@ -172,70 +187,119 @@ public class CanvasAdapter {
     }
 
     public void render() {
-        System.out.println("[DEBUG] CanvasAdapter.render() called");
-        
         if (disposed) {
-            System.out.println("[WARNING] CanvasAdapter is disposed, skipping render");
             return;
         }
 
-        int width = (int) canvas.getWidth();
-        int height = (int) canvas.getHeight();
-        System.out.println("[DEBUG] Canvas size: " + width + " x " + height);
+        long now = System.currentTimeMillis();
+        long timeSinceLastRender = now - lastRenderTime.get();
+        
+        if (timeSinceLastRender < MIN_RENDER_INTERVAL_MS) {
+            if (renderPending.compareAndSet(false, true)) {
+                scheduleThrottledRender();
+            }
+            return;
+        }
+
+        if (isRendering.get()) {
+            renderPending.set(true);
+            return;
+        }
+
+        startAsyncRender();
+    }
+
+    private void scheduleThrottledRender() {
+        new Thread(() -> {
+            try {
+                Thread.sleep(THROTTLE_DELAY_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            Platform.runLater(() -> {
+                renderPending.set(false);
+                render();
+            });
+        }).start();
+    }
+
+    private void startAsyncRender() {
+        if (!isRendering.compareAndSet(false, true)) {
+            return;
+        }
+
+        final int width = (int) canvas.getWidth();
+        final int height = (int) canvas.getHeight();
 
         if (width <= 0 || height <= 0) {
-            System.out.println("[WARNING] Invalid canvas size, skipping render");
+            isRendering.set(false);
             return;
         }
 
-        if (device == null) {
-            System.out.println("[DEBUG] Creating new ImageDevice...");
-            device = new ImageDevice(width, height);
-        } else {
-            System.out.println("[DEBUG] Resizing ImageDevice...");
-            device.resize(width, height);
-        }
-
-        System.out.println("[DEBUG] Calling viewer.render()...");
-        long devicePtr = device.getNativePtr();
-        System.out.println("[DEBUG] Device pointer: " + devicePtr);
-        
-        int renderResult = viewer.render(devicePtr, width, height);
-        System.out.println("[DEBUG] viewer.render() returned: " + renderResult);
-
-        System.out.println("[DEBUG] Getting pixels from device...");
-        byte[] pixels = device.getPixels();
-        System.out.println("[DEBUG] Pixels array: " + (pixels != null ? "length=" + pixels.length : "null"));
-        
-        if (pixels != null && pixels.length >= width * height * 4) {
-            System.out.println("[DEBUG] Drawing image to canvas...");
-            
-            GraphicsContext gc = canvas.getGraphicsContext2D();
-            gc.clearRect(0, 0, width, height);
-            
-            javafx.scene.image.WritableImage image = 
-                new javafx.scene.image.WritableImage(width, height);
-            PixelWriter writer = image.getPixelWriter();
-            WritablePixelFormat<ByteBuffer> format = WritablePixelFormat.getByteBgraPreInstance();
-            writer.setPixels(0, 0, width, height, format, ByteBuffer.wrap(pixels), width * 4);
-            
-            boolean hasNonZeroPixels = false;
-            int nonZeroCount = 0;
-            for (int i = 0; i < pixels.length; i++) {
-                if (pixels[i] != 0) {
-                    hasNonZeroPixels = true;
-                    nonZeroCount++;
-                    if (nonZeroCount > 10) break;
+        new Thread(() -> {
+            try {
+                doRender(width, height);
+            } finally {
+                isRendering.set(false);
+                lastRenderTime.set(System.currentTimeMillis());
+                
+                if (renderPending.getAndSet(false)) {
+                    Platform.runLater(this::render);
                 }
             }
-            System.out.println("[DEBUG] Non-zero pixel count: " + nonZeroCount + " / " + pixels.length);
-            System.out.println("[DEBUG] Has non-zero pixels: " + hasNonZeroPixels);
-            
-            gc.drawImage(image, 0, 0);
-            System.out.println("[DEBUG] Image drawn successfully");
+        }).start();
+    }
+
+    private void doRender(int width, int height) {
+        ImageDevice localDevice = device;
+        if (localDevice == null) {
+            localDevice = new ImageDevice(width, height);
+            device = localDevice;
         } else {
-            System.out.println("[WARNING] No valid pixel data to draw");
+            localDevice.resize(width, height);
         }
+
+        long devicePtr = localDevice.getNativePtr();
+        
+        Viewport viewport = viewer.getViewportObject();
+        if (viewport != null) {
+            viewport.setSize(width, height);
+        }
+        
+        final int renderResult = viewer.render(devicePtr, width, height);
+        final byte[] pixels = localDevice.getPixels();
+        
+        if (pixels != null && pixels.length >= width * height * 4) {
+            pendingPixels = pixels;
+            pendingWidth = width;
+            pendingHeight = height;
+            
+            Platform.runLater(() -> updateCanvas());
+        }
+    }
+
+    private void updateCanvas() {
+        if (disposed || pendingPixels == null) {
+            return;
+        }
+
+        int width = pendingWidth;
+        int height = pendingHeight;
+        byte[] pixels = pendingPixels;
+
+        if (bufferImage == null || lastWidth != width || lastHeight != height) {
+            bufferImage = new javafx.scene.image.WritableImage(width, height);
+            lastWidth = width;
+            lastHeight = height;
+        }
+        
+        PixelWriter writer = bufferImage.getPixelWriter();
+        WritablePixelFormat<ByteBuffer> format = WritablePixelFormat.getByteBgraPreInstance();
+        writer.setPixels(0, 0, width, height, format, ByteBuffer.wrap(pixels), width * 4);
+        
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, width, height);
+        gc.drawImage(bufferImage, 0, 0);
     }
 
     public void clear() {
@@ -257,6 +321,9 @@ public class CanvasAdapter {
     public void dispose() {
         if (!disposed) {
             disposed = true;
+            isRendering.set(false);
+            renderPending.set(false);
+            pendingPixels = null;
             for (ChartEventHandler handler : handlers) {
                 handler.uninstall();
             }
@@ -265,6 +332,7 @@ public class CanvasAdapter {
                 device.dispose();
                 device = null;
             }
+            bufferImage = null;
         }
     }
 

@@ -2697,6 +2697,70 @@ SDK_C_API int ogc_draw_device_get_height(const ogc_draw_device_t* device);
  */
 SDK_C_API ogc_image_t* ogc_draw_device_get_image(ogc_draw_device_t* device);
 
+/* 5.7.1 ImageDevice (for JavaFX integration) */
+/**
+ * @brief Opaque type representing an image device.
+ */
+typedef struct ogc_image_device_t ogc_image_device_t;
+
+/**
+ * @brief Create an image device.
+ * @param width Pixel width.
+ * @param height Pixel height.
+ * @return Pointer to newly created image device, or NULL on failure.
+ */
+SDK_C_API ogc_image_device_t* ogc_image_device_create(size_t width, size_t height);
+
+/**
+ * @brief Destroy an image device.
+ * @param device Pointer to the image device to destroy.
+ */
+SDK_C_API void ogc_image_device_destroy(ogc_image_device_t* device);
+
+/**
+ * @brief Resize an image device.
+ * @param device Pointer to the image device.
+ * @param width New pixel width.
+ * @param height New pixel height.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_image_device_resize(ogc_image_device_t* device, size_t width, size_t height);
+
+/**
+ * @brief Clear an image device.
+ * @param device Pointer to the image device.
+ */
+SDK_C_API void ogc_image_device_clear(ogc_image_device_t* device);
+
+/**
+ * @brief Get pixel data from an image device.
+ * @param device Pointer to the image device.
+ * @param size Pointer to store the size of the pixel data.
+ * @return Pointer to pixel data (BGRA format), or NULL on failure.
+ */
+SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size);
+
+/**
+ * @brief Get the width of an image device.
+ * @param device Pointer to the image device.
+ * @return Width in pixels, or 0 on failure.
+ */
+SDK_C_API int ogc_image_device_get_width(const ogc_image_device_t* device);
+
+/**
+ * @brief Get the height of an image device.
+ * @param device Pointer to the image device.
+ * @return Height in pixels, or 0 on failure.
+ */
+SDK_C_API int ogc_image_device_get_height(const ogc_image_device_t* device);
+
+/**
+ * @brief Get the native pointer of an image device.
+ * @param device Pointer to the image device.
+ * @return Native pointer, or 0 on failure.
+ */
+SDK_C_API long long ogc_image_device_get_native_ptr(const ogc_image_device_t* device);
+
 /* 5.8 DrawEngine */
 /* Java: cn.cycle.chart.api.draw.DrawEngine */
 /* C++:   ogc::draw::DrawEngine */
@@ -2996,15 +3060,31 @@ SDK_C_API void ogc_chart_viewer_screen_to_world(ogc_chart_viewer_t* viewer, doub
  */
 SDK_C_API void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x, double world_y, double* screen_x, double* screen_y);
 
+/* Forward declaration for ogc_viewport_t */
+typedef struct ogc_viewport_t ogc_viewport_t;
+
+/**
+ * @brief Get the viewport object pointer.
+ * @param viewer Pointer to the viewer.
+ * @return Pointer to the viewport object, or NULL on failure.
+ */
+SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* viewer);
+
+/**
+ * @brief Get the full extent of the loaded chart.
+ * @param viewer Pointer to the viewer.
+ * @param min_x Pointer to store minimum X coordinate.
+ * @param min_y Pointer to store minimum Y coordinate.
+ * @param max_x Pointer to store maximum X coordinate.
+ * @param max_y Pointer to store maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_chart_viewer_get_full_extent(ogc_chart_viewer_t* viewer, double* min_x, double* min_y, double* max_x, double* max_y);
+
 /* 6.2 Viewport */
 /* Java: cn.cycle.chart.api.core.Viewport */
 /* C++:   ogc::graph::Viewport (in DrawFacade) */
 /* Header: ogc/graph/render/draw_facade.h */
-
-/**
- * @brief Opaque type representing a viewport.
- */
-typedef struct ogc_viewport_t ogc_viewport_t;
 
 /**
  * @brief Create a viewport.
@@ -3069,6 +3149,14 @@ SDK_C_API void ogc_viewport_set_scale(ogc_viewport_t* viewport, double scale);
 SDK_C_API void ogc_viewport_set_rotation(ogc_viewport_t* viewport, double rotation);
 
 /**
+ * @brief Set the pixel size of the viewport.
+ * @param viewport Pointer to the viewport.
+ * @param width Pixel width.
+ * @param height Pixel height.
+ */
+SDK_C_API void ogc_viewport_set_size(ogc_viewport_t* viewport, int width, int height);
+
+/**
  * @brief Get the bounding envelope.
  * @param viewport Pointer to the viewport.
  * @return Pointer to newly created envelope, or NULL on failure.
@@ -3112,6 +3200,52 @@ SDK_C_API int ogc_viewport_screen_to_world(const ogc_viewport_t* viewport, doubl
  * @return 0 on success, non-zero on failure.
  */
 SDK_C_API int ogc_viewport_world_to_screen(const ogc_viewport_t* viewport, double wx, double wy, double* sx, double* sy);
+
+/**
+ * @brief Pan the viewport by a delta.
+ * @param viewport Pointer to the viewport.
+ * @param dx Delta X in world coordinates.
+ * @param dy Delta Y in world coordinates.
+ */
+SDK_C_API void ogc_viewport_pan(ogc_viewport_t* viewport, double dx, double dy);
+
+/**
+ * @brief Zoom the viewport by a factor.
+ * @param viewport Pointer to the viewport.
+ * @param factor Zoom factor (>1 to zoom in, <1 to zoom out).
+ */
+SDK_C_API void ogc_viewport_zoom(ogc_viewport_t* viewport, double factor);
+
+/**
+ * @brief Zoom the viewport at a specific center point.
+ * @param viewport Pointer to the viewport.
+ * @param factor Zoom factor (>1 to zoom in, <1 to zoom out).
+ * @param center_x Center X coordinate in world coordinates.
+ * @param center_y Center Y coordinate in world coordinates.
+ */
+SDK_C_API void ogc_viewport_zoom_at(ogc_viewport_t* viewport, double factor, double center_x, double center_y);
+
+/**
+ * @brief Set the extent of the viewport.
+ * @param viewport Pointer to the viewport.
+ * @param min_x Minimum X coordinate.
+ * @param min_y Minimum Y coordinate.
+ * @param max_x Maximum X coordinate.
+ * @param max_y Maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_set_extent(ogc_viewport_t* viewport, double min_x, double min_y, double max_x, double max_y);
+
+/**
+ * @brief Get the extent of the viewport.
+ * @param viewport Pointer to the viewport.
+ * @param min_x Pointer to store minimum X coordinate.
+ * @param min_y Pointer to store minimum Y coordinate.
+ * @param max_x Pointer to store maximum X coordinate.
+ * @param max_y Pointer to store maximum Y coordinate.
+ * @return 0 on success, non-zero on failure.
+ */
+SDK_C_API int ogc_viewport_get_extent(const ogc_viewport_t* viewport, double* min_x, double* min_y, double* max_x, double* max_y);
 
 /* 6.3 ChartConfig */
 /* Java: cn.cycle.chart.api.core.ChartConfig */

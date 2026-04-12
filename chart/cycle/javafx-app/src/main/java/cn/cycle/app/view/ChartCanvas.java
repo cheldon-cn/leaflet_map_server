@@ -4,6 +4,7 @@ import cn.cycle.chart.api.adapter.CanvasAdapter;
 import cn.cycle.chart.api.adapter.PanHandler;
 import cn.cycle.chart.api.adapter.ZoomHandler;
 import cn.cycle.chart.api.core.ChartViewer;
+import cn.cycle.chart.api.core.Viewport;
 import cn.cycle.chart.api.geometry.Coordinate;
 import javafx.scene.ImageCursor;
 import javafx.scene.canvas.Canvas;
@@ -206,6 +207,8 @@ public class ChartCanvas extends Pane {
                 if (chartViewer != null) {
                     chartViewer.pan(-dx, -dy);
                     render();
+                } else {
+                    System.out.println("[Java:DRAG] ERROR: chartViewer is null!");
                 }
             }
             
@@ -216,16 +219,9 @@ public class ChartCanvas extends Pane {
 
     private void handleScroll(ScrollEvent e) {
         if (chartViewer != null) {
-            double delta = e.getDeltaY();
-            if (delta != 0) {
-                Coordinate worldCoord = chartViewer.screenToWorld(e.getX(), e.getY());
-                if (worldCoord != null) {
-                    double factor = delta > 0 ? 1.2 : 0.8;
-                    chartViewer.getViewportObject().zoom(factor, worldCoord.getX(), worldCoord.getY());
-                    render();
-                }
-                e.consume();
-            }
+            e.consume();
+        } else {
+            System.out.println("[Java:SCROLL] ERROR: chartViewer is null!");
         }
     }
 

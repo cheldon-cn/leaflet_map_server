@@ -91,6 +91,14 @@ public final class Viewport extends NativeObject {
         nativeZoomAt(getNativePtr(), factor, centerX, centerY);
     }
 
+    public void setSize(int width, int height) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("Width and height must be positive");
+        }
+        checkNotDisposed();
+        nativeSetSize(getNativePtr(), width, height);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -110,4 +118,5 @@ public final class Viewport extends NativeObject {
     private native void nativePan(long ptr, double dx, double dy);
     private native void nativeZoom(long ptr, double factor);
     private native void nativeZoomAt(long ptr, double factor, double centerX, double centerY);
+    private native void nativeSetSize(long ptr, int width, int height);
 }

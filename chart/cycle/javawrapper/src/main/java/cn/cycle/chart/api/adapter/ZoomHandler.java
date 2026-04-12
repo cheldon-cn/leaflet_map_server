@@ -44,39 +44,16 @@ public class ZoomHandler implements ChartEventHandler.ScrollHandler, ChartEventH
             return;
         }
 
-        Envelope extent = viewport.getExtent();
-        if (extent == null) {
-            return;
-        }
-
         double delta = event.getDelta();
-        double factor = delta > 0 ? 1.0 / zoomFactor : zoomFactor;
+        double factor = delta > 0 ? zoomFactor : 1.0 / zoomFactor;
 
         Coordinate worldCenter = event.getWorldCoordinate();
-        if (worldCenter == null) {
-            worldCenter = extent.getCenter();
+        if (worldCenter != null) {
+            viewport.zoom(factor, worldCenter.getX(), worldCenter.getY());
+        } else {
+            viewport.zoom(factor);
         }
 
-        double newWidth = extent.getWidth() * factor;
-        double newHeight = extent.getHeight() * factor;
-
-        if (newWidth < minZoom || newHeight < minZoom) {
-            return;
-        }
-        if (newWidth > maxZoom || newHeight > maxZoom) {
-            return;
-        }
-
-        double halfW = newWidth / 2;
-        double halfH = newHeight / 2;
-        Envelope newExtent = new Envelope(
-            worldCenter.getX() - halfW,
-            worldCenter.getY() - halfH,
-            worldCenter.getX() + halfW,
-            worldCenter.getY() + halfH
-        );
-
-        viewport.setExtent(newExtent);
         adapter.render();
     }
 

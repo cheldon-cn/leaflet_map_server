@@ -2883,7 +2883,213 @@ context->DrawCircle(pt.x, pt.y, point_radius_pixels / scale, true);
 ---
 
 **文档版本**: v1.6  
-**最后更新**: 2026年4月12日  
+**最后更新**: 2026年4月13日
+
+---
+
+## 十一、视图平移缩放与视口裁剪优化（2026-04-13）
+
+### 11.1 概述
+
+本轮对话完成了视图平移缩放功能的修复和视口裁剪优化工作，解决了显示范围、缩放中心点、坐标转换等多个问题。
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| 第一阶段 | 代码回滚到视口裁剪之前 | ✅ 完成 |
+| 第二阶段 | 添加视口裁剪逻辑（外扩1/10） | ✅ 完成 |
+| 第三阶段 | 修复缩放中心点问题 | ✅ 完成 |
+| 第四阶段 | 修复非均匀缩放坐标转换 | ✅ 完成 |
+
+---
+
+### 11.2 第一阶段：代码回滚
+
+#### 11.2.1 用户请求
+
+> 代码回滚到执行视口裁剪之前
+
+#### 11.2.2 回滚内容
+
+移除了以下视口裁剪相关代码：
+1. `spatial_index` 空间索引
+2. `feature_bounds` 特征边界缓存
+3. `CalculateFeatureBounds` 函数
+4. 渲染时的视口裁剪逻辑
+5. 相关的头文件包含 `#include <ogc/geom/spatial_index.h>`
+
+#### 11.2.3 回滚原因
+
+之前的视口裁剪实现使用了空间索引，但存在以下问题：
+- 空间索引构建增加了初始化时间
+- 复杂度较高，不利于调试
+- 需要简化实现以便更好地理解核心逻辑
+
+---
+
+### 11.3 第二阶段：添加视口裁剪逻辑
+
+#### 11.3.1 用户请求
+
+> 现在显示范围是对的，添加数据查询逻辑，只有在当前显示范围内的数据需要显示，显示范围可外扩宽高的1/10
+
+#### 11.3.2 实现方案
+
+**计算显示范围（世界坐标）**：
+```cpp
+double world_half_width = half_width / vp->scale_x;
+double world_half_height = half_height / vp->scale_y;
+double margin_x = world_half_width * 0.1;
+double margin_y = world_half_height * 0.1;
+double view_min_x = vp->center_x - world_half_width - margin_x;
+double view_max_x = vp->center_x + world_half_width + margin_x;
+double view_min_y = vp->center_y - world_half_height - margin_y;
+double view_max_y = vp->center_y + world_half_height + margin_y;
+```
+
+**视口判断函数**：
+```cpp
+auto IsInViewport = [&](const chart::parser::Feature& feat) -> bool {
+    if (feat.geometry.type == chart::parser::GeometryType::Point ||
+        feat.geometry.type == chart::parser::GeometryType::Line) {
+        for (const auto& pt : feat.geometry.points) {
+            if (pt.x >= view_min_x && pt.x <= view_max_x &&
+                pt.y >= view_min_y && pt.y <= view_max_y) {
+                return true;
+            }
+        }
+    } else if (feat.geometry.type == chart::parser::GeometryType::Area) {
+        for (const auto& ring : feat.geometry.rings) {
+            for (const auto& pt : ring) {
+                if (pt.x >= view_min_x && pt.x <= view_max_x &&
+                    pt.y >= view_min_y && pt.y <= view_max_y) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+};
+```
+
+#### 11.3.3 预期结果
+
+- 只渲染视口范围内的要素
+- 外扩1/10确保边缘要素完整显示
+- 提升渲染性能
+
+---
+
+### 11.4 第三阶段：修复缩放中心点问题
+
+#### 11.4.1 用户请求
+
+> 检查下缩放的中心点是否为鼠标位置
+
+#### 11.4.2 问题分析
+
+用户指出核心逻辑：
+> 鼠标位置对应设备点坐标，映射为数据逻辑坐标，也就是说鼠标位置对应的就是某个特定的空间位置，缩放时，以鼠标位置为中心点意味着特定空间位置在显示设备上保持不变，变动的是对应的显示范围
+
+#### 11.4.3 发现的问题
+
+| 函数 | 问题 | 影响 |
+|------|------|------|
+| `ogc_viewport_screen_to_world` | 使用`scale`而非`scale_x`/`scale_y` | 非均匀缩放时坐标转换错误 |
+| `ogc_viewport_world_to_screen` | 使用`scale`而非`scale_x`/`scale_y` | 非均匀缩放时坐标转换错误 |
+| `ogc_viewport_get_extent` | 使用`scale`而非`scale_x`/`scale_y` | 返回的extent范围错误 |
+| `ogc_chart_viewer_pan` | 使用`scale`而非`scale_x`/`scale_y` | 平移距离计算错误 |
+
+#### 11.4.4 修复内容
+
+**1. ogc_viewport_screen_to_world**
+```cpp
+// 修复前
+double dx = (sx - half_width) / data->scale;
+double dy = (half_height - sy) / data->scale;
+
+// 修复后
+double dx = (sx - half_width) / data->scale_x;
+double dy = (half_height - sy) / data->scale_y;
+```
+
+**2. ogc_viewport_world_to_screen**
+```cpp
+// 修复前
+*sx = half_width + dx * data->scale;
+*sy = half_height - dy * data->scale;
+
+// 修复后
+*sx = half_width + dx * data->scale_x;
+*sy = half_height - dy * data->scale_y;
+```
+
+**3. ogc_viewport_get_extent**
+```cpp
+// 修复前
+double half_width = (data->pixel_width / 2.0) / data->scale;
+double half_height = (data->pixel_height / 2.0) / data->scale;
+
+// 修复后
+double half_width = (data->pixel_width / 2.0) / data->scale_x;
+double half_height = (data->pixel_height / 2.0) / data->scale_y;
+```
+
+**4. ogc_chart_viewer_pan**
+```cpp
+// 修复前
+double world_dx = dx / data->viewport->scale;
+double world_dy = dy / data->viewport->scale;
+
+// 修复后
+double world_dx = dx / data->viewport->scale_x;
+double world_dy = dy / data->viewport->scale_y;
+```
+
+#### 11.4.5 预期结果
+
+- 缩放时鼠标位置对应的空间位置保持不变
+- 平移距离正确
+- 视口范围计算正确
+
+---
+
+### 11.5 涉及文件
+
+| 文件路径 | 修改内容 |
+|----------|----------|
+| code/cycle/chart_c_api/sdk_c_api_graph.cpp | 视口裁剪逻辑、坐标转换函数修复 |
+| cycle/javawrapper/src/main/java/cn/cycle/chart/api/adapter/CanvasAdapter.java | 删除诊断日志 |
+| cycle/javawrapper/src/main/java/cn/cycle/chart/api/adapter/ZoomHandler.java | 缩放处理逻辑 |
+
+---
+
+### 11.6 经验总结
+
+#### 11.6.1 非均匀缩放注意事项
+
+| 场景 | 错误做法 | 正确做法 |
+|------|----------|----------|
+| 屏幕坐标转世界坐标 | 使用统一scale | 分别使用scale_x和scale_y |
+| 世界坐标转屏幕坐标 | 使用统一scale | 分别使用scale_x和scale_y |
+| 计算视口范围 | 使用统一scale | 分别使用scale_x和scale_y |
+| 计算平移距离 | 使用统一scale | 分别使用scale_x和scale_y |
+
+#### 11.6.2 缩放中心点逻辑
+
+```
+缩放中心点逻辑：
+1. 鼠标位置 (screenX, screenY) → 通过 screenToWorld 计算世界坐标 (worldX, worldY)
+2. 缩放时，zoom_at(factor, worldX, worldY) 确保该世界坐标在屏幕上的位置保持不变
+3. 新的视口中心通过公式计算：center' = center + (worldPos - center) * (1 - 1/factor)
+```
+
+#### 11.6.3 视口裁剪优化要点
+
+| 优化项 | 说明 |
+|--------|------|
+| 外扩范围 | 宽高的1/10，确保边缘要素完整显示 |
+| 判断逻辑 | 要素有任意点在范围内即渲染 |
+| 性能提升 | 减少不必要的绘制调用 |  
 **维护者**: Technical Review Team
 
 ---

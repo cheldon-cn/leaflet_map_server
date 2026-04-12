@@ -166,4 +166,14 @@ Java_cn_cycle_chart_api_core_Viewport_nativeZoomAt
     }
 }
 
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeSetSize
+  (JNIEnv* env, jobject obj, jlong ptr, jint width, jint height) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (viewport) {
+        ogc_viewport_set_size(viewport, width, height);
+    }
+}
+
 }

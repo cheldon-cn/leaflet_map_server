@@ -9,6 +9,8 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
+#include <cstdio>
+#include <cstdarg>
 
 namespace ogc {
 namespace base {
@@ -22,6 +24,13 @@ enum class LogLevel {
     kFatal = 5,
     kNone = 6
 };
+
+template<typename... Args>
+std::string FormatString(const char* format, Args... args) {
+    char buffer[4096];
+    snprintf(buffer, sizeof(buffer), format, args...);
+    return std::string(buffer);
+}
 
 class OGC_BASE_API Logger {
 public:
@@ -41,6 +50,8 @@ public:
     void Fatal(const std::string& message);
     
     void Log(LogLevel level, const std::string& message);
+    void LogWithLocation(LogLevel level, const char* file, int line, 
+                         const char* func, const std::string& message);
     
     void Flush();
     void Close();
@@ -56,6 +67,8 @@ private:
     Logger& operator=(const Logger&) = delete;
     
     void WriteLog(LogLevel level, const std::string& message);
+    void WriteLogWithLocation(LogLevel level, const char* file, int line,
+                              const char* func, const std::string& message);
     std::string GetTimestamp() const;
     
     LogLevel m_level;
@@ -80,14 +93,33 @@ private:
     std::string m_buffer;
 };
 
-#define LOG_TRACE() LogHelper(LogLevel::kTrace)
-#define LOG_DEBUG() LogHelper(LogLevel::kDebug)
-#define LOG_INFO() LogHelper(LogLevel::kInfo)
-#define LOG_WARNING() LogHelper(LogLevel::kWarning)
-#define LOG_ERROR() LogHelper(LogLevel::kError)
-#define LOG_FATAL() LogHelper(LogLevel::kFatal)
+}  
+}  
 
-}  
-}  
+#define LOG_TRACE() ogc::base::LogHelper(ogc::base::LogLevel::kTrace)
+#define LOG_DEBUG() ogc::base::LogHelper(ogc::base::LogLevel::kDebug)
+#define LOG_INFO() ogc::base::LogHelper(ogc::base::LogLevel::kInfo)
+#define LOG_WARNING() ogc::base::LogHelper(ogc::base::LogLevel::kWarning)
+#define LOG_ERROR() ogc::base::LogHelper(ogc::base::LogLevel::kError)
+#define LOG_FATAL() ogc::base::LogHelper(ogc::base::LogLevel::kFatal)
+
+#define LOG_TRACE_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kTrace, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_DEBUG_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kDebug, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_INFO_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kInfo, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_WARN_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kWarning, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_ERROR_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kError, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_FATAL_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kFatal, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
 
 #endif  

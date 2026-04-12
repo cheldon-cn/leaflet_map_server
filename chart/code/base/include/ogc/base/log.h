@@ -93,12 +93,14 @@ private:
     std::string m_buffer;
 };
 
-#define LOG_TRACE() LogHelper(LogLevel::kTrace)
-#define LOG_DEBUG() LogHelper(LogLevel::kDebug)
-#define LOG_INFO() LogHelper(LogLevel::kInfo)
-#define LOG_WARNING() LogHelper(LogLevel::kWarning)
-#define LOG_ERROR() LogHelper(LogLevel::kError)
-#define LOG_FATAL() LogHelper(LogLevel::kFatal)
+}  
+}  
+#define LOG_TRACE() ogc::base::LogHelper(ogc::base::LogLevel::kTrace)
+#define LOG_DEBUG() ogc::base::LogHelper(ogc::base::LogLevel::kDebug)
+#define LOG_INFO() ogc::base::LogHelper(ogc::base::LogLevel::kInfo)
+#define LOG_WARNING() ogc::base::LogHelper(ogc::base::LogLevel::kWarning)
+#define LOG_ERROR() ogc::base::LogHelper(ogc::base::LogLevel::kError)
+#define LOG_FATAL() ogc::base::LogHelper(ogc::base::LogLevel::kFatal)
 
 #define LOG_TRACE_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
     ogc::base::LogLevel::kTrace, __FILE__, __LINE__, __func__, \
@@ -119,7 +121,5 @@ private:
     ogc::base::LogLevel::kFatal, __FILE__, __LINE__, __func__, \
     ogc::base::FormatString(__VA_ARGS__))
 
-}  
-}  
 
 #endif  
