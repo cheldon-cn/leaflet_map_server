@@ -34,8 +34,8 @@ void Simple2DEngine::End() {
 }
 
 Point Simple2DEngine::TransformPoint(double x, double y) const {
-    double tx = m_transform.m[0][0] * x + m_transform.m[0][1] * y + m_transform.m[0][2];
-    double ty = m_transform.m[1][0] * x + m_transform.m[1][1] * y + m_transform.m[1][2];
+    double tx, ty;
+    m_transform.TransformPoint(x, y, tx, ty);
     return Point(tx, ty);
 }
 
@@ -251,7 +251,12 @@ DrawResult Simple2DEngine::DrawCircle(double cx, double cy, double radius,
     if (radius <= 0) return DrawResult::kInvalidParameter;
     
     Point center = TransformPoint(cx, cy);
-    int r = static_cast<int>(radius);
+    
+    double scaleX = std::sqrt(m_transform.m[0][0] * m_transform.m[0][0] + 
+                              m_transform.m[0][1] * m_transform.m[0][1]);
+    int r = static_cast<int>(radius * scaleX);
+    if (r < 1) r = 1;
+    
     Color color = fill ? style.brush.color : style.pen.color;
     
     if (fill) {

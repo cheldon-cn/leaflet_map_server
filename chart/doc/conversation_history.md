@@ -2551,3 +2551,337 @@ endif()
 **创建日期**: 2026年3月18日  
 **最后更新**: 2026年3月22日  
 **维护者**: Technical Review Team
+
+---
+
+## 十七、海图渲染模块开发过程记录（2026-04-12）
+
+### 17.1 概述
+
+本轮对话完成了海图渲染模块的核心功能开发和问题修复，主要工作包括：
+- 渲染方式从像素填充改为符号化绘制
+- 使用DrawContext替代DrawFacade
+- 像素缓冲区问题修复
+- 变换矩阵问题修复
+- 绘制顺序调整
+- 绘制样式优化
+
+---
+
+### 17.2 第一阶段：渲染方式重构
+
+#### 17.2.1 用户请求
+
+> ogc_chart_viewer_render 是否有问题，不是应该直接使用解析出的几何数据进行符号化绘制，然后绘制到视图上吗，搞什么像素填充
+
+#### 17.2.2 问题分析
+
+原始实现使用手动像素操作进行渲染，存在以下问题：
+1. 渲染效率低
+2. 无法正确处理复杂几何
+3. 不符合符号化绘制的标准做法
+
+#### 17.2.3 解决方案
+
+将渲染方式从像素填充改为符号化绘制，使用DrawContext进行绘制：
+
+```cpp
+// 修改前：手动像素操作
+for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+        // 手动设置像素颜色
+    }
+}
+
+// 修改后：符号化绘制
+ogc::draw::DrawContext* context = ogc_image_device_get_context(device);
+context->Begin();
+context->DrawCircle(x, y, radius, true);
+context->DrawLineString(points);
+context->DrawPolygon(points, true);
+context->End();
+```
+
+---
+
+### 17.3 第二阶段：DrawContext集成
+
+#### 17.3.1 用户请求
+
+> 不用DrawFacade，用DrawContext
+
+#### 17.3.2 实现变更
+
+| 变更项 | 修改前 | 修改后 |
+|--------|--------|--------|
+| 绘制接口 | DrawFacade | DrawContext |
+| 像素缓冲区 | data->pixels | data->device->GetPixelData() |
+| 变换处理 | 手动计算 | TransformMatrix |
+
+#### 17.3.3 新增接口
+
+```cpp
+// sdk_c_api_draw.cpp
+SDK_C_API ogc::draw::DrawContext* ogc_image_device_get_context(ogc_image_device_t* device);
+SDK_C_API ogc::draw::RasterImageDevice* ogc_image_device_get_raster_device(ogc_image_device_t* device);
+SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size);
+```
+
+---
+
+### 17.4 第三阶段：像素缓冲区问题修复
+
+#### 17.4.1 问题描述
+
+渲染后只有11个非零像素，实际应该有大量像素被绘制。
+
+#### 17.4.2 问题分析
+
+ImageDeviceImpl存在两个独立的像素缓冲区：
+1. `data->pixels` - 独立分配的缓冲区
+2. `data->device->GetPixelData()` - RasterImageDevice内部的缓冲区
+
+绘制操作写入的是内部缓冲区，但返回的是独立缓冲区。
+
+#### 17.4.3 解决方案
+
+修改`ogc_image_device_get_pixels`返回设备内部缓冲区：
+
+```cpp
+SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size) {
+    ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+    *size = data->width * data->height * 4;
+    
+    // 修改前：返回独立缓冲区
+    // return data->pixels;
+    
+    // 修改后：返回设备内部缓冲区
+    if (data->device && data->device->GetPixelData()) {
+        return data->device->GetPixelData();
+    }
+    return data->pixels;
+}
+```
+
+---
+
+### 17.5 第四阶段：DrawContext::Begin()失败修复
+
+#### 17.5.1 问题描述
+
+DrawContext::Begin()返回失败，导致无法进行绘制。
+
+#### 17.5.2 问题分析
+
+`RasterImageDevice::CreateEngine()`返回nullptr，导致DrawContext无法创建引擎。
+
+#### 17.5.3 解决方案
+
+修改`RasterImageDevice::CreateEngine()`创建Simple2DEngine实例：
+
+```cpp
+// 修改前
+std::unique_ptr<DrawEngine> RasterImageDevice::CreateEngine() {
+    return nullptr;
+}
+
+// 修改后
+std::unique_ptr<DrawEngine> RasterImageDevice::CreateEngine() {
+    return std::unique_ptr<DrawEngine>(new Simple2DEngine(this));
+}
+```
+
+---
+
+### 17.6 第五阶段：变换矩阵问题修复
+
+#### 17.6.1 问题描述
+
+渲染后仍然只有11个非零像素，变换矩阵计算可能有问题。
+
+#### 17.6.2 问题分析
+
+`Simple2DEngine::TransformPoint`没有正确使用变换矩阵的齐次坐标变换方法。
+
+#### 17.6.3 解决方案
+
+使用`TransformMatrix::TransformPoint`方法：
+
+```cpp
+// 修改前
+Point Simple2DEngine::TransformPoint(double x, double y) const {
+    double tx = m_transform.m[0][0] * x + m_transform.m[0][1] * y + m_transform.m[0][2];
+    double ty = m_transform.m[1][0] * x + m_transform.m[1][1] * y + m_transform.m[1][2];
+    return Point(tx, ty);
+}
+
+// 修改后
+Point Simple2DEngine::TransformPoint(double x, double y) const {
+    double tx, ty;
+    m_transform.TransformPoint(x, y, tx, ty);
+    return Point(tx, ty);
+}
+```
+
+---
+
+### 17.7 第六阶段：圆半径缩放问题修复
+
+#### 17.7.1 问题描述
+
+点的圆半径在缩放后变得非常小（0.27像素），几乎不可见。
+
+#### 17.7.2 问题分析
+
+原始代码使用`3.0 / scale`计算半径，当scale=10.9时，半径只有0.27像素。
+
+#### 17.7.3 解决方案
+
+1. 使用固定像素半径，根据变换矩阵缩放：
+```cpp
+// 修改前
+context->DrawCircle(pt.x, pt.y, 3.0 / scale, true);
+
+// 修改后
+context->DrawCircle(pt.x, pt.y, 3.0, true);
+```
+
+2. 在Simple2DEngine中根据变换矩阵缩放半径：
+```cpp
+DrawResult Simple2DEngine::DrawCircle(double cx, double cy, double radius, ...) {
+    Point center = TransformPoint(cx, cy);
+    
+    // 计算缩放因子
+    double scaleX = std::sqrt(m_transform.m[0][0] * m_transform.m[0][0] + 
+                              m_transform.m[0][1] * m_transform.m[0][1]);
+    int r = static_cast<int>(radius * scaleX);
+    if (r < 1) r = 1;
+    
+    // 绘制
+    FillCircle(static_cast<int>(center.x), static_cast<int>(center.y), r, color);
+}
+```
+
+---
+
+### 17.8 第七阶段：绘制顺序调整
+
+#### 17.8.1 用户请求
+
+> 绘制海图数据时，先绘制区，再绘制线，最后绘制点
+
+#### 17.8.2 实现变更
+
+将原来的单循环绘制改为三个独立循环：
+
+```cpp
+// 第一轮：绘制区
+for (const auto& feature : data->features) {
+    if (feature.geometry.type == chart::parser::GeometryType::Area) {
+        // 绘制区
+    }
+}
+
+// 第二轮：绘制线
+for (const auto& feature : data->features) {
+    if (feature.geometry.type == chart::parser::GeometryType::Line) {
+        // 绘制线
+    }
+}
+
+// 第三轮：绘制点
+for (const auto& feature : data->features) {
+    if (feature.geometry.type == chart::parser::GeometryType::Point) {
+        // 绘制点
+    }
+}
+```
+
+---
+
+### 17.9 第八阶段：绘制样式优化
+
+#### 17.9.1 用户请求
+
+> 绘制区可以每两个一个颜色，共三个颜色，分别为浅蓝、浅黄、浅绿；绘制线线宽为2mm,绘制点时对应circle半径为1.5mm
+
+#### 17.9.2 实现变更
+
+1. **区颜色循环**：
+```cpp
+ogc::draw::Color area_colors[3] = {
+    ogc::draw::Color(173, 216, 230, 180),  // 浅蓝
+    ogc::draw::Color(255, 255, 224, 180),  // 浅黄
+    ogc::draw::Color(144, 238, 144, 180)   // 浅绿
+};
+
+int color_idx = (area_idx / 2) % 3;  // 每两个区使用同一颜色
+```
+
+2. **线宽设置**：
+```cpp
+double line_width_pixels = 2.0 * 96.0 / 25.4;  // 2mm转换为像素
+ogc::draw::Pen pen(stroke_color, line_width_pixels / scale);
+```
+
+3. **点半径设置**：
+```cpp
+double point_radius_pixels = 1.5 * 96.0 / 25.4;  // 1.5mm转换为像素
+context->DrawCircle(pt.x, pt.y, point_radius_pixels / scale, true);
+```
+
+---
+
+### 17.10 问题汇总
+
+| # | 问题 | 分类 | 状态 |
+|---|------|------|------|
+| 1 | 渲染使用像素填充而非符号化绘制 | 架构设计 | ✅ 已解决 |
+| 2 | 使用DrawFacade而非DrawContext | 接口选择 | ✅ 已解决 |
+| 3 | 像素缓冲区不匹配 | 内存管理 | ✅ 已解决 |
+| 4 | DrawContext::Begin()失败 | 引擎创建 | ✅ 已解决 |
+| 5 | 变换矩阵计算错误 | 坐标变换 | ✅ 已解决 |
+| 6 | 圆半径缩放后过小 | 参数计算 | ✅ 已解决 |
+| 7 | 绘制顺序不正确 | 渲染逻辑 | ✅ 已解决 |
+| 8 | 区颜色单一 | 样式设计 | ✅ 已解决 |
+| 9 | 线宽和点半径单位不明确 | 参数单位 | ✅ 已解决 |
+
+---
+
+### 17.11 涉及文件清单
+
+| 文件路径 | 类型 | 说明 |
+|----------|------|------|
+| code/cycle/chart_c_api/sdk_c_api_graph.cpp | 源文件 | 渲染主逻辑 |
+| code/cycle/chart_c_api/sdk_c_api_draw.cpp | 源文件 | 图像设备接口 |
+| code/draw/src/draw/raster_image_device.cpp | 源文件 | 光栅设备实现 |
+| code/draw/src/draw/simple2d_engine.cpp | 源文件 | 2D引擎实现 |
+| code/draw/src/draw/draw_context.cpp | 源文件 | 绘制上下文实现 |
+
+---
+
+### 17.12 开发经验总结
+
+#### 17.12.1 渲染架构最佳实践
+
+1. **符号化绘制优先**：使用DrawContext等高级接口进行符号化绘制，避免手动像素操作
+2. **缓冲区一致性**：确保读写使用同一缓冲区，避免数据不一致
+3. **变换矩阵正确使用**：使用矩阵提供的变换方法，而非手动计算
+
+#### 17.12.2 坐标变换注意事项
+
+1. **Y轴翻转**：屏幕坐标系Y轴向下，地理坐标系Y轴向上，需要翻转
+2. **缩放因子**：半径、线宽等参数需要根据变换矩阵的缩放因子调整
+3. **变换顺序**：平移→缩放→翻转，顺序影响最终结果
+
+#### 17.12.3 绘制顺序原则
+
+1. **区→线→点**：先绘制填充区域，再绘制线条，最后绘制点符号
+2. **大→小**：先绘制大要素，再绘制小要素
+3. **背景→前景**：先绘制背景层，再绘制前景层
+
+---
+
+**文档版本**: v1.6  
+**最后更新**: 2026年4月12日  
+**维护者**: Technical Review Team

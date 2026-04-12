@@ -11,6 +11,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -20,8 +21,7 @@ public class SplashScreen {
     private Label statusLabel;
     private ProgressBar progressBar;
     private Label progressLabel;
-    private static final int MIN_WIDTH = 256;
-    private static final int MAX_WIDTH = 768;
+    private static final double WIDTH_RATIO = 0.35;
     
     public SplashScreen() {
         createSplashStage();
@@ -45,7 +45,9 @@ public class SplashScreen {
         );
         
         ImageView logoView = new ImageView();
-        double imageWidth = 400;
+        
+        double screenWidth = Screen.getPrimary().getVisualBounds().getWidth();
+        double imageWidth = screenWidth * WIDTH_RATIO;
         double imageHeight = 300;
         
         try {
@@ -55,14 +57,6 @@ public class SplashScreen {
             double originalWidth = logoImage.getWidth();
             double originalHeight = logoImage.getHeight();
             double aspectRatio = originalWidth / originalHeight;
-            
-            if (originalWidth < MIN_WIDTH) {
-                imageWidth = MIN_WIDTH;
-            } else if (originalWidth > MAX_WIDTH) {
-                imageWidth = MAX_WIDTH;
-            } else {
-                imageWidth = originalWidth;
-            }
             
             imageHeight = imageWidth / aspectRatio;
             

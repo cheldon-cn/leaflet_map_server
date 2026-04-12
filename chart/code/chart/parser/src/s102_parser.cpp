@@ -22,7 +22,7 @@ ParseResult S102Parser::ParseChart(const std::string& filePath, const ParseConfi
     
     auto startTime = std::chrono::high_resolution_clock::now();
     
-    LOG_INFO("Parsing S102 file: {}", filePath);
+    LOG_INFO("Parsing S102 file: %s", filePath.c_str());
     
     BathymetryGrid grid;
     if (ParseBathymetryGrid(filePath, grid)) {
@@ -64,7 +64,7 @@ ParseResult S102Parser::ParseChart(const std::string& filePath, const ParseConfi
     result.success = true;
     result.errorCode = ErrorCode::Success;
     
-    LOG_INFO("S102 parsing completed. {} depth points parsed in {} ms", 
+    LOG_INFO("S102 parsing completed. %d depth points parsed in %.2f ms", 
              result.statistics.totalFeatureCount, result.statistics.parseTimeMs);
     
     return result;
@@ -84,7 +84,7 @@ bool S102Parser::ParseBathymetryGrid(const std::string& filePath, BathymetryGrid
     ));
     
     if (!dataset) {
-        LOG_ERROR("Failed to open S102 file: {}", filePath);
+        LOG_ERROR("Failed to open S102 file: %s", filePath.c_str());
         return false;
     }
     
@@ -131,7 +131,7 @@ bool S102Parser::ParseDepthValues(void* band, BathymetryGrid& grid, int rows, in
         );
         
         if (err != CE_None) {
-            LOG_WARN("Failed to read row {} of depth band", row);
+            LOG_WARN("Failed to read row %d of depth band", row);
             continue;
         }
         
@@ -152,7 +152,7 @@ bool S102Parser::ParseDepthValues(void* band, BathymetryGrid& grid, int rows, in
         }
     }
     
-    LOG_INFO("Parsed {} bathymetry points from grid", grid.points.size());
+    LOG_INFO("Parsed %zu bathymetry points from grid", grid.points.size());
     return true;
 }
 

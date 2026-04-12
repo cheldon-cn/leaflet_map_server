@@ -80,7 +80,7 @@ FeatureType S57FeatureTypeMapper::MapFeatureType(const std::string& className) {
         return it->second;
     }
     
-    LOG_DEBUG("Unknown S57 object class: {}", className);
+    LOG_DEBUG("Unknown S57 object class: %s", className.c_str());
     return FeatureType::Unknown;
 }
 

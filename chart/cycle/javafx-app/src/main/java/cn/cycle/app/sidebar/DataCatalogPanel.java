@@ -143,19 +143,25 @@ public class DataCatalogPanel extends AbstractSideBarPanel {
     
     public void addFile(File file) {
         if (file != null && file.exists()) {
+            if (chartCategory == null) {
+                createContent();
+            }
+            
             DataItem dataItem = new DataItem(file);
             TreeItem<DataItem> item = new TreeItem<>(dataItem);
             
             TreeItem<DataItem> category = getCategoryForDataType(dataItem.getDataType());
-            category.getChildren().add(item);
-            category.setExpanded(true);
-            
-            treeView.getSelectionModel().select(item);
-            
-            AppEventBus.getInstance().publish(
-                new AppEvent(AppEventType.DATA_ADDED, this)
-                    .withData("dataItem", dataItem)
-            );
+            if (category != null) {
+                category.getChildren().add(item);
+                category.setExpanded(true);
+                
+                treeView.getSelectionModel().select(item);
+                
+                AppEventBus.getInstance().publish(
+                    new AppEvent(AppEventType.DATA_ADDED, this)
+                        .withData("dataItem", dataItem)
+                );
+            }
         }
     }
     
@@ -167,6 +173,8 @@ public class DataCatalogPanel extends AbstractSideBarPanel {
                 return imageCategory;
             case VECTOR:
                 return vectorCategory;
+            case RASTER:
+                return imageCategory;
             default:
                 return otherCategory;
         }

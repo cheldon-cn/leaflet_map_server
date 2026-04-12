@@ -17,12 +17,10 @@ if(OGC_CHART_C_API_STATIC)
 endif()
 
 set(OGC_CHART_C_API_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-if(NOT DEFINED INSTALL_INCLUDE_DIR)
-    set(INSTALL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../install/include)
-endif()
-if(NOT DEFINED INSTALL_LIB_DIR)
-    set(INSTALL_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../install/lib)
-endif()
+set(INSTALL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../install/include")
+set(INSTALL_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../install/lib")
+
+set(CHART_PARSER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../chart/parser/include")
 
 set(POSTGRESQL_ROOT "E:/Program Files/postgresql/16" CACHE PATH "PostgreSQL root directory")
 set(SQLITE3_ROOT "E:/xspace/3rd/sqlite3-3.35.5" CACHE PATH "SQLite3 root directory")
@@ -82,6 +80,7 @@ target_include_directories(ogc_chart_c_api
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${INSTALL_INCLUDE_DIR}
+        ${CHART_PARSER_INCLUDE_DIR}
 )
 
 set(OGC_LIB_DIR ${CMAKE_SOURCE_DIR}/../../build/lib)

@@ -717,6 +717,9 @@ SDK_C_API const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* d
     ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
     *size = data->width * data->height * 4;
     
+    if (data->device && data->device->GetPixelData()) {
+        return data->device->GetPixelData();
+    }
     
     return data->pixels;
 }
@@ -733,6 +736,24 @@ SDK_C_API int ogc_image_device_get_height(const ogc_image_device_t* device) {
         return static_cast<int>(reinterpret_cast<const ImageDeviceImpl*>(device)->height);
     }
     return 0;
+}
+
+SDK_C_API ogc::draw::DrawContext* ogc_image_device_get_context(ogc_image_device_t* device) {
+    if (!device) {
+        return nullptr;
+    }
+    
+    ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+    return data->context;
+}
+
+SDK_C_API ogc::draw::RasterImageDevice* ogc_image_device_get_raster_device(ogc_image_device_t* device) {
+    if (!device) {
+        return nullptr;
+    }
+    
+    ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
+    return data->device;
 }
 
 }  /* extern "C" */

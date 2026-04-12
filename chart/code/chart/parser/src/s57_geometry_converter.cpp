@@ -46,7 +46,7 @@ bool S57GeometryConverter::ConvertGeometry(void* ogrGeometry, Geometry& outGeome
             return ConvertMultiPolygon(geom, outGeometry);
         
         default:
-            LOG_WARN("Unsupported geometry type: {}", static_cast<int>(type));
+            LOG_WARN("Unsupported geometry type: %d", static_cast<int>(type));
             return false;
     }
 }

@@ -1,5 +1,6 @@
 #include "ogc/draw/raster_image_device.h"
 #include "ogc/draw/draw_engine.h"
+#include "ogc/draw/simple2d_engine.h"
 #include <cstring>
 #include <algorithm>
 
@@ -80,7 +81,7 @@ DrawResult RasterImageDevice::Finalize() {
 }
 
 std::unique_ptr<DrawEngine> RasterImageDevice::CreateEngine() {
-    return nullptr;
+    return std::unique_ptr<DrawEngine>(new Simple2DEngine(this));
 }
 
 std::vector<EngineType> RasterImageDevice::GetSupportedEngineTypes() const {

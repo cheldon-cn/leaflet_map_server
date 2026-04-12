@@ -46,7 +46,9 @@ public abstract class NativeObject implements AutoCloseable {
     @Override
     protected void finalize() throws Throwable {
         try {
-            dispose();
+            if (!disposed && nativePtr != 0) {
+                System.err.println("[WARNING] NativeObject finalized without explicit dispose() - ptr: " + nativePtr);
+            }
         } finally {
             super.finalize();
         }

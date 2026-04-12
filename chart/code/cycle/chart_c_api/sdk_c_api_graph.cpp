@@ -17,23 +17,51 @@
 #include <ogc/graph/util/transform_manager.h>
 #include <ogc/graph/interaction/hit_test.h>
 
+#include <ogc/layer/memory_layer.h>
+#include <ogc/geom/envelope.h>
+#include <ogc/geom/coordinate.h>
+
+#include <ogc/draw/draw_context.h>
+#include <ogc/draw/draw_style.h>
+#include <ogc/draw/color.h>
+#include <ogc/draw/transform_matrix.h>
+#include <ogc/draw/geometry_types.h>
+#include <ogc/draw/raster_image_device.h>
+
+#include <parser/s57_parser.h>
+#include <parser/chart_parser.h>
+
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
 #include <memory>
+#include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 
 using namespace ogc;
 using namespace ogc::graph;
+using namespace chart::parser;
 
 typedef struct ogc_image_device_t ogc_image_device_t;
 extern "C" const unsigned char* ogc_image_device_get_pixels(ogc_image_device_t* device, size_t* size);
+
+namespace ogc {
+namespace draw {
+    class DrawContext;
+    class RasterImageDevice;
+}
+}
+
+extern "C" ogc::draw::DrawContext* ogc_image_device_get_context(ogc_image_device_t* device);
+extern "C" ogc::draw::RasterImageDevice* ogc_image_device_get_raster_device(ogc_image_device_t* device);
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-namespace { static std::string SafeString(const char* str) {
+static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
@@ -50,7 +78,59 @@ struct ViewportData {
                      pixel_width(800), pixel_height(600) {}
 };
 
-}  
+struct ChartViewerData {
+    DrawFacade* facade;
+    LayerManager* layer_manager;
+    ViewportData* viewport;
+    Envelope full_extent;
+    std::string chart_path;
+    bool chart_loaded;
+    std::vector<chart::parser::Feature> features;
+    
+    ChartViewerData() : facade(nullptr), layer_manager(nullptr), viewport(nullptr), 
+                         chart_loaded(false) {
+        facade = &DrawFacade::Instance();
+        layer_manager = new LayerManager();
+        viewport = new ViewportData();
+    }
+    
+    ~ChartViewerData() {
+        if (layer_manager) {
+            delete layer_manager;
+            layer_manager = nullptr;
+        }
+        if (viewport) {
+            delete viewport;
+            viewport = nullptr;
+        }
+    }
+};
+
+static std::map<ogc_chart_viewer_t*, ChartViewerData*> g_chart_viewers;
+
+static ChartViewerData* GetChartViewerData(ogc_chart_viewer_t* viewer) {
+    auto it = g_chart_viewers.find(viewer);
+    if (it != g_chart_viewers.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
+static uint32_t GetFeatureColor(chart::parser::FeatureType type) {
+    switch (type) {
+        case chart::parser::FeatureType::DEPARE: return 0xFF406080;
+        case chart::parser::FeatureType::DEPCNT: return 0xFF306090;
+        case chart::parser::FeatureType::COALNE: return 0xFF505050;
+        case chart::parser::FeatureType::LNDARE: return 0xFF80C080;
+        case chart::parser::FeatureType::SOUNDG: return 0xFF000080;
+        case chart::parser::FeatureType::LIGHTS: return 0xFFFFFF00;
+        case chart::parser::FeatureType::BOYLAT: return 0xFFFF8000;
+        case chart::parser::FeatureType::BOYSAW: return 0xFF00FF00;
+        case chart::parser::FeatureType::BCNLAT: return 0xFF000000;
+        case chart::parser::FeatureType::BCNSAW: return 0xFF000000;
+        default: return 0xFF808080;
+    }
+}
 
 ogc_viewport_t* ogc_viewport_create(void) {
     return reinterpret_cast<ogc_viewport_t*>(new ViewportData());
@@ -257,23 +337,34 @@ SDK_C_API int ogc_viewport_get_extent(const ogc_viewport_t* viewport, double* mi
 }
 
 ogc_chart_viewer_t* ogc_chart_viewer_create(void) {
-    return reinterpret_cast<ogc_chart_viewer_t*>(&DrawFacade::Instance());
+    ChartViewerData* data = new ChartViewerData();
+    ogc_chart_viewer_t* viewer = reinterpret_cast<ogc_chart_viewer_t*>(data);
+    g_chart_viewers[viewer] = data;
+    return viewer;
 }
 
 void ogc_chart_viewer_destroy(ogc_chart_viewer_t* viewer) {
+    auto it = g_chart_viewers.find(viewer);
+    if (it != g_chart_viewers.end()) {
+        ChartViewerData* data = it->second;
+        g_chart_viewers.erase(it);
+        delete data;
+    }
 }
 
 int ogc_chart_viewer_initialize(ogc_chart_viewer_t* viewer) {
-    if (viewer) {
-        DrawResult result = reinterpret_cast<DrawFacade*>(viewer)->Initialize();
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->facade) {
+        DrawResult result = data->facade->Initialize();
         return result == DrawResult::kSuccess ? 0 : -1;
     }
     return -1;
 }
 
 void ogc_chart_viewer_shutdown(ogc_chart_viewer_t* viewer) {
-    if (viewer) {
-        reinterpret_cast<DrawFacade*>(viewer)->Finalize();
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->facade) {
+        data->facade->Finalize();
     }
 }
 
@@ -281,6 +372,59 @@ int ogc_chart_viewer_load_chart(ogc_chart_viewer_t* viewer, const char* path) {
     if (!viewer || !path) {
         return -1;
     }
+    
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (!data) {
+        return -1;
+    }
+    
+    S57Parser parser;
+    ParseResult result = parser.ParseChart(path);
+    
+    if (!result.success) {
+        return -2;
+    }
+    
+    data->features = std::move(result.features);
+    data->chart_path = path;
+    data->chart_loaded = true;
+    
+    std::cout << "[DEBUG] Loaded " << data->features.size() << " features" << std::endl;
+    
+    double min_x = std::numeric_limits<double>::max();
+    double min_y = std::numeric_limits<double>::max();
+    double max_x = std::numeric_limits<double>::lowest();
+    double max_y = std::numeric_limits<double>::lowest();
+    
+    for (const auto& feature : data->features) {
+        const auto& geom = feature.geometry;
+        for (const auto& pt : geom.points) {
+            min_x = std::min(min_x, pt.x);
+            min_y = std::min(min_y, pt.y);
+            max_x = std::max(max_x, pt.x);
+            max_y = std::max(max_y, pt.y);
+        }
+        for (const auto& ring : geom.rings) {
+            for (const auto& pt : ring) {
+                min_x = std::min(min_x, pt.x);
+                min_y = std::min(min_y, pt.y);
+                max_x = std::max(max_x, pt.x);
+                max_y = std::max(max_y, pt.y);
+            }
+        }
+    }
+    
+    std::cout << "[DEBUG] Calculated extent: " << min_x << ", " << min_y << " - " << max_x << ", " << max_y << std::endl;
+    
+    if (min_x < max_x && min_y < max_y) {
+        data->full_extent = Envelope(min_x, min_y, max_x, max_y);
+        if (data->viewport) {
+            data->viewport->bounds = data->full_extent;
+            data->viewport->center_x = (min_x + max_x) / 2.0;
+            data->viewport->center_y = (min_y + max_y) / 2.0;
+        }
+    }
+    
     return 0;
 }
 
@@ -289,40 +433,216 @@ int ogc_chart_viewer_render(ogc_chart_viewer_t* viewer, ogc_draw_device_t* devic
         return -1;
     }
     
-    size_t size = 0;
-    unsigned char* pixels = const_cast<unsigned char*>(ogc_image_device_get_pixels(
-        reinterpret_cast<ogc_image_device_t*>(device), &size));
-    
-    if (!pixels || size < static_cast<size_t>(width * height * 4)) {
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (!data) {
         return -1;
     }
     
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int idx = (y * width + x) * 4;
-            pixels[idx + 0] = static_cast<unsigned char>((x * 255) / width);
-            pixels[idx + 1] = static_cast<unsigned char>((y * 255) / height);
-            pixels[idx + 2] = 128;
-            pixels[idx + 3] = 255;
+    ogc::draw::DrawContext* context = ogc_image_device_get_context(
+        reinterpret_cast<ogc_image_device_t*>(device));
+    
+    if (!context) {
+        std::cerr << "[ERROR] Failed to get DrawContext" << std::endl;
+        return -1;
+    }
+    
+    ogc::draw::RasterImageDevice* raster_device = ogc_image_device_get_raster_device(
+        reinterpret_cast<ogc_image_device_t*>(device));
+    
+    if (!data->chart_loaded || data->features.empty()) {
+        if (context->Begin() == ogc::draw::DrawResult::kSuccess) {
+            ogc::draw::Color bg_color(200, 200, 200, 255);
+            context->Clear(bg_color);
+            context->End();
+        }
+        return 0;
+    }
+    
+    ViewportData* vp = data->viewport;
+    if (!vp) {
+        return 0;
+    }
+    
+    double extent_width = data->full_extent.GetWidth();
+    double extent_height = data->full_extent.GetHeight();
+    
+    if (extent_width <= 0 || extent_height <= 0) {
+        return 0;
+    }
+    
+    double scale_x = width / extent_width;
+    double scale_y = height / extent_height;
+    double scale = (scale_x < scale_y) ? scale_x : scale_y;
+    
+    double offset_x = (width - extent_width * scale) / 2.0;
+    double offset_y = (height - extent_height * scale) / 2.0;
+    
+    std::cout << "[DEBUG] Extent: " << data->full_extent.GetMinX() << ", " << data->full_extent.GetMinY() 
+              << " - " << data->full_extent.GetMaxX() << ", " << data->full_extent.GetMaxY() << std::endl;
+    std::cout << "[DEBUG] Extent size: " << extent_width << " x " << extent_height << std::endl;
+    std::cout << "[DEBUG] Canvas size: " << width << " x " << height << std::endl;
+    std::cout << "[DEBUG] Scale: " << scale << std::endl;
+    std::cout << "[DEBUG] Offset: " << offset_x << ", " << offset_y << std::endl;
+    
+    if (context->Begin() != ogc::draw::DrawResult::kSuccess) {
+        std::cerr << "[ERROR] DrawContext::Begin() failed" << std::endl;
+        return -1;
+    }
+    
+    ogc::draw::Color bg_color(240, 248, 255, 255);
+    context->Clear(bg_color);
+    
+    ogc::draw::TransformMatrix transform;
+    transform = ogc::draw::TransformMatrix::Translate(offset_x, offset_y);
+    transform = transform * ogc::draw::TransformMatrix::Scale(scale, scale);
+    transform = transform * ogc::draw::TransformMatrix::Translate(-data->full_extent.GetMinX(), -data->full_extent.GetMinY());
+    
+    ogc::draw::TransformMatrix flip_y;
+    flip_y.m[0][0] = 1.0;
+    flip_y.m[1][1] = -1.0;
+    flip_y.m[1][2] = height;
+    
+    transform = flip_y * transform;
+    
+    context->SetTransform(transform);
+    
+    int point_count = 0;
+    int line_count = 0;
+    int area_count = 0;
+    
+    ogc::draw::Color area_colors[3] = {
+        ogc::draw::Color(173, 216, 230, 180),
+        ogc::draw::Color(255, 255, 224, 180),
+        ogc::draw::Color(144, 238, 144, 180)
+    };
+    ogc::draw::Color area_stroke_colors[3] = {
+        ogc::draw::Color(100, 149, 237, 255),
+        ogc::draw::Color(218, 165, 32, 255),
+        ogc::draw::Color(34, 139, 34, 255)
+    };
+    
+    int area_idx = 0;
+    for (const auto& feature : data->features) {
+        if (feature.geometry.type == chart::parser::GeometryType::Area) {
+            area_count++;
+            int color_idx = (area_idx / 2) % 3;
+            ogc::draw::Pen area_pen(area_stroke_colors[color_idx], 1.0);
+            ogc::draw::Brush area_brush(area_colors[color_idx]);
+            context->SetPen(area_pen);
+            context->SetBrush(area_brush);
+            if (!feature.geometry.rings.empty() && feature.geometry.rings[0].size() >= 3) {
+                std::vector<ogc::draw::Point> points;
+                for (const auto& pt : feature.geometry.rings[0]) {
+                    points.push_back(ogc::draw::Point(pt.x, pt.y));
+                }
+                context->DrawPolygon(points, true);
+            }
+            area_idx++;
         }
     }
+    
+    double line_width_pixels = 2.0 * 96.0 / 25.4;
+    for (const auto& feature : data->features) {
+        if (feature.geometry.type == chart::parser::GeometryType::Line) {
+            line_count++;
+            uint32_t color_value = GetFeatureColor(feature.type);
+            ogc::draw::Color stroke_color(
+                (color_value >> 16) & 0xFF,
+                (color_value >> 8) & 0xFF,
+                (color_value >> 0) & 0xFF,
+                255
+            );
+            ogc::draw::Pen pen(stroke_color, line_width_pixels / scale);
+            context->SetPen(pen);
+            if (feature.geometry.points.size() >= 2) {
+                std::vector<ogc::draw::Point> points;
+                for (const auto& pt : feature.geometry.points) {
+                    points.push_back(ogc::draw::Point(pt.x, pt.y));
+                }
+                context->DrawLineString(points);
+            }
+        }
+    }
+    
+    double point_radius_pixels = 1.5 * 96.0 / 25.4;
+    for (const auto& feature : data->features) {
+        if (feature.geometry.type == chart::parser::GeometryType::Point) {
+            point_count++;
+            uint32_t color_value = GetFeatureColor(feature.type);
+            ogc::draw::Color stroke_color(
+                (color_value >> 16) & 0xFF,
+                (color_value >> 8) & 0xFF,
+                (color_value >> 0) & 0xFF,
+                255
+            );
+            ogc::draw::Color fill_color(
+                ((color_value >> 16) & 0xFF) * 0.7,
+                ((color_value >> 8) & 0xFF) * 0.7,
+                ((color_value >> 0) & 0xFF) * 0.7,
+                200
+            );
+            ogc::draw::Pen pen(stroke_color, 1.0);
+            ogc::draw::Brush brush(fill_color);
+            context->SetPen(pen);
+            context->SetBrush(brush);
+            if (!feature.geometry.points.empty()) {
+                const auto& pt = feature.geometry.points[0];
+                context->DrawCircle(pt.x, pt.y, point_radius_pixels / scale, true);
+            }
+        }
+    }
+    
+    context->End();
+    
+    std::cout << "========== chart render statistics ==========" << std::endl;
+    std::cout << "Total point count: " << point_count << std::endl;
+    std::cout << "Total line count: " << line_count << std::endl;
+    std::cout << "Total area count: " << area_count << std::endl;
+    std::cout << "Total feature count: " << (point_count + line_count + area_count) << std::endl;
+    std::cout << "=================================" << std::endl;
     
     return 0;
 }
 
 void ogc_chart_viewer_set_viewport(ogc_chart_viewer_t* viewer, double center_x, double center_y, double scale) {
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        data->viewport->center_x = center_x;
+        data->viewport->center_y = center_y;
+        data->viewport->scale = scale;
+    }
 }
 
 void ogc_chart_viewer_get_viewport(ogc_chart_viewer_t* viewer, double* center_x, double* center_y, double* scale) {
-    if (center_x) *center_x = 0.0;
-    if (center_y) *center_y = 0.0;
-    if (scale) *scale = 1.0;
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        if (center_x) *center_x = data->viewport->center_x;
+        if (center_y) *center_y = data->viewport->center_y;
+        if (scale) *scale = data->viewport->scale;
+    } else {
+        if (center_x) *center_x = 0.0;
+        if (center_y) *center_y = 0.0;
+        if (scale) *scale = 1.0;
+    }
 }
 
 void ogc_chart_viewer_pan(ogc_chart_viewer_t* viewer, double dx, double dy) {
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        data->viewport->center_x += dx;
+        data->viewport->center_y += dy;
+    }
 }
 
 void ogc_chart_viewer_zoom(ogc_chart_viewer_t* viewer, double factor, double center_x, double center_y) {
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        double dx = center_x - data->viewport->center_x;
+        double dy = center_y - data->viewport->center_y;
+        data->viewport->center_x += dx * (1.0 - 1.0 / factor);
+        data->viewport->center_y += dy * (1.0 - 1.0 / factor);
+        data->viewport->scale *= factor;
+    }
 }
 
 ogc_feature_t* ogc_chart_viewer_query_feature(ogc_chart_viewer_t* viewer, double x, double y) {
@@ -340,8 +660,9 @@ void ogc_chart_viewer_world_to_screen(ogc_chart_viewer_t* viewer, double world_x
 }
 
 SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* viewer) {
-    if (viewer) {
-        return reinterpret_cast<ogc_viewport_t*>(new ViewportData());
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->viewport) {
+        return reinterpret_cast<ogc_viewport_t*>(data->viewport);
     }
     return nullptr;
 }
@@ -349,6 +670,15 @@ SDK_C_API ogc_viewport_t* ogc_chart_viewer_get_viewport_ptr(ogc_chart_viewer_t* 
 SDK_C_API int ogc_chart_viewer_get_full_extent(ogc_chart_viewer_t* viewer, double* min_x, double* min_y, double* max_x, double* max_y) {
     if (!viewer || !min_x || !min_y || !max_x || !max_y) {
         return -1;
+    }
+    
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->chart_loaded) {
+        *min_x = data->full_extent.GetMinX();
+        *min_y = data->full_extent.GetMinY();
+        *max_x = data->full_extent.GetMaxX();
+        *max_y = data->full_extent.GetMaxY();
+        return 0;
     }
     
     *min_x = -180.0;
