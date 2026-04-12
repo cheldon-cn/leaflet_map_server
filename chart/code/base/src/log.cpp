@@ -73,6 +73,14 @@ void Logger::Log(LogLevel level, const std::string& message) {
     WriteLog(level, message);
 }
 
+void Logger::LogWithLocation(LogLevel level, const char* file, int line, 
+                             const char* func, const std::string& message) {
+    if (level < m_level) {
+        return;
+    }
+    WriteLogWithLocation(level, file, line, func, message);
+}
+
 void Logger::Flush() {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_file.is_open()) {
@@ -119,6 +127,31 @@ void Logger::WriteLog(LogLevel level, const std::string& message) {
     std::ostringstream oss;
     oss << "[" << GetTimestamp() << "] "
         << "[" << LevelToString(level) << "] "
+        << message << std::endl;
+    
+    std::string logLine = oss.str();
+    
+    if (m_consoleOutput) {
+        if (level >= LogLevel::kError) {
+            std::cerr << logLine;
+        } else {
+            std::cout << logLine;
+        }
+    }
+    
+    if (m_file.is_open()) {
+        m_file << logLine;
+    }
+}
+
+void Logger::WriteLogWithLocation(LogLevel level, const char* file, int line,
+                                  const char* func, const std::string& message) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    std::ostringstream oss;
+    oss << "[" << GetTimestamp() << "] "
+        << "[" << std::setw(7) << LevelToString(level) << "] "
+        << "[" << file << ":" << line << "] "
         << message << std::endl;
     
     std::string logLine = oss.str();

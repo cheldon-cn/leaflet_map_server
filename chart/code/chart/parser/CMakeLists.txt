@@ -47,7 +47,6 @@ set(CHART_PARSER_SOURCES
     src/s57_geometry_converter.cpp
     src/s57_attribute_parser.cpp
     src/s57_feature_type_mapper.cpp
-    src/error_handler.cpp
     src/data_converter.cpp
     src/ogr_data_converter.cpp
     src/parse_cache.cpp
@@ -101,11 +100,13 @@ target_include_directories(chart_parser
         $<INSTALL_INTERFACE:include>
     PRIVATE
         ${GDAL_INCLUDE_DIR}
+        ${CMAKE_SOURCE_DIR}/base/include
 )
 
 target_link_libraries(chart_parser
     PUBLIC
         ${GDAL_LIBRARY}
+        ogc_base
 )
 
 if(LIBXML2_FOUND)

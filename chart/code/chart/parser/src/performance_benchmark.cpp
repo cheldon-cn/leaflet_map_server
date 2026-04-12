@@ -121,8 +121,8 @@ BenchmarkResult PerformanceBenchmark::RunBenchmark(
     
     m_results.push_back(result);
     
-    LOG_INFO("Benchmark '{}': avg={:.2f}ms, min={:.2f}ms, max={:.2f}ms, throughput={:.2f}/s",
-             name, result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.throughput);
+    LOG_INFO("Benchmark '%s': avg=%.2fms, min=%.2fms, max=%.2fms, throughput=%.2f/s",
+             name.c_str(), result.avgTimeMs, result.minTimeMs, result.maxTimeMs, result.throughput);
     
     return result;
 }
@@ -178,13 +178,13 @@ void PerformanceBenchmark::RunAllBenchmarks() {
         }
     }, 100);
     
-    LOG_INFO("All benchmarks completed. {} results.", m_results.size());
+    LOG_INFO("All benchmarks completed. %zu results.", m_results.size());
 }
 
 void PerformanceBenchmark::GenerateReport(const std::string& outputPath) {
     std::ofstream file(outputPath);
     if (!file) {
-        LOG_ERROR("Failed to open report file: {}", outputPath);
+        LOG_ERROR("Failed to open report file: %s", outputPath.c_str());
         return;
     }
     
@@ -212,7 +212,7 @@ void PerformanceBenchmark::GenerateReport(const std::string& outputPath) {
     file << "- Physical Memory Used: " << (memInfo.physicalMemUsed / 1024 / 1024) << " MB\n";
     file << "- Current Process RSS: " << (memInfo.physicalMemUsedByMe / 1024 / 1024) << " MB\n";
     
-    LOG_INFO("Benchmark report generated: {}", outputPath);
+    LOG_INFO("Benchmark report generated: %s", outputPath.c_str());
 }
 
 ScopedTimer::ScopedTimer(const std::string& name)
@@ -222,7 +222,7 @@ ScopedTimer::ScopedTimer(const std::string& name)
 
 ScopedTimer::~ScopedTimer() {
     double elapsed = GetElapsedMs();
-    LOG_DEBUG("Timer '{}': {:.2f} ms", m_name, elapsed);
+    LOG_DEBUG("Timer '%s': %.2f ms", m_name.c_str(), elapsed);
 }
 
 double ScopedTimer::GetElapsedMs() const {

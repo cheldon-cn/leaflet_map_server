@@ -40,7 +40,7 @@ bool GDALInitializer::Initialize() {
     m_initialized = true;
     m_registerCount = GDALGetDriverCount();
     
-    LOG_INFO("GDAL initialized successfully. {} drivers registered", m_registerCount);
+    LOG_INFO("GDAL initialized successfully. %d drivers registered", m_registerCount);
     
     return true;
 }
@@ -69,11 +69,11 @@ bool GDALInitializer::RegisterDriver(const std::string& driverName) {
     
     GDALDriver* driver = GetGDALDriverManager()->GetDriverByName(driverName.c_str());
     if (driver) {
-        LOG_DEBUG("Driver '{}' already registered", driverName);
+        LOG_DEBUG("Driver '%s' already registered", driverName.c_str());
         return true;
     }
     
-    LOG_WARN("Driver '{}' not found", driverName);
+    LOG_WARN("Driver '%s' not found", driverName.c_str());
     return false;
 }
 

@@ -2885,3 +2885,129 @@ context->DrawCircle(pt.x, pt.y, point_radius_pixels / scale, true);
 **文档版本**: v1.6  
 **最后更新**: 2026年4月12日  
 **维护者**: Technical Review Team
+
+---
+
+## 十八、Logger统一整合实施记录（2026-04-12）
+
+### 18.1 概述
+
+本轮工作完成了Logger统一整合，解决了parser模块中格式化风格混用的问题，并将日志系统统一到ogc::base::Logger。
+
+---
+
+### 18.2 问题发现
+
+在parser模块中发现了两种不同的格式化风格混用：
+
+| 格式化风格 | 文件 | 状态 |
+|------------|------|------|
+| printf风格（正确） | s102_parser.cpp, s57_parser.cpp | ✅ |
+| fmt风格（错误） | s101_parser.cpp, s100_parser.cpp, performance_benchmark.cpp, parse_cache.cpp, incremental_parser.cpp, gdal_initializer.cpp | ❌ |
+
+使用`{}`占位符的代码会输出字面量`{}`，而非格式化后的值。
+
+---
+
+### 18.3 实施方案
+
+采用方案三：统一到ogc::base::Logger
+
+#### 阶段一：修复格式化问题（P0）
+
+将所有使用`{}`占位符的代码改为printf风格：
+
+```cpp
+// 修改前
+LOG_INFO("Parsing S101 file: {}", filePath);
+LOG_INFO("Dataset has {} layers", layerCount);
+
+// 修改后
+LOG_INFO("Parsing S101 file: %s", filePath.c_str());
+LOG_INFO("Dataset has %d layers", layerCount);
+```
+
+#### 阶段二：扩展ogc::base::Logger（P1）
+
+在log.h中添加：
+
+```cpp
+// FormatString模板函数
+template<typename... Args>
+std::string FormatString(const char* format, Args... args) {
+    char buffer[4096];
+    snprintf(buffer, sizeof(buffer), format, args...);
+    return std::string(buffer);
+}
+
+// 带位置信息的Log方法
+void LogWithLocation(LogLevel level, const char* file, int line, 
+                     const char* func, const std::string& message);
+
+// printf风格宏
+#define LOG_INFO_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kInfo, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+```
+
+#### 阶段三：迁移parser模块（P2）
+
+修改error_handler.h为兼容层：
+
+```cpp
+#include <ogc/base/log.h>
+
+namespace chart {
+namespace parser {
+
+using LogLevel = ogc::base::LogLevel;
+using Logger = ogc::base::Logger;
+using ogc::base::FormatString;
+
+#define LOG_INFO(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kInfo, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+
+} // namespace parser
+} // namespace chart
+```
+
+---
+
+### 18.4 修改的文件
+
+| 文件 | 修改内容 |
+|------|----------|
+| code/base/include/ogc/base/log.h | 添加FormatString、LogWithLocation、LOG_xxx_FMT宏 |
+| code/base/src/log.cpp | 实现LogWithLocation和WriteLogWithLocation |
+| code/chart/parser/include/parser/error_handler.h | 改为兼容层，使用ogc::base::Logger |
+| code/chart/parser/CMakeLists.txt | 添加ogc_base依赖，移除error_handler.cpp |
+| code/chart/parser/src/s101_parser.cpp | 修复格式化占位符 |
+| code/chart/parser/src/s100_parser.cpp | 修复格式化占位符 |
+| code/chart/parser/src/performance_benchmark.cpp | 修复格式化占位符 |
+| code/chart/parser/src/parse_cache.cpp | 修复格式化占位符 |
+| code/chart/parser/src/incremental_parser.cpp | 修复格式化占位符 |
+| code/chart/parser/src/gdal_initializer.cpp | 修复格式化占位符 |
+
+---
+
+### 18.5 兼容性保证
+
+- `error_handler.h`保留作为兼容层
+- 所有LOG_xxx宏保持原有用法
+- 无需修改parser模块的其他源文件
+- parser::Logger只被parser模块内部使用，无外部依赖
+
+---
+
+### 18.6 经验教训
+
+1. **格式化风格统一**: 在同一项目中应使用统一的格式化风格，避免混用
+2. **日志系统集中管理**: 统一日志系统便于维护和扩展
+3. **兼容层设计**: 通过兼容层可以平滑过渡，减少对现有代码的影响
+4. **依赖分析**: 在迁移前应确认模块依赖关系，避免影响其他模块
+
+---
+
+**文档版本**: v1.7  
+**最后更新**: 2026年4月12日

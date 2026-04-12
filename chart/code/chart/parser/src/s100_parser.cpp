@@ -20,7 +20,7 @@ ParseResult S100Parser::ParseChart(const std::string& filePath, const ParseConfi
     
     auto startTime = std::chrono::high_resolution_clock::now();
     
-    LOG_INFO("Parsing S100 file: {}", filePath);
+    LOG_INFO("Parsing S100 file: %s", filePath.c_str());
     
     if (!GDALInitializer::Instance().Initialize()) {
         result.SetError(ErrorCode::ErrGDALInitFailed, "GDAL initialization failed");
@@ -34,20 +34,20 @@ ParseResult S100Parser::ParseChart(const std::string& filePath, const ParseConfi
     }
     
     int layerCount = dataset->GetLayerCount();
-    LOG_INFO("Dataset has {} layers", layerCount);
+    LOG_INFO("Dataset has %d layers", layerCount);
     
     for (int i = 0; i < layerCount; ++i) {
         OGRLayer* layer = dataset->GetLayer(i);
         if (!layer) {
-            LOG_WARN("Failed to get layer {}", i);
+            LOG_WARN("Failed to get layer %d", i);
             continue;
         }
         
         std::string layerName = layer->GetName();
-        LOG_DEBUG("Processing layer: {}", layerName);
+        LOG_DEBUG("Processing layer: %s", layerName.c_str());
         
         if (!ParseLayer(dataset, layerName, result.features, config)) {
-            LOG_WARN("Failed to parse layer: {}", layerName);
+            LOG_WARN("Failed to parse layer: %s", layerName.c_str());
         }
     }
     
@@ -63,7 +63,7 @@ ParseResult S100Parser::ParseChart(const std::string& filePath, const ParseConfi
     result.success = true;
     result.errorCode = ErrorCode::Success;
     
-    LOG_INFO("S100 parsing completed. {} features parsed in {} ms", 
+    LOG_INFO("S100 parsing completed. %d features parsed in %.2f ms", 
              result.statistics.totalFeatureCount, result.statistics.parseTimeMs);
     
     return result;
@@ -109,7 +109,7 @@ bool S100Parser::OpenDataset(const std::string& filePath, void** dataset) {
     ));
     
     if (!ds) {
-        LOG_ERROR("Failed to open S100 file: {}", filePath);
+        LOG_ERROR("Failed to open S100 file: %s", filePath.c_str());
         return false;
     }
     
@@ -157,7 +157,7 @@ bool S100Parser::ParseLayer(void* dataset, const std::string& layerName, std::ve
     OGRLayer* layer = ds->GetLayerByName(layerName.c_str());
     
     if (!layer) {
-        LOG_ERROR("Layer not found: {}", layerName);
+        LOG_ERROR("Layer not found: %s", layerName.c_str());
         return false;
     }
     

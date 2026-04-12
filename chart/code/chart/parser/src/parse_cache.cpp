@@ -58,7 +58,7 @@ bool ParseCache::Get(const std::string& filePath, ParseResult& result) {
                           (m_stats.hitCount + m_stats.missCount);
     }
     
-    LOG_DEBUG("Cache hit for file: {}", filePath);
+    LOG_DEBUG("Cache hit for file: %s", filePath.c_str());
     return true;
 }
 
@@ -92,13 +92,13 @@ void ParseCache::Put(const std::string& filePath, const ParseResult& result) {
 #endif
     
     m_cache[filePath] = entry;
-    LOG_DEBUG("Cached result for file: {}", filePath);
+    LOG_DEBUG("Cached result for file: %s", filePath.c_str());
 }
 
 void ParseCache::Remove(const std::string& filePath) {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_cache.erase(filePath);
-    LOG_DEBUG("Removed cache entry for file: {}", filePath);
+    LOG_DEBUG("Removed cache entry for file: %s", filePath.c_str());
 }
 
 void ParseCache::Clear() {
@@ -176,7 +176,7 @@ bool ParseCache::SaveToFile(const std::string& filePath) {
     
     std::ofstream file(filePath, std::ios::binary);
     if (!file) {
-        LOG_ERROR("Failed to open cache file for writing: {}", filePath);
+        LOG_ERROR("Failed to open cache file for writing: %s", filePath.c_str());
         return false;
     }
     
@@ -209,7 +209,7 @@ bool ParseCache::LoadFromFile(const std::string& filePath) {
     
     std::ifstream file(filePath, std::ios::binary);
     if (!file) {
-        LOG_ERROR("Failed to open cache file for reading: {}", filePath);
+        LOG_ERROR("Failed to open cache file for reading: %s", filePath.c_str());
         return false;
     }
     
@@ -242,7 +242,7 @@ bool ParseCache::LoadFromFile(const std::string& filePath) {
         m_cache[path] = entry;
     }
     
-    LOG_INFO("Cache loaded from file: {} ({} entries)", filePath, count);
+    LOG_INFO("Cache loaded from file: %s (%zu entries)", filePath.c_str(), count);
     return true;
 }
 

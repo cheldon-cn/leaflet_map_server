@@ -77,7 +77,7 @@ IncrementalParseResult IncrementalParser::ParseIncremental(
     IncrementalParseResult result;
     auto startTime = std::chrono::high_resolution_clock::now();
     
-    LOG_INFO("Starting incremental parse for: {}", filePath);
+    LOG_INFO("Starting incremental parse for: %s", filePath.c_str());
     
     FileChangeInfo currentInfo = GetFileInfo(filePath);
     
@@ -85,7 +85,7 @@ IncrementalParseResult IncrementalParser::ParseIncremental(
     bool isFirstParse = (stateIt == m_fileStates.end());
     
     if (isFirstParse) {
-        LOG_DEBUG("First parse for file: {}", filePath);
+        LOG_DEBUG("First parse for file: %s", filePath.c_str());
         
         if (!m_parser) {
             LOG_ERROR("No parser function set");
@@ -114,7 +114,7 @@ IncrementalParseResult IncrementalParser::ParseIncremental(
         State& existingState = stateIt->second;
         
         if (!existingState.fileInfo.HasChanged(currentInfo)) {
-            LOG_DEBUG("File unchanged: {}", filePath);
+            LOG_DEBUG("File unchanged: %s", filePath.c_str());
             result.unchangedFeatures.features.reserve(existingState.features.size());
             for (const auto& pair : existingState.features) {
                 result.unchangedFeatures.features.push_back(pair.second);
@@ -122,7 +122,7 @@ IncrementalParseResult IncrementalParser::ParseIncremental(
             result.hasChanges = false;
             
         } else {
-            LOG_DEBUG("File changed, re-parsing: {}", filePath);
+            LOG_DEBUG("File changed, re-parsing: %s", filePath.c_str());
             
             if (!m_parser) {
                 LOG_ERROR("No parser function set");
@@ -153,7 +153,7 @@ IncrementalParseResult IncrementalParser::ParseIncremental(
         m_changeCallback(filePath, result);
     }
     
-    LOG_INFO("Incremental parse completed. Added={}, Modified={}, Deleted={}",
+    LOG_INFO("Incremental parse completed. Added=%zu, Modified=%zu, Deleted=%zu",
              result.addedFeatureIds.size(),
              result.modifiedFeatureIds.size(),
              result.deletedFeatureIds.size());
