@@ -6,6 +6,8 @@ import cn.cycle.chart.api.geometry.Coordinate;
 import cn.cycle.chart.api.geometry.Envelope;
 import cn.cycle.chart.api.layer.LayerManager;
 import cn.cycle.app.view.AlertPanel;
+import cn.cycle.app.view.MainView;
+import cn.cycle.app.model.DataItem;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -19,8 +21,10 @@ public class MainController {
     private ChartViewer chartViewer;
     private LayerManager layerManager;
     private AlertPanel alertPanel;
+    private MainView mainView;
     private Runnable renderCallback;
     private Runnable statusUpdateCallback;
+    private java.util.function.Consumer<String> imageLoadCallback;
     
     private final BooleanProperty layerPanelVisible = new SimpleBooleanProperty(true);
     private final BooleanProperty alertPanelVisible = new SimpleBooleanProperty(false);
@@ -63,12 +67,20 @@ public class MainController {
         this.alertPanel = panel;
     }
     
+    public void setMainView(MainView view) {
+        this.mainView = view;
+    }
+    
     public void setRenderCallback(Runnable callback) {
         this.renderCallback = callback;
     }
     
     public void setStatusUpdateCallback(Runnable callback) {
         this.statusUpdateCallback = callback;
+    }
+    
+    public void setImageLoadCallback(java.util.function.Consumer<String> callback) {
+        this.imageLoadCallback = callback;
     }
     
     private void requestRender() {
@@ -82,65 +94,100 @@ public class MainController {
             statusUpdateCallback.run();
         }
     }
+    
+    private void addToDataCatalog(java.io.File file) {
+        if (mainView != null && mainView.getDataCatalogPanel() != null) {
+            javafx.application.Platform.runLater(() -> {
+                mainView.getDataCatalogPanel().addFile(file);
+                
+                if (mainView.isPropertiesPanelVisible()) {
+                    DataItem dataItem = new DataItem(file);
+                    mainView.updatePropertiesPanel(dataItem);
+                }
+            });
+        }
+    }
 
     public void openChart() {
         System.out.println("[DEBUG] openChart() called");
-        if (chartViewer == null) {
-            System.out.println("[ERROR] chartViewer is null");
-            return;
-        }
-        if (chartViewer.isDisposed()) {
-            System.out.println("[ERROR] chartViewer is disposed");
-            return;
-        }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("打开海图文件");
+        fileChooser.setTitle("打开文件");
         fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("支持的文件", "*.000", "*.enc", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"),
             new FileChooser.ExtensionFilter("海图文件", "*.000", "*.enc"),
+            new FileChooser.ExtensionFilter("图片文件", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif"),
             new FileChooser.ExtensionFilter("所有文件", "*.*")
         );
 
         Stage stage = new Stage();
         java.io.File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
-            System.out.println("[DEBUG] Selected file: " + file.getAbsolutePath());
-            try {
-                System.out.println("[DEBUG] Calling chartViewer.loadChart()...");
-                int result = chartViewer.loadChart(file.getAbsolutePath());
-                System.out.println("[DEBUG] loadChart() returned: " + result);
-                
-                if (result == 0) {
-                    System.out.println("[DEBUG] Chart loaded successfully");
+            String filePath = file.getAbsolutePath();
+            String fileName = file.getName().toLowerCase();
+            System.out.println("[DEBUG] Selected file: " + filePath);
+            
+            boolean isImage = fileName.endsWith(".png") || fileName.endsWith(".jpg") || 
+                              fileName.endsWith(".jpeg") || fileName.endsWith(".bmp") || 
+                              fileName.endsWith(".gif");
+            
+            if (isImage) {
+                if (imageLoadCallback != null) {
+                    imageLoadCallback.accept(filePath);
                     if (alertPanel != null) {
-                        alertPanel.addInfo("已打开海图: " + file.getName());
+                        alertPanel.addInfo("已打开图片: " + file.getName());
                     }
-                    
-                    System.out.println("[DEBUG] Getting full extent...");
-                    Envelope extent = chartViewer.getFullExtent();
-                    if (extent != null) {
-                        System.out.println("[DEBUG] Full extent: " + extent.getMinX() + ", " + extent.getMinY() + ", " + extent.getMaxX() + ", " + extent.getMaxY());
-                    } else {
-                        System.out.println("[WARNING] Full extent is null");
-                    }
-                    
-                    System.out.println("[DEBUG] Calling fitToWindow()...");
-                    fitToWindow();
-                    
-                    System.out.println("[DEBUG] Requesting render...");
-                    requestRender();
-                    updateStatus();
-                } else {
-                    System.out.println("[ERROR] loadChart() failed with code: " + result);
-                    if (alertPanel != null) {
-                        alertPanel.addError("打开海图失败，错误码: " + result);
-                    }
+                    addToDataCatalog(file);
                 }
-            } catch (Exception e) {
-                System.out.println("[ERROR] Exception in openChart: " + e.getMessage());
-                e.printStackTrace();
-                if (alertPanel != null) {
-                    alertPanel.addError("打开海图失败: " + e.getMessage());
+            } else {
+                if (chartViewer == null) {
+                    System.out.println("[ERROR] chartViewer is null");
+                    return;
+                }
+                if (chartViewer.isDisposed()) {
+                    System.out.println("[ERROR] chartViewer is disposed");
+                    return;
+                }
+                
+                try {
+                    System.out.println("[DEBUG] Calling chartViewer.loadChart()...");
+                    int result = chartViewer.loadChart(filePath);
+                    System.out.println("[DEBUG] loadChart() returned: " + result);
+                    
+                    if (result == 0) {
+                        System.out.println("[DEBUG] Chart loaded successfully");
+                        if (alertPanel != null) {
+                            alertPanel.addInfo("已打开海图: " + file.getName());
+                        }
+                        
+                        addToDataCatalog(file);
+                        
+                        System.out.println("[DEBUG] Getting full extent...");
+                        Envelope extent = chartViewer.getFullExtent();
+                        if (extent != null) {
+                            System.out.println("[DEBUG] Full extent: " + extent.getMinX() + ", " + extent.getMinY() + ", " + extent.getMaxX() + ", " + extent.getMaxY());
+                        } else {
+                            System.out.println("[WARNING] Full extent is null");
+                        }
+                        
+                        System.out.println("[DEBUG] Calling fitToWindow()...");
+                        fitToWindow();
+                        
+                        System.out.println("[DEBUG] Requesting render...");
+                        requestRender();
+                        updateStatus();
+                    } else {
+                        System.out.println("[ERROR] loadChart() failed with code: " + result);
+                        if (alertPanel != null) {
+                            alertPanel.addError("打开海图失败，错误码: " + result);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("[ERROR] Exception in openChart: " + e.getMessage());
+                    e.printStackTrace();
+                    if (alertPanel != null) {
+                        alertPanel.addError("打开海图失败: " + e.getMessage());
+                    }
                 }
             }
         } else {
@@ -382,5 +429,26 @@ public class MainController {
             "F: 适应窗口\n\n" +
             "详细帮助请访问: https://cycle.cn/help");
         alert.showAndWait();
+    }
+    
+    public void loadChart(String filePath) {
+        if (chartViewer == null || chartViewer.isDisposed()) {
+            System.out.println("[ERROR] chartViewer is null or disposed");
+            return;
+        }
+        
+        try {
+            int result = chartViewer.loadChart(filePath);
+            if (result == 0) {
+                fitToWindow();
+                requestRender();
+                updateStatus();
+            } else {
+                System.out.println("[ERROR] loadChart() failed with code: " + result);
+            }
+        } catch (Exception e) {
+            System.out.println("[ERROR] Exception in loadChart: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

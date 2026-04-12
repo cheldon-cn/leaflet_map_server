@@ -79,6 +79,28 @@
     -fx-background-color: transparent;
 }
 
+.window-controls {
+    -fx-background-color: transparent;
+    -fx-padding: 2 10 2 5;
+    -fx-spacing: 5;
+    -fx-alignment: center-right;
+    -fx-pref-height: 2.91666375em;
+    -fx-min-height: 2.91666375em;
+    -fx-max-height: 2.91666375em;
+}
+
+.window-controls .window-control-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0.3em 0.6em;
+    -fx-min-width: 2.2em;
+    -fx-pref-width: 2.2em;
+}
+
+.window-controls .window-control-button:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+}
+
 .ribbon .tab .tab-label {
     -fx-text-fill: #333333;
 }

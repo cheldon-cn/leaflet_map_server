@@ -172,6 +172,52 @@ public final class ChartViewer extends NativeObject {
         return new Envelope(extent[0], extent[1], extent[2], extent[3]);
     }
 
+    public void zoomIn() {
+        checkNotDisposed();
+        zoom(1.25, 0, 0);
+    }
+
+    public void zoomOut() {
+        checkNotDisposed();
+        zoom(0.8, 0, 0);
+    }
+
+    public void setZoom(double scale) {
+        checkNotDisposed();
+        double[] viewport = getViewport();
+        setViewport(viewport[0], viewport[1], scale);
+    }
+
+    public void fitToWindow() {
+        checkNotDisposed();
+        Envelope extent = getFullExtent();
+        Viewport vp = getViewportObject();
+        if (vp != null && extent != null) {
+            vp.setExtent(extent);
+        }
+    }
+
+    public void resetView() {
+        checkNotDisposed();
+        Envelope extent = getFullExtent();
+        if (extent != null) {
+            double centerX = (extent.getMinX() + extent.getMaxX()) / 2;
+            double centerY = (extent.getMinY() + extent.getMaxY()) / 2;
+            setViewport(centerX, centerY, 1.0);
+        }
+    }
+
+    public void centerView() {
+        checkNotDisposed();
+        Envelope extent = getFullExtent();
+        if (extent != null) {
+            double centerX = (extent.getMinX() + extent.getMaxX()) / 2;
+            double centerY = (extent.getMinY() + extent.getMaxY()) / 2;
+            double[] viewport = getViewport();
+            setViewport(centerX, centerY, viewport[2]);
+        }
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         if (viewport != null) {

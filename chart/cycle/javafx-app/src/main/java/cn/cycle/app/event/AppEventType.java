@@ -36,5 +36,10 @@ public enum AppEventType {
     MEMORY_CRITICAL,
     
     THEME_CHANGED,
-    LOCALE_CHANGED
+    LOCALE_CHANGED,
+    
+    DATA_ADDED,
+    DATA_REMOVED,
+    DATA_PREVIEW,
+    DATA_PROPERTIES
 }

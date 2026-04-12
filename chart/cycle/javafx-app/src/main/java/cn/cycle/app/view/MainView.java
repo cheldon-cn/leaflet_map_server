@@ -1,6 +1,8 @@
 package cn.cycle.app.view;
 
 import cn.cycle.app.context.AppContext;
+import cn.cycle.app.dialog.LoginPanel;
+import cn.cycle.app.dialog.SettingsDialog;
 import cn.cycle.app.dpi.DPIScaler;
 import cn.cycle.app.dpi.IconLoader;
 import cn.cycle.app.event.AppEvent;
@@ -10,12 +12,15 @@ import cn.cycle.app.i18n.I18nManager;
 import cn.cycle.app.layout.ResponsiveLayoutManager;
 import cn.cycle.app.lifecycle.LifecycleComponent;
 import cn.cycle.app.panel.RightTabManager;
+import cn.cycle.app.panel.PropertiesPanel;
 import cn.cycle.app.shortcut.ShortcutManager;
 import cn.cycle.app.sidebar.SideBarManager;
+import cn.cycle.app.sidebar.DataCatalogPanel;
 import cn.cycle.app.status.StatusBar;
 import cn.cycle.app.theme.ThemeManager;
 import cn.cycle.chart.api.core.ChartViewer;
 import cn.cycle.app.controller.MainController;
+import cn.cycle.app.model.DataItem;
 import com.cycle.control.Ribbon;
 import com.cycle.control.ribbon.RibbonGroup;
 import com.cycle.control.ribbon.RibbonTab;
@@ -23,6 +28,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioMenuItem;
@@ -45,6 +51,8 @@ public class MainView extends BorderPane implements LifecycleComponent {
 
     private Ribbon ribbon;
     private ChartCanvas chartCanvas;
+    private ImageCanvas imageCanvas;
+    private StackPane viewContainer;
     private MainController controller;
     
     private VBox sideBarButtonContainer;
@@ -53,6 +61,10 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     private TabPane rightTabPane;
     private RightTabManager rightTabManager;
+    
+    private DataCatalogPanel dataCatalogPanel;
+    
+    private Button maximizeBtn;
     
     private StatusBar statusBar;
     
@@ -67,11 +79,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
     public MainView(ChartViewer chartViewer) {
         this.controller = new MainController(chartViewer);
         this.chartCanvas = new ChartCanvas(chartViewer);
+        this.imageCanvas = new ImageCanvas();
+        this.viewContainer = new StackPane();
         createView();
         setupControllerCallbacks();
     }
     
     private void setupControllerCallbacks() {
+        controller.setMainView(this);
         controller.setRenderCallback(() -> {
             if (chartCanvas != null) {
                 chartCanvas.render();
@@ -83,6 +98,92 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 statusBar.setMessage("海图已加载");
             }
         });
+        
+        controller.setImageLoadCallback(filePath -> {
+            javafx.application.Platform.runLater(() -> {
+                if (imageCanvas.loadImage(filePath)) {
+                    showImageCanvas();
+                    if (statusBar != null) {
+                        statusBar.setMessage("图片已加载");
+                    }
+                }
+            });
+        });
+    }
+    
+    private void showChartCanvas() {
+        viewContainer.getChildren().clear();
+        chartCanvas.setMaxWidth(Double.MAX_VALUE);
+        chartCanvas.setMaxHeight(Double.MAX_VALUE);
+        viewContainer.getChildren().add(chartCanvas);
+        chartCanvas.toFront();
+    }
+    
+    private void showImageCanvas() {
+        viewContainer.getChildren().clear();
+        imageCanvas.setMaxWidth(Double.MAX_VALUE);
+        imageCanvas.setMaxHeight(Double.MAX_VALUE);
+        viewContainer.getChildren().add(imageCanvas);
+        imageCanvas.toFront();
+    }
+    
+    public DataCatalogPanel getDataCatalogPanel() {
+        return dataCatalogPanel;
+    }
+    
+    public boolean isPropertiesPanelVisible() {
+        return rightTabPane != null && rightTabPane.isVisible();
+    }
+    
+    public void updatePropertiesPanel(DataItem item) {
+        if (propertiesPanel != null && item != null) {
+            propertiesPanel.setDataItem(item);
+        }
+    }
+    
+    private void previewDataItem(DataItem item) {
+        if (item == null || item.getFile() == null) {
+            return;
+        }
+        
+        String filePath = item.getFile().getAbsolutePath();
+        String fileName = item.getFile().getName().toLowerCase();
+        
+        if (fileName.endsWith(".png") || fileName.endsWith(".jpg") || 
+            fileName.endsWith(".jpeg") || fileName.endsWith(".bmp") || 
+            fileName.endsWith(".gif")) {
+            if (imageCanvas.loadImage(filePath)) {
+                showImageCanvas();
+                if (statusBar != null) {
+                    statusBar.setMessage("已加载图片: " + item.getName());
+                }
+            }
+        } else if (fileName.endsWith(".000") || fileName.endsWith(".enc")) {
+            controller.loadChart(filePath);
+            showChartCanvas();
+            if (statusBar != null) {
+                statusBar.setMessage("已加载海图: " + item.getName());
+            }
+        }
+    }
+    
+    private PropertiesPanel propertiesPanel;
+    
+    private void showPropertiesPanel(DataItem item) {
+        if (propertiesPanel == null) {
+            propertiesPanel = new PropertiesPanel();
+            rightTabManager.registerPanel(propertiesPanel);
+        }
+        
+        propertiesPanel.setDataItem(item);
+        rightTabManager.selectTab("properties");
+        
+        rightTabPane.setVisible(true);
+        rightTabPane.setManaged(true);
+        rightTabPane.setPrefWidth(300);
+        rightTabPane.setMinWidth(200);
+        
+        requestViewRender();
     }
     
     public void createView() {
@@ -101,11 +202,12 @@ public class MainView extends BorderPane implements LifecycleComponent {
         topContainer.getStyleClass().add("top-container");
         
         ribbon = createRibbon();
-        HBox.setHgrow(ribbon, Priority.ALWAYS);
         
         HBox windowControls = createWindowControls();
+        ribbon.setWindowControls(windowControls);
         
-        topContainer.getChildren().addAll(ribbon, windowControls);
+        HBox.setHgrow(ribbon, Priority.ALWAYS);
+        topContainer.getChildren().add(ribbon);
         
         return topContainer;
     }
@@ -113,37 +215,27 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private HBox createWindowControls() {
         HBox controls = new HBox();
         controls.getStyleClass().add("window-controls");
-        controls.setStyle("-fx-background-color: derive(-fx-base, -20%);");
         controls.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         
-        Button settingsBtn = createWindowButton("设置", "应用程序设置", "Png_online_16.png");
+        Button settingsBtn = createWindowButton("设置", "应用程序设置", "win_settings_8.png");
         settingsBtn.setOnAction(e -> showSettings());
         
-        Button loginBtn = createWindowButton("登录", "用户登录", "Png_img_16.png");
+        Button loginBtn = createWindowButton("登录", "用户登录", "win_login_8.png");
         loginBtn.setOnAction(e -> showLogin());
         
-        Button minimizeBtn = createWindowButton("", "最小化", "Png_ZoomIn_16.png");
-        minimizeBtn.setPrefWidth(40);
+        Button minimizeBtn = createWindowButton("", "最小化", "win_minimize_8.png");
         minimizeBtn.setOnAction(e -> minimizeWindow());
         
-        Button maximizeBtn = createWindowButton("", "最大化/还原", "Png_show_16.png");
-        maximizeBtn.setPrefWidth(40);
+        maximizeBtn = createWindowButton("", "最大化", "win_maximize_8.png");
         maximizeBtn.setOnAction(e -> maximizeWindow());
         
-        Button closeBtn = createWindowButton("", "关闭", "close.png");
-        closeBtn.setPrefWidth(40);
+        Button closeBtn = createWindowButton("", "关闭", "win_close_8.png");
         closeBtn.setStyle(closeBtn.getStyle() + "-fx-background-color: transparent;");
         closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;"));
         closeBtn.setOnMouseExited(e -> closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -fx-text-base-color;"));
         closeBtn.setOnAction(e -> closeWindow());
         
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        
-        controls.getChildren().addAll(settingsBtn, loginBtn, spacer, minimizeBtn, maximizeBtn, closeBtn);
-        controls.setPrefHeight(16);
-        controls.setMinHeight(16);
-        controls.setMaxHeight(16);
+        controls.getChildren().addAll(settingsBtn, loginBtn, minimizeBtn, maximizeBtn, closeBtn);
         
         return controls;
     }
@@ -151,9 +243,12 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private Button createWindowButton(String text, String tooltip, String iconName) {
         Button button = new Button(text);
         button.setTooltip(new javafx.scene.control.Tooltip(tooltip));
-        button.setGraphic(createIcon(iconName));
+        ImageView icon = createIcon(iconName);
+        icon.setFitWidth(12);
+        icon.setFitHeight(12);
+        button.setGraphic(icon);
         button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-        button.setPrefSize(60, 60);
+        button.setPrefSize(24, 24);
         button.getStyleClass().add("window-control-button");
         button.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         
@@ -168,11 +263,18 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void showSettings() {
-        System.out.println("显示设置对话框");
+        SettingsDialog dialog = new SettingsDialog((javafx.stage.Stage) this.getScene().getWindow());
+        dialog.show();
     }
     
+    private LoginPanel loginPanel;
+    
     private void showLogin() {
-        System.out.println("显示登录对话框");
+        if (loginPanel == null) {
+            loginPanel = new LoginPanel();
+        }
+        javafx.geometry.Point2D point = this.localToScreen(this.getWidth() - 300, 50);
+        loginPanel.show(this.getScene().getWindow(), point.getX(), point.getY());
     }
     
     private void minimizeWindow() {
@@ -187,6 +289,19 @@ public class MainView extends BorderPane implements LifecycleComponent {
         if (window instanceof javafx.stage.Stage) {
             javafx.stage.Stage stage = (javafx.stage.Stage) window;
             stage.setMaximized(!stage.isMaximized());
+            updateMaximizeButtonIcon(stage.isMaximized());
+        }
+    }
+    
+    private void updateMaximizeButtonIcon(boolean isMaximized) {
+        if (maximizeBtn != null) {
+            String iconName = isMaximized ? "win_restore_8.png" : "win_maximize_8.png";
+            String tooltip = isMaximized ? "还原" : "最大化";
+            ImageView icon = createIcon(iconName);
+            icon.setFitWidth(12);
+            icon.setFitHeight(12);
+            maximizeBtn.setGraphic(icon);
+            maximizeBtn.setTooltip(new javafx.scene.control.Tooltip(tooltip));
         }
     }
     
@@ -209,8 +324,8 @@ public class MainView extends BorderPane implements LifecycleComponent {
         sideBarButtonContainer.setStyle("-fx-border-color: derive(-fx-base, -20%); -fx-border-width: 0 1 0 0; -fx-padding: 8 4 8 4;");
         
         sideBarPanelContainer = new StackPane();
-        sideBarPanelContainer.setPrefWidth(250);
-        sideBarPanelContainer.setMinWidth(180);
+        sideBarPanelContainer.setPrefWidth(0);
+        sideBarPanelContainer.setMinWidth(0);
         sideBarPanelContainer.setMaxWidth(350);
         sideBarPanelContainer.getStyleClass().add("sidebar-panel");
         
@@ -219,21 +334,54 @@ public class MainView extends BorderPane implements LifecycleComponent {
         sideBar.setCenter(sideBarPanelContainer);
         
         sideBarManager = new SideBarManager(sideBarButtonContainer, sideBarPanelContainer);
+        sideBarManager.setOnPanelVisibilityChanged(() -> {
+            javafx.application.Platform.runLater(() -> {
+                if (sideBarManager.getActivePanelId() != null) {
+                    sideBarPanelContainer.setPrefWidth(250);
+                    sideBarPanelContainer.setMinWidth(180);
+                } else {
+                    sideBarPanelContainer.setPrefWidth(0);
+                    sideBarPanelContainer.setMinWidth(0);
+                }
+                requestViewRender();
+            });
+        });
         
-        sideBarManager.registerPanel(new cn.cycle.app.sidebar.DataCatalogPanel());
+        dataCatalogPanel = new DataCatalogPanel();
+        dataCatalogPanel.setOnPreviewCallback(() -> {
+            DataItem item = dataCatalogPanel.getSelectedDataItem();
+            if (item != null && item.getFile() != null) {
+                previewDataItem(item);
+            }
+        });
+        dataCatalogPanel.setOnPropertiesCallback(item -> {
+            showPropertiesPanel(item);
+        });
+        dataCatalogPanel.setOnSelectionChangedCallback(item -> {
+            if (rightTabPane.isVisible() && propertiesPanel != null) {
+                propertiesPanel.setDataItem(item);
+            }
+        });
+        
+        sideBarManager.registerPanel(dataCatalogPanel);
         sideBarManager.registerPanel(new cn.cycle.app.sidebar.DataConvertPanel());
         sideBarManager.registerPanel(new cn.cycle.app.sidebar.QueryPanel());
         sideBarManager.registerPanel(new cn.cycle.app.sidebar.StylePanel());
         
         centerLayout.setLeft(sideBar);
         
-        centerLayout.setCenter(chartCanvas);
+        chartCanvas.setMaxWidth(Double.MAX_VALUE);
+        chartCanvas.setMaxHeight(Double.MAX_VALUE);
+        viewContainer.getChildren().add(chartCanvas);
+        centerLayout.setCenter(viewContainer);
         
         rightTabPane = new TabPane();
-        rightTabPane.setPrefWidth(300);
-        rightTabPane.setMinWidth(200);
+        rightTabPane.setPrefWidth(0);
+        rightTabPane.setMinWidth(0);
         rightTabPane.setMaxWidth(450);
         rightTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        rightTabPane.setVisible(false);
+        rightTabPane.setManaged(false);
         
         rightTabManager = new RightTabManager(rightTabPane);
         
@@ -594,19 +742,41 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void toggleSideBar() {
-        if (sideBarPanelContainer != null) {
-            boolean visible = sideBarPanelContainer.isVisible();
-            sideBarPanelContainer.setVisible(!visible);
-            sideBarPanelContainer.setManaged(!visible);
+        if (sideBarManager != null) {
+            if (sideBarManager.getActivePanelId() != null) {
+                sideBarManager.hidePanel();
+            }
         }
     }
     
     private void toggleRightPanel() {
         if (rightTabPane != null) {
             boolean visible = rightTabPane.isVisible();
-            rightTabPane.setVisible(!visible);
-            rightTabPane.setManaged(!visible);
+            if (visible) {
+                rightTabPane.setVisible(false);
+                rightTabPane.setManaged(false);
+                rightTabPane.setPrefWidth(0);
+                rightTabPane.setMinWidth(0);
+            } else {
+                rightTabPane.setVisible(true);
+                rightTabPane.setManaged(true);
+                rightTabPane.setPrefWidth(300);
+                rightTabPane.setMinWidth(200);
+            }
+            requestViewRender();
         }
+    }
+    
+    private void requestViewRender() {
+        javafx.application.Platform.runLater(() -> {
+            viewContainer.layout();
+            if (chartCanvas != null && chartCanvas.isVisible()) {
+                chartCanvas.render();
+            }
+            if (imageCanvas != null && imageCanvas.isVisible()) {
+                imageCanvas.render();
+            }
+        });
     }
     
     public void updateMousePosition(double x, double y) {

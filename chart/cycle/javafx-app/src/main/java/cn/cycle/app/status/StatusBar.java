@@ -25,6 +25,8 @@ public class StatusBar extends AbstractLifecycleComponent {
     }
     
     private final HBox container;
+    private final HBox leftSection;
+    private final HBox rightSection;
     private final Map<String, StatusItem> items = new ConcurrentHashMap<>();
     
     private boolean compactMode = false;
@@ -33,31 +35,57 @@ public class StatusBar extends AbstractLifecycleComponent {
         container = new HBox();
         container.setAlignment(Pos.CENTER_LEFT);
         container.setPadding(new Insets(4, 8, 4, 8));
-        container.setSpacing(16);
+        container.setSpacing(0);
         container.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;");
+        
+        leftSection = new HBox();
+        leftSection.setAlignment(Pos.CENTER_LEFT);
+        leftSection.setSpacing(16);
+        
+        rightSection = new HBox();
+        rightSection.setAlignment(Pos.CENTER_RIGHT);
+        rightSection.setSpacing(16);
+        HBox.setHgrow(rightSection, Priority.ALWAYS);
+        
+        container.getChildren().addAll(leftSection, rightSection);
         
         initDefaultItems();
     }
     
     private void initDefaultItems() {
-        addItem("service", "服务状态", "● 已连接");
-        addItem("region", "显示区域", "-");
-        addItem("position", "鼠标位置", "-");
-        addItem("tileLevel", "瓦片级数", "Level -");
-        addItem("zoom", "缩放比例", "1:-");
-        addItem("message", "提示信息", "就绪");
+        addLeftItem("service", "服务状态", "● 已连接");
+        addLeftItem("message", "提示信息", "就绪");
+        
+        addRightItem("position", "鼠标位置", "-");
+        addRightItem("zoom", "缩放比例", "1:-");
     }
     
-    public void addItem(String id, String tooltip, String defaultValue) {
+    public void addLeftItem(String id, String tooltip, String defaultValue) {
         Label label = new Label(defaultValue);
         label.setTooltip(new Tooltip(tooltip));
         
-        StatusItem item = new StatusItem(id, label, tooltip);
+        StatusItem item = new StatusItem(id, label, tooltip, true);
         items.put(id, item);
         
         if (!compactMode || isEssentialItem(id)) {
-            container.getChildren().add(label);
+            leftSection.getChildren().add(label);
         }
+    }
+    
+    public void addRightItem(String id, String tooltip, String defaultValue) {
+        Label label = new Label(defaultValue);
+        label.setTooltip(new Tooltip(tooltip));
+        
+        StatusItem item = new StatusItem(id, label, tooltip, false);
+        items.put(id, item);
+        
+        if (!compactMode || isEssentialItem(id)) {
+            rightSection.getChildren().add(label);
+        }
+    }
+    
+    public void addItem(String id, String tooltip, String defaultValue) {
+        addLeftItem(id, tooltip, defaultValue);
     }
     
     private boolean isEssentialItem(String id) {
@@ -119,6 +147,10 @@ public class StatusBar extends AbstractLifecycleComponent {
         updateItem("position", pos);
     }
     
+    public void setPosition(String position) {
+        updateItem("position", position);
+    }
+    
     public void setTileLevel(int level) {
         updateItem("tileLevel", "Level " + level);
     }
@@ -138,17 +170,26 @@ public class StatusBar extends AbstractLifecycleComponent {
         
         this.compactMode = compact;
         
-        container.getChildren().clear();
+        leftSection.getChildren().clear();
+        rightSection.getChildren().clear();
         
         if (compact) {
             for (Map.Entry<String, StatusItem> entry : items.entrySet()) {
                 if (isEssentialItem(entry.getKey())) {
-                    container.getChildren().add(entry.getValue().getLabel());
+                    if (entry.getValue().isLeftSection()) {
+                        leftSection.getChildren().add(entry.getValue().getLabel());
+                    } else {
+                        rightSection.getChildren().add(entry.getValue().getLabel());
+                    }
                 }
             }
         } else {
             for (StatusItem item : items.values()) {
-                container.getChildren().add(item.getLabel());
+                if (item.isLeftSection()) {
+                    leftSection.getChildren().add(item.getLabel());
+                } else {
+                    rightSection.getChildren().add(item.getLabel());
+                }
             }
         }
     }
@@ -160,7 +201,7 @@ public class StatusBar extends AbstractLifecycleComponent {
     public void addSpacer() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        container.getChildren().add(spacer);
+        leftSection.getChildren().add(spacer);
     }
     
     @Override
@@ -199,11 +240,13 @@ public class StatusBar extends AbstractLifecycleComponent {
         private final String id;
         private final Label label;
         private final String tooltip;
+        private final boolean leftSection;
         
-        StatusItem(String id, Label label, String tooltip) {
+        StatusItem(String id, Label label, String tooltip, boolean leftSection) {
             this.id = id;
             this.label = label;
             this.tooltip = tooltip;
+            this.leftSection = leftSection;
         }
         
         public String getId() {
@@ -216,6 +259,10 @@ public class StatusBar extends AbstractLifecycleComponent {
         
         public String getTooltip() {
             return tooltip;
+        }
+        
+        public boolean isLeftSection() {
+            return leftSection;
         }
     }
 }

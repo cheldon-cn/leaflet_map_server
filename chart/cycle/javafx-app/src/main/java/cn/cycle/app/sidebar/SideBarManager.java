@@ -22,10 +22,15 @@ public class SideBarManager extends AbstractLifecycleComponent implements StateP
     private final Map<String, ToggleButton> buttons = new HashMap<>();
     private String activePanelId = null;
     private double panelWidth = 250;
+    private Runnable onPanelVisibilityChanged;
     
     public SideBarManager(VBox buttonContainer, StackPane panelContainer) {
         this.buttonContainer = buttonContainer;
         this.panelContainer = panelContainer;
+    }
+    
+    public void setOnPanelVisibilityChanged(Runnable callback) {
+        this.onPanelVisibilityChanged = callback;
     }
     
     public void registerPanel(SideBarPanel panel) {
@@ -75,6 +80,10 @@ public class SideBarManager extends AbstractLifecycleComponent implements StateP
         }
         activePanelId = panelId;
         
+        if (onPanelVisibilityChanged != null) {
+            onPanelVisibilityChanged.run();
+        }
+        
         AppEventBus.getInstance().publish(
             new AppEvent(AppEventType.SIDEBAR_PANEL_CHANGED, this)
                 .withData("panelId", panelId)
@@ -93,6 +102,10 @@ public class SideBarManager extends AbstractLifecycleComponent implements StateP
             }
             panelContainer.getChildren().clear();
             activePanelId = null;
+            
+            if (onPanelVisibilityChanged != null) {
+                onPanelVisibilityChanged.run();
+            }
         }
     }
     

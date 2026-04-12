@@ -30,8 +30,13 @@ package com.cycle.skin;
 import com.cycle.control.Ribbon;
 import com.cycle.control.ribbon.RibbonTab;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TabPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.Collection;
@@ -59,6 +64,42 @@ public class RibbonSkin extends SkinBase<Ribbon> {
 
         control.selectedRibbonTabProperty().addListener((observable, oldValue, newValue) -> tabPane.getSelectionModel().select((RibbonTab)newValue));
         tabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> control.setSelectedRibbonTab((RibbonTab)tabPane.getSelectionModel().getSelectedItem()));
+        
+        Node windowControls = control.getWindowControls();
+        if (windowControls != null) {
+            addWindowControlsToTabHeader(windowControls);
+        }
+    }
+    
+    private void addWindowControlsToTabHeader(Node windowControls) {
+        tabPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            updateWindowControlsPosition(windowControls);
+        });
+        
+        tabPane.getChildrenUnmodifiable().addListener((javafx.collections.ListChangeListener<Node>) c -> {
+            while (c.next()) {
+                if (c.wasAdded()) {
+                    for (Node node : c.getAddedSubList()) {
+                        if (node.getStyleClass().contains("tab-header-area")) {
+                            updateWindowControlsPosition(windowControls);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    private void updateWindowControlsPosition(Node windowControls) {
+        for (Node node : tabPane.getChildrenUnmodifiable()) {
+            if (node.getStyleClass().contains("tab-header-area")) {
+                if (windowControls.getParent() == null) {
+                    ((javafx.scene.layout.Pane) node).getChildren().add(windowControls);
+                }
+                windowControls.setLayoutX(tabPane.getWidth() - windowControls.getLayoutBounds().getWidth() - 10);
+                windowControls.setLayoutY(9);
+                break;
+            }
+        }
     }
 
     private void updateAddedRibbonTabs(Collection<? extends RibbonTab> ribbonTabs) {
@@ -77,7 +118,7 @@ public class RibbonSkin extends SkinBase<Ribbon> {
             {
                 for (RibbonTab ribbonTab : changed.getRemoved())
                     tabPane.getTabs().remove(ribbonTab);
-            }
+                }
         }
     }
 

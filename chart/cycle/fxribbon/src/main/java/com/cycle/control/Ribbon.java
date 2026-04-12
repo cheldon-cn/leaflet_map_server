@@ -34,6 +34,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 
@@ -46,6 +47,8 @@ public class Ribbon extends Control{
     private final ObservableList<RibbonTab> tabs;
 
     private QuickAccessBar quickAccessBar;
+    
+    private Node windowControls;
 
     public Ribbon()
     {
@@ -58,6 +61,14 @@ public class Ribbon extends Control{
 
     public ObservableList<RibbonTab> getTabs(){
         return tabs;
+    }
+    
+    public void setWindowControls(Node controls) {
+        this.windowControls = controls;
+    }
+    
+    public Node getWindowControls() {
+        return windowControls;
     }
 
 
