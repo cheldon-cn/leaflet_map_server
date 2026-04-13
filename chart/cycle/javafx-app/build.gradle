@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'cn.cycle.app'
-version '1.0.0'
+// version '1.0.0'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -26,7 +26,7 @@ tasks.withType(JavaCompile) {
 }
 
 jar {
-    destinationDir = new File(rootDir, '../code/build/test')
+    destinationDir = new File(rootDir, '../build/test')
     manifest {
         attributes(
             'Implementation-Title': 'Cycle Chart JavaFX App',
@@ -41,13 +41,13 @@ jar {
 }
 
 test {
-    workingDir = new File(rootDir, '../code/build/test')
-    jvmArgs = ['-Djava.library.path=' + new File(rootDir, '../code/build/test').absolutePath]
+    workingDir = new File(rootDir, '../build/test')
+    jvmArgs = ['-Djava.library.path=' + new File(rootDir, '../build/test').absolutePath]
 }
 
 run {
-    workingDir = new File(rootDir, '../code/build/test')
+    workingDir = new File(rootDir, '../build/test')
     jvmArgs = [
-        '-Djava.library.path=' + new File(rootDir, '../code/build/test').absolutePath
+        '-Djava.library.path=' + new File(rootDir, '../build/test').absolutePath
     ]
 }

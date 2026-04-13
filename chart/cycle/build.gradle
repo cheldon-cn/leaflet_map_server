@@ -1,7 +1,3 @@
-plugins {
-    id 'java'
-}
-
 allprojects {
     repositories {
         mavenCentral()
@@ -9,38 +5,35 @@ allprojects {
 }
 
 subprojects {
-    group = 'cn.cycle.chart'
-    version = '1.0.0'
-    
-    buildDir = new File(rootDir, '../code/build/cycle/' + project.name)
+    buildDir = new File(rootDir, '../build/cycle/' + project.name)
     
     ext {
-        outputDir = new File(rootDir, '../code/build/test')
-        installDir = new File(rootDir, 'install/bin')
+        outputDir = new File(rootDir, '../build/test')
+        installDir = new File(rootDir, '../install/bin')
     }
 }
 
 task cleanAll(type: Delete) {
     delete 'build'
-    delete '../code/build/cycle'
+    delete '../build/cycle'
 }
 
 task install(type: Copy, dependsOn: [':javawrapper:jar', ':javafx-app:jar']) {
-    from('../code/build/cycle/javawrapper/libs') {
+    from('../build/cycle/javawrapper/libs') {
         include '*.jar'
     }
-    from('../code/build/cycle/javafx-app/libs') {
+    from('../build/cycle/javafx-app/libs') {
         include '*.jar'
     }
-    into 'install/bin'
+    into '../install/bin'
 }
 
 task copyNativeLibs(type: Copy) {
-    from('../code/build/test') {
+    from('../build/test') {
         include '*.dll'
     }
-    into 'install/bin'
+    into '../install/bin'
     onlyIf {
-        file('../code/build/test').exists()
+        file('../build/test').exists()
     }
 }

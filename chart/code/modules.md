@@ -27,6 +27,42 @@
 
 ---
 
+## 编译与安装目录
+
+### 目录结构
+
+| 目录类型 | 路径 | 说明 |
+|----------|------|------|
+| 编译根目录 | `build/` | CMake构建输出目录 |
+| 动态库/测试 | `build/test/` | `.dll`、`.exe` 文件 |
+| 静态库/导入库 | `build/lib/` | `.lib` 文件 |
+| 安装根目录 | `install/` | `make install` 输出目录 |
+| 头文件 | `install/include/ogc/` | 各模块头文件 |
+| 动态库/可执行 | `install/bin/` | 运行时文件 |
+| 静态库/导入库 | `install/lib/` | 链接时文件 |
+
+### 各模块编译产物
+
+| 模块 | 动态库 | 导入库 | 头文件目录 |
+|------|--------|--------|------------|
+| base | ogc_base.dll | ogc_base.lib | include/ogc/base/ |
+| geom | ogc_geometry.dll | ogc_geometry.lib | include/ogc/geom/ |
+| chart/parser | - | chart_parser.lib | include/ogc/parser/ |
+| feature | ogc_feature.dll | ogc_feature.lib | include/ogc/feature/ |
+| layer | ogc_layer.dll | ogc_layer.lib | include/ogc/layer/ |
+| database | ogc_database.dll | ogc_database.lib | include/ogc/db/ |
+| draw | ogc_draw.dll | ogc_draw.lib | include/ogc/draw/ |
+| proj | ogc_proj.dll | ogc_proj.lib | include/ogc/proj/ |
+| cache | ogc_cache.dll | ogc_cache.lib | include/ogc/cache/ |
+| symbology | ogc_symbology.dll | ogc_symbology.lib | include/ogc/symbology/ |
+| alert | ogc_alert.dll | ogc_alert.lib | include/ogc/alert/ |
+| alarm | alert_system.dll | alert_system.lib | include/ogc/alert/ |
+| graph | ogc_graph.dll | ogc_graph.lib | include/ogc/graph/ |
+| navi | ogc_navi.dll | ogc_navi.lib | include/ogc/navi/ |
+| cycle/chart_c_api | - | - | include/ogc/capi/ |
+
+---
+
 ## 模块依赖关系
 
 ```
