@@ -27,10 +27,10 @@ class OGC_SYMBOLOGY_API LineSymbolizer : public Symbolizer {
 public:
     LineSymbolizer();
     explicit LineSymbolizer(double width, uint32_t color);
-    ~LineSymbolizer() override = default;
+    ~LineSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kLine; }
-    std::string GetName() const override { return m_name.empty() ? "LineSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -86,19 +86,8 @@ private:
     ogc::draw::DrawResult DrawMultiLineString(ogc::draw::DrawContextPtr context, const ogc::MultiLineString* multiLineString, const ogc::draw::DrawStyle& style);
     std::vector<double> GetDefaultDashPattern(DashStyle style) const;
     
-    double m_width;
-    uint32_t m_color;
-    double m_opacity;
-    ogc::draw::LineCap m_capStyle;
-    ogc::draw::LineJoin m_joinStyle;
-    DashStyle m_dashStyle;
-    std::vector<double> m_dashPattern;
-    double m_dashOffset;
-    double m_offset;
-    double m_perpendicularOffset;
-    bool m_graphicStroke;
-    double m_graphicStrokeSize;
-    double m_graphicStrokeSpacing;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

@@ -5,32 +5,57 @@
 namespace ogc {
 namespace symbology {
 
-LogicalFilter::LogicalFilter(LogicalOperator op)
-    : m_operator(op)
+struct LogicalFilter::Impl {
+    LogicalOperator op = LogicalOperator::kAnd;
+    std::vector<FilterPtr> filters;
+};
+
+LogicalFilter::LogicalFilter(LogicalOperator op) : impl_(std::make_unique<Impl>())
 {
+    impl_->op = op;
 }
 
 LogicalFilter::LogicalFilter(LogicalOperator op, const std::vector<FilterPtr>& filters)
-    : m_operator(op)
-    , m_filters(filters)
+    : impl_(std::make_unique<Impl>())
 {
+    impl_->op = op;
+    impl_->filters = filters;
 }
 
 LogicalFilter::LogicalFilter(LogicalOperator op, FilterPtr filter1, FilterPtr filter2)
-    : m_operator(op)
+    : impl_(std::make_unique<Impl>())
 {
-    m_filters.push_back(filter1);
-    m_filters.push_back(filter2);
+    impl_->op = op;
+    impl_->filters.push_back(filter1);
+    impl_->filters.push_back(filter2);
+}
+
+LogicalFilter::~LogicalFilter() = default;
+
+LogicalOperator LogicalFilter::GetOperator() const {
+    return impl_->op;
+}
+
+void LogicalFilter::SetOperator(LogicalOperator op) {
+    impl_->op = op;
+}
+
+const std::vector<FilterPtr>& LogicalFilter::GetFilters() const {
+    return impl_->filters;
+}
+
+size_t LogicalFilter::GetFilterCount() const {
+    return impl_->filters.size();
 }
 
 bool LogicalFilter::Evaluate(const CNFeature* feature) const {
-    if (m_filters.empty()) {
-        return m_operator == LogicalOperator::kOr;
+    if (impl_->filters.empty()) {
+        return impl_->op == LogicalOperator::kOr;
     }
     
-    switch (m_operator) {
+    switch (impl_->op) {
         case LogicalOperator::kAnd: {
-            for (const auto& filter : m_filters) {
+            for (const auto& filter : impl_->filters) {
                 if (filter && !filter->Evaluate(feature)) {
                     return false;
                 }
@@ -39,7 +64,7 @@ bool LogicalFilter::Evaluate(const CNFeature* feature) const {
         }
         
         case LogicalOperator::kOr: {
-            for (const auto& filter : m_filters) {
+            for (const auto& filter : impl_->filters) {
                 if (filter && filter->Evaluate(feature)) {
                     return true;
                 }
@@ -48,10 +73,10 @@ bool LogicalFilter::Evaluate(const CNFeature* feature) const {
         }
         
         case LogicalOperator::kNot: {
-            if (m_filters.empty()) {
+            if (impl_->filters.empty()) {
                 return true;
             }
-            return !m_filters[0]->Evaluate(feature);
+            return !impl_->filters[0]->Evaluate(feature);
         }
         
         default:
@@ -60,13 +85,13 @@ bool LogicalFilter::Evaluate(const CNFeature* feature) const {
 }
 
 bool LogicalFilter::Evaluate(const Geometry* geometry) const {
-    if (m_filters.empty()) {
-        return m_operator == LogicalOperator::kOr;
+    if (impl_->filters.empty()) {
+        return impl_->op == LogicalOperator::kOr;
     }
     
-    switch (m_operator) {
+    switch (impl_->op) {
         case LogicalOperator::kAnd: {
-            for (const auto& filter : m_filters) {
+            for (const auto& filter : impl_->filters) {
                 if (filter && !filter->Evaluate(geometry)) {
                     return false;
                 }
@@ -75,7 +100,7 @@ bool LogicalFilter::Evaluate(const Geometry* geometry) const {
         }
         
         case LogicalOperator::kOr: {
-            for (const auto& filter : m_filters) {
+            for (const auto& filter : impl_->filters) {
                 if (filter && filter->Evaluate(geometry)) {
                     return true;
                 }
@@ -84,10 +109,10 @@ bool LogicalFilter::Evaluate(const Geometry* geometry) const {
         }
         
         case LogicalOperator::kNot: {
-            if (m_filters.empty()) {
+            if (impl_->filters.empty()) {
                 return true;
             }
-            return !m_filters[0]->Evaluate(geometry);
+            return !impl_->filters[0]->Evaluate(geometry);
         }
         
         default:
@@ -98,21 +123,21 @@ bool LogicalFilter::Evaluate(const Geometry* geometry) const {
 std::string LogicalFilter::ToString() const {
     std::ostringstream oss;
     
-    if (m_operator == LogicalOperator::kNot) {
+    if (impl_->op == LogicalOperator::kNot) {
         oss << "NOT ";
-        if (!m_filters.empty()) {
-            oss << m_filters[0]->ToString();
+        if (!impl_->filters.empty()) {
+            oss << impl_->filters[0]->ToString();
         }
         return oss.str();
     }
     
     oss << "(";
-    for (size_t i = 0; i < m_filters.size(); ++i) {
+    for (size_t i = 0; i < impl_->filters.size(); ++i) {
         if (i > 0) {
-            oss << " " << OperatorToString(m_operator) << " ";
+            oss << " " << OperatorToString(impl_->op) << " ";
         }
-        if (m_filters[i]) {
-            oss << m_filters[i]->ToString();
+        if (impl_->filters[i]) {
+            oss << impl_->filters[i]->ToString();
         }
     }
     oss << ")";
@@ -122,34 +147,34 @@ std::string LogicalFilter::ToString() const {
 
 FilterPtr LogicalFilter::Clone() const {
     std::vector<FilterPtr> clonedFilters;
-    for (const auto& filter : m_filters) {
+    for (const auto& filter : impl_->filters) {
         if (filter) {
             clonedFilters.push_back(filter->Clone());
         }
     }
-    return std::make_shared<LogicalFilter>(m_operator, clonedFilters);
+    return std::make_shared<LogicalFilter>(impl_->op, clonedFilters);
 }
 
 void LogicalFilter::AddFilter(FilterPtr filter) {
     if (filter) {
-        m_filters.push_back(filter);
+        impl_->filters.push_back(filter);
     }
 }
 
 void LogicalFilter::RemoveFilter(FilterPtr filter) {
-    m_filters.erase(
-        std::remove(m_filters.begin(), m_filters.end(), filter),
-        m_filters.end()
+    impl_->filters.erase(
+        std::remove(impl_->filters.begin(), impl_->filters.end(), filter),
+        impl_->filters.end()
     );
 }
 
 void LogicalFilter::ClearFilters() {
-    m_filters.clear();
+    impl_->filters.clear();
 }
 
 FilterPtr LogicalFilter::GetFilter(size_t index) const {
-    if (index < m_filters.size()) {
-        return m_filters[index];
+    if (index < impl_->filters.size()) {
+        return impl_->filters[index];
     }
     return nullptr;
 }

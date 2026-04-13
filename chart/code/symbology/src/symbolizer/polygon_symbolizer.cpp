@@ -6,53 +6,44 @@
 namespace ogc {
 namespace symbology {
 
-PolygonSymbolizer::PolygonSymbolizer()
-    : m_fillColor(0xFFCCCCCC)
-    , m_fillOpacity(1.0)
-    , m_strokeColor(0xFF000000)
-    , m_strokeWidth(1.0)
-    , m_strokeOpacity(1.0)
-    , m_fillPattern(FillPattern::kSolid)
-    , m_displacementX(0.0)
-    , m_displacementY(0.0)
-    , m_perpendicularOffset(0.0)
-    , m_graphicFill(false)
-    , m_graphicFillSize(0.0)
-    , m_graphicFillSpacing(0.0) {
+struct PolygonSymbolizer::Impl {
+    uint32_t fillColor = 0xFFCCCCCC;
+    double fillOpacity = 1.0;
+    uint32_t strokeColor = 0xFF000000;
+    double strokeWidth = 1.0;
+    double strokeOpacity = 1.0;
+    FillPattern fillPattern = FillPattern::kSolid;
+    double displacementX = 0.0;
+    double displacementY = 0.0;
+    double perpendicularOffset = 0.0;
+    bool graphicFill = false;
+    double graphicFillSize = 0.0;
+    double graphicFillSpacing = 0.0;
+};
+
+PolygonSymbolizer::PolygonSymbolizer() : impl_(std::make_unique<Impl>()) {
 }
 
-PolygonSymbolizer::PolygonSymbolizer(uint32_t fillColor)
-    : m_fillColor(fillColor)
-    , m_fillOpacity(1.0)
-    , m_strokeColor(0xFF000000)
-    , m_strokeWidth(1.0)
-    , m_strokeOpacity(1.0)
-    , m_fillPattern(FillPattern::kSolid)
-    , m_displacementX(0.0)
-    , m_displacementY(0.0)
-    , m_perpendicularOffset(0.0)
-    , m_graphicFill(false)
-    , m_graphicFillSize(0.0)
-    , m_graphicFillSpacing(0.0) {
+PolygonSymbolizer::PolygonSymbolizer(uint32_t fillColor) : impl_(std::make_unique<Impl>()) {
+    impl_->fillColor = fillColor;
 }
 
-PolygonSymbolizer::PolygonSymbolizer(uint32_t fillColor, uint32_t strokeColor, double strokeWidth)
-    : m_fillColor(fillColor)
-    , m_fillOpacity(1.0)
-    , m_strokeColor(strokeColor)
-    , m_strokeWidth(strokeWidth)
-    , m_strokeOpacity(1.0)
-    , m_fillPattern(FillPattern::kSolid)
-    , m_displacementX(0.0)
-    , m_displacementY(0.0)
-    , m_perpendicularOffset(0.0)
-    , m_graphicFill(false)
-    , m_graphicFillSize(0.0)
-    , m_graphicFillSpacing(0.0) {
+PolygonSymbolizer::PolygonSymbolizer(uint32_t fillColor, uint32_t strokeColor, double strokeWidth) 
+    : impl_(std::make_unique<Impl>()) {
+    impl_->fillColor = fillColor;
+    impl_->strokeColor = strokeColor;
+    impl_->strokeWidth = strokeWidth;
+}
+
+PolygonSymbolizer::~PolygonSymbolizer() = default;
+
+std::string PolygonSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "PolygonSymbolizer" : name;
 }
 
 ogc::draw::DrawResult PolygonSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, GetDefaultStyle());
 }
 
 ogc::draw::DrawResult PolygonSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -60,7 +51,7 @@ ogc::draw::DrawResult PolygonSymbolizer::Symbolize(ogc::draw::DrawContextPtr con
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!IsEnabled()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -69,12 +60,12 @@ ogc::draw::DrawResult PolygonSymbolizer::Symbolize(ogc::draw::DrawContextPtr con
         return ogc::draw::DrawResult::kSuccess;
     }
     
-    ogc::draw::DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
+    ogc::draw::DrawStyle finalStyle = MergeStyle(GetDefaultStyle(), style);
     if (finalStyle.brush.color.GetAlpha() == 0) {
-        finalStyle.brush = ogc::draw::Brush(ogc::draw::Color(m_fillColor));
+        finalStyle.brush = ogc::draw::Brush(ogc::draw::Color(impl_->fillColor));
     }
     if (finalStyle.pen.width == 0) {
-        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(m_strokeColor), m_strokeWidth);
+        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(impl_->strokeColor), impl_->strokeWidth);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -100,116 +91,116 @@ bool PolygonSymbolizer::CanSymbolize(GeomType geomType) const {
 }
 
 void PolygonSymbolizer::SetFillColor(uint32_t color) {
-    m_fillColor = color;
+    impl_->fillColor = color;
 }
 
 uint32_t PolygonSymbolizer::GetFillColor() const {
-    return m_fillColor;
+    return impl_->fillColor;
 }
 
 void PolygonSymbolizer::SetFillOpacity(double opacity) {
-    m_fillOpacity = opacity;
+    impl_->fillOpacity = opacity;
 }
 
 double PolygonSymbolizer::GetFillOpacity() const {
-    return m_fillOpacity;
+    return impl_->fillOpacity;
 }
 
 void PolygonSymbolizer::SetStrokeColor(uint32_t color) {
-    m_strokeColor = color;
+    impl_->strokeColor = color;
 }
 
 uint32_t PolygonSymbolizer::GetStrokeColor() const {
-    return m_strokeColor;
+    return impl_->strokeColor;
 }
 
 void PolygonSymbolizer::SetStrokeWidth(double width) {
-    m_strokeWidth = width;
+    impl_->strokeWidth = width;
 }
 
 double PolygonSymbolizer::GetStrokeWidth() const {
-    return m_strokeWidth;
+    return impl_->strokeWidth;
 }
 
 void PolygonSymbolizer::SetStrokeOpacity(double opacity) {
-    m_strokeOpacity = opacity;
+    impl_->strokeOpacity = opacity;
 }
 
 double PolygonSymbolizer::GetStrokeOpacity() const {
-    return m_strokeOpacity;
+    return impl_->strokeOpacity;
 }
 
 void PolygonSymbolizer::SetFillPattern(FillPattern pattern) {
-    m_fillPattern = pattern;
+    impl_->fillPattern = pattern;
 }
 
 FillPattern PolygonSymbolizer::GetFillPattern() const {
-    return m_fillPattern;
+    return impl_->fillPattern;
 }
 
 void PolygonSymbolizer::SetDisplacement(double dx, double dy) {
-    m_displacementX = dx;
-    m_displacementY = dy;
+    impl_->displacementX = dx;
+    impl_->displacementY = dy;
 }
 
 void PolygonSymbolizer::GetDisplacement(double& dx, double& dy) const {
-    dx = m_displacementX;
-    dy = m_displacementY;
+    dx = impl_->displacementX;
+    dy = impl_->displacementY;
 }
 
 void PolygonSymbolizer::SetPerpendicularOffset(double offset) {
-    m_perpendicularOffset = offset;
+    impl_->perpendicularOffset = offset;
 }
 
 double PolygonSymbolizer::GetPerpendicularOffset() const {
-    return m_perpendicularOffset;
+    return impl_->perpendicularOffset;
 }
 
 void PolygonSymbolizer::SetGraphicFill(bool enabled) {
-    m_graphicFill = enabled;
+    impl_->graphicFill = enabled;
 }
 
 bool PolygonSymbolizer::HasGraphicFill() const {
-    return m_graphicFill;
+    return impl_->graphicFill;
 }
 
 void PolygonSymbolizer::SetGraphicFillSize(double size) {
-    m_graphicFillSize = size;
+    impl_->graphicFillSize = size;
 }
 
 double PolygonSymbolizer::GetGraphicFillSize() const {
-    return m_graphicFillSize;
+    return impl_->graphicFillSize;
 }
 
 void PolygonSymbolizer::SetGraphicFillSpacing(double spacing) {
-    m_graphicFillSpacing = spacing;
+    impl_->graphicFillSpacing = spacing;
 }
 
 double PolygonSymbolizer::GetGraphicFillSpacing() const {
-    return m_graphicFillSpacing;
+    return impl_->graphicFillSpacing;
 }
 
 SymbolizerPtr PolygonSymbolizer::Clone() const {
     auto sym = std::make_shared<PolygonSymbolizer>();
-    sym->m_fillColor = m_fillColor;
-    sym->m_fillOpacity = m_fillOpacity;
-    sym->m_strokeColor = m_strokeColor;
-    sym->m_strokeWidth = m_strokeWidth;
-    sym->m_strokeOpacity = m_strokeOpacity;
-    sym->m_fillPattern = m_fillPattern;
-    sym->m_displacementX = m_displacementX;
-    sym->m_displacementY = m_displacementY;
-    sym->m_perpendicularOffset = m_perpendicularOffset;
-    sym->m_graphicFill = m_graphicFill;
-    sym->m_graphicFillSize = m_graphicFillSize;
-    sym->m_graphicFillSpacing = m_graphicFillSpacing;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
-    sym->m_opacity = m_opacity;
+    sym->impl_->fillColor = impl_->fillColor;
+    sym->impl_->fillOpacity = impl_->fillOpacity;
+    sym->impl_->strokeColor = impl_->strokeColor;
+    sym->impl_->strokeWidth = impl_->strokeWidth;
+    sym->impl_->strokeOpacity = impl_->strokeOpacity;
+    sym->impl_->fillPattern = impl_->fillPattern;
+    sym->impl_->displacementX = impl_->displacementX;
+    sym->impl_->displacementY = impl_->displacementY;
+    sym->impl_->perpendicularOffset = impl_->perpendicularOffset;
+    sym->impl_->graphicFill = impl_->graphicFill;
+    sym->impl_->graphicFillSize = impl_->graphicFillSize;
+    sym->impl_->graphicFillSpacing = impl_->graphicFillSpacing;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
+    sym->SetOpacity(GetOpacity());
     return sym;
 }
 
@@ -241,8 +232,8 @@ ogc::draw::DrawResult PolygonSymbolizer::DrawPolygon(ogc::draw::DrawContextPtr c
     
     for (size_t i = 0; i < numPoints; ++i) {
         ogc::Coordinate coord = exteriorRing->GetPointN(i);
-        x[i] = coord.x + m_displacementX;
-        y[i] = coord.y + m_displacementY;
+        x[i] = coord.x + impl_->displacementX;
+        y[i] = coord.y + impl_->displacementY;
     }
     
     context->Save();

@@ -5,6 +5,7 @@
 #include "ogc/geom/linearring.h"
 #include "ogc/geom/geometrycollection.h"
 #include "ogc/geom/visitor.h"
+#include "geometry_impl_internal.h"
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
@@ -95,6 +96,10 @@ double Cross(const Coordinate& o, const Coordinate& a, const Coordinate& b) {
 }
 
 }
+Geometry::Geometry() : impl_(std::make_unique<Impl>()) {
+}
+
+Geometry::~Geometry() = default;
 
 bool Geometry::IsValid(std::string* reason) const {
     if (IsEmpty()) {
@@ -132,18 +137,32 @@ double Geometry::Area() const {
     return 0.0;
 }
 
+int Geometry::GetSRID() const noexcept {
+    return impl_->srid;
+}
+
+void Geometry::SetSRID(int srid) noexcept {
+    impl_->srid = srid;
+}
+
+void Geometry::InvalidateCache() const {
+    std::unique_lock<std::mutex> lock(impl_->cache_mutex);
+    impl_->envelope_cache.reset();
+    impl_->centroid_cache.reset();
+}
+
 double Geometry::Length() const {
     return 0.0;
 }
 
 const Envelope& Geometry::GetEnvelope() const {
-    if (!m_envelope_cache) {
-        std::unique_lock<std::mutex> lock(m_cache_mutex);
-        if (!m_envelope_cache) {
-            m_envelope_cache.reset(new Envelope(ComputeEnvelope()));
+    if (!impl_->envelope_cache) {
+        std::unique_lock<std::mutex> lock(impl_->cache_mutex);
+        if (!impl_->envelope_cache) {
+            impl_->envelope_cache.reset(new Envelope(ComputeEnvelope()));
         }
     }
-    return *m_envelope_cache;
+    return *impl_->envelope_cache;
 }
 
 GeometryPtr Geometry::GetEnvelopeGeometry() const {
@@ -155,13 +174,13 @@ GeometryPtr Geometry::GetEnvelopeGeometry() const {
 }
 
 Coordinate Geometry::GetCentroid() const {
-    if (!m_centroid_cache) {
-        std::unique_lock<std::mutex> lock(m_cache_mutex);
-        if (!m_centroid_cache) {
-            m_centroid_cache.reset(new Coordinate(ComputeCentroid()));
+    if (!impl_->centroid_cache) {
+        std::unique_lock<std::mutex> lock(impl_->cache_mutex);
+        if (!impl_->centroid_cache) {
+            impl_->centroid_cache.reset(new Coordinate(ComputeCentroid()));
         }
     }
-    return *m_centroid_cache;
+    return *impl_->centroid_cache;
 }
 
 Coordinate Geometry::GetPointOnSurface() const {

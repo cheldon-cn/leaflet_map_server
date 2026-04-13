@@ -1,6 +1,7 @@
 #include "ogc/geom/multilinestring.h"
 #include "ogc/geom/visitor.h"
 #include "ogc/geom/serialization_utils.h"
+#include "geometry_impl_internal.h"
 #include <sstream>
 #include <iomanip>
 

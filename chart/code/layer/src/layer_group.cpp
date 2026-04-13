@@ -4,13 +4,23 @@
 
 namespace ogc {
 
+struct CNLayerWrapper::Impl {
+    std::unique_ptr<CNLayer> layer;
+    bool visible = true;
+    int z_order = 0;
+    CNLayerNode* parent = nullptr;
+};
+
 CNLayerWrapper::CNLayerWrapper(std::unique_ptr<CNLayer> layer)
-    : layer_(std::move(layer)) {
+    : impl_(std::make_unique<Impl>()) {
+    impl_->layer = std::move(layer);
 }
+
+CNLayerWrapper::~CNLayerWrapper() = default;
 
 const std::string& CNLayerWrapper::GetName() const {
     static const std::string empty;
-    return layer_ ? layer_->GetName() : empty;
+    return impl_->layer ? impl_->layer->GetName() : empty;
 }
 
 void CNLayerWrapper::SetName(const std::string& name) {
@@ -18,87 +28,121 @@ void CNLayerWrapper::SetName(const std::string& name) {
 }
 
 bool CNLayerWrapper::IsVisible() const {
-    return visible_;
+    return impl_->visible;
 }
 
 void CNLayerWrapper::SetVisible(bool visible) {
-    visible_ = visible;
+    impl_->visible = visible;
 }
 
 CNLayerNode* CNLayerWrapper::GetParent() {
-    return parent_;
+    return impl_->parent;
 }
 
 const CNLayerNode* CNLayerWrapper::GetParent() const {
-    return parent_;
+    return impl_->parent;
 }
 
 void CNLayerWrapper::SetParent(CNLayerNode* parent) {
-    parent_ = parent;
+    impl_->parent = parent;
 }
 
 CNLayer* CNLayerWrapper::GetLayer() {
-    return layer_.get();
+    return impl_->layer.get();
 }
 
 const CNLayer* CNLayerWrapper::GetLayer() const {
-    return layer_.get();
+    return impl_->layer.get();
+}
+
+int CNLayerWrapper::GetZOrder() const {
+    return impl_->z_order;
+}
+
+void CNLayerWrapper::SetZOrder(int z_order) {
+    impl_->z_order = z_order;
+}
+
+struct CNLayerGroup::Impl {
+    std::string name;
+    bool visible = true;
+    int z_order = 0;
+    CNLayerNode* parent = nullptr;
+    std::vector<std::unique_ptr<CNLayerWrapper>> layers;
+    std::vector<std::unique_ptr<CNLayerGroup>> groups;
+};
+
+CNLayerGroup::CNLayerGroup() : impl_(std::make_unique<Impl>()) {
 }
 
 CNLayerGroup::CNLayerGroup(const std::string& name)
-    : name_(name) {
+    : impl_(std::make_unique<Impl>()) {
+    impl_->name = name;
 }
 
+CNLayerGroup::CNLayerGroup(CNLayerGroup&& other) noexcept
+    : impl_(std::move(other.impl_)) {
+}
+
+CNLayerGroup& CNLayerGroup::operator=(CNLayerGroup&& other) noexcept {
+    if (this != &other) {
+        impl_ = std::move(other.impl_);
+    }
+    return *this;
+}
+
+CNLayerGroup::~CNLayerGroup() = default;
+
 const std::string& CNLayerGroup::GetName() const {
-    return name_;
+    return impl_->name;
 }
 
 void CNLayerGroup::SetName(const std::string& name) {
-    name_ = name;
+    impl_->name = name;
 }
 
 bool CNLayerGroup::IsVisible() const {
-    return visible_;
+    return impl_->visible;
 }
 
 void CNLayerGroup::SetVisible(bool visible) {
-    visible_ = visible;
+    impl_->visible = visible;
 }
 
 CNLayerNode* CNLayerGroup::GetParent() {
-    return parent_;
+    return impl_->parent;
 }
 
 const CNLayerNode* CNLayerGroup::GetParent() const {
-    return parent_;
+    return impl_->parent;
 }
 
 void CNLayerGroup::SetParent(CNLayerNode* node) {
-    parent_ = node;
+    impl_->parent = node;
 }
 
 size_t CNLayerGroup::GetChildCount() const {
-    return layers_.size() + groups_.size();
+    return impl_->layers.size() + impl_->groups.size();
 }
 
 CNLayerNode* CNLayerGroup::GetChild(size_t index) {
-    if (index < layers_.size()) {
-        return layers_[index].get();
+    if (index < impl_->layers.size()) {
+        return impl_->layers[index].get();
     }
-    index -= layers_.size();
-    if (index < groups_.size()) {
-        return groups_[index].get();
+    index -= impl_->layers.size();
+    if (index < impl_->groups.size()) {
+        return impl_->groups[index].get();
     }
     return nullptr;
 }
 
 const CNLayerNode* CNLayerGroup::GetChild(size_t index) const {
-    if (index < layers_.size()) {
-        return layers_[index].get();
+    if (index < impl_->layers.size()) {
+        return impl_->layers[index].get();
     }
-    index -= layers_.size();
-    if (index < groups_.size()) {
-        return groups_[index].get();
+    index -= impl_->layers.size();
+    if (index < impl_->groups.size()) {
+        return impl_->groups[index].get();
     }
     return nullptr;
 }
@@ -109,19 +153,19 @@ void CNLayerGroup::AddChild(std::unique_ptr<CNLayerNode> child) {
     if (child->GetNodeType() == CNLayerNodeType::kLayer) {
         CNLayerWrapper* wrapper = dynamic_cast<CNLayerWrapper*>(child.get());
         if (wrapper) {
-            auto raw = child.release();
+            child.release();
             std::unique_ptr<CNLayerWrapper> owned_wrapper(wrapper);
             owned_wrapper->SetParent(this);
-            layers_.push_back(std::move(owned_wrapper));
+            impl_->layers.push_back(std::move(owned_wrapper));
             return;
         }
     } else if (child->GetNodeType() == CNLayerNodeType::kGroup) {
         CNLayerGroup* group = dynamic_cast<CNLayerGroup*>(child.get());
         if (group) {
-            auto raw = child.release();
+            child.release();
             std::unique_ptr<CNLayerGroup> owned_group(group);
             owned_group->SetParent(this);
-            groups_.push_back(std::move(owned_group));
+            impl_->groups.push_back(std::move(owned_group));
             return;
         }
     }
@@ -132,50 +176,50 @@ void CNLayerGroup::InsertChild(size_t index, std::unique_ptr<CNLayerNode> child)
 
     if (child->GetNodeType() == CNLayerNodeType::kLayer) {
         CNLayerWrapper* wrapper = dynamic_cast<CNLayerWrapper*>(child.get());
-        if (wrapper && index <= layers_.size()) {
-            auto raw = child.release();
+        if (wrapper && index <= impl_->layers.size()) {
+            child.release();
             std::unique_ptr<CNLayerWrapper> owned_wrapper(wrapper);
             owned_wrapper->SetParent(this);
-            layers_.insert(layers_.begin() + index, std::move(owned_wrapper));
+            impl_->layers.insert(impl_->layers.begin() + index, std::move(owned_wrapper));
             return;
         }
     } else if (child->GetNodeType() == CNLayerNodeType::kGroup) {
         CNLayerGroup* group = dynamic_cast<CNLayerGroup*>(child.get());
         if (group) {
-            index = (index <= layers_.size() ? layers_.size() : index - layers_.size());
-            auto raw = child.release();
+            index = (index <= impl_->layers.size() ? impl_->layers.size() : index - impl_->layers.size());
+            child.release();
             std::unique_ptr<CNLayerGroup> owned_group(group);
             owned_group->SetParent(this);
-            groups_.insert(groups_.begin() + index, std::move(owned_group));
+            impl_->groups.insert(impl_->groups.begin() + index, std::move(owned_group));
             return;
         }
     }
 }
 
 std::unique_ptr<CNLayerNode> CNLayerGroup::RemoveChild(size_t index) {
-    if (index < layers_.size()) {
-        layers_[index]->SetParent(nullptr);
-        auto wrapper = layers_[index].release();
-        layers_.erase(layers_.begin() + index);
+    if (index < impl_->layers.size()) {
+        impl_->layers[index]->SetParent(nullptr);
+        auto wrapper = impl_->layers[index].release();
+        impl_->layers.erase(impl_->layers.begin() + index);
         return std::unique_ptr<CNLayerNode>(wrapper);
     }
-    index -= layers_.size();
-    if (index < groups_.size()) {
-        groups_[index]->SetParent(nullptr);
-        auto group = groups_[index].release();
-        groups_.erase(groups_.begin() + index);
+    index -= impl_->layers.size();
+    if (index < impl_->groups.size()) {
+        impl_->groups[index]->SetParent(nullptr);
+        auto group = impl_->groups[index].release();
+        impl_->groups.erase(impl_->groups.begin() + index);
         return std::unique_ptr<CNLayerNode>(group);
     }
     return nullptr;
 }
 
 CNLayerNode* CNLayerGroup::FindChild(const std::string& name) {
-    for (auto& layer : layers_) {
+    for (auto& layer : impl_->layers) {
         if (layer->GetName() == name) {
             return layer.get();
         }
     }
-    for (auto& group : groups_) {
+    for (auto& group : impl_->groups) {
         if (group->GetName() == name) {
             return group.get();
         }
@@ -184,24 +228,24 @@ CNLayerNode* CNLayerGroup::FindChild(const std::string& name) {
 }
 
 void CNLayerGroup::ClearChildren() {
-    layers_.clear();
-    groups_.clear();
+    impl_->layers.clear();
+    impl_->groups.clear();
 }
 
 int CNLayerGroup::GetLayerCount() const {
-    int count = static_cast<int>(layers_.size());
-    for (auto& group : groups_) {
+    int count = static_cast<int>(impl_->layers.size());
+    for (auto& group : impl_->groups) {
         count += group->GetLayerCount();
     }
     return count;
 }
 
 CNLayer* CNLayerGroup::GetLayer(size_t index) {
-    if (index < layers_.size()) {
-        return layers_[index]->GetLayer();
+    if (index < impl_->layers.size()) {
+        return impl_->layers[index]->GetLayer();
     }
-    index -= layers_.size();
-    for (auto& group : groups_) {
+    index -= impl_->layers.size();
+    for (auto& group : impl_->groups) {
         if (index < static_cast<size_t>(group->GetLayerCount())) {
             return group->GetLayer(index);
         }
@@ -211,19 +255,19 @@ CNLayer* CNLayerGroup::GetLayer(size_t index) {
 }
 
 int CNLayerGroup::GetGroupCount() const {
-    return static_cast<int>(groups_.size());
+    return static_cast<int>(impl_->groups.size());
 }
 
 CNLayerGroup* CNLayerGroup::GetGroup(size_t index) {
-    if (index < groups_.size()) {
-        return groups_[index].get();
+    if (index < impl_->groups.size()) {
+        return impl_->groups[index].get();
     }
     return nullptr;
 }
 
 const CNLayerGroup* CNLayerGroup::GetGroup(size_t index) const {
-    if (index < groups_.size()) {
-        return groups_[index].get();
+    if (index < impl_->groups.size()) {
+        return impl_->groups[index].get();
     }
     return nullptr;
 }
@@ -232,25 +276,25 @@ void CNLayerGroup::AddLayer(std::unique_ptr<CNLayer> layer) {
     if (layer) {
         auto wrapper = std::make_unique<CNLayerWrapper>(std::move(layer));
         wrapper->SetParent(this);
-        layers_.push_back(std::move(wrapper));
+        impl_->layers.push_back(std::move(wrapper));
     }
 }
 
 void CNLayerGroup::AddGroup(std::unique_ptr<CNLayerGroup> group) {
     if (group) {
         group->SetParent(this);
-        groups_.push_back(std::move(group));
+        impl_->groups.push_back(std::move(group));
     }
 }
 
 CNStatus CNLayerGroup::StartTransaction() {
-    for (auto& layer : layers_) {
+    for (auto& layer : impl_->layers) {
         CNStatus status = layer->GetLayer()->StartTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
         }
     }
-    for (auto& group : groups_) {
+    for (auto& group : impl_->groups) {
         CNStatus status = group->StartTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
@@ -260,13 +304,13 @@ CNStatus CNLayerGroup::StartTransaction() {
 }
 
 CNStatus CNLayerGroup::CommitTransaction() {
-    for (auto& layer : layers_) {
+    for (auto& layer : impl_->layers) {
         CNStatus status = layer->GetLayer()->CommitTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
         }
     }
-    for (auto& group : groups_) {
+    for (auto& group : impl_->groups) {
         CNStatus status = group->CommitTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
@@ -276,13 +320,13 @@ CNStatus CNLayerGroup::CommitTransaction() {
 }
 
 CNStatus CNLayerGroup::RollbackTransaction() {
-    for (auto& layer : layers_) {
+    for (auto& layer : impl_->layers) {
         CNStatus status = layer->GetLayer()->RollbackTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
         }
     }
-    for (auto& group : groups_) {
+    for (auto& group : impl_->groups) {
         CNStatus status = group->RollbackTransaction();
         if (status != CNStatus::kSuccess) {
             return status;
@@ -291,18 +335,26 @@ CNStatus CNLayerGroup::RollbackTransaction() {
     return CNStatus::kSuccess;
 }
 
+int CNLayerGroup::GetZOrder() const {
+    return impl_->z_order;
+}
+
+void CNLayerGroup::SetZOrder(int z_order) {
+    impl_->z_order = z_order;
+}
+
 void CNLayerGroup::SortByZOrder() {
-    std::stable_sort(layers_.begin(), layers_.end(),
+    std::stable_sort(impl_->layers.begin(), impl_->layers.end(),
         [](const std::unique_ptr<CNLayerWrapper>& a,
            const std::unique_ptr<CNLayerWrapper>& b) {
             return a->GetZOrder() < b->GetZOrder();
         });
-    std::stable_sort(groups_.begin(), groups_.end(),
+    std::stable_sort(impl_->groups.begin(), impl_->groups.end(),
         [](const std::unique_ptr<CNLayerGroup>& a,
            const std::unique_ptr<CNLayerGroup>& b) {
             return a->GetZOrder() < b->GetZOrder();
         });
-    for (auto& group : groups_) {
+    for (auto& group : impl_->groups) {
         group->SortByZOrder();
     }
 }

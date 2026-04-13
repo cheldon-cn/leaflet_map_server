@@ -6,7 +6,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <mutex>
 
 namespace ogc {
 namespace cache {
@@ -40,15 +39,8 @@ public:
     static void Destroy(CacheManager* mgr);
 
 private:
-    struct CacheEntry {
-        std::string name;
-        TileCachePtr cache;
-    };
-
-    std::vector<CacheEntry> m_caches;
-    mutable std::mutex m_mutex;
-
-    size_t FindCacheIndex(const std::string& name) const;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 typedef std::unique_ptr<CacheManager> CacheManagerPtr;

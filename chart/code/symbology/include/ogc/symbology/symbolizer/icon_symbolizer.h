@@ -16,10 +16,10 @@ class OGC_SYMBOLOGY_API IconSymbolizer : public Symbolizer {
 public:
     IconSymbolizer();
     explicit IconSymbolizer(const std::string& iconPath);
-    ~IconSymbolizer() override = default;
+    ~IconSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kIcon; }
-    std::string GetName() const override { return m_name.empty() ? "IconSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -70,22 +70,8 @@ public:
 private:
     ogc::draw::DrawResult DrawIcon(ogc::draw::DrawContextPtr context, double x, double y);
     
-    std::string m_iconPath;
-    std::vector<uint8_t> m_iconData;
-    int m_dataWidth;
-    int m_dataHeight;
-    int m_dataChannels;
-    double m_width;
-    double m_height;
-    double m_opacity;
-    double m_rotation;
-    double m_anchorX;
-    double m_anchorY;
-    double m_displacementX;
-    double m_displacementY;
-    bool m_allowOverlap;
-    uint32_t m_colorReplacement;
-    bool m_hasColorReplacement;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

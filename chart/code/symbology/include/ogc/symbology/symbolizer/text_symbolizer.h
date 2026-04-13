@@ -35,10 +35,10 @@ class OGC_SYMBOLOGY_API TextSymbolizer : public Symbolizer {
 public:
     TextSymbolizer();
     explicit TextSymbolizer(const std::string& label, const ogc::draw::Font& font, uint32_t color);
-    ~TextSymbolizer() override = default;
+    ~TextSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kText; }
-    std::string GetName() const override { return m_name.empty() ? "TextSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -114,35 +114,13 @@ public:
     static TextSymbolizerPtr Create(const std::string& label, const ogc::draw::Font& font, uint32_t color);
 
 private:
+    struct TextImpl;
+    std::unique_ptr<TextImpl> textImpl_;
+    
     ogc::draw::DrawResult DrawTextAtPoint(ogc::draw::DrawContextPtr context, double x, double y, const std::string& text);
     ogc::draw::DrawResult DrawTextAlongLine(ogc::draw::DrawContextPtr context, const ogc::LineString* lineString, const std::string& text);
     ogc::draw::DrawResult DrawTextInPolygon(ogc::draw::DrawContextPtr context, const ogc::Polygon* polygon, const std::string& text);
     std::string GetLabelText(const Geometry* geometry) const;
-    
-    std::string m_label;
-    std::string m_labelProperty;
-    ogc::draw::Font m_font;
-    uint32_t m_color;
-    double m_opacity;
-    TextHorizontalAlignment m_horizontalAlignment;
-    TextVerticalAlignment m_verticalAlignment;
-    TextPlacement m_placement;
-    double m_offsetX;
-    double m_offsetY;
-    double m_rotation;
-    double m_maxAngleDelta;
-    bool m_followLine;
-    double m_maxDisplacement;
-    double m_repeatDistance;
-    uint32_t m_haloColor;
-    double m_haloRadius;
-    double m_haloOpacity;
-    uint32_t m_backgroundColor;
-    double m_perpendicularOffset;
-    double m_anchorX;
-    double m_anchorY;
-    double m_displacementX;
-    double m_displacementY;
 };
 
 }

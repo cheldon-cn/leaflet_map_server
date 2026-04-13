@@ -7,49 +7,53 @@
 namespace ogc {
 namespace symbology {
 
+struct TextSymbolizer::TextImpl {
+    std::string label;
+    std::string labelProperty;
+    ogc::draw::Font font{"Arial", 12.0};
+    uint32_t color = 0xFF000000;
+    double opacity = 1.0;
+    TextHorizontalAlignment horizontalAlignment = TextHorizontalAlignment::kCenter;
+    TextVerticalAlignment verticalAlignment = TextVerticalAlignment::kMiddle;
+    TextPlacement placement = TextPlacement::kPoint;
+    double offsetX = 0.0;
+    double offsetY = 0.0;
+    double rotation = 0.0;
+    double maxAngleDelta = 22.5;
+    bool followLine = false;
+    double maxDisplacement = 0.0;
+    double repeatDistance = 0.0;
+    uint32_t haloColor = 0x00FFFFFF;
+    double haloRadius = 0.0;
+    double haloOpacity = 0.0;
+    uint32_t backgroundColor = 0x00000000;
+    double perpendicularOffset = 0.0;
+    double anchorX = 0.0;
+    double anchorY = 0.0;
+    double displacementX = 0.0;
+    double displacementY = 0.0;
+};
+
 TextSymbolizer::TextSymbolizer()
-    : m_font("Arial", 12.0)
-    , m_color(0xFF000000)
-    , m_opacity(1.0)
-    , m_horizontalAlignment(TextHorizontalAlignment::kCenter)
-    , m_verticalAlignment(TextVerticalAlignment::kMiddle)
-    , m_placement(TextPlacement::kPoint)
-    , m_offsetX(0.0)
-    , m_offsetY(0.0)
-    , m_rotation(0.0)
-    , m_maxAngleDelta(22.5)
-    , m_followLine(false)
-    , m_maxDisplacement(0.0)
-    , m_repeatDistance(0.0)
-    , m_haloColor(0x00FFFFFF)
-    , m_haloRadius(0.0)
-    , m_haloOpacity(0.0)
-    , m_backgroundColor(0x00000000) {
+    : textImpl_(std::make_unique<TextImpl>()) {
 }
 
 TextSymbolizer::TextSymbolizer(const std::string& label, const ogc::draw::Font& font, uint32_t color)
-    : m_label(label)
-    , m_font(font)
-    , m_color(color)
-    , m_opacity(1.0)
-    , m_horizontalAlignment(TextHorizontalAlignment::kCenter)
-    , m_verticalAlignment(TextVerticalAlignment::kMiddle)
-    , m_placement(TextPlacement::kPoint)
-    , m_offsetX(0.0)
-    , m_offsetY(0.0)
-    , m_rotation(0.0)
-    , m_maxAngleDelta(22.5)
-    , m_followLine(false)
-    , m_maxDisplacement(0.0)
-    , m_repeatDistance(0.0)
-    , m_haloColor(0x00FFFFFF)
-    , m_haloRadius(0.0)
-    , m_haloOpacity(0.0)
-    , m_backgroundColor(0x00000000) {
+    : textImpl_(std::make_unique<TextImpl>()) {
+    textImpl_->label = label;
+    textImpl_->font = font;
+    textImpl_->color = color;
+}
+
+TextSymbolizer::~TextSymbolizer() = default;
+
+std::string TextSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "TextSymbolizer" : name;
 }
 
 ogc::draw::DrawResult TextSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, DefaultStyleRef());
 }
 
 ogc::draw::DrawResult TextSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -57,7 +61,7 @@ ogc::draw::DrawResult TextSymbolizer::Symbolize(ogc::draw::DrawContextPtr contex
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!EnabledRef()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -75,7 +79,7 @@ ogc::draw::DrawResult TextSymbolizer::Symbolize(ogc::draw::DrawContextPtr contex
     
     GeomType geomType = geometry->GetGeometryType();
     
-    switch (m_placement) {
+    switch (textImpl_->placement) {
         case TextPlacement::kPoint:
             if (geomType == GeomType::kPoint) {
                 const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
@@ -119,211 +123,211 @@ bool TextSymbolizer::CanSymbolize(GeomType geomType) const {
 }
 
 void TextSymbolizer::SetLabel(const std::string& label) {
-    m_label = label;
+    textImpl_->label = label;
 }
 
 std::string TextSymbolizer::GetLabel() const {
-    return m_label;
+    return textImpl_->label;
 }
 
 void TextSymbolizer::SetLabelProperty(const std::string& propertyName) {
-    m_labelProperty = propertyName;
+    textImpl_->labelProperty = propertyName;
 }
 
 std::string TextSymbolizer::GetLabelProperty() const {
-    return m_labelProperty;
+    return textImpl_->labelProperty;
 }
 
 void TextSymbolizer::SetFont(const ogc::draw::Font& font) {
-    m_font = font;
+    textImpl_->font = font;
 }
 
 ogc::draw::Font TextSymbolizer::GetFont() const {
-    return m_font;
+    return textImpl_->font;
 }
 
 void TextSymbolizer::SetColor(uint32_t color) {
-    m_color = color;
+    textImpl_->color = color;
 }
 
 uint32_t TextSymbolizer::GetColor() const {
-    return m_color;
+    return textImpl_->color;
 }
 
 void TextSymbolizer::SetOpacity(double opacity) {
-    m_opacity = opacity;
+    textImpl_->opacity = opacity;
 }
 
 double TextSymbolizer::GetOpacity() const {
-    return m_opacity;
+    return textImpl_->opacity;
 }
 
 void TextSymbolizer::SetHorizontalAlignment(TextHorizontalAlignment alignment) {
-    m_horizontalAlignment = alignment;
+    textImpl_->horizontalAlignment = alignment;
 }
 
 TextHorizontalAlignment TextSymbolizer::GetHorizontalAlignment() const {
-    return m_horizontalAlignment;
+    return textImpl_->horizontalAlignment;
 }
 
 void TextSymbolizer::SetVerticalAlignment(TextVerticalAlignment alignment) {
-    m_verticalAlignment = alignment;
+    textImpl_->verticalAlignment = alignment;
 }
 
 TextVerticalAlignment TextSymbolizer::GetVerticalAlignment() const {
-    return m_verticalAlignment;
+    return textImpl_->verticalAlignment;
 }
 
 void TextSymbolizer::SetPlacement(TextPlacement placement) {
-    m_placement = placement;
+    textImpl_->placement = placement;
 }
 
 TextPlacement TextSymbolizer::GetPlacement() const {
-    return m_placement;
+    return textImpl_->placement;
 }
 
 void TextSymbolizer::SetOffset(double dx, double dy) {
-    m_offsetX = dx;
-    m_offsetY = dy;
+    textImpl_->offsetX = dx;
+    textImpl_->offsetY = dy;
 }
 
 void TextSymbolizer::GetOffset(double& dx, double& dy) const {
-    dx = m_offsetX;
-    dy = m_offsetY;
+    dx = textImpl_->offsetX;
+    dy = textImpl_->offsetY;
 }
 
 void TextSymbolizer::SetRotation(double angle) {
-    m_rotation = angle;
+    textImpl_->rotation = angle;
 }
 
 double TextSymbolizer::GetRotation() const {
-    return m_rotation;
+    return textImpl_->rotation;
 }
 
 void TextSymbolizer::SetMaxAngleDelta(double delta) {
-    m_maxAngleDelta = delta;
+    textImpl_->maxAngleDelta = delta;
 }
 
 double TextSymbolizer::GetMaxAngleDelta() const {
-    return m_maxAngleDelta;
+    return textImpl_->maxAngleDelta;
 }
 
 void TextSymbolizer::SetFollowLine(bool follow) {
-    m_followLine = follow;
+    textImpl_->followLine = follow;
 }
 
 bool TextSymbolizer::GetFollowLine() const {
-    return m_followLine;
+    return textImpl_->followLine;
 }
 
 void TextSymbolizer::SetMaxDisplacement(double displacement) {
-    m_maxDisplacement = displacement;
+    textImpl_->maxDisplacement = displacement;
 }
 
 double TextSymbolizer::GetMaxDisplacement() const {
-    return m_maxDisplacement;
+    return textImpl_->maxDisplacement;
 }
 
 void TextSymbolizer::SetRepeatDistance(double distance) {
-    m_repeatDistance = distance;
+    textImpl_->repeatDistance = distance;
 }
 
 double TextSymbolizer::GetRepeatDistance() const {
-    return m_repeatDistance;
+    return textImpl_->repeatDistance;
 }
 
 void TextSymbolizer::SetHaloColor(uint32_t color) {
-    m_haloColor = color;
+    textImpl_->haloColor = color;
 }
 
 uint32_t TextSymbolizer::GetHaloColor() const {
-    return m_haloColor;
+    return textImpl_->haloColor;
 }
 
 void TextSymbolizer::SetHaloRadius(double radius) {
-    m_haloRadius = radius;
+    textImpl_->haloRadius = radius;
 }
 
 double TextSymbolizer::GetHaloRadius() const {
-    return m_haloRadius;
+    return textImpl_->haloRadius;
 }
 
 void TextSymbolizer::SetHaloOpacity(double opacity) {
-    m_haloOpacity = opacity;
+    textImpl_->haloOpacity = opacity;
 }
 
 double TextSymbolizer::GetHaloOpacity() const {
-    return m_haloOpacity;
+    return textImpl_->haloOpacity;
 }
 
 void TextSymbolizer::SetBackgroundColor(uint32_t color) {
-    m_backgroundColor = color;
+    textImpl_->backgroundColor = color;
 }
 
 uint32_t TextSymbolizer::GetBackgroundColor() const {
-    return m_backgroundColor;
+    return textImpl_->backgroundColor;
 }
 
 void TextSymbolizer::SetPerpendicularOffset(double offset) {
-    m_perpendicularOffset = offset;
+    textImpl_->perpendicularOffset = offset;
 }
 
 double TextSymbolizer::GetPerpendicularOffset() const {
-    return m_perpendicularOffset;
+    return textImpl_->perpendicularOffset;
 }
 
 void TextSymbolizer::SetAnchorPoint(double x, double y) {
-    m_anchorX = x;
-    m_anchorY = y;
+    textImpl_->anchorX = x;
+    textImpl_->anchorY = y;
 }
 
 void TextSymbolizer::GetAnchorPoint(double& x, double& y) const {
-    x = m_anchorX;
-    y = m_anchorY;
+    x = textImpl_->anchorX;
+    y = textImpl_->anchorY;
 }
 
 void TextSymbolizer::SetDisplacement(double dx, double dy) {
-    m_displacementX = dx;
-    m_displacementY = dy;
+    textImpl_->displacementX = dx;
+    textImpl_->displacementY = dy;
 }
 
 void TextSymbolizer::GetDisplacement(double& dx, double& dy) const {
-    dx = m_displacementX;
-    dy = m_displacementY;
+    dx = textImpl_->displacementX;
+    dy = textImpl_->displacementY;
 }
 
 SymbolizerPtr TextSymbolizer::Clone() const {
     auto sym = std::make_shared<TextSymbolizer>();
-    sym->m_label = m_label;
-    sym->m_labelProperty = m_labelProperty;
-    sym->m_font = m_font;
-    sym->m_color = m_color;
-    sym->m_opacity = m_opacity;
-    sym->m_horizontalAlignment = m_horizontalAlignment;
-    sym->m_verticalAlignment = m_verticalAlignment;
-    sym->m_placement = m_placement;
-    sym->m_offsetX = m_offsetX;
-    sym->m_offsetY = m_offsetY;
-    sym->m_rotation = m_rotation;
-    sym->m_maxAngleDelta = m_maxAngleDelta;
-    sym->m_followLine = m_followLine;
-    sym->m_maxDisplacement = m_maxDisplacement;
-    sym->m_repeatDistance = m_repeatDistance;
-    sym->m_haloColor = m_haloColor;
-    sym->m_haloRadius = m_haloRadius;
-    sym->m_haloOpacity = m_haloOpacity;
-    sym->m_backgroundColor = m_backgroundColor;
-    sym->m_perpendicularOffset = m_perpendicularOffset;
-    sym->m_anchorX = m_anchorX;
-    sym->m_anchorY = m_anchorY;
-    sym->m_displacementX = m_displacementX;
-    sym->m_displacementY = m_displacementY;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
+    sym->textImpl_->label = textImpl_->label;
+    sym->textImpl_->labelProperty = textImpl_->labelProperty;
+    sym->textImpl_->font = textImpl_->font;
+    sym->textImpl_->color = textImpl_->color;
+    sym->textImpl_->opacity = textImpl_->opacity;
+    sym->textImpl_->horizontalAlignment = textImpl_->horizontalAlignment;
+    sym->textImpl_->verticalAlignment = textImpl_->verticalAlignment;
+    sym->textImpl_->placement = textImpl_->placement;
+    sym->textImpl_->offsetX = textImpl_->offsetX;
+    sym->textImpl_->offsetY = textImpl_->offsetY;
+    sym->textImpl_->rotation = textImpl_->rotation;
+    sym->textImpl_->maxAngleDelta = textImpl_->maxAngleDelta;
+    sym->textImpl_->followLine = textImpl_->followLine;
+    sym->textImpl_->maxDisplacement = textImpl_->maxDisplacement;
+    sym->textImpl_->repeatDistance = textImpl_->repeatDistance;
+    sym->textImpl_->haloColor = textImpl_->haloColor;
+    sym->textImpl_->haloRadius = textImpl_->haloRadius;
+    sym->textImpl_->haloOpacity = textImpl_->haloOpacity;
+    sym->textImpl_->backgroundColor = textImpl_->backgroundColor;
+    sym->textImpl_->perpendicularOffset = textImpl_->perpendicularOffset;
+    sym->textImpl_->anchorX = textImpl_->anchorX;
+    sym->textImpl_->anchorY = textImpl_->anchorY;
+    sym->textImpl_->displacementX = textImpl_->displacementX;
+    sym->textImpl_->displacementY = textImpl_->displacementY;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
     return sym;
 }
 
@@ -336,20 +340,20 @@ TextSymbolizerPtr TextSymbolizer::Create(const std::string& label, const ogc::dr
 }
 
 ogc::draw::DrawResult TextSymbolizer::DrawTextAtPoint(ogc::draw::DrawContextPtr context, double x, double y, const std::string& text) {
-    double drawX = x + m_offsetX;
-    double drawY = y + m_offsetY;
+    double drawX = x + textImpl_->offsetX;
+    double drawY = y + textImpl_->offsetY;
     
-    if (m_rotation != 0.0) {
+    if (textImpl_->rotation != 0.0) {
         context->Save();
         context->Translate(drawX, drawY);
-        context->Rotate(m_rotation);
+        context->Rotate(textImpl_->rotation);
         context->Translate(-drawX, -drawY);
     }
     
-    ogc::draw::Color textColor(m_color);
-    ogc::draw::DrawResult result = context->DrawText(drawX, drawY, text, m_font, textColor);
+    ogc::draw::Color textColor(textImpl_->color);
+    ogc::draw::DrawResult result = context->DrawText(drawX, drawY, text, textImpl_->font, textColor);
     
-    if (m_rotation != 0.0) {
+    if (textImpl_->rotation != 0.0) {
         context->Restore();
     }
     
@@ -387,7 +391,7 @@ ogc::draw::DrawResult TextSymbolizer::DrawTextInPolygon(ogc::draw::DrawContextPt
 
 std::string TextSymbolizer::GetLabelText(const Geometry* geometry) const {
     (void)geometry;
-    return m_label;
+    return textImpl_->label;
 }
 
 }

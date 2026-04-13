@@ -5,27 +5,90 @@
 namespace ogc {
 namespace symbology {
 
+struct SpatialFilter::Impl {
+    SpatialOperator op = SpatialOperator::kIntersects;
+    std::shared_ptr<Geometry> geometry;
+    Envelope envelope;
+    bool hasEnvelope = false;
+    std::string propertyName;
+};
+
 SpatialFilter::SpatialFilter(SpatialOperator op, const Geometry* geometry)
-    : m_operator(op)
-    , m_hasEnvelope(false)
+    : impl_(std::make_unique<Impl>())
 {
+    impl_->op = op;
     if (geometry) {
-        m_geometry = std::shared_ptr<Geometry>(geometry->Clone());
+        impl_->geometry = std::shared_ptr<Geometry>(geometry->Clone());
     }
 }
 
 SpatialFilter::SpatialFilter(SpatialOperator op, const Envelope& envelope)
-    : m_operator(op)
-    , m_envelope(envelope)
-    , m_hasEnvelope(true)
+    : impl_(std::make_unique<Impl>())
 {
+    impl_->op = op;
+    impl_->envelope = envelope;
+    impl_->hasEnvelope = true;
 }
 
 SpatialFilter::SpatialFilter(SpatialOperator op, std::shared_ptr<Geometry> geometry)
-    : m_operator(op)
-    , m_geometry(geometry)
-    , m_hasEnvelope(false)
+    : impl_(std::make_unique<Impl>())
 {
+    impl_->op = op;
+    impl_->geometry = geometry;
+}
+
+SpatialFilter::~SpatialFilter() = default;
+
+SpatialOperator SpatialFilter::GetOperator() const {
+    return impl_->op;
+}
+
+void SpatialFilter::SetOperator(SpatialOperator op) {
+    impl_->op = op;
+}
+
+const Geometry* SpatialFilter::GetGeometry() const {
+    return impl_->geometry.get();
+}
+
+void SpatialFilter::SetGeometry(const Geometry* geometry) {
+    if (geometry) {
+        impl_->geometry = std::shared_ptr<Geometry>(geometry->Clone());
+    } else {
+        impl_->geometry.reset();
+    }
+    impl_->hasEnvelope = false;
+}
+
+void SpatialFilter::SetGeometry(std::shared_ptr<Geometry> geometry) {
+    impl_->geometry = geometry;
+    impl_->hasEnvelope = false;
+}
+
+const Envelope& SpatialFilter::GetEnvelope() const {
+    return impl_->envelope;
+}
+
+void SpatialFilter::SetEnvelope(const Envelope& envelope) {
+    impl_->envelope = envelope;
+    impl_->hasEnvelope = true;
+    impl_->geometry.reset();
+}
+
+bool SpatialFilter::HasGeometry() const {
+    return impl_->geometry != nullptr;
+}
+
+bool SpatialFilter::HasEnvelope() const {
+    return impl_->hasEnvelope;
+}
+
+void SpatialFilter::SetPropertyName(const std::string& name) {
+    impl_->propertyName = name;
+}
+
+std::string SpatialFilter::GetPropertyName() const {
+    return impl_->propertyName;
 }
 
 bool SpatialFilter::Evaluate(const CNFeature* feature) const {
@@ -51,14 +114,14 @@ bool SpatialFilter::Evaluate(const Geometry* geometry) const {
 
 std::string SpatialFilter::ToString() const {
     std::ostringstream oss;
-    oss << OperatorToString(m_operator) << "(";
+    oss << OperatorToString(impl_->op) << "(";
     
-    if (m_hasEnvelope) {
-        oss << "BBOX(" << m_envelope.GetMinX() << "," 
-            << m_envelope.GetMinY() << ","
-            << m_envelope.GetMaxX() << ","
-            << m_envelope.GetMaxY() << ")";
-    } else if (m_geometry) {
+    if (impl_->hasEnvelope) {
+        oss << "BBOX(" << impl_->envelope.GetMinX() << "," 
+            << impl_->envelope.GetMinY() << ","
+            << impl_->envelope.GetMaxX() << ","
+            << impl_->envelope.GetMaxY() << ")";
+    } else if (impl_->geometry) {
         oss << "Geometry";
     }
     
@@ -67,32 +130,12 @@ std::string SpatialFilter::ToString() const {
 }
 
 FilterPtr SpatialFilter::Clone() const {
-    if (m_hasEnvelope) {
-        return std::make_shared<SpatialFilter>(m_operator, m_envelope);
-    } else if (m_geometry) {
-        return std::make_shared<SpatialFilter>(m_operator, m_geometry);
+    if (impl_->hasEnvelope) {
+        return std::make_shared<SpatialFilter>(impl_->op, impl_->envelope);
+    } else if (impl_->geometry) {
+        return std::make_shared<SpatialFilter>(impl_->op, impl_->geometry);
     }
-    return std::make_shared<SpatialFilter>(m_operator, nullptr);
-}
-
-void SpatialFilter::SetGeometry(const Geometry* geometry) {
-    if (geometry) {
-        m_geometry = std::shared_ptr<Geometry>(geometry->Clone());
-    } else {
-        m_geometry.reset();
-    }
-    m_hasEnvelope = false;
-}
-
-void SpatialFilter::SetGeometry(std::shared_ptr<Geometry> geometry) {
-    m_geometry = geometry;
-    m_hasEnvelope = false;
-}
-
-void SpatialFilter::SetEnvelope(const Envelope& envelope) {
-    m_envelope = envelope;
-    m_hasEnvelope = true;
-    m_geometry.reset();
+    return std::make_shared<SpatialFilter>(impl_->op, nullptr);
 }
 
 bool SpatialFilter::EvaluateGeometry(const Geometry* testGeom) const {
@@ -100,39 +143,39 @@ bool SpatialFilter::EvaluateGeometry(const Geometry* testGeom) const {
         return false;
     }
     
-    if (m_hasEnvelope) {
+    if (impl_->hasEnvelope) {
         return EvaluateEnvelope(testGeom);
     }
     
-    if (!m_geometry) {
+    if (!impl_->geometry) {
         return false;
     }
     
-    switch (m_operator) {
+    switch (impl_->op) {
         case SpatialOperator::kBbox:
         case SpatialOperator::kIntersects:
-            return testGeom->Intersects(m_geometry.get());
+            return testGeom->Intersects(impl_->geometry.get());
             
         case SpatialOperator::kWithin:
-            return testGeom->Within(m_geometry.get());
+            return testGeom->Within(impl_->geometry.get());
             
         case SpatialOperator::kContains:
-            return testGeom->Contains(m_geometry.get());
+            return testGeom->Contains(impl_->geometry.get());
             
         case SpatialOperator::kEquals:
-            return testGeom->Equals(m_geometry.get());
+            return testGeom->Equals(impl_->geometry.get());
             
         case SpatialOperator::kOverlaps:
-            return testGeom->Overlaps(m_geometry.get());
+            return testGeom->Overlaps(impl_->geometry.get());
             
         case SpatialOperator::kTouches:
-            return testGeom->Touches(m_geometry.get());
+            return testGeom->Touches(impl_->geometry.get());
             
         case SpatialOperator::kCrosses:
-            return testGeom->Crosses(m_geometry.get());
+            return testGeom->Crosses(impl_->geometry.get());
             
         case SpatialOperator::kDisjoint:
-            return testGeom->Disjoint(m_geometry.get());
+            return testGeom->Disjoint(impl_->geometry.get());
             
         default:
             return false;
@@ -146,38 +189,38 @@ bool SpatialFilter::EvaluateEnvelope(const Geometry* testGeom) const {
     
     Envelope testEnv = testGeom->GetEnvelope();
     
-    switch (m_operator) {
+    switch (impl_->op) {
         case SpatialOperator::kBbox:
         case SpatialOperator::kIntersects:
-            return testEnv.Intersects(m_envelope);
+            return testEnv.Intersects(impl_->envelope);
             
         case SpatialOperator::kWithin:
-            return m_envelope.Contains(testEnv);
+            return impl_->envelope.Contains(testEnv);
             
         case SpatialOperator::kContains:
-            return testEnv.Contains(m_envelope);
+            return testEnv.Contains(impl_->envelope);
             
         case SpatialOperator::kEquals:
-            return testEnv.Equals(m_envelope);
+            return testEnv.Equals(impl_->envelope);
             
         case SpatialOperator::kOverlaps:
-            return testEnv.Intersects(m_envelope) && 
-                   !testEnv.Contains(m_envelope) &&
-                   !m_envelope.Contains(testEnv);
+            return testEnv.Intersects(impl_->envelope) && 
+                   !testEnv.Contains(impl_->envelope) &&
+                   !impl_->envelope.Contains(testEnv);
             
         case SpatialOperator::kTouches: {
-            bool touchesX = (testEnv.GetMinX() == m_envelope.GetMaxX()) ||
-                           (testEnv.GetMaxX() == m_envelope.GetMinX());
-            bool touchesY = (testEnv.GetMinY() == m_envelope.GetMaxY()) ||
-                           (testEnv.GetMaxY() == m_envelope.GetMinY());
-            return testEnv.Intersects(m_envelope) && (touchesX || touchesY);
+            bool touchesX = (testEnv.GetMinX() == impl_->envelope.GetMaxX()) ||
+                           (testEnv.GetMaxX() == impl_->envelope.GetMinX());
+            bool touchesY = (testEnv.GetMinY() == impl_->envelope.GetMaxY()) ||
+                           (testEnv.GetMaxY() == impl_->envelope.GetMinY());
+            return testEnv.Intersects(impl_->envelope) && (touchesX || touchesY);
         }
             
         case SpatialOperator::kCrosses:
-            return testEnv.Intersects(m_envelope);
+            return testEnv.Intersects(impl_->envelope);
             
         case SpatialOperator::kDisjoint:
-            return !testEnv.Intersects(m_envelope);
+            return !testEnv.Intersects(impl_->envelope);
             
         default:
             return false;

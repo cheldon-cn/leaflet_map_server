@@ -5,26 +5,37 @@
 namespace ogc {
 namespace symbology {
 
-RasterSymbolizer::RasterSymbolizer()
-    : m_opacity(1.0)
-    , m_channelSelection(RasterChannelSelection::kRGB)
-    , m_redChannel(0)
-    , m_greenChannel(1)
-    , m_blueChannel(2)
-    , m_grayChannel(0)
-    , m_contrastEnhancement(false)
-    , m_contrastValue(1.0)
-    , m_brightnessValue(0.0)
-    , m_gammaValue(1.0)
-    , m_colorMapType(RasterChannelSelection::kGrayscale)
-    , m_minValue(0.0)
-    , m_maxValue(255.0)
-    , m_resampling("nearest")
-    , m_overlapBehavior("auto") {
+struct RasterSymbolizer::Impl {
+    double opacity = 1.0;
+    RasterChannelSelection channelSelection = RasterChannelSelection::kRGB;
+    int redChannel = 0;
+    int greenChannel = 1;
+    int blueChannel = 2;
+    int grayChannel = 0;
+    bool contrastEnhancement = false;
+    double contrastValue = 1.0;
+    double brightnessValue = 0.0;
+    double gammaValue = 1.0;
+    std::vector<ColorMapEntry> colorMap;
+    RasterChannelSelection colorMapType = RasterChannelSelection::kGrayscale;
+    double minValue = 0.0;
+    double maxValue = 255.0;
+    std::string resampling = "nearest";
+    std::string overlapBehavior = "auto";
+};
+
+RasterSymbolizer::RasterSymbolizer() : impl_(std::make_unique<Impl>()) {
+}
+
+RasterSymbolizer::~RasterSymbolizer() = default;
+
+std::string RasterSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "RasterSymbolizer" : name;
 }
 
 ogc::draw::DrawResult RasterSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, GetDefaultStyle());
 }
 
 ogc::draw::DrawResult RasterSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -32,7 +43,7 @@ ogc::draw::DrawResult RasterSymbolizer::Symbolize(ogc::draw::DrawContextPtr cont
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!IsEnabled()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -52,161 +63,161 @@ bool RasterSymbolizer::CanSymbolize(GeomType geomType) const {
 }
 
 void RasterSymbolizer::SetOpacity(double opacity) {
-    m_opacity = opacity;
+    impl_->opacity = opacity;
 }
 
 double RasterSymbolizer::GetOpacity() const {
-    return m_opacity;
+    return impl_->opacity;
 }
 
 void RasterSymbolizer::SetChannelSelection(RasterChannelSelection selection) {
-    m_channelSelection = selection;
+    impl_->channelSelection = selection;
 }
 
 RasterChannelSelection RasterSymbolizer::GetChannelSelection() const {
-    return m_channelSelection;
+    return impl_->channelSelection;
 }
 
 void RasterSymbolizer::SetRedChannel(int channel) {
-    m_redChannel = channel;
+    impl_->redChannel = channel;
 }
 
 int RasterSymbolizer::GetRedChannel() const {
-    return m_redChannel;
+    return impl_->redChannel;
 }
 
 void RasterSymbolizer::SetGreenChannel(int channel) {
-    m_greenChannel = channel;
+    impl_->greenChannel = channel;
 }
 
 int RasterSymbolizer::GetGreenChannel() const {
-    return m_greenChannel;
+    return impl_->greenChannel;
 }
 
 void RasterSymbolizer::SetBlueChannel(int channel) {
-    m_blueChannel = channel;
+    impl_->blueChannel = channel;
 }
 
 int RasterSymbolizer::GetBlueChannel() const {
-    return m_blueChannel;
+    return impl_->blueChannel;
 }
 
 void RasterSymbolizer::SetGrayChannel(int channel) {
-    m_grayChannel = channel;
+    impl_->grayChannel = channel;
 }
 
 int RasterSymbolizer::GetGrayChannel() const {
-    return m_grayChannel;
+    return impl_->grayChannel;
 }
 
 void RasterSymbolizer::SetContrastEnhancement(bool enabled) {
-    m_contrastEnhancement = enabled;
+    impl_->contrastEnhancement = enabled;
 }
 
 bool RasterSymbolizer::HasContrastEnhancement() const {
-    return m_contrastEnhancement;
+    return impl_->contrastEnhancement;
 }
 
 void RasterSymbolizer::SetContrastValue(double value) {
-    m_contrastValue = value;
+    impl_->contrastValue = value;
 }
 
 double RasterSymbolizer::GetContrastValue() const {
-    return m_contrastValue;
+    return impl_->contrastValue;
 }
 
 void RasterSymbolizer::SetBrightnessValue(double value) {
-    m_brightnessValue = value;
+    impl_->brightnessValue = value;
 }
 
 double RasterSymbolizer::GetBrightnessValue() const {
-    return m_brightnessValue;
+    return impl_->brightnessValue;
 }
 
 void RasterSymbolizer::SetGammaValue(double value) {
-    m_gammaValue = value;
+    impl_->gammaValue = value;
 }
 
 double RasterSymbolizer::GetGammaValue() const {
-    return m_gammaValue;
+    return impl_->gammaValue;
 }
 
 void RasterSymbolizer::AddColorMapEntry(const ColorMapEntry& entry) {
-    m_colorMap.push_back(entry);
+    impl_->colorMap.push_back(entry);
 }
 
 void RasterSymbolizer::ClearColorMap() {
-    m_colorMap.clear();
+    impl_->colorMap.clear();
 }
 
 std::vector<ColorMapEntry> RasterSymbolizer::GetColorMap() const {
-    return m_colorMap;
+    return impl_->colorMap;
 }
 
 void RasterSymbolizer::SetColorMapType(RasterChannelSelection type) {
-    m_colorMapType = type;
+    impl_->colorMapType = type;
 }
 
 RasterChannelSelection RasterSymbolizer::GetColorMapType() const {
-    return m_colorMapType;
+    return impl_->colorMapType;
 }
 
 void RasterSymbolizer::SetMinValue(double value) {
-    m_minValue = value;
+    impl_->minValue = value;
 }
 
 double RasterSymbolizer::GetMinValue() const {
-    return m_minValue;
+    return impl_->minValue;
 }
 
 void RasterSymbolizer::SetMaxValue(double value) {
-    m_maxValue = value;
+    impl_->maxValue = value;
 }
 
 double RasterSymbolizer::GetMaxValue() const {
-    return m_maxValue;
+    return impl_->maxValue;
 }
 
 void RasterSymbolizer::SetResampling(const std::string& method) {
-    m_resampling = method;
+    impl_->resampling = method;
 }
 
 std::string RasterSymbolizer::GetResampling() const {
-    return m_resampling;
+    return impl_->resampling;
 }
 
 void RasterSymbolizer::SetOverlapBehavior(const std::string& behavior) {
-    m_overlapBehavior = behavior;
+    impl_->overlapBehavior = behavior;
 }
 
 std::string RasterSymbolizer::GetOverlapBehavior() const {
-    return m_overlapBehavior;
+    return impl_->overlapBehavior;
 }
 
 SymbolizerPtr RasterSymbolizer::Clone() const {
     auto sym = std::make_shared<RasterSymbolizer>();
-    sym->m_opacity = m_opacity;
-    sym->m_channelSelection = m_channelSelection;
-    sym->m_redChannel = m_redChannel;
-    sym->m_greenChannel = m_greenChannel;
-    sym->m_blueChannel = m_blueChannel;
-    sym->m_grayChannel = m_grayChannel;
-    sym->m_contrastEnhancement = m_contrastEnhancement;
-    sym->m_contrastValue = m_contrastValue;
-    sym->m_brightnessValue = m_brightnessValue;
-    sym->m_gammaValue = m_gammaValue;
-    sym->m_colorMap = m_colorMap;
-    sym->m_colorMapType = m_colorMapType;
-    sym->m_minValue = m_minValue;
-    sym->m_maxValue = m_maxValue;
-    sym->m_resampling = m_resampling;
-    sym->m_overlapBehavior = m_overlapBehavior;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
+    sym->impl_->opacity = impl_->opacity;
+    sym->impl_->channelSelection = impl_->channelSelection;
+    sym->impl_->redChannel = impl_->redChannel;
+    sym->impl_->greenChannel = impl_->greenChannel;
+    sym->impl_->blueChannel = impl_->blueChannel;
+    sym->impl_->grayChannel = impl_->grayChannel;
+    sym->impl_->contrastEnhancement = impl_->contrastEnhancement;
+    sym->impl_->contrastValue = impl_->contrastValue;
+    sym->impl_->brightnessValue = impl_->brightnessValue;
+    sym->impl_->gammaValue = impl_->gammaValue;
+    sym->impl_->colorMap = impl_->colorMap;
+    sym->impl_->colorMapType = impl_->colorMapType;
+    sym->impl_->minValue = impl_->minValue;
+    sym->impl_->maxValue = impl_->maxValue;
+    sym->impl_->resampling = impl_->resampling;
+    sym->impl_->overlapBehavior = impl_->overlapBehavior;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
     return sym;
 }
 
@@ -215,24 +226,24 @@ RasterSymbolizerPtr RasterSymbolizer::Create() {
 }
 
 uint32_t RasterSymbolizer::InterpolateColor(double value, double minVal, double maxVal) const {
-    if (m_colorMap.empty()) {
+    if (impl_->colorMap.empty()) {
         double t = (value - minVal) / (maxVal - minVal);
         t = std::max(0.0, std::min(1.0, t));
         uint8_t gray = static_cast<uint8_t>(t * 255.0);
         return ogc::draw::Color::FromRGBA(gray, gray, gray, 255).GetRGBA();
     }
     
-    if (m_colorMap.size() == 1) {
-        return m_colorMap[0].color;
+    if (impl_->colorMap.size() == 1) {
+        return impl_->colorMap[0].color;
     }
     
-    for (size_t i = 0; i < m_colorMap.size() - 1; ++i) {
-        if (value >= m_colorMap[i].value && value <= m_colorMap[i + 1].value) {
-            double t = (value - m_colorMap[i].value) / 
-                       (m_colorMap[i + 1].value - m_colorMap[i].value);
+    for (size_t i = 0; i < impl_->colorMap.size() - 1; ++i) {
+        if (value >= impl_->colorMap[i].value && value <= impl_->colorMap[i + 1].value) {
+            double t = (value - impl_->colorMap[i].value) / 
+                       (impl_->colorMap[i + 1].value - impl_->colorMap[i].value);
             
-            ogc::draw::Color c1(m_colorMap[i].color);
-            ogc::draw::Color c2(m_colorMap[i + 1].color);
+            ogc::draw::Color c1(impl_->colorMap[i].color);
+            ogc::draw::Color c2(impl_->colorMap[i + 1].color);
             
             uint8_t r = static_cast<uint8_t>(c1.GetRed() + t * (c2.GetRed() - c1.GetRed()));
             uint8_t g = static_cast<uint8_t>(c1.GetGreen() + t * (c2.GetGreen() - c1.GetGreen()));
@@ -243,11 +254,7 @@ uint32_t RasterSymbolizer::InterpolateColor(double value, double minVal, double 
         }
     }
     
-    if (value < m_colorMap[0].value) {
-        return m_colorMap[0].color;
-    }
-    
-    return m_colorMap.back().color;
+    return 0xFF000000;
 }
 
 }

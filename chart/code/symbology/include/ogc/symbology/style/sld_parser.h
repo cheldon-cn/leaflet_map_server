@@ -64,22 +64,22 @@ struct SldStyledLayerDescriptor {
 class OGC_SYMBOLOGY_API SldParser {
 public:
     SldParser();
-    ~SldParser() = default;
+    ~SldParser();
     
     SldParseResult Parse(const std::string& sldContent);
     SldParseResult ParseFile(const std::string& filePath);
     
-    SldStyledLayerDescriptor GetSld() const { return m_sld; }
+    SldStyledLayerDescriptor GetSld() const;
     std::vector<SymbolizerRulePtr> GetRules() const;
     
-    void SetStrictMode(bool strict) { m_strictMode = strict; }
-    bool IsStrictMode() const { return m_strictMode; }
+    void SetStrictMode(bool strict);
+    bool IsStrictMode() const;
     
-    void SetDefaultVersion(const std::string& version) { m_defaultVersion = version; }
-    std::string GetDefaultVersion() const { return m_defaultVersion; }
+    void SetDefaultVersion(const std::string& version);
+    std::string GetDefaultVersion() const;
     
-    bool HasError() const { return !m_lastError.empty(); }
-    std::string GetLastError() const { return m_lastError; }
+    bool HasError() const;
+    std::string GetLastError() const;
     
     static SldParserPtr Create();
     
@@ -90,12 +90,8 @@ public:
     static std::string GenerateSld(const SymbolizerRulePtr& rule);
     
 private:
-    SldStyledLayerDescriptor m_sld;
-    std::string m_lastError;
-    bool m_strictMode;
-    std::string m_defaultVersion;
-    size_t m_currentPos;
-    std::string m_content;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     bool ParseSldElement();
     bool ParseNamedLayer();

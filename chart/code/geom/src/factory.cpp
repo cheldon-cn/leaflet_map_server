@@ -6,6 +6,7 @@
 #include "ogc/geom/multilinestring.h"
 #include "ogc/geom/multipolygon.h"
 #include "ogc/geom/geometrycollection.h"
+#include "geometry_impl_internal.h"
 #include <sstream>
 #include <cctype>
 #include <cstring>

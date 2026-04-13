@@ -1,4 +1,5 @@
 #include "ogc/geom/linearring.h"
+#include "geometry_impl_internal.h"
 #include <algorithm>
 
 namespace ogc {

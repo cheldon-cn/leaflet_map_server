@@ -6,38 +6,39 @@
 namespace ogc {
 namespace symbology {
 
-LineSymbolizer::LineSymbolizer()
-    : m_width(1.0)
-    , m_color(0xFF000000)
-    , m_opacity(1.0)
-    , m_capStyle(ogc::draw::LineCap::kFlat)
-    , m_joinStyle(ogc::draw::LineJoin::kMiter)
-    , m_dashStyle(DashStyle::kSolid)
-    , m_dashOffset(0.0)
-    , m_offset(0.0)
-    , m_perpendicularOffset(0.0)
-    , m_graphicStroke(false)
-    , m_graphicStrokeSize(0.0)
-    , m_graphicStrokeSpacing(0.0) {
+struct LineSymbolizer::Impl {
+    double width = 1.0;
+    uint32_t color = 0xFF000000;
+    double opacity = 1.0;
+    ogc::draw::LineCap capStyle = ogc::draw::LineCap::kFlat;
+    ogc::draw::LineJoin joinStyle = ogc::draw::LineJoin::kMiter;
+    DashStyle dashStyle = DashStyle::kSolid;
+    std::vector<double> dashPattern;
+    double dashOffset = 0.0;
+    double offset = 0.0;
+    double perpendicularOffset = 0.0;
+    bool graphicStroke = false;
+    double graphicStrokeSize = 0.0;
+    double graphicStrokeSpacing = 0.0;
+};
+
+LineSymbolizer::LineSymbolizer() : impl_(std::make_unique<Impl>()) {
 }
 
-LineSymbolizer::LineSymbolizer(double width, uint32_t color)
-    : m_width(width)
-    , m_color(color)
-    , m_opacity(1.0)
-    , m_capStyle(ogc::draw::LineCap::kFlat)
-    , m_joinStyle(ogc::draw::LineJoin::kMiter)
-    , m_dashStyle(DashStyle::kSolid)
-    , m_dashOffset(0.0)
-    , m_offset(0.0)
-    , m_perpendicularOffset(0.0)
-    , m_graphicStroke(false)
-    , m_graphicStrokeSize(0.0)
-    , m_graphicStrokeSpacing(0.0) {
+LineSymbolizer::LineSymbolizer(double width, uint32_t color) : impl_(std::make_unique<Impl>()) {
+    impl_->width = width;
+    impl_->color = color;
+}
+
+LineSymbolizer::~LineSymbolizer() = default;
+
+std::string LineSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "LineSymbolizer" : name;
 }
 
 ogc::draw::DrawResult LineSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, GetDefaultStyle());
 }
 
 ogc::draw::DrawResult LineSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -45,7 +46,7 @@ ogc::draw::DrawResult LineSymbolizer::Symbolize(ogc::draw::DrawContextPtr contex
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!IsEnabled()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -54,9 +55,9 @@ ogc::draw::DrawResult LineSymbolizer::Symbolize(ogc::draw::DrawContextPtr contex
         return ogc::draw::DrawResult::kSuccess;
     }
     
-    ogc::draw::DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
+    ogc::draw::DrawStyle finalStyle = MergeStyle(GetDefaultStyle(), style);
     if (finalStyle.pen.width == 0) {
-        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(m_color), m_width);
+        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(impl_->color), impl_->width);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -82,135 +83,135 @@ bool LineSymbolizer::CanSymbolize(GeomType geomType) const {
 }
 
 void LineSymbolizer::SetWidth(double width) {
-    m_width = width;
+    impl_->width = width;
 }
 
 double LineSymbolizer::GetWidth() const {
-    return m_width;
+    return impl_->width;
 }
 
 void LineSymbolizer::SetColor(uint32_t color) {
-    m_color = color;
+    impl_->color = color;
 }
 
 uint32_t LineSymbolizer::GetColor() const {
-    return m_color;
+    return impl_->color;
 }
 
 void LineSymbolizer::SetOpacity(double opacity) {
-    m_opacity = opacity;
+    impl_->opacity = opacity;
 }
 
 double LineSymbolizer::GetOpacity() const {
-    return m_opacity;
+    return impl_->opacity;
 }
 
 void LineSymbolizer::SetCapStyle(ogc::draw::LineCap style) {
-    m_capStyle = style;
+    impl_->capStyle = style;
 }
 
 ogc::draw::LineCap LineSymbolizer::GetCapStyle() const {
-    return m_capStyle;
+    return impl_->capStyle;
 }
 
 void LineSymbolizer::SetJoinStyle(ogc::draw::LineJoin style) {
-    m_joinStyle = style;
+    impl_->joinStyle = style;
 }
 
 ogc::draw::LineJoin LineSymbolizer::GetJoinStyle() const {
-    return m_joinStyle;
+    return impl_->joinStyle;
 }
 
 void LineSymbolizer::SetDashStyle(DashStyle style) {
-    m_dashStyle = style;
+    impl_->dashStyle = style;
     if (style != DashStyle::kCustom) {
-        m_dashPattern = GetDefaultDashPattern(style);
+        impl_->dashPattern = GetDefaultDashPattern(style);
     }
 }
 
 DashStyle LineSymbolizer::GetDashStyle() const {
-    return m_dashStyle;
+    return impl_->dashStyle;
 }
 
 void LineSymbolizer::SetDashPattern(const std::vector<double>& pattern) {
-    m_dashPattern = pattern;
-    m_dashStyle = DashStyle::kCustom;
+    impl_->dashPattern = pattern;
+    impl_->dashStyle = DashStyle::kCustom;
 }
 
 std::vector<double> LineSymbolizer::GetDashPattern() const {
-    return m_dashPattern;
+    return impl_->dashPattern;
 }
 
 void LineSymbolizer::SetDashOffset(double offset) {
-    m_dashOffset = offset;
+    impl_->dashOffset = offset;
 }
 
 double LineSymbolizer::GetDashOffset() const {
-    return m_dashOffset;
+    return impl_->dashOffset;
 }
 
 void LineSymbolizer::SetOffset(double offset) {
-    m_offset = offset;
+    impl_->offset = offset;
 }
 
 double LineSymbolizer::GetOffset() const {
-    return m_offset;
+    return impl_->offset;
 }
 
 void LineSymbolizer::SetPerpendicularOffset(double offset) {
-    m_perpendicularOffset = offset;
+    impl_->perpendicularOffset = offset;
 }
 
 double LineSymbolizer::GetPerpendicularOffset() const {
-    return m_perpendicularOffset;
+    return impl_->perpendicularOffset;
 }
 
 void LineSymbolizer::SetGraphicStroke(bool enabled) {
-    m_graphicStroke = enabled;
+    impl_->graphicStroke = enabled;
 }
 
 bool LineSymbolizer::HasGraphicStroke() const {
-    return m_graphicStroke;
+    return impl_->graphicStroke;
 }
 
 void LineSymbolizer::SetGraphicStrokeSize(double size) {
-    m_graphicStrokeSize = size;
+    impl_->graphicStrokeSize = size;
 }
 
 double LineSymbolizer::GetGraphicStrokeSize() const {
-    return m_graphicStrokeSize;
+    return impl_->graphicStrokeSize;
 }
 
 void LineSymbolizer::SetGraphicStrokeSpacing(double spacing) {
-    m_graphicStrokeSpacing = spacing;
+    impl_->graphicStrokeSpacing = spacing;
 }
 
 double LineSymbolizer::GetGraphicStrokeSpacing() const {
-    return m_graphicStrokeSpacing;
+    return impl_->graphicStrokeSpacing;
 }
 
 SymbolizerPtr LineSymbolizer::Clone() const {
     auto sym = std::make_shared<LineSymbolizer>();
-    sym->m_width = m_width;
-    sym->m_color = m_color;
-    sym->m_opacity = m_opacity;
-    sym->m_capStyle = m_capStyle;
-    sym->m_joinStyle = m_joinStyle;
-    sym->m_dashStyle = m_dashStyle;
-    sym->m_dashPattern = m_dashPattern;
-    sym->m_dashOffset = m_dashOffset;
-    sym->m_offset = m_offset;
-    sym->m_perpendicularOffset = m_perpendicularOffset;
-    sym->m_graphicStroke = m_graphicStroke;
-    sym->m_graphicStrokeSize = m_graphicStrokeSize;
-    sym->m_graphicStrokeSpacing = m_graphicStrokeSpacing;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
-    sym->m_opacity = m_opacity;
+    sym->impl_->width = impl_->width;
+    sym->impl_->color = impl_->color;
+    sym->impl_->opacity = impl_->opacity;
+    sym->impl_->capStyle = impl_->capStyle;
+    sym->impl_->joinStyle = impl_->joinStyle;
+    sym->impl_->dashStyle = impl_->dashStyle;
+    sym->impl_->dashPattern = impl_->dashPattern;
+    sym->impl_->dashOffset = impl_->dashOffset;
+    sym->impl_->offset = impl_->offset;
+    sym->impl_->perpendicularOffset = impl_->perpendicularOffset;
+    sym->impl_->graphicStroke = impl_->graphicStroke;
+    sym->impl_->graphicStrokeSize = impl_->graphicStrokeSize;
+    sym->impl_->graphicStrokeSpacing = impl_->graphicStrokeSpacing;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
+    sym->SetOpacity(GetOpacity());
     return sym;
 }
 

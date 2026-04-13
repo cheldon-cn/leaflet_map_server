@@ -15,6 +15,14 @@ using ogc::draw::DrawContext;
 namespace ogc {
 namespace symbology {
 
+struct S52SymbolRenderer::Impl {
+    bool initialized = false;
+    double defaultSymbolSize = 10.0;
+    double defaultLineWidth = 1.0;
+    std::map<std::string, SymbolizerPtr> symbolizerCache;
+    mutable std::mutex mutex;
+};
+
 S52SymbolRenderer& S52SymbolRenderer::Instance()
 {
     static S52SymbolRenderer instance;
@@ -23,15 +31,20 @@ S52SymbolRenderer& S52SymbolRenderer::Instance()
 
 bool S52SymbolRenderer::Initialize()
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_initialized) {
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    if (impl_->initialized) {
         return true;
     }
     
-    m_defaultSymbolSize = 10.0;
-    m_defaultLineWidth = 1.0;
-    m_initialized = true;
+    impl_->defaultSymbolSize = 10.0;
+    impl_->defaultLineWidth = 1.0;
+    impl_->initialized = true;
     return true;
+}
+
+bool S52SymbolRenderer::IsInitialized() const {
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->initialized;
 }
 
 DrawResult S52SymbolRenderer::RenderSymbol(DrawContextPtr context, 
@@ -153,13 +166,13 @@ SymbolizerPtr S52SymbolRenderer::CreatePointSymbolizer(const SymbolDefinition* s
 {
     PointSymbolizerPtr symbolizer = PointSymbolizer::Create();
     
-    double size = m_defaultSymbolSize;
+    double size = impl_->defaultSymbolSize;
     uint32_t color = 0x000000;
     
     if (symbolDef) {
         size = std::max(symbolDef->width, symbolDef->height);
         if (size <= 0) {
-            size = m_defaultSymbolSize;
+            size = impl_->defaultSymbolSize;
         }
     }
     
@@ -179,7 +192,7 @@ SymbolizerPtr S52SymbolRenderer::CreateLineSymbolizer(const SymbolDefinition* sy
 {
     LineSymbolizerPtr symbolizer = LineSymbolizer::Create();
     
-    double width = m_defaultLineWidth;
+    double width = impl_->defaultLineWidth;
     uint32_t color = 0x000000;
     
     if (rule) {
@@ -200,7 +213,7 @@ SymbolizerPtr S52SymbolRenderer::CreatePolygonSymbolizer(const SymbolDefinition*
     
     uint32_t fillColor = 0xFFFFFF;
     uint32_t strokeColor = 0x000000;
-    double strokeWidth = m_defaultLineWidth;
+    double strokeWidth = impl_->defaultLineWidth;
     
     if (rule) {
         fillColor = rule->fillColor.GetRGBA();
@@ -217,39 +230,39 @@ SymbolizerPtr S52SymbolRenderer::CreatePolygonSymbolizer(const SymbolDefinition*
 
 void S52SymbolRenderer::SetDefaultSymbolSize(double size)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_defaultSymbolSize = size;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->defaultSymbolSize = size;
 }
 
 double S52SymbolRenderer::GetDefaultSymbolSize() const
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_defaultSymbolSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->defaultSymbolSize;
 }
 
 void S52SymbolRenderer::SetDefaultLineWidth(double width)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_defaultLineWidth = width;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->defaultLineWidth = width;
 }
 
 double S52SymbolRenderer::GetDefaultLineWidth() const
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_defaultLineWidth;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->defaultLineWidth;
 }
 
 void S52SymbolRenderer::CacheSymbolizer(const std::string& key, SymbolizerPtr symbolizer)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_symbolizerCache[key] = symbolizer;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->symbolizerCache[key] = symbolizer;
 }
 
 SymbolizerPtr S52SymbolRenderer::GetCachedSymbolizer(const std::string& key) const
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto it = m_symbolizerCache.find(key);
-    if (it != m_symbolizerCache.end()) {
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    auto it = impl_->symbolizerCache.find(key);
+    if (it != impl_->symbolizerCache.end()) {
         return it->second;
     }
     return nullptr;
@@ -257,8 +270,8 @@ SymbolizerPtr S52SymbolRenderer::GetCachedSymbolizer(const std::string& key) con
 
 void S52SymbolRenderer::ClearCache()
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_symbolizerCache.clear();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->symbolizerCache.clear();
 }
 
 DrawResult S52SymbolRenderer::RenderVectorSymbol(DrawContextPtr context,
@@ -336,10 +349,7 @@ std::string S52SymbolRenderer::GenerateCacheKey(const std::string& symbolId,
     return key;
 }
 
-S52SymbolRenderer::S52SymbolRenderer()
-    : m_initialized(false)
-    , m_defaultSymbolSize(10.0)
-    , m_defaultLineWidth(1.0)
+S52SymbolRenderer::S52SymbolRenderer() : impl_(std::make_unique<Impl>())
 {
 }
 

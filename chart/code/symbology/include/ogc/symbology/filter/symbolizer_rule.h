@@ -18,29 +18,29 @@ class OGC_SYMBOLOGY_API SymbolizerRule {
 public:
     SymbolizerRule();
     explicit SymbolizerRule(const std::string& name);
-    ~SymbolizerRule() = default;
+    ~SymbolizerRule();
     
-    const std::string& GetName() const { return m_name; }
-    void SetName(const std::string& name) { m_name = name; }
+    const std::string& GetName() const;
+    void SetName(const std::string& name);
     
-    const std::string& GetTitle() const { return m_title; }
-    void SetTitle(const std::string& title) { m_title = title; }
+    const std::string& GetTitle() const;
+    void SetTitle(const std::string& title);
     
-    const std::string& GetAbstract() const { return m_abstract; }
-    void SetAbstract(const std::string& abstract) { m_abstract = abstract; }
+    const std::string& GetAbstract() const;
+    void SetAbstract(const std::string& abstract);
     
-    FilterPtr GetFilter() const { return m_filter; }
-    void SetFilter(FilterPtr filter) { m_filter = filter; }
-    bool HasFilter() const { return m_filter != nullptr; }
+    FilterPtr GetFilter() const;
+    void SetFilter(FilterPtr filter);
+    bool HasFilter() const;
     
     bool Evaluate(const CNFeature* feature) const;
     bool Evaluate(const Geometry* geometry) const;
     
-    double GetMinScaleDenominator() const { return m_minScaleDenominator; }
-    void SetMinScaleDenominator(double scale) { m_minScaleDenominator = scale; }
+    double GetMinScaleDenominator() const;
+    void SetMinScaleDenominator(double scale);
     
-    double GetMaxScaleDenominator() const { return m_maxScaleDenominator; }
-    void SetMaxScaleDenominator(double scale) { m_maxScaleDenominator = scale; }
+    double GetMaxScaleDenominator() const;
+    void SetMaxScaleDenominator(double scale);
     
     bool IsScaleInRange(double scale) const;
     
@@ -48,21 +48,21 @@ public:
     void RemoveSymbolizer(SymbolizerPtr symbolizer);
     void ClearSymbolizers();
     
-    const std::vector<SymbolizerPtr>& GetSymbolizers() const { return m_symbolizers; }
-    size_t GetSymbolizerCount() const { return m_symbolizers.size(); }
+    const std::vector<SymbolizerPtr>& GetSymbolizers() const;
+    size_t GetSymbolizerCount() const;
     SymbolizerPtr GetSymbolizer(size_t index) const;
     
-    bool HasSymbolizers() const { return !m_symbolizers.empty(); }
+    bool HasSymbolizers() const;
     
-    const Envelope& GetExtent() const { return m_extent; }
-    void SetExtent(const Envelope& extent) { m_extent = extent; }
-    bool HasExtent() const { return !m_extent.IsNull(); }
+    const Envelope& GetExtent() const;
+    void SetExtent(const Envelope& extent);
+    bool HasExtent() const;
     
-    bool IsElseFilter() const { return m_isElseFilter; }
-    void SetElseFilter(bool isElse) { m_isElseFilter = isElse; }
+    bool IsElseFilter() const;
+    void SetElseFilter(bool isElse);
     
-    int GetPriority() const { return m_priority; }
-    void SetPriority(int priority) { m_priority = priority; }
+    int GetPriority() const;
+    void SetPriority(int priority);
     
     SymbolizerRulePtr Clone() const;
     
@@ -70,16 +70,8 @@ public:
     static SymbolizerRulePtr Create(const std::string& name);
     
 private:
-    std::string m_name;
-    std::string m_title;
-    std::string m_abstract;
-    FilterPtr m_filter;
-    double m_minScaleDenominator;
-    double m_maxScaleDenominator;
-    std::vector<SymbolizerPtr> m_symbolizers;
-    Envelope m_extent;
-    bool m_isElseFilter;
-    int m_priority;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

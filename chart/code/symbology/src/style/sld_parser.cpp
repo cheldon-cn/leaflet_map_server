@@ -22,12 +22,29 @@ using ogc::draw::Font;
 using ogc::draw::LineCap;
 using ogc::draw::LineJoin;
 
-SldParser::SldParser()
-    : m_strictMode(false)
-    , m_defaultVersion("1.0.0")
-    , m_currentPos(0)
-{
-}
+struct SldParser::Impl {
+    SldStyledLayerDescriptor sld;
+    std::string lastError;
+    bool strictMode = false;
+    std::string defaultVersion = "1.0.0";
+    size_t currentPos = 0;
+    std::string content;
+};
+
+SldParser::SldParser() : impl_(std::make_unique<Impl>()) {}
+
+SldParser::~SldParser() = default;
+
+SldStyledLayerDescriptor SldParser::GetSld() const { return impl_->sld; }
+
+void SldParser::SetStrictMode(bool strict) { impl_->strictMode = strict; }
+bool SldParser::IsStrictMode() const { return impl_->strictMode; }
+
+void SldParser::SetDefaultVersion(const std::string& version) { impl_->defaultVersion = version; }
+std::string SldParser::GetDefaultVersion() const { return impl_->defaultVersion; }
+
+bool SldParser::HasError() const { return !impl_->lastError.empty(); }
+std::string SldParser::GetLastError() const { return impl_->lastError; }
 
 SldParserPtr SldParser::Create()
 {
@@ -39,18 +56,18 @@ SldParseResult SldParser::Parse(const std::string& sldContent)
     SldParseResult result;
     ClearError();
     
-    m_content = sldContent;
-    m_currentPos = 0;
-    m_sld = SldStyledLayerDescriptor();
+    impl_->content = sldContent;
+    impl_->currentPos = 0;
+    impl_->sld = SldStyledLayerDescriptor();
     
     if (sldContent.empty()) {
         SetError("SLD content is empty");
-        result.errorMessage = m_lastError;
+        result.errorMessage = impl_->lastError;
         return result;
     }
     
     if (!ParseSldElement()) {
-        result.errorMessage = m_lastError;
+        result.errorMessage = impl_->lastError;
         return result;
     }
     
@@ -66,7 +83,7 @@ SldParseResult SldParser::ParseFile(const std::string& filePath)
     std::ifstream file(filePath);
     if (!file.is_open()) {
         SetError("Cannot open file: " + filePath);
-        result.errorMessage = m_lastError;
+        result.errorMessage = impl_->lastError;
         return result;
     }
     
@@ -81,7 +98,7 @@ std::vector<SymbolizerRulePtr> SldParser::GetRules() const
 {
     std::vector<SymbolizerRulePtr> allRules;
     
-    for (const auto& namedLayer : m_sld.namedLayers) {
+    for (const auto& namedLayer : impl_->sld.namedLayers) {
         for (const auto& fts : namedLayer.featureTypeStyles) {
             for (const auto& rule : fts.rules) {
                 allRules.push_back(rule);
@@ -115,47 +132,47 @@ bool SldParser::ParseSldElement()
     
     std::string version = ReadAttribute("StyledLayerDescriptor", "version");
     if (!version.empty()) {
-        m_sld.version = version;
+        impl_->sld.version = version;
     } else {
-        m_sld.version = m_defaultVersion;
+        impl_->sld.version = impl_->defaultVersion;
     }
     
-    size_t sldStart = m_content.find("<StyledLayerDescriptor");
+    size_t sldStart = impl_->content.find("<StyledLayerDescriptor");
     if (sldStart == std::string::npos) {
         return false;
     }
     
-    size_t sldEnd = m_content.find("</StyledLayerDescriptor>");
+    size_t sldEnd = impl_->content.find("</StyledLayerDescriptor>");
     if (sldEnd == std::string::npos) {
-        if (m_strictMode) {
+        if (impl_->strictMode) {
             SetError("Missing closing StyledLayerDescriptor tag");
             return false;
         }
-        sldEnd = m_content.length();
+        sldEnd = impl_->content.length();
     }
     
-    std::string sldContent = m_content.substr(sldStart, sldEnd - sldStart + 24);
+    std::string sldContent = impl_->content.substr(sldStart, sldEnd - sldStart + 24);
     
     while (true) {
-        size_t namedLayerPos = sldContent.find("<NamedLayer", m_currentPos);
-        size_t userLayerPos = sldContent.find("<UserLayer", m_currentPos);
+        size_t namedLayerPos = sldContent.find("<NamedLayer", impl_->currentPos);
+        size_t userLayerPos = sldContent.find("<UserLayer", impl_->currentPos);
         
         if (namedLayerPos == std::string::npos && userLayerPos == std::string::npos) {
             break;
         }
         
         size_t nextPos = std::min(namedLayerPos, userLayerPos);
-        m_currentPos = nextPos;
+        impl_->currentPos = nextPos;
         
         if (nextPos == namedLayerPos && namedLayerPos != std::string::npos) {
             if (!ParseNamedLayer()) {
-                if (m_strictMode) {
+                if (impl_->strictMode) {
                     return false;
                 }
             }
         } else if (nextPos == userLayerPos && userLayerPos != std::string::npos) {
             if (!ParseUserLayer()) {
-                if (m_strictMode) {
+                if (impl_->strictMode) {
                     return false;
                 }
             }
@@ -172,14 +189,14 @@ bool SldParser::ParseNamedLayer()
     namedLayer.name = ReadElementContent("Name");
     
     while (true) {
-        size_t ftsPos = m_content.find("<FeatureTypeStyle", m_currentPos);
-        size_t endNamedLayerPos = m_content.find("</NamedLayer>", m_currentPos);
+        size_t ftsPos = impl_->content.find("<FeatureTypeStyle", impl_->currentPos);
+        size_t endNamedLayerPos = impl_->content.find("</NamedLayer>", impl_->currentPos);
         
         if (ftsPos == std::string::npos || ftsPos > endNamedLayerPos) {
             break;
         }
         
-        m_currentPos = ftsPos;
+        impl_->currentPos = ftsPos;
         
         SldFeatureTypeStyle fts;
         if (ParseFeatureTypeStyle(fts)) {
@@ -187,7 +204,7 @@ bool SldParser::ParseNamedLayer()
         }
     }
     
-    m_sld.namedLayers.push_back(namedLayer);
+    impl_->sld.namedLayers.push_back(namedLayer);
     SkipToEndElement("NamedLayer");
     return true;
 }
@@ -199,14 +216,14 @@ bool SldParser::ParseUserLayer()
     userLayer.name = ReadElementContent("Name");
     
     while (true) {
-        size_t ftsPos = m_content.find("<FeatureTypeStyle", m_currentPos);
-        size_t endUserLayerPos = m_content.find("</UserLayer>", m_currentPos);
+        size_t ftsPos = impl_->content.find("<FeatureTypeStyle", impl_->currentPos);
+        size_t endUserLayerPos = impl_->content.find("</UserLayer>", impl_->currentPos);
         
         if (ftsPos == std::string::npos || ftsPos > endUserLayerPos) {
             break;
         }
         
-        m_currentPos = ftsPos;
+        impl_->currentPos = ftsPos;
         
         SldFeatureTypeStyle fts;
         if (ParseFeatureTypeStyle(fts)) {
@@ -214,41 +231,41 @@ bool SldParser::ParseUserLayer()
         }
     }
     
-    m_sld.namedLayers.push_back(userLayer);
+    impl_->sld.namedLayers.push_back(userLayer);
     SkipToEndElement("UserLayer");
     return true;
 }
 
 bool SldParser::ParseFeatureTypeStyle(SldFeatureTypeStyle& style)
 {
-    size_t ftsStart = m_content.find("<FeatureTypeStyle", m_currentPos);
+    size_t ftsStart = impl_->content.find("<FeatureTypeStyle", impl_->currentPos);
     if (ftsStart == std::string::npos) {
         return false;
     }
     
-    size_t ftsEnd = m_content.find("</FeatureTypeStyle>", ftsStart);
+    size_t ftsEnd = impl_->content.find("</FeatureTypeStyle>", ftsStart);
     if (ftsEnd == std::string::npos) {
-        if (m_strictMode) {
+        if (impl_->strictMode) {
             SetError("Missing closing FeatureTypeStyle tag");
             return false;
         }
-        ftsEnd = m_content.length();
+        ftsEnd = impl_->content.length();
     }
     
-    std::string ftsContent = m_content.substr(ftsStart, ftsEnd - ftsStart + 19);
-    m_currentPos = ftsStart;
+    std::string ftsContent = impl_->content.substr(ftsStart, ftsEnd - ftsStart + 19);
+    impl_->currentPos = ftsStart;
     
     style.name = ReadElementContent("Name");
     style.title = ReadElementContent("Title");
     style.abstract = ReadElementContent("Abstract");
     
     while (true) {
-        size_t rulePos = ftsContent.find("<Rule", m_currentPos - ftsStart);
+        size_t rulePos = ftsContent.find("<Rule", impl_->currentPos - ftsStart);
         if (rulePos == std::string::npos || rulePos > ftsEnd - ftsStart) {
             break;
         }
         
-        m_currentPos = ftsStart + rulePos;
+        impl_->currentPos = ftsStart + rulePos;
         
         SymbolizerRulePtr rule = SymbolizerRule::Create();
         if (ParseRule(rule)) {
@@ -256,27 +273,27 @@ bool SldParser::ParseFeatureTypeStyle(SldFeatureTypeStyle& style)
         }
     }
     
-    m_currentPos = ftsEnd + 19;
+    impl_->currentPos = ftsEnd + 19;
     return true;
 }
 
 bool SldParser::ParseRule(SymbolizerRulePtr rule)
 {
-    size_t ruleStart = m_content.find("<Rule", m_currentPos);
+    size_t ruleStart = impl_->content.find("<Rule", impl_->currentPos);
     if (ruleStart == std::string::npos) {
         return false;
     }
     
-    size_t ruleEnd = m_content.find("</Rule>", ruleStart);
+    size_t ruleEnd = impl_->content.find("</Rule>", ruleStart);
     if (ruleEnd == std::string::npos) {
-        if (m_strictMode) {
+        if (impl_->strictMode) {
             SetError("Missing closing Rule tag");
             return false;
         }
-        ruleEnd = m_content.length();
+        ruleEnd = impl_->content.length();
     }
     
-    m_currentPos = ruleStart;
+    impl_->currentPos = ruleStart;
     
     std::string name = ReadElementContent("Name");
     if (!name.empty()) {
@@ -303,11 +320,11 @@ bool SldParser::ParseRule(SymbolizerRulePtr rule)
         rule->SetMaxScaleDenominator(ParseDouble(maxScale, std::numeric_limits<double>::max()));
     }
     
-    size_t filterPos = m_content.find("<Filter", m_currentPos);
-    size_t elseFilterPos = m_content.find("<ElseFilter", m_currentPos);
+    size_t filterPos = impl_->content.find("<Filter", impl_->currentPos);
+    size_t elseFilterPos = impl_->content.find("<ElseFilter", impl_->currentPos);
     
     if (filterPos != std::string::npos && filterPos < ruleEnd) {
-        m_currentPos = filterPos;
+        impl_->currentPos = filterPos;
         FilterPtr filter;
         if (ParseFilter(filter)) {
             rule->SetFilter(filter);
@@ -317,7 +334,7 @@ bool SldParser::ParseRule(SymbolizerRulePtr rule)
         SkipToEndElement("ElseFilter");
     }
     
-    while (m_currentPos < ruleEnd) {
+    while (impl_->currentPos < ruleEnd) {
         SymbolizerPtr symbolizer;
         if (ParseSymbolizer(symbolizer)) {
             rule->AddSymbolizer(symbolizer);
@@ -326,17 +343,17 @@ bool SldParser::ParseRule(SymbolizerRulePtr rule)
         }
     }
     
-    m_currentPos = ruleEnd + 7;
+    impl_->currentPos = ruleEnd + 7;
     return true;
 }
 
 bool SldParser::ParseSymbolizer(SymbolizerPtr& symbolizer)
 {
-    size_t pos = m_currentPos;
+    size_t pos = impl_->currentPos;
     
-    if (m_content.find("<PointSymbolizer", pos) != std::string::npos &&
-        m_content.find("<PointSymbolizer", pos) < m_content.find("</Rule>", pos)) {
-        m_currentPos = m_content.find("<PointSymbolizer", pos);
+    if (impl_->content.find("<PointSymbolizer", pos) != std::string::npos &&
+        impl_->content.find("<PointSymbolizer", pos) < impl_->content.find("</Rule>", pos)) {
+        impl_->currentPos = impl_->content.find("<PointSymbolizer", pos);
         PointSymbolizerPtr pointSym;
         if (ParsePointSymbolizer(pointSym)) {
             symbolizer = std::static_pointer_cast<Symbolizer>(pointSym);
@@ -344,9 +361,9 @@ bool SldParser::ParseSymbolizer(SymbolizerPtr& symbolizer)
         }
     }
     
-    if (m_content.find("<LineSymbolizer", pos) != std::string::npos &&
-        m_content.find("<LineSymbolizer", pos) < m_content.find("</Rule>", pos)) {
-        m_currentPos = m_content.find("<LineSymbolizer", pos);
+    if (impl_->content.find("<LineSymbolizer", pos) != std::string::npos &&
+        impl_->content.find("<LineSymbolizer", pos) < impl_->content.find("</Rule>", pos)) {
+        impl_->currentPos = impl_->content.find("<LineSymbolizer", pos);
         LineSymbolizerPtr lineSym;
         if (ParseLineSymbolizer(lineSym)) {
             symbolizer = std::static_pointer_cast<Symbolizer>(lineSym);
@@ -354,9 +371,9 @@ bool SldParser::ParseSymbolizer(SymbolizerPtr& symbolizer)
         }
     }
     
-    if (m_content.find("<PolygonSymbolizer", pos) != std::string::npos &&
-        m_content.find("<PolygonSymbolizer", pos) < m_content.find("</Rule>", pos)) {
-        m_currentPos = m_content.find("<PolygonSymbolizer", pos);
+    if (impl_->content.find("<PolygonSymbolizer", pos) != std::string::npos &&
+        impl_->content.find("<PolygonSymbolizer", pos) < impl_->content.find("</Rule>", pos)) {
+        impl_->currentPos = impl_->content.find("<PolygonSymbolizer", pos);
         PolygonSymbolizerPtr polySym;
         if (ParsePolygonSymbolizer(polySym)) {
             symbolizer = std::static_pointer_cast<Symbolizer>(polySym);
@@ -364,9 +381,9 @@ bool SldParser::ParseSymbolizer(SymbolizerPtr& symbolizer)
         }
     }
     
-    if (m_content.find("<TextSymbolizer", pos) != std::string::npos &&
-        m_content.find("<TextSymbolizer", pos) < m_content.find("</Rule>", pos)) {
-        m_currentPos = m_content.find("<TextSymbolizer", pos);
+    if (impl_->content.find("<TextSymbolizer", pos) != std::string::npos &&
+        impl_->content.find("<TextSymbolizer", pos) < impl_->content.find("</Rule>", pos)) {
+        impl_->currentPos = impl_->content.find("<TextSymbolizer", pos);
         TextSymbolizerPtr textSym;
         if (ParseTextSymbolizer(textSym)) {
             symbolizer = std::static_pointer_cast<Symbolizer>(textSym);
@@ -374,9 +391,9 @@ bool SldParser::ParseSymbolizer(SymbolizerPtr& symbolizer)
         }
     }
     
-    if (m_content.find("<RasterSymbolizer", pos) != std::string::npos &&
-        m_content.find("<RasterSymbolizer", pos) < m_content.find("</Rule>", pos)) {
-        m_currentPos = m_content.find("<RasterSymbolizer", pos);
+    if (impl_->content.find("<RasterSymbolizer", pos) != std::string::npos &&
+        impl_->content.find("<RasterSymbolizer", pos) < impl_->content.find("</Rule>", pos)) {
+        impl_->currentPos = impl_->content.find("<RasterSymbolizer", pos);
         RasterSymbolizerPtr rasterSym;
         if (ParseRasterSymbolizer(rasterSym)) {
             symbolizer = std::static_pointer_cast<Symbolizer>(rasterSym);
@@ -391,7 +408,7 @@ bool SldParser::ParsePointSymbolizer(PointSymbolizerPtr& symbolizer)
 {
     symbolizer = PointSymbolizer::Create();
     
-    size_t symEnd = m_content.find("</PointSymbolizer>", m_currentPos);
+    size_t symEnd = impl_->content.find("</PointSymbolizer>", impl_->currentPos);
     if (symEnd == std::string::npos) {
         return false;
     }
@@ -455,7 +472,7 @@ bool SldParser::ParsePointSymbolizer(PointSymbolizerPtr& symbolizer)
         }
     }
     
-    m_currentPos = symEnd + 18;
+    impl_->currentPos = symEnd + 18;
     return true;
 }
 
@@ -463,7 +480,7 @@ bool SldParser::ParseLineSymbolizer(LineSymbolizerPtr& symbolizer)
 {
     symbolizer = LineSymbolizer::Create();
     
-    size_t symEnd = m_content.find("</LineSymbolizer>", m_currentPos);
+    size_t symEnd = impl_->content.find("</LineSymbolizer>", impl_->currentPos);
     if (symEnd == std::string::npos) {
         return false;
     }
@@ -524,7 +541,7 @@ bool SldParser::ParseLineSymbolizer(LineSymbolizerPtr& symbolizer)
         symbolizer->SetPerpendicularOffset(ParseDouble(perpOffset, 0.0));
     }
     
-    m_currentPos = symEnd + 17;
+    impl_->currentPos = symEnd + 17;
     return true;
 }
 
@@ -532,7 +549,7 @@ bool SldParser::ParsePolygonSymbolizer(PolygonSymbolizerPtr& symbolizer)
 {
     symbolizer = PolygonSymbolizer::Create();
     
-    size_t symEnd = m_content.find("</PolygonSymbolizer>", m_currentPos);
+    size_t symEnd = impl_->content.find("</PolygonSymbolizer>", impl_->currentPos);
     if (symEnd == std::string::npos) {
         return false;
     }
@@ -575,7 +592,7 @@ bool SldParser::ParsePolygonSymbolizer(PolygonSymbolizerPtr& symbolizer)
         }
     }
     
-    m_currentPos = symEnd + 20;
+    impl_->currentPos = symEnd + 20;
     return true;
 }
 
@@ -583,7 +600,7 @@ bool SldParser::ParseTextSymbolizer(TextSymbolizerPtr& symbolizer)
 {
     symbolizer = TextSymbolizer::Create();
     
-    size_t symEnd = m_content.find("</TextSymbolizer>", m_currentPos);
+    size_t symEnd = impl_->content.find("</TextSymbolizer>", impl_->currentPos);
     if (symEnd == std::string::npos) {
         return false;
     }
@@ -694,7 +711,7 @@ bool SldParser::ParseTextSymbolizer(TextSymbolizerPtr& symbolizer)
         }
     }
     
-    m_currentPos = symEnd + 17;
+    impl_->currentPos = symEnd + 17;
     return true;
 }
 
@@ -702,7 +719,7 @@ bool SldParser::ParseRasterSymbolizer(RasterSymbolizerPtr& symbolizer)
 {
     symbolizer = RasterSymbolizer::Create();
     
-    size_t symEnd = m_content.find("</RasterSymbolizer>", m_currentPos);
+    size_t symEnd = impl_->content.find("</RasterSymbolizer>", impl_->currentPos);
     if (symEnd == std::string::npos) {
         return false;
     }
@@ -731,105 +748,105 @@ bool SldParser::ParseRasterSymbolizer(RasterSymbolizerPtr& symbolizer)
     if (!colorMap.empty()) {
     }
     
-    m_currentPos = symEnd + 19;
+    impl_->currentPos = symEnd + 19;
     return true;
 }
 
 bool SldParser::ParseFilter(FilterPtr& filter)
 {
-    size_t filterStart = m_content.find("<Filter", m_currentPos);
+    size_t filterStart = impl_->content.find("<Filter", impl_->currentPos);
     if (filterStart == std::string::npos) {
         return false;
     }
     
-    size_t filterEnd = m_content.find("</Filter>", filterStart);
+    size_t filterEnd = impl_->content.find("</Filter>", filterStart);
     if (filterEnd == std::string::npos) {
         return false;
     }
     
-    m_currentPos = filterStart;
+    impl_->currentPos = filterStart;
     
-    if (m_content.find("<PropertyIsEqualTo", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsEqualTo", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsEqualTo", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsEqualTo", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsNotEqualTo", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsNotEqualTo", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsNotEqualTo", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsNotEqualTo", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsLessThan", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsLessThan", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsLessThan", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsLessThan", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsGreaterThan", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsGreaterThan", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsGreaterThan", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsGreaterThan", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsLessThanOrEqualTo", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsLessThanOrEqualTo", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsLessThanOrEqualTo", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsLessThanOrEqualTo", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsGreaterThanOrEqualTo", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsGreaterThanOrEqualTo", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsGreaterThanOrEqualTo", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsGreaterThanOrEqualTo", impl_->currentPos) < filterEnd) {
         return ParseComparisonFilter(filter);
     }
     
-    if (m_content.find("<PropertyIsBetween", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsBetween", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsBetween", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsBetween", impl_->currentPos) < filterEnd) {
         return ParsePropertyIsBetween(filter);
     }
     
-    if (m_content.find("<PropertyIsLike", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsLike", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsLike", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsLike", impl_->currentPos) < filterEnd) {
         return ParsePropertyIsLike(filter);
     }
     
-    if (m_content.find("<PropertyIsNull", m_currentPos) != std::string::npos &&
-        m_content.find("<PropertyIsNull", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<PropertyIsNull", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<PropertyIsNull", impl_->currentPos) < filterEnd) {
         return ParsePropertyIsNull(filter);
     }
     
-    if (m_content.find("<And", m_currentPos) != std::string::npos &&
-        m_content.find("<And", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<And", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<And", impl_->currentPos) < filterEnd) {
         return ParseLogicalFilter(filter);
     }
     
-    if (m_content.find("<Or", m_currentPos) != std::string::npos &&
-        m_content.find("<Or", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<Or", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<Or", impl_->currentPos) < filterEnd) {
         return ParseLogicalFilter(filter);
     }
     
-    if (m_content.find("<Not", m_currentPos) != std::string::npos &&
-        m_content.find("<Not", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<Not", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<Not", impl_->currentPos) < filterEnd) {
         return ParseLogicalFilter(filter);
     }
     
-    if (m_content.find("<BBOX", m_currentPos) != std::string::npos &&
-        m_content.find("<BBOX", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<BBOX", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<BBOX", impl_->currentPos) < filterEnd) {
         return ParseSpatialFilter(filter);
     }
     
-    if (m_content.find("<Intersects", m_currentPos) != std::string::npos &&
-        m_content.find("<Intersects", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<Intersects", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<Intersects", impl_->currentPos) < filterEnd) {
         return ParseSpatialFilter(filter);
     }
     
-    if (m_content.find("<Within", m_currentPos) != std::string::npos &&
-        m_content.find("<Within", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<Within", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<Within", impl_->currentPos) < filterEnd) {
         return ParseSpatialFilter(filter);
     }
     
-    if (m_content.find("<Contains", m_currentPos) != std::string::npos &&
-        m_content.find("<Contains", m_currentPos) < filterEnd) {
+    if (impl_->content.find("<Contains", impl_->currentPos) != std::string::npos &&
+        impl_->content.find("<Contains", impl_->currentPos) < filterEnd) {
         return ParseSpatialFilter(filter);
     }
     
-    m_currentPos = filterEnd + 9;
+    impl_->currentPos = filterEnd + 9;
     return false;
 }
 
@@ -840,22 +857,22 @@ bool SldParser::ParseComparisonFilter(FilterPtr& filter)
     
     size_t opStart = std::string::npos;
     
-    if ((opStart = m_content.find("<PropertyIsEqualTo", m_currentPos)) != std::string::npos) {
+    if ((opStart = impl_->content.find("<PropertyIsEqualTo", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kEqual;
         opName = "PropertyIsEqualTo";
-    } else if ((opStart = m_content.find("<PropertyIsNotEqualTo", m_currentPos)) != std::string::npos) {
+    } else if ((opStart = impl_->content.find("<PropertyIsNotEqualTo", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kNotEqual;
         opName = "PropertyIsNotEqualTo";
-    } else if ((opStart = m_content.find("<PropertyIsLessThan", m_currentPos)) != std::string::npos) {
+    } else if ((opStart = impl_->content.find("<PropertyIsLessThan", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kLessThan;
         opName = "PropertyIsLessThan";
-    } else if ((opStart = m_content.find("<PropertyIsGreaterThan", m_currentPos)) != std::string::npos) {
+    } else if ((opStart = impl_->content.find("<PropertyIsGreaterThan", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kGreaterThan;
         opName = "PropertyIsGreaterThan";
-    } else if ((opStart = m_content.find("<PropertyIsLessThanOrEqualTo", m_currentPos)) != std::string::npos) {
+    } else if ((opStart = impl_->content.find("<PropertyIsLessThanOrEqualTo", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kLessThanOrEqual;
         opName = "PropertyIsLessThanOrEqualTo";
-    } else if ((opStart = m_content.find("<PropertyIsGreaterThanOrEqualTo", m_currentPos)) != std::string::npos) {
+    } else if ((opStart = impl_->content.find("<PropertyIsGreaterThanOrEqualTo", impl_->currentPos)) != std::string::npos) {
         op = ComparisonOperator::kGreaterThanOrEqual;
         opName = "PropertyIsGreaterThanOrEqualTo";
     }
@@ -864,7 +881,7 @@ bool SldParser::ParseComparisonFilter(FilterPtr& filter)
         return false;
     }
     
-    m_currentPos = opStart;
+    impl_->currentPos = opStart;
     
     std::string propertyName = ReadElementContent("PropertyName");
     std::string literal = ReadElementContent("Literal");
@@ -877,9 +894,9 @@ bool SldParser::ParseComparisonFilter(FilterPtr& filter)
 
 bool SldParser::ParseLogicalFilter(FilterPtr& filter)
 {
-    size_t andPos = m_content.find("<And", m_currentPos);
-    size_t orPos = m_content.find("<Or", m_currentPos);
-    size_t notPos = m_content.find("<Not", m_currentPos);
+    size_t andPos = impl_->content.find("<And", impl_->currentPos);
+    size_t orPos = impl_->content.find("<Or", impl_->currentPos);
+    size_t notPos = impl_->content.find("<Not", impl_->currentPos);
     
     LogicalOperator op;
     std::string tagName;
@@ -904,16 +921,16 @@ bool SldParser::ParseLogicalFilter(FilterPtr& filter)
         return false;
     }
     
-    m_currentPos = opPos;
+    impl_->currentPos = opPos;
     
     LogicalFilterPtr logicalFilter = std::make_shared<LogicalFilter>(op);
     
-    size_t endTag = m_content.find("</" + tagName + ">", m_currentPos);
+    size_t endTag = impl_->content.find("</" + tagName + ">", impl_->currentPos);
     if (endTag == std::string::npos) {
         return false;
     }
     
-    while (m_currentPos < endTag) {
+    while (impl_->currentPos < endTag) {
         FilterPtr subFilter;
         if (ParseFilter(subFilter)) {
             logicalFilter->AddFilter(subFilter);
@@ -923,7 +940,7 @@ bool SldParser::ParseLogicalFilter(FilterPtr& filter)
     }
     
     filter = logicalFilter;
-    m_currentPos = endTag + tagName.length() + 3;
+    impl_->currentPos = endTag + tagName.length() + 3;
     return true;
 }
 
@@ -933,16 +950,16 @@ bool SldParser::ParseSpatialFilter(FilterPtr& filter)
     std::string tagName;
     size_t opPos = std::string::npos;
     
-    if ((opPos = m_content.find("<BBOX", m_currentPos)) != std::string::npos) {
+    if ((opPos = impl_->content.find("<BBOX", impl_->currentPos)) != std::string::npos) {
         op = SpatialOperator::kBbox;
         tagName = "BBOX";
-    } else if ((opPos = m_content.find("<Intersects", m_currentPos)) != std::string::npos) {
+    } else if ((opPos = impl_->content.find("<Intersects", impl_->currentPos)) != std::string::npos) {
         op = SpatialOperator::kIntersects;
         tagName = "Intersects";
-    } else if ((opPos = m_content.find("<Within", m_currentPos)) != std::string::npos) {
+    } else if ((opPos = impl_->content.find("<Within", impl_->currentPos)) != std::string::npos) {
         op = SpatialOperator::kWithin;
         tagName = "Within";
-    } else if ((opPos = m_content.find("<Contains", m_currentPos)) != std::string::npos) {
+    } else if ((opPos = impl_->content.find("<Contains", impl_->currentPos)) != std::string::npos) {
         op = SpatialOperator::kContains;
         tagName = "Contains";
     }
@@ -951,7 +968,7 @@ bool SldParser::ParseSpatialFilter(FilterPtr& filter)
         return false;
     }
     
-    m_currentPos = opPos;
+    impl_->currentPos = opPos;
     
     std::string propertyName = ReadElementContent("PropertyName");
     std::string envelopeContent = ReadElementContent("Envelope");
@@ -978,12 +995,12 @@ bool SldParser::ParseSpatialFilter(FilterPtr& filter)
 
 bool SldParser::ParsePropertyIsBetween(FilterPtr& filter)
 {
-    size_t startPos = m_content.find("<PropertyIsBetween", m_currentPos);
+    size_t startPos = impl_->content.find("<PropertyIsBetween", impl_->currentPos);
     if (startPos == std::string::npos) {
         return false;
     }
     
-    m_currentPos = startPos;
+    impl_->currentPos = startPos;
     
     std::string propertyName = ReadElementContent("PropertyName");
     std::string lowerBoundary = ReadElementContent("LowerBoundary");
@@ -1001,12 +1018,12 @@ bool SldParser::ParsePropertyIsBetween(FilterPtr& filter)
 
 bool SldParser::ParsePropertyIsLike(FilterPtr& filter)
 {
-    size_t startPos = m_content.find("<PropertyIsLike", m_currentPos);
+    size_t startPos = impl_->content.find("<PropertyIsLike", impl_->currentPos);
     if (startPos == std::string::npos) {
         return false;
     }
     
-    m_currentPos = startPos;
+    impl_->currentPos = startPos;
     
     std::string propertyName = ReadElementContent("PropertyName");
     std::string literal = ReadElementContent("Literal");
@@ -1019,12 +1036,12 @@ bool SldParser::ParsePropertyIsLike(FilterPtr& filter)
 
 bool SldParser::ParsePropertyIsNull(FilterPtr& filter)
 {
-    size_t startPos = m_content.find("<PropertyIsNull", m_currentPos);
+    size_t startPos = impl_->content.find("<PropertyIsNull", impl_->currentPos);
     if (startPos == std::string::npos) {
         return false;
     }
     
-    m_currentPos = startPos;
+    impl_->currentPos = startPos;
     
     std::string propertyName = ReadElementContent("PropertyName");
     
@@ -1036,27 +1053,27 @@ bool SldParser::ParsePropertyIsNull(FilterPtr& filter)
 
 bool SldParser::ParseParameter(std::map<std::string, std::string>& params, const std::string& tagName)
 {
-    size_t searchPos = m_currentPos;
+    size_t searchPos = impl_->currentPos;
     
     while (true) {
-        size_t paramStart = m_content.find("<" + tagName, searchPos);
+        size_t paramStart = impl_->content.find("<" + tagName, searchPos);
         if (paramStart == std::string::npos) {
             break;
         }
         
-        size_t paramEnd = m_content.find("</" + tagName + ">", paramStart);
+        size_t paramEnd = impl_->content.find("</" + tagName + ">", paramStart);
         if (paramEnd == std::string::npos) {
             break;
         }
         
-        size_t nameAttrStart = m_content.find("name=\"", paramStart);
+        size_t nameAttrStart = impl_->content.find("name=\"", paramStart);
         if (nameAttrStart != std::string::npos && nameAttrStart < paramEnd) {
             nameAttrStart += 6;
-            size_t nameAttrEnd = m_content.find("\"", nameAttrStart);
-            std::string name = m_content.substr(nameAttrStart, nameAttrEnd - nameAttrStart);
+            size_t nameAttrEnd = impl_->content.find("\"", nameAttrStart);
+            std::string name = impl_->content.substr(nameAttrStart, nameAttrEnd - nameAttrStart);
             
-            size_t contentStart = m_content.find(">", paramStart) + 1;
-            std::string value = m_content.substr(contentStart, paramEnd - contentStart);
+            size_t contentStart = impl_->content.find(">", paramStart) + 1;
+            std::string value = impl_->content.substr(contentStart, paramEnd - contentStart);
             
             params[Trim(name)] = Trim(value);
         }
@@ -1069,73 +1086,73 @@ bool SldParser::ParseParameter(std::map<std::string, std::string>& params, const
 
 std::string SldParser::ReadElement(const std::string& tagName)
 {
-    size_t start = m_content.find("<" + tagName, m_currentPos);
+    size_t start = impl_->content.find("<" + tagName, impl_->currentPos);
     if (start == std::string::npos) {
         return "";
     }
     
-    size_t end = m_content.find("</" + tagName + ">", start);
+    size_t end = impl_->content.find("</" + tagName + ">", start);
     if (end == std::string::npos) {
         return "";
     }
     
-    return m_content.substr(start, end - start + tagName.length() + 3);
+    return impl_->content.substr(start, end - start + tagName.length() + 3);
 }
 
 std::string SldParser::ReadElementContent(const std::string& tagName)
 {
-    size_t start = m_content.find("<" + tagName, m_currentPos);
+    size_t start = impl_->content.find("<" + tagName, impl_->currentPos);
     if (start == std::string::npos) {
         return "";
     }
     
-    size_t contentStart = m_content.find(">", start);
+    size_t contentStart = impl_->content.find(">", start);
     if (contentStart == std::string::npos) {
         return "";
     }
     contentStart++;
     
-    size_t end = m_content.find("</" + tagName + ">", contentStart);
+    size_t end = impl_->content.find("</" + tagName + ">", contentStart);
     if (end == std::string::npos) {
         return "";
     }
     
-    return m_content.substr(contentStart, end - contentStart);
+    return impl_->content.substr(contentStart, end - contentStart);
 }
 
 bool SldParser::SkipToElement(const std::string& tagName)
 {
-    size_t pos = m_content.find("<" + tagName, m_currentPos);
+    size_t pos = impl_->content.find("<" + tagName, impl_->currentPos);
     if (pos == std::string::npos) {
         return false;
     }
-    m_currentPos = pos;
+    impl_->currentPos = pos;
     return true;
 }
 
 bool SldParser::SkipToEndElement(const std::string& tagName)
 {
-    size_t pos = m_content.find("</" + tagName + ">", m_currentPos);
+    size_t pos = impl_->content.find("</" + tagName + ">", impl_->currentPos);
     if (pos == std::string::npos) {
         return false;
     }
-    m_currentPos = pos + tagName.length() + 3;
+    impl_->currentPos = pos + tagName.length() + 3;
     return true;
 }
 
 std::string SldParser::ReadAttribute(const std::string& tagName, const std::string& attrName)
 {
-    size_t start = m_content.find("<" + tagName, m_currentPos);
+    size_t start = impl_->content.find("<" + tagName, impl_->currentPos);
     if (start == std::string::npos) {
         return "";
     }
     
-    size_t end = m_content.find(">", start);
+    size_t end = impl_->content.find(">", start);
     if (end == std::string::npos) {
         return "";
     }
     
-    std::string tagContent = m_content.substr(start, end - start);
+    std::string tagContent = impl_->content.substr(start, end - start);
     
     std::string attrPattern = attrName + "=\"";
     size_t attrStart = tagContent.find(attrPattern);
@@ -1246,12 +1263,12 @@ std::string SldParser::DoubleToString(double val)
 
 void SldParser::SetError(const std::string& message)
 {
-    m_lastError = message;
+    impl_->lastError = message;
 }
 
 void SldParser::ClearError()
 {
-    m_lastError.clear();
+    impl_->lastError.clear();
 }
 
 std::string SldParser::GenerateIndent(int level)

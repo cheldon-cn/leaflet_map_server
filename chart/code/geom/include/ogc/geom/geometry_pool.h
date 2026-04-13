@@ -27,7 +27,7 @@ public:
         }
     }
     
-    ~ObjectPool() = default;
+    ~ObjectPool();
     
     std::unique_ptr<T> Acquire() {
         std::lock_guard<std::mutex> lock(m_mutex);

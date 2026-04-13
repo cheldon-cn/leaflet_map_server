@@ -1,10 +1,29 @@
 #include "ogc/geom/polygon.h"
 #include "ogc/geom/visitor.h"
 #include "ogc/geom/serialization_utils.h"
+#include "geometry_impl_internal.h"
 #include <sstream>
 #include <iomanip>
 
 namespace ogc {
+
+struct Polygon::Impl {
+    LinearRingPtr exteriorRing;
+    std::vector<LinearRingPtr> interiorRings;
+};
+
+Polygon::Polygon() : impl_(std::make_unique<Impl>()) {
+}
+
+Polygon::~Polygon() = default;
+
+LinearRingPtr& Polygon::GetExteriorRingRef() {
+    return impl_->exteriorRing;
+}
+
+std::vector<LinearRingPtr>& Polygon::GetInteriorRingsRef() {
+    return impl_->interiorRings;
+}
 
 PolygonPtr Polygon::Create() {
     return PolygonPtr(new Polygon());
@@ -12,68 +31,76 @@ PolygonPtr Polygon::Create() {
 
 PolygonPtr Polygon::Create(LinearRingPtr exteriorRing) {
     auto polygon = new Polygon();
-    polygon->m_exteriorRing = std::move(exteriorRing);
+    polygon->impl_->exteriorRing = std::move(exteriorRing);
     return PolygonPtr(polygon);
 }
 
 bool Polygon::IsEmpty() const noexcept {
-    return !m_exteriorRing || m_exteriorRing->IsEmpty();
+    return !impl_->exteriorRing || impl_->exteriorRing->IsEmpty();
 }
 
 bool Polygon::Is3D() const noexcept {
-    return m_exteriorRing && m_exteriorRing->Is3D();
+    return impl_->exteriorRing && impl_->exteriorRing->Is3D();
 }
 
 bool Polygon::IsMeasured() const noexcept {
-    return m_exteriorRing && m_exteriorRing->IsMeasured();
+    return impl_->exteriorRing && impl_->exteriorRing->IsMeasured();
 }
 
 int Polygon::GetCoordinateDimension() const noexcept {
-    if (!m_exteriorRing) return 2;
-    return m_exteriorRing->GetCoordinateDimension();
+    if (!impl_->exteriorRing) return 2;
+    return impl_->exteriorRing->GetCoordinateDimension();
 }
 
 void Polygon::SetExteriorRing(LinearRingPtr ring) {
-    m_exteriorRing = std::move(ring);
+    impl_->exteriorRing = std::move(ring);
     InvalidateCache();
 }
 
 const LinearRing* Polygon::GetExteriorRing() const noexcept {
-    return m_exteriorRing.get();
+    return impl_->exteriorRing.get();
 }
 
 void Polygon::AddInteriorRing(LinearRingPtr ring) {
-    m_interiorRings.push_back(std::move(ring));
+    impl_->interiorRings.push_back(std::move(ring));
     InvalidateCache();
 }
 
 void Polygon::RemoveInteriorRing(size_t index) {
-    if (index >= m_interiorRings.size()) {
+    if (index >= impl_->interiorRings.size()) {
         GLM_THROW(GeomResult::kOutOfRange, "Interior ring index out of range");
     }
-    m_interiorRings.erase(m_interiorRings.begin() + index);
+    impl_->interiorRings.erase(impl_->interiorRings.begin() + index);
     InvalidateCache();
 }
 
 const LinearRing* Polygon::GetInteriorRingN(size_t index) const {
-    if (index >= m_interiorRings.size()) {
+    if (index >= impl_->interiorRings.size()) {
         GLM_THROW(GeomResult::kOutOfRange, "Interior ring index out of range");
     }
-    return m_interiorRings[index].get();
+    return impl_->interiorRings[index].get();
+}
+
+size_t Polygon::GetNumInteriorRings() const noexcept {
+    return impl_->interiorRings.size();
+}
+
+size_t Polygon::GetNumRings() const noexcept {
+    return (impl_->exteriorRing ? 1 : 0) + impl_->interiorRings.size();
 }
 
 void Polygon::ClearRings() {
-    m_exteriorRing.reset();
-    m_interiorRings.clear();
+    impl_->exteriorRing.reset();
+    impl_->interiorRings.clear();
     InvalidateCache();
 }
 
 size_t Polygon::GetNumCoordinates() const noexcept {
     size_t count = 0;
-    if (m_exteriorRing) {
-        count += m_exteriorRing->GetNumCoordinates();
+    if (impl_->exteriorRing) {
+        count += impl_->exteriorRing->GetNumCoordinates();
     }
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         count += ring->GetNumCoordinates();
     }
     return count;
@@ -81,14 +108,14 @@ size_t Polygon::GetNumCoordinates() const noexcept {
 
 Coordinate Polygon::GetCoordinateN(size_t index) const {
     size_t count = 0;
-    if (m_exteriorRing) {
-        size_t n = m_exteriorRing->GetNumCoordinates();
+    if (impl_->exteriorRing) {
+        size_t n = impl_->exteriorRing->GetNumCoordinates();
         if (index < count + n) {
-            return m_exteriorRing->GetCoordinateN(index - count);
+            return impl_->exteriorRing->GetCoordinateN(index - count);
         }
         count += n;
     }
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         size_t n = ring->GetNumCoordinates();
         if (index < count + n) {
             return ring->GetCoordinateN(index - count);
@@ -101,11 +128,11 @@ Coordinate Polygon::GetCoordinateN(size_t index) const {
 
 CoordinateList Polygon::GetCoordinates() const {
     CoordinateList coords;
-    if (m_exteriorRing) {
-        auto exteriorCoords = m_exteriorRing->GetCoordinates();
+    if (impl_->exteriorRing) {
+        auto exteriorCoords = impl_->exteriorRing->GetCoordinates();
         coords.insert(coords.end(), exteriorCoords.begin(), exteriorCoords.end());
     }
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         auto ringCoords = ring->GetCoordinates();
         coords.insert(coords.end(), ringCoords.begin(), ringCoords.end());
     }
@@ -113,11 +140,11 @@ CoordinateList Polygon::GetCoordinates() const {
 }
 
 double Polygon::Area() const {
-    if (!m_exteriorRing) return 0.0;
+    if (!impl_->exteriorRing) return 0.0;
     
-    double area = m_exteriorRing->Area();
+    double area = impl_->exteriorRing->Area();
     
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         area -= ring->Area();
     }
     
@@ -125,11 +152,11 @@ double Polygon::Area() const {
 }
 
 double Polygon::GetPerimeter() const {
-    if (!m_exteriorRing) return 0.0;
+    if (!impl_->exteriorRing) return 0.0;
     
-    double perimeter = m_exteriorRing->Length();
+    double perimeter = impl_->exteriorRing->Length();
     
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         perimeter += ring->Length();
     }
     
@@ -137,13 +164,13 @@ double Polygon::GetPerimeter() const {
 }
 
 double Polygon::GetExteriorArea() const {
-    if (!m_exteriorRing) return 0.0;
-    return m_exteriorRing->Area();
+    if (!impl_->exteriorRing) return 0.0;
+    return impl_->exteriorRing->Area();
 }
 
 double Polygon::GetInteriorArea() const {
     double area = 0.0;
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         area += ring->Area();
     }
     return area;
@@ -163,8 +190,8 @@ double Polygon::GetCompactness() const {
 }
 
 PolygonPtr Polygon::RemoveHoles() const {
-    if (!m_exteriorRing) return Create();
-    return Create(LinearRingPtr(static_cast<LinearRing*>(m_exteriorRing->Clone().release())));
+    if (!impl_->exteriorRing) return Create();
+    return Create(LinearRingPtr(static_cast<LinearRing*>(impl_->exteriorRing->Clone().release())));
 }
 
 PolygonPtr Polygon::MergeHoles() const {
@@ -177,15 +204,15 @@ std::vector<LinearRing::Triangle> Polygon::Triangulate() const {
 }
 
 bool Polygon::ContainsRing(const LinearRing* ring) const {
-    if (!m_exteriorRing || !ring) return false;
+    if (!impl_->exteriorRing || !ring) return false;
     
     for (const auto& coord : ring->GetCoordinates()) {
-        if (!m_exteriorRing->ContainsPoint(coord)) {
+        if (!impl_->exteriorRing->ContainsPoint(coord)) {
             return false;
         }
     }
     
-    for (const auto& interiorRing : m_interiorRings) {
+    for (const auto& interiorRing : impl_->interiorRings) {
         for (const auto& coord : ring->GetCoordinates()) {
             if (interiorRing->ContainsPoint(coord)) {
                 return false;
@@ -261,7 +288,7 @@ std::string Polygon::AsText(int precision) const {
     oss << "POLYGON(";
     
     oss << "(";
-    const auto& exteriorCoords = m_exteriorRing->GetCoordinates();
+    const auto& exteriorCoords = impl_->exteriorRing->GetCoordinates();
     for (size_t i = 0; i < exteriorCoords.size(); ++i) {
         if (i > 0) oss << ", ";
         oss << exteriorCoords[i].x << " " << exteriorCoords[i].y;
@@ -269,7 +296,7 @@ std::string Polygon::AsText(int precision) const {
     }
     oss << ")";
     
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         oss << ", (";
         const auto& ringCoords = ring->GetCoordinates();
         for (size_t i = 0; i < ringCoords.size(); ++i) {
@@ -295,7 +322,7 @@ std::vector<uint8_t> Polygon::AsBinary() const {
     wkb::WriteByteOrder(wkb);
     wkb::WriteGeometryType(wkb, static_cast<uint32_t>(GeomType::kPolygon), Is3D(), IsMeasured());
     
-    uint32_t numRings = 1 + static_cast<uint32_t>(m_interiorRings.size());
+    uint32_t numRings = 1 + static_cast<uint32_t>(impl_->interiorRings.size());
     wkb::WriteUInt32LE(wkb, numRings);
     
     auto writeRing = [this](std::vector<uint8_t>& wkb, const LinearRing* ring) {
@@ -307,9 +334,9 @@ std::vector<uint8_t> Polygon::AsBinary() const {
         }
     };
     
-    writeRing(wkb, m_exteriorRing.get());
+    writeRing(wkb, impl_->exteriorRing.get());
     
-    for (const auto& ring : m_interiorRings) {
+    for (const auto& ring : impl_->interiorRings) {
         writeRing(wkb, ring.get());
     }
     
@@ -318,12 +345,12 @@ std::vector<uint8_t> Polygon::AsBinary() const {
 
 GeometryPtr Polygon::Clone() const {
     auto polygon = Create();
-    if (m_exteriorRing) {
-        polygon->m_exteriorRing = LinearRingPtr(
-            static_cast<LinearRing*>(m_exteriorRing->Clone().release()));
+    if (impl_->exteriorRing) {
+        polygon->impl_->exteriorRing = LinearRingPtr(
+            static_cast<LinearRing*>(impl_->exteriorRing->Clone().release()));
     }
-    for (const auto& ring : m_interiorRings) {
-        polygon->m_interiorRings.push_back(
+    for (const auto& ring : impl_->interiorRings) {
+        polygon->impl_->interiorRings.push_back(
             LinearRingPtr(static_cast<LinearRing*>(ring->Clone().release())));
     }
     return polygon;
@@ -334,13 +361,13 @@ GeometryPtr Polygon::CloneEmpty() const {
 }
 
 Envelope Polygon::ComputeEnvelope() const {
-    if (!m_exteriorRing) return Envelope();
-    return m_exteriorRing->GetEnvelope();
+    if (!impl_->exteriorRing) return Envelope();
+    return impl_->exteriorRing->GetEnvelope();
 }
 
 Coordinate Polygon::ComputeCentroid() const {
-    if (!m_exteriorRing) return Coordinate::Empty();
-    return m_exteriorRing->GetCentroid();
+    if (!impl_->exteriorRing) return Coordinate::Empty();
+    return impl_->exteriorRing->GetCentroid();
 }
 
 std::string Polygon::AsGeoJSON(int precision) const {
@@ -367,10 +394,10 @@ std::string Polygon::AsGeoJSON(int precision) const {
     
     std::ostringstream oss;
     oss << "[";
-    writeRing(oss, m_exteriorRing.get());
-    for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+    writeRing(oss, impl_->exteriorRing.get());
+    for (size_t i = 0; i < impl_->interiorRings.size(); ++i) {
         oss << ",";
-        writeRing(oss, m_interiorRings[i].get());
+        writeRing(oss, impl_->interiorRings[i].get());
     }
     oss << "]";
     
@@ -399,14 +426,14 @@ std::string Polygon::AsGML() const {
     };
     
     std::ostringstream exterior;
-    writeRingPosList(exterior, m_exteriorRing.get());
+    writeRingPosList(exterior, impl_->exteriorRing.get());
     
     std::string interior;
-    if (!m_interiorRings.empty()) {
+    if (!impl_->interiorRings.empty()) {
         std::ostringstream intOss;
-        for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+        for (size_t i = 0; i < impl_->interiorRings.size(); ++i) {
             std::ostringstream ringOss;
-            writeRingPosList(ringOss, m_interiorRings[i].get());
+            writeRingPosList(ringOss, impl_->interiorRings[i].get());
             if (i > 0) intOss << " ";
             intOss << ringOss.str();
         }
@@ -435,14 +462,14 @@ std::string Polygon::AsKML() const {
     };
     
     std::ostringstream exterior;
-    writeRingCoords(exterior, m_exteriorRing.get());
+    writeRingCoords(exterior, impl_->exteriorRing.get());
     
     std::string interior;
-    if (!m_interiorRings.empty()) {
+    if (!impl_->interiorRings.empty()) {
         std::ostringstream intOss;
-        for (size_t i = 0; i < m_interiorRings.size(); ++i) {
+        for (size_t i = 0; i < impl_->interiorRings.size(); ++i) {
             std::ostringstream ringOss;
-            writeRingCoords(ringOss, m_interiorRings[i].get());
+            writeRingCoords(ringOss, impl_->interiorRings[i].get());
             if (i > 0) intOss << " ";
             intOss << ringOss.str();
         }

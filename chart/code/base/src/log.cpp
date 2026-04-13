@@ -7,14 +7,85 @@
 namespace ogc {
 namespace base {
 
+struct Logger::Impl {
+    LogLevel level = LogLevel::kInfo;
+    std::ofstream file;
+    std::string filepath;
+    bool consoleOutput = true;
+    std::mutex mutex;
+    
+    void WriteLog(LogLevel level, const std::string& message);
+    void WriteLogWithLocation(LogLevel level, const char* file, int line,
+                              const char* func, const std::string& message);
+    std::string GetTimestamp() const;
+};
+
+void Logger::Impl::WriteLog(LogLevel level, const std::string& message) {
+    std::lock_guard<std::mutex> lock(mutex);
+    
+    std::ostringstream oss;
+    oss << "[" << GetTimestamp() << "] "
+        << "[" << Logger::LevelToString(level) << "] "
+        << message << std::endl;
+    
+    std::string logLine = oss.str();
+    
+    if (consoleOutput) {
+        if (level >= LogLevel::kError) {
+            std::cerr << logLine;
+        } else {
+            std::cout << logLine;
+        }
+    }
+    
+    if (file.is_open()) {
+        file << logLine;
+    }
+}
+
+void Logger::Impl::WriteLogWithLocation(LogLevel level, const char* file, int line,
+                                        const char* func, const std::string& message) {
+    std::lock_guard<std::mutex> lock(mutex);
+    
+    std::ostringstream oss;
+    oss << "[" << GetTimestamp() << "] "
+        << "[" << std::setw(7) << Logger::LevelToString(level) << "] "
+        << "[" << file << ":" << line << "] "
+        << message << std::endl;
+    
+    std::string logLine = oss.str();
+    
+    if (consoleOutput) {
+        if (level >= LogLevel::kError) {
+            std::cerr << logLine;
+        } else {
+            std::cout << logLine;
+        }
+    }
+    
+    if (this->file.is_open()) {
+        this->file << logLine;
+    }
+}
+
+std::string Logger::Impl::GetTimestamp() const {
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()) % 1000;
+    
+    std::ostringstream oss;
+    oss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
+    oss << "." << std::setfill('0') << std::setw(3) << ms.count();
+    return oss.str();
+}
+
 Logger& Logger::Instance() {
     static Logger instance;
     return instance;
 }
 
-Logger::Logger()
-    : m_level(LogLevel::kInfo)
-    , m_consoleOutput(true) {
+Logger::Logger() : impl_(std::make_unique<Impl>()) {
 }
 
 Logger::~Logger() {
@@ -22,24 +93,24 @@ Logger::~Logger() {
 }
 
 void Logger::SetLevel(LogLevel level) {
-    m_level = level;
+    impl_->level = level;
 }
 
 LogLevel Logger::GetLevel() const {
-    return m_level;
+    return impl_->level;
 }
 
 void Logger::SetLogFile(const std::string& filepath) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_file.is_open()) {
-        m_file.close();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    if (impl_->file.is_open()) {
+        impl_->file.close();
     }
-    m_filepath = filepath;
-    m_file.open(filepath, std::ios::app);
+    impl_->filepath = filepath;
+    impl_->file.open(filepath, std::ios::app);
 }
 
 void Logger::SetConsoleOutput(bool enable) {
-    m_consoleOutput = enable;
+    impl_->consoleOutput = enable;
 }
 
 void Logger::Trace(const std::string& message) {
@@ -67,34 +138,34 @@ void Logger::Fatal(const std::string& message) {
 }
 
 void Logger::Log(LogLevel level, const std::string& message) {
-    if (level < m_level) {
+    if (level < impl_->level) {
         return;
     }
-    WriteLog(level, message);
+    impl_->WriteLog(level, message);
 }
 
 void Logger::LogWithLocation(LogLevel level, const char* file, int line, 
                              const char* func, const std::string& message) {
-    if (level < m_level) {
+    if (level < impl_->level) {
         return;
     }
-    WriteLogWithLocation(level, file, line, func, message);
+    impl_->WriteLogWithLocation(level, file, line, func, message);
 }
 
 void Logger::Flush() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_file.is_open()) {
-        m_file.flush();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    if (impl_->file.is_open()) {
+        impl_->file.flush();
     }
-    if (m_consoleOutput) {
+    if (impl_->consoleOutput) {
         std::cout.flush();
     }
 }
 
 void Logger::Close() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_file.is_open()) {
-        m_file.close();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    if (impl_->file.is_open()) {
+        impl_->file.close();
     }
 }
 
@@ -119,66 +190,6 @@ LogLevel Logger::StringToLevel(const std::string& str) {
     if (str == "ERROR") return LogLevel::kError;
     if (str == "FATAL") return LogLevel::kFatal;
     return LogLevel::kNone;
-}
-
-void Logger::WriteLog(LogLevel level, const std::string& message) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    
-    std::ostringstream oss;
-    oss << "[" << GetTimestamp() << "] "
-        << "[" << LevelToString(level) << "] "
-        << message << std::endl;
-    
-    std::string logLine = oss.str();
-    
-    if (m_consoleOutput) {
-        if (level >= LogLevel::kError) {
-            std::cerr << logLine;
-        } else {
-            std::cout << logLine;
-        }
-    }
-    
-    if (m_file.is_open()) {
-        m_file << logLine;
-    }
-}
-
-void Logger::WriteLogWithLocation(LogLevel level, const char* file, int line,
-                                  const char* func, const std::string& message) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    
-    std::ostringstream oss;
-    oss << "[" << GetTimestamp() << "] "
-        << "[" << std::setw(7) << LevelToString(level) << "] "
-        << "[" << file << ":" << line << "] "
-        << message << std::endl;
-    
-    std::string logLine = oss.str();
-    
-    if (m_consoleOutput) {
-        if (level >= LogLevel::kError) {
-            std::cerr << logLine;
-        } else {
-            std::cout << logLine;
-        }
-    }
-    
-    if (m_file.is_open()) {
-        m_file << logLine;
-    }
-}
-
-std::string Logger::GetTimestamp() const {
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()) % 1000;
-    
-    std::ostringstream oss;
-    oss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
-    oss << "." << std::setfill('0') << std::setw(3) << ms.count();
-    return oss.str();
 }
 
 LogHelper::LogHelper(LogLevel level) : m_level(level) {}

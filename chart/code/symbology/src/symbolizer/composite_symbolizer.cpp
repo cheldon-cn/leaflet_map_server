@@ -8,8 +8,15 @@ CompositeSymbolizer::CompositeSymbolizer()
     : m_compositionMode("normal") {
 }
 
+CompositeSymbolizer::~CompositeSymbolizer() = default;
+
+std::string CompositeSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "CompositeSymbolizer" : name;
+}
+
 ogc::draw::DrawResult CompositeSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, GetDefaultStyle());
 }
 
 ogc::draw::DrawResult CompositeSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -17,7 +24,7 @@ ogc::draw::DrawResult CompositeSymbolizer::Symbolize(ogc::draw::DrawContextPtr c
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!IsEnabled()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -114,13 +121,13 @@ SymbolizerPtr CompositeSymbolizer::Clone() const {
         }
     }
     sym->m_compositionMode = m_compositionMode;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
-    sym->m_opacity = m_opacity;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
+    sym->SetOpacity(GetOpacity());
     return sym;
 }
 

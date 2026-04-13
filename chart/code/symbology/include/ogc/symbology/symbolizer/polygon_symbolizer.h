@@ -28,10 +28,10 @@ public:
     PolygonSymbolizer();
     explicit PolygonSymbolizer(uint32_t fillColor);
     PolygonSymbolizer(uint32_t fillColor, uint32_t strokeColor, double strokeWidth);
-    ~PolygonSymbolizer() override = default;
+    ~PolygonSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kPolygon; }
-    std::string GetName() const override { return m_name.empty() ? "PolygonSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -81,18 +81,8 @@ private:
     ogc::draw::DrawResult DrawPolygon(ogc::draw::DrawContextPtr context, const ogc::Polygon* polygon, const ogc::draw::DrawStyle& style);
     ogc::draw::DrawResult DrawMultiPolygon(ogc::draw::DrawContextPtr context, const ogc::MultiPolygon* multiPolygon, const ogc::draw::DrawStyle& style);
     
-    uint32_t m_fillColor;
-    double m_fillOpacity;
-    uint32_t m_strokeColor;
-    double m_strokeWidth;
-    double m_strokeOpacity;
-    FillPattern m_fillPattern;
-    double m_displacementX;
-    double m_displacementY;
-    double m_perpendicularOffset;
-    bool m_graphicFill;
-    double m_graphicFillSize;
-    double m_graphicFillSpacing;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

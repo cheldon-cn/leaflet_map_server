@@ -66,16 +66,8 @@ private:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     
-    void WriteLog(LogLevel level, const std::string& message);
-    void WriteLogWithLocation(LogLevel level, const char* file, int line,
-                              const char* func, const std::string& message);
-    std::string GetTimestamp() const;
-    
-    LogLevel m_level;
-    std::ofstream m_file;
-    std::string m_filepath;
-    bool m_consoleOutput;
-    std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class OGC_BASE_API LogHelper {

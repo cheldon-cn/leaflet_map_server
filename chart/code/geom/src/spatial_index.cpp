@@ -1,5 +1,6 @@
 #include "ogc/geom/spatial_index.h"
 #include "ogc/geom/point.h"
+#include "geometry_impl_internal.h"
 #include <algorithm>
 #include <queue>
 #include <cmath>

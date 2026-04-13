@@ -2,6 +2,7 @@
 #include "ogc/geom/geometry.h"
 #include "ogc/geom/polygon.h"
 #include "ogc/geom/multipolygon.h"
+#include "geometry_impl_internal.h"
 
 namespace ogc {
 

@@ -10,34 +10,36 @@
 namespace ogc {
 namespace symbology {
 
-PointSymbolizer::PointSymbolizer()
-    : m_symbolType(PointSymbolType::kCircle)
-    , m_size(6.0)
-    , m_color(0xFF0000FF)
-    , m_strokeColor(0xFF000000)
-    , m_strokeWidth(1.0)
-    , m_rotation(0.0)
-    , m_anchorX(0.5)
-    , m_anchorY(0.5)
-    , m_displacementX(0.0)
-    , m_displacementY(0.0) {
+struct PointSymbolizer::Impl {
+    PointSymbolType symbolType = PointSymbolType::kCircle;
+    double size = 6.0;
+    uint32_t color = 0xFF0000FF;
+    uint32_t strokeColor = 0xFF000000;
+    double strokeWidth = 1.0;
+    double rotation = 0.0;
+    double anchorX = 0.5;
+    double anchorY = 0.5;
+    double displacementX = 0.0;
+    double displacementY = 0.0;
+};
+
+PointSymbolizer::PointSymbolizer() : impl_(std::make_unique<Impl>()) {
 }
 
-PointSymbolizer::PointSymbolizer(double size, uint32_t color)
-    : m_symbolType(PointSymbolType::kCircle)
-    , m_size(size)
-    , m_color(color)
-    , m_strokeColor(0xFF000000)
-    , m_strokeWidth(1.0)
-    , m_rotation(0.0)
-    , m_anchorX(0.5)
-    , m_anchorY(0.5)
-    , m_displacementX(0.0)
-    , m_displacementY(0.0) {
+PointSymbolizer::PointSymbolizer(double size, uint32_t color) : impl_(std::make_unique<Impl>()) {
+    impl_->size = size;
+    impl_->color = color;
+}
+
+PointSymbolizer::~PointSymbolizer() = default;
+
+std::string PointSymbolizer::GetName() const {
+    std::string name = Symbolizer::GetName();
+    return name.empty() ? "PointSymbolizer" : name;
 }
 
 ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) {
-    return Symbolize(context, geometry, m_defaultStyle);
+    return Symbolize(context, geometry, GetDefaultStyle());
 }
 
 ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) {
@@ -45,7 +47,7 @@ ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr conte
         return ogc::draw::DrawResult::kInvalidParameter;
     }
     
-    if (!m_enabled) {
+    if (!IsEnabled()) {
         return ogc::draw::DrawResult::kSuccess;
     }
     
@@ -54,12 +56,12 @@ ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr conte
         return ogc::draw::DrawResult::kSuccess;
     }
     
-    ogc::draw::DrawStyle finalStyle = MergeStyle(m_defaultStyle, style);
+    ogc::draw::DrawStyle finalStyle = MergeStyle(GetDefaultStyle(), style);
     if (finalStyle.brush.color.GetAlpha() == 0) {
-        finalStyle.brush = ogc::draw::Brush(ogc::draw::Color(m_color));
+        finalStyle.brush = ogc::draw::Brush(ogc::draw::Color(impl_->color));
     }
     if (finalStyle.pen.width == 0) {
-        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(m_strokeColor), m_strokeWidth);
+        finalStyle.pen = ogc::draw::Pen(ogc::draw::Color(impl_->strokeColor), impl_->strokeWidth);
     }
     
     GeomType geomType = geometry->GetGeometryType();
@@ -67,8 +69,8 @@ ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr conte
     if (geomType == GeomType::kPoint) {
         const ogc::Point* point = dynamic_cast<const ogc::Point*>(geometry);
         if (point) {
-            double x = point->GetX() + m_displacementX;
-            double y = point->GetY() + m_displacementY;
+            double x = point->GetX() + impl_->displacementX;
+            double y = point->GetY() + impl_->displacementY;
             return DrawPoint(context, x, y, finalStyle);
         }
     } else if (geomType == GeomType::kMultiPoint) {
@@ -78,8 +80,8 @@ ogc::draw::DrawResult PointSymbolizer::Symbolize(ogc::draw::DrawContextPtr conte
             for (size_t i = 0; i < multiPoint->GetNumPoints(); ++i) {
                 const ogc::Point* pt = multiPoint->GetPointN(i);
                 if (pt) {
-                    double x = pt->GetX() + m_displacementX;
-                    double y = pt->GetY() + m_displacementY;
+                    double x = pt->GetX() + impl_->displacementX;
+                    double y = pt->GetY() + impl_->displacementY;
                     ogc::draw::DrawResult r = DrawPoint(context, x, y, finalStyle);
                     if (r != ogc::draw::DrawResult::kSuccess) {
                         result = r;
@@ -99,92 +101,92 @@ bool PointSymbolizer::CanSymbolize(GeomType geomType) const {
 }
 
 void PointSymbolizer::SetSymbolType(PointSymbolType type) {
-    m_symbolType = type;
+    impl_->symbolType = type;
 }
 
 PointSymbolType PointSymbolizer::GetSymbolType() const {
-    return m_symbolType;
+    return impl_->symbolType;
 }
 
 void PointSymbolizer::SetSize(double size) {
-    m_size = size;
+    impl_->size = size;
 }
 
 double PointSymbolizer::GetSize() const {
-    return m_size;
+    return impl_->size;
 }
 
 void PointSymbolizer::SetColor(uint32_t color) {
-    m_color = color;
+    impl_->color = color;
 }
 
 uint32_t PointSymbolizer::GetColor() const {
-    return m_color;
+    return impl_->color;
 }
 
 void PointSymbolizer::SetStrokeColor(uint32_t color) {
-    m_strokeColor = color;
+    impl_->strokeColor = color;
 }
 
 uint32_t PointSymbolizer::GetStrokeColor() const {
-    return m_strokeColor;
+    return impl_->strokeColor;
 }
 
 void PointSymbolizer::SetStrokeWidth(double width) {
-    m_strokeWidth = width;
+    impl_->strokeWidth = width;
 }
 
 double PointSymbolizer::GetStrokeWidth() const {
-    return m_strokeWidth;
+    return impl_->strokeWidth;
 }
 
 void PointSymbolizer::SetRotation(double angle) {
-    m_rotation = angle;
+    impl_->rotation = angle;
 }
 
 double PointSymbolizer::GetRotation() const {
-    return m_rotation;
+    return impl_->rotation;
 }
 
 void PointSymbolizer::SetAnchorPoint(double x, double y) {
-    m_anchorX = x;
-    m_anchorY = y;
+    impl_->anchorX = x;
+    impl_->anchorY = y;
 }
 
 void PointSymbolizer::GetAnchorPoint(double& x, double& y) const {
-    x = m_anchorX;
-    y = m_anchorY;
+    x = impl_->anchorX;
+    y = impl_->anchorY;
 }
 
 void PointSymbolizer::SetDisplacement(double dx, double dy) {
-    m_displacementX = dx;
-    m_displacementY = dy;
+    impl_->displacementX = dx;
+    impl_->displacementY = dy;
 }
 
 void PointSymbolizer::GetDisplacement(double& dx, double& dy) const {
-    dx = m_displacementX;
-    dy = m_displacementY;
+    dx = impl_->displacementX;
+    dy = impl_->displacementY;
 }
 
 SymbolizerPtr PointSymbolizer::Clone() const {
     auto sym = std::make_shared<PointSymbolizer>();
-    sym->m_symbolType = m_symbolType;
-    sym->m_size = m_size;
-    sym->m_color = m_color;
-    sym->m_strokeColor = m_strokeColor;
-    sym->m_strokeWidth = m_strokeWidth;
-    sym->m_rotation = m_rotation;
-    sym->m_anchorX = m_anchorX;
-    sym->m_anchorY = m_anchorY;
-    sym->m_displacementX = m_displacementX;
-    sym->m_displacementY = m_displacementY;
-    sym->m_name = m_name;
-    sym->m_defaultStyle = m_defaultStyle;
-    sym->m_enabled = m_enabled;
-    sym->m_minScale = m_minScale;
-    sym->m_maxScale = m_maxScale;
-    sym->m_zIndex = m_zIndex;
-    sym->m_opacity = m_opacity;
+    sym->impl_->symbolType = impl_->symbolType;
+    sym->impl_->size = impl_->size;
+    sym->impl_->color = impl_->color;
+    sym->impl_->strokeColor = impl_->strokeColor;
+    sym->impl_->strokeWidth = impl_->strokeWidth;
+    sym->impl_->rotation = impl_->rotation;
+    sym->impl_->anchorX = impl_->anchorX;
+    sym->impl_->anchorY = impl_->anchorY;
+    sym->impl_->displacementX = impl_->displacementX;
+    sym->impl_->displacementY = impl_->displacementY;
+    sym->SetName(GetName());
+    sym->SetDefaultStyle(GetDefaultStyle());
+    sym->SetEnabled(IsEnabled());
+    sym->SetMinScale(GetMinScale());
+    sym->SetMaxScale(GetMaxScale());
+    sym->SetZIndex(GetZIndex());
+    sym->SetOpacity(GetOpacity());
     return sym;
 }
 
@@ -197,16 +199,16 @@ PointSymbolizerPtr PointSymbolizer::Create(double size, uint32_t color) {
 }
 
 ogc::draw::DrawResult PointSymbolizer::DrawPoint(ogc::draw::DrawContextPtr context, double x, double y, const ogc::draw::DrawStyle& style) {
-    return DrawSymbol(context, x, y, m_size, m_symbolType, style);
+    return DrawSymbol(context, x, y, impl_->size, impl_->symbolType, style);
 }
 
 ogc::draw::DrawResult PointSymbolizer::DrawSymbol(ogc::draw::DrawContextPtr context, double x, double y, double size, PointSymbolType type, const ogc::draw::DrawStyle& style) {
     double halfSize = size / 2.0;
     
-    if (m_rotation != 0.0) {
+    if (impl_->rotation != 0.0) {
         context->Save();
         context->Translate(x, y);
-        context->Rotate(m_rotation);
+        context->Rotate(impl_->rotation);
         context->Translate(-x, -y);
     }
     
@@ -266,7 +268,7 @@ ogc::draw::DrawResult PointSymbolizer::DrawSymbol(ogc::draw::DrawContextPtr cont
     
     context->Restore();
     
-    if (m_rotation != 0.0) {
+    if (impl_->rotation != 0.0) {
         context->Restore();
     }
     
