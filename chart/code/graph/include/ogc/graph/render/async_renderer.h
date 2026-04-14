@@ -146,21 +146,14 @@ private:
     
     std::string GenerateRenderId();
     
-    AsyncRenderConfig m_config;
-    ProgressCallback m_progressCallback;
-    CompletionCallback m_completionCallback;
-    ErrorCallback m_errorCallback;
-    
-    mutable std::mutex m_sessionsMutex;
-    std::map<std::string, RenderSessionPtr> m_sessions;
-    std::atomic<bool> m_shutdown;
-    std::atomic<size_t> m_nextRenderId;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class OGC_GRAPH_API AsyncRenderBuilder {
 public:
     AsyncRenderBuilder();
-    ~AsyncRenderBuilder() = default;
+    ~AsyncRenderBuilder();
     
     AsyncRenderBuilder& SetMaxConcurrentTasks(size_t maxTasks);
     AsyncRenderBuilder& SetTaskTimeout(int64_t timeoutMs);
@@ -177,12 +170,8 @@ public:
     std::string BuildAndStart();
 
 private:
-    AsyncRenderConfig m_config;
-    ProgressCallback m_progressCallback;
-    CompletionCallback m_completionCallback;
-    ErrorCallback m_errorCallback;
-    std::vector<RenderTaskPtr> m_tasks;
-    RenderQueuePtr m_queue;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 } 

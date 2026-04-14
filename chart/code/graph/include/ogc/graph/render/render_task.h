@@ -3,7 +3,7 @@
 
 #include "ogc/graph/export.h"
 #include "ogc/graph/render/draw_params.h"
-#include "ogc/draw/draw_result.h"
+#include <ogc/draw/draw_result.h>
 #include "ogc/geom/envelope.h"
 #include "ogc/geom/geometry.h"
 #include <memory>
@@ -59,7 +59,7 @@ class OGC_GRAPH_API RenderTask : public std::enable_shared_from_this<RenderTask>
 public:
     RenderTask();
     RenderTask(const std::string& id, const DrawParams& params);
-    virtual ~RenderTask() = default;
+    virtual ~RenderTask();
     
     void SetId(const std::string& id);
     std::string GetId() const;
@@ -123,20 +123,8 @@ public:
 protected:
     void UpdateState(RenderTaskState state);
     
-    std::string m_id;
-    DrawParams m_params;
-    Envelope m_extent;
-    RenderTaskPriority m_priority;
-    std::atomic<RenderTaskState> m_state;
-    std::atomic<double> m_progress;
-    ogc::draw::DrawResult m_result;
-    std::string m_error;
-    RenderTaskStats m_stats;
-    void* m_userData;
-    std::string m_tag;
-    RenderTaskCallback m_callback;
-    int64_t m_timeout;
-    std::chrono::steady_clock::time_point m_createdTime;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

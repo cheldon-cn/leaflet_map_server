@@ -5,9 +5,6 @@
 #include "ogc/graph/render/render_task.h"
 #include <memory>
 #include <vector>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
 #include <functional>
 
 namespace ogc {
@@ -93,25 +90,8 @@ private:
     void NotifyEnqueued(const RenderTaskPtr& task);
     void NotifyDequeued(const RenderTaskPtr& task);
     
-    struct TaskComparator {
-        bool operator()(const RenderTaskPtr& a, const RenderTaskPtr& b) const {
-            return a->GetPriorityValue() < b->GetPriorityValue();
-        }
-    };
-    
-    mutable std::mutex m_mutex;
-    std::condition_variable m_condition;
-    std::priority_queue<RenderTaskPtr, std::vector<RenderTaskPtr>, TaskComparator> m_queue;
-    std::vector<RenderTaskPtr> m_allTasks;
-    size_t m_maxSize;
-    bool m_priorityMode;
-    bool m_paused;
-    RenderQueueStats m_stats;
-    
-    TaskEventHandler m_onTaskEnqueued;
-    TaskEventHandler m_onTaskDequeued;
-    TaskEventHandler m_onTaskCompleted;
-    TaskEventHandler m_onTaskFailed;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

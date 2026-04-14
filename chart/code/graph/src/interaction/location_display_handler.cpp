@@ -10,32 +10,100 @@
 namespace ogc {
 namespace graph {
 
+struct LocationDisplayHandler::Impl {
+    std::string name;
+    int priority = 100;
+    bool enabled = true;
+    bool isActive = false;
+    bool showLocation = true;
+    
+    Position position;
+    Heading heading;
+    Speed speed;
+    Coordinate mapCoordinate;
+    
+    bool hasValidPosition = false;
+    bool hasValidHeading = false;
+    bool hasValidSpeed = false;
+    
+    LocationStyle style;
+    LocationConfig config;
+    
+    int viewportWidth = 800;
+    int viewportHeight = 600;
+    
+    FeedbackManager* feedbackManager = nullptr;
+    int64_t feedbackId = 0;
+    int64_t trackFeedbackId = 0;
+    
+    std::function<Coordinate(double, double)> screenToWorld;
+    std::function<Coordinate(double, double)> worldToScreen;
+    std::function<void(double, double)> centerCallback;
+    std::function<void(double)> rotateCallback;
+    std::function<void(const Envelope&)> extentCallback;
+    
+    PositionChangedCallback positionChangedCallback;
+    HeadingChangedCallback headingChangedCallback;
+    SpeedChangedCallback speedChangedCallback;
+    LocationUpdatedCallback locationUpdatedCallback;
+    
+    bool isRecordingTrack = false;
+    std::vector<Coordinate> trackPoints;
+    std::chrono::system_clock::time_point lastTrackTime;
+    
+    Position smoothedPosition;
+    Heading smoothedHeading;
+    
+    Impl(const std::string& n) : name(n) {
+        position.timestamp = std::chrono::system_clock::now();
+        smoothedPosition.timestamp = std::chrono::system_clock::now();
+    }
+};
+
 std::unique_ptr<LocationDisplayHandler> LocationDisplayHandler::Create(const std::string& name) {
     return std::unique_ptr<LocationDisplayHandler>(new LocationDisplayHandler(name));
 }
 
 LocationDisplayHandler::LocationDisplayHandler(const std::string& name)
-    : m_name(name)
+    : impl_(std::make_unique<Impl>(name))
 {
-    m_position.timestamp = std::chrono::system_clock::now();
-    m_smoothedPosition.timestamp = std::chrono::system_clock::now();
 }
 
 LocationDisplayHandler::~LocationDisplayHandler() {
     ClearLocationFeedback();
 }
 
+std::string LocationDisplayHandler::GetName() const {
+    return impl_->name;
+}
+
+int LocationDisplayHandler::GetPriority() const {
+    return impl_->priority;
+}
+
+void LocationDisplayHandler::SetPriority(int priority) {
+    impl_->priority = priority;
+}
+
+bool LocationDisplayHandler::IsEnabled() const {
+    return impl_->enabled;
+}
+
+InteractionState LocationDisplayHandler::GetState() const {
+    return impl_->isActive ? InteractionState::kPan : InteractionState::kNone;
+}
+
 void LocationDisplayHandler::SetEnabled(bool enabled) {
-    m_enabled = enabled;
+    impl_->enabled = enabled;
     if (!enabled) {
         ClearLocationFeedback();
-    } else if (m_hasValidPosition) {
+    } else if (impl_->hasValidPosition) {
         UpdateLocationFeedback();
     }
 }
 
 bool LocationDisplayHandler::HandleEvent(const InteractionEvent& event) {
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
@@ -54,13 +122,13 @@ bool LocationDisplayHandler::HandleEvent(const InteractionEvent& event) {
 }
 
 void LocationDisplayHandler::UpdatePosition(const Position& position) {
-    m_position = position;
-    m_hasValidPosition = true;
+    impl_->position = position;
+    impl_->hasValidPosition = true;
     
-    if (m_config.smoothPosition) {
+    if (impl_->config.smoothPosition) {
         ApplySmoothing();
     } else {
-        m_smoothedPosition = position;
+        impl_->smoothedPosition = position;
     }
     
     UpdateTrack();
@@ -68,36 +136,36 @@ void LocationDisplayHandler::UpdatePosition(const Position& position) {
     NotifyPositionChanged();
     NotifyLocationUpdated();
     
-    if (m_config.autoCenter && m_hasValidPosition) {
-        CenterOnPosition(m_position.latitude, m_position.longitude);
+    if (impl_->config.autoCenter && impl_->hasValidPosition) {
+        CenterOnPosition(impl_->position.latitude, impl_->position.longitude);
     }
 }
 
 void LocationDisplayHandler::UpdateHeading(const Heading& heading) {
-    m_heading = heading;
-    m_hasValidHeading = true;
+    impl_->heading = heading;
+    impl_->hasValidHeading = true;
     
-    if (m_config.smoothPosition) {
-        m_smoothedHeading.degrees = heading.degrees;
-        m_smoothedHeading.magneticVariation = heading.magneticVariation;
-        m_smoothedHeading.isTrue = heading.isTrue;
-        m_smoothedHeading.rateOfTurn = heading.rateOfTurn;
+    if (impl_->config.smoothPosition) {
+        impl_->smoothedHeading.degrees = heading.degrees;
+        impl_->smoothedHeading.magneticVariation = heading.magneticVariation;
+        impl_->smoothedHeading.isTrue = heading.isTrue;
+        impl_->smoothedHeading.rateOfTurn = heading.rateOfTurn;
     }
     
     UpdateLocationFeedback();
     NotifyHeadingChanged();
     NotifyLocationUpdated();
     
-    if (m_config.autoRotate && m_hasValidHeading) {
-        if (m_rotateCallback) {
-            m_rotateCallback(m_heading.degrees);
+    if (impl_->config.autoRotate && impl_->hasValidHeading) {
+        if (impl_->rotateCallback) {
+            impl_->rotateCallback(impl_->heading.degrees);
         }
     }
 }
 
 void LocationDisplayHandler::UpdateSpeed(const Speed& speed) {
-    m_speed = speed;
-    m_hasValidSpeed = true;
+    impl_->speed = speed;
+    impl_->hasValidSpeed = true;
     
     UpdateLocationFeedback();
     NotifySpeedChanged();
@@ -105,33 +173,33 @@ void LocationDisplayHandler::UpdateSpeed(const Speed& speed) {
 }
 
 void LocationDisplayHandler::UpdateLocation(const Position& position, const Heading& heading, const Speed& speed) {
-    m_position = position;
-    m_heading = heading;
-    m_speed = speed;
+    impl_->position = position;
+    impl_->heading = heading;
+    impl_->speed = speed;
     
-    m_hasValidPosition = true;
-    m_hasValidHeading = true;
-    m_hasValidSpeed = true;
+    impl_->hasValidPosition = true;
+    impl_->hasValidHeading = true;
+    impl_->hasValidSpeed = true;
     
-    if (m_config.smoothPosition) {
+    if (impl_->config.smoothPosition) {
         ApplySmoothing();
-        m_smoothedHeading = heading;
+        impl_->smoothedHeading = heading;
     } else {
-        m_smoothedPosition = position;
-        m_smoothedHeading = heading;
+        impl_->smoothedPosition = position;
+        impl_->smoothedHeading = heading;
     }
     
     UpdateTrack();
     UpdateLocationFeedback();
     NotifyLocationUpdated();
     
-    if (m_config.autoCenter && m_hasValidPosition) {
-        CenterOnPosition(m_position.latitude, m_position.longitude);
+    if (impl_->config.autoCenter && impl_->hasValidPosition) {
+        CenterOnPosition(impl_->position.latitude, impl_->position.longitude);
     }
     
-    if (m_config.autoRotate && m_hasValidHeading) {
-        if (m_rotateCallback) {
-            m_rotateCallback(m_heading.degrees);
+    if (impl_->config.autoRotate && impl_->hasValidHeading) {
+        if (impl_->rotateCallback) {
+            impl_->rotateCallback(impl_->heading.degrees);
         }
     }
 }
@@ -158,143 +226,207 @@ void LocationDisplayHandler::SetPositionAndHeading(double latitude, double longi
     hdg.degrees = headingDegrees;
     hdg.isTrue = true;
     
-    UpdateLocation(pos, hdg, m_speed);
+    UpdateLocation(pos, hdg, impl_->speed);
+}
+
+const Position& LocationDisplayHandler::GetPosition() const {
+    return impl_->position;
+}
+
+const Heading& LocationDisplayHandler::GetHeading() const {
+    return impl_->heading;
+}
+
+const Speed& LocationDisplayHandler::GetSpeed() const {
+    return impl_->speed;
 }
 
 LocationInfo LocationDisplayHandler::GetLocationInfo() const {
     LocationInfo info;
-    info.position = m_position;
-    info.heading = m_heading;
-    info.speed = m_speed;
-    info.mapCoordinate = m_mapCoordinate;
-    info.isValid = m_hasValidPosition;
+    info.position = impl_->position;
+    info.heading = impl_->heading;
+    info.speed = impl_->speed;
+    info.mapCoordinate = impl_->mapCoordinate;
+    info.isValid = impl_->hasValidPosition;
     return info;
 }
 
 void LocationDisplayHandler::SetMapCoordinate(const Coordinate& coord) {
-    m_mapCoordinate = coord;
+    impl_->mapCoordinate = coord;
+}
+
+Coordinate LocationDisplayHandler::GetMapCoordinate() const {
+    return impl_->mapCoordinate;
 }
 
 void LocationDisplayHandler::SetLocationStyle(const LocationStyle& style) {
-    m_style = style;
-    if (m_hasValidPosition && m_enabled) {
+    impl_->style = style;
+    if (impl_->hasValidPosition && impl_->enabled) {
         UpdateLocationFeedback();
     }
 }
 
+LocationStyle LocationDisplayHandler::GetLocationStyle() const {
+    return impl_->style;
+}
+
 void LocationDisplayHandler::SetLocationConfig(const LocationConfig& config) {
-    m_config = config;
+    impl_->config = config;
+}
+
+LocationConfig LocationDisplayHandler::GetLocationConfig() const {
+    return impl_->config;
 }
 
 void LocationDisplayHandler::SetAutoCenter(bool enabled) {
-    m_config.autoCenter = enabled;
+    impl_->config.autoCenter = enabled;
+}
+
+bool LocationDisplayHandler::IsAutoCenter() const {
+    return impl_->config.autoCenter;
 }
 
 void LocationDisplayHandler::SetAutoRotate(bool enabled) {
-    m_config.autoRotate = enabled;
+    impl_->config.autoRotate = enabled;
+}
+
+bool LocationDisplayHandler::IsAutoRotate() const {
+    return impl_->config.autoRotate;
 }
 
 void LocationDisplayHandler::CenterOnPosition() {
-    if (m_hasValidPosition) {
-        CenterOnPosition(m_position.latitude, m_position.longitude);
+    if (impl_->hasValidPosition) {
+        CenterOnPosition(impl_->position.latitude, impl_->position.longitude);
     }
 }
 
 void LocationDisplayHandler::CenterOnPosition(double latitude, double longitude) {
-    if (m_centerCallback) {
-        m_centerCallback(longitude, latitude);
+    if (impl_->centerCallback) {
+        impl_->centerCallback(longitude, latitude);
     }
 }
 
 void LocationDisplayHandler::SetViewportSize(int width, int height) {
-    m_viewportWidth = width;
-    m_viewportHeight = height;
+    impl_->viewportWidth = width;
+    impl_->viewportHeight = height;
 }
 
 void LocationDisplayHandler::SetFeedbackManager(FeedbackManager* manager) {
-    m_feedbackManager = manager;
+    impl_->feedbackManager = manager;
+}
+
+FeedbackManager* LocationDisplayHandler::GetFeedbackManager() const {
+    return impl_->feedbackManager;
 }
 
 void LocationDisplayHandler::SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform) {
-    m_screenToWorld = transform;
+    impl_->screenToWorld = transform;
 }
 
 void LocationDisplayHandler::SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform) {
-    m_worldToScreen = transform;
+    impl_->worldToScreen = transform;
 }
 
 void LocationDisplayHandler::SetCenterCallback(std::function<void(double, double)> callback) {
-    m_centerCallback = callback;
+    impl_->centerCallback = callback;
 }
 
 void LocationDisplayHandler::SetRotateCallback(std::function<void(double)> callback) {
-    m_rotateCallback = callback;
+    impl_->rotateCallback = callback;
 }
 
 void LocationDisplayHandler::SetExtentCallback(std::function<void(const Envelope&)> callback) {
-    m_extentCallback = callback;
+    impl_->extentCallback = callback;
 }
 
 Coordinate LocationDisplayHandler::ScreenToWorld(double screenX, double screenY) const {
-    if (m_screenToWorld) {
-        return m_screenToWorld(screenX, screenY);
+    if (impl_->screenToWorld) {
+        return impl_->screenToWorld(screenX, screenY);
     }
     return Coordinate(screenX, screenY);
 }
 
 Coordinate LocationDisplayHandler::WorldToScreen(double worldX, double worldY) const {
-    if (m_worldToScreen) {
-        return m_worldToScreen(worldX, worldY);
+    if (impl_->worldToScreen) {
+        return impl_->worldToScreen(worldX, worldY);
     }
     return Coordinate(worldX, worldY);
 }
 
 void LocationDisplayHandler::SetPositionChangedCallback(PositionChangedCallback callback) {
-    m_positionChangedCallback = callback;
+    impl_->positionChangedCallback = callback;
 }
 
 void LocationDisplayHandler::SetHeadingChangedCallback(HeadingChangedCallback callback) {
-    m_headingChangedCallback = callback;
+    impl_->headingChangedCallback = callback;
 }
 
 void LocationDisplayHandler::SetSpeedChangedCallback(SpeedChangedCallback callback) {
-    m_speedChangedCallback = callback;
+    impl_->speedChangedCallback = callback;
 }
 
 void LocationDisplayHandler::SetLocationUpdatedCallback(LocationUpdatedCallback callback) {
-    m_locationUpdatedCallback = callback;
+    impl_->locationUpdatedCallback = callback;
 }
 
 void LocationDisplayHandler::StartTrackRecording() {
-    m_isRecordingTrack = true;
-    m_lastTrackTime = std::chrono::system_clock::now();
+    impl_->isRecordingTrack = true;
+    impl_->lastTrackTime = std::chrono::system_clock::now();
 }
 
 void LocationDisplayHandler::StopTrackRecording() {
-    m_isRecordingTrack = false;
+    impl_->isRecordingTrack = false;
+}
+
+bool LocationDisplayHandler::IsRecordingTrack() const {
+    return impl_->isRecordingTrack;
 }
 
 void LocationDisplayHandler::ClearTrack() {
-    m_trackPoints.clear();
+    impl_->trackPoints.clear();
+}
+
+const std::vector<Coordinate>& LocationDisplayHandler::GetTrackPoints() const {
+    return impl_->trackPoints;
+}
+
+size_t LocationDisplayHandler::GetTrackPointCount() const {
+    return impl_->trackPoints.size();
+}
+
+bool LocationDisplayHandler::HasValidPosition() const {
+    return impl_->hasValidPosition;
+}
+
+bool LocationDisplayHandler::HasValidHeading() const {
+    return impl_->hasValidHeading;
+}
+
+bool LocationDisplayHandler::HasValidSpeed() const {
+    return impl_->hasValidSpeed;
 }
 
 void LocationDisplayHandler::ShowLocation(bool show) {
-    m_showLocation = show;
-    if (show && m_hasValidPosition) {
+    impl_->showLocation = show;
+    if (show && impl_->hasValidPosition) {
         UpdateLocationFeedback();
     } else {
         ClearLocationFeedback();
     }
 }
 
+bool LocationDisplayHandler::IsLocationVisible() const {
+    return impl_->showLocation;
+}
+
 double LocationDisplayHandler::DistanceToPosition(double screenX, double screenY) const {
-    if (!m_hasValidPosition) {
+    if (!impl_->hasValidPosition) {
         return -1.0;
     }
     
     Coordinate worldPos = ScreenToWorld(screenX, screenY);
-    double dx = worldPos.x - m_mapCoordinate.x;
-    double dy = worldPos.y - m_mapCoordinate.y;
+    double dx = worldPos.x - impl_->mapCoordinate.x;
+    double dy = worldPos.y - impl_->mapCoordinate.y;
     return std::sqrt(dx * dx + dy * dy);
 }
 
@@ -304,60 +436,60 @@ bool LocationDisplayHandler::IsNearPosition(double screenX, double screenY, doub
 }
 
 void LocationDisplayHandler::UpdateLocationFeedback() {
-    if (!m_showLocation || !m_feedbackManager || !m_hasValidPosition) {
+    if (!impl_->showLocation || !impl_->feedbackManager || !impl_->hasValidPosition) {
         return;
     }
     
     ClearLocationFeedback();
     
-    if (m_style.showVesselSymbol) {
+    if (impl_->style.showVesselSymbol) {
         auto item = FeedbackItem::Create(FeedbackType::kHighlight);
         if (item) {
-            item->SetPoint(m_mapCoordinate);
+            item->SetPoint(impl_->mapCoordinate);
             
             FeedbackConfig config;
-            config.strokeColor = m_style.vesselColor;
-            config.strokeWidth = m_style.vesselSize / 5.0;
-            config.fillColor = m_style.vesselColor;
+            config.strokeColor = impl_->style.vesselColor;
+            config.strokeWidth = impl_->style.vesselSize / 5.0;
+            config.fillColor = impl_->style.vesselColor;
             config.opacity = 0.8;
             config.visible = true;
             item->SetConfig(config);
             
-            m_feedbackId = m_feedbackManager->AddFeedback(item);
+            impl_->feedbackId = impl_->feedbackManager->AddFeedback(item);
         }
     }
     
-    if (m_style.showHeadingLine && m_hasValidHeading) {
-        double rad = m_heading.degrees * M_PI / 180.0;
-        double dx = std::sin(rad) * m_style.headingLength;
-        double dy = -std::cos(rad) * m_style.headingLength;
+    if (impl_->style.showHeadingLine && impl_->hasValidHeading) {
+        double rad = impl_->heading.degrees * M_PI / 180.0;
+        double dx = std::sin(rad) * impl_->style.headingLength;
+        double dy = -std::cos(rad) * impl_->style.headingLength;
         
         std::vector<Coordinate> headingLine;
-        headingLine.push_back(m_mapCoordinate);
-        headingLine.push_back(Coordinate(m_mapCoordinate.x + dx, m_mapCoordinate.y + dy));
+        headingLine.push_back(impl_->mapCoordinate);
+        headingLine.push_back(Coordinate(impl_->mapCoordinate.x + dx, impl_->mapCoordinate.y + dy));
         
         auto headingItem = FeedbackItem::Create(FeedbackType::kHighlight);
         if (headingItem) {
             headingItem->SetPoints(headingLine);
             
             FeedbackConfig config;
-            config.strokeColor = m_style.headingColor;
+            config.strokeColor = impl_->style.headingColor;
             config.strokeWidth = 2.0;
             config.opacity = 1.0;
             config.visible = true;
             headingItem->SetConfig(config);
             
-            m_feedbackManager->AddFeedback(headingItem);
+            impl_->feedbackManager->AddFeedback(headingItem);
         }
     }
     
-    if (m_style.showAccuracyCircle && m_position.accuracy > 0) {
-        double radius = m_position.accuracy;
+    if (impl_->style.showAccuracyCircle && impl_->position.accuracy > 0) {
+        double radius = impl_->position.accuracy;
         Envelope accuracyEnv(
-            m_mapCoordinate.x - radius,
-            m_mapCoordinate.y - radius,
-            m_mapCoordinate.x + radius,
-            m_mapCoordinate.y + radius
+            impl_->mapCoordinate.x - radius,
+            impl_->mapCoordinate.y - radius,
+            impl_->mapCoordinate.x + radius,
+            impl_->mapCoordinate.y + radius
         );
         
         auto accuracyItem = FeedbackItem::Create(FeedbackType::kHighlight);
@@ -365,86 +497,86 @@ void LocationDisplayHandler::UpdateLocationFeedback() {
             accuracyItem->SetEnvelope(accuracyEnv);
             
             FeedbackConfig config;
-            config.strokeColor = m_style.accuracyColor;
+            config.strokeColor = impl_->style.accuracyColor;
             config.strokeWidth = 1.0;
-            config.fillColor = m_style.accuracyColor;
+            config.fillColor = impl_->style.accuracyColor;
             config.opacity = 0.3;
             config.visible = true;
             accuracyItem->SetConfig(config);
             
-            m_feedbackManager->AddFeedback(accuracyItem);
+            impl_->feedbackManager->AddFeedback(accuracyItem);
         }
     }
 }
 
 void LocationDisplayHandler::ClearLocationFeedback() {
-    if (m_feedbackManager && m_feedbackId > 0) {
-        m_feedbackManager->RemoveFeedback(m_feedbackId);
-        m_feedbackId = 0;
+    if (impl_->feedbackManager && impl_->feedbackId > 0) {
+        impl_->feedbackManager->RemoveFeedback(impl_->feedbackId);
+        impl_->feedbackId = 0;
     }
 }
 
 void LocationDisplayHandler::UpdateTrack() {
-    if (!m_isRecordingTrack || !m_hasValidPosition) {
+    if (!impl_->isRecordingTrack || !impl_->hasValidPosition) {
         return;
     }
     
     auto now = std::chrono::system_clock::now();
-    auto elapsed = std::chrono::duration<double>(now - m_lastTrackTime).count();
+    auto elapsed = std::chrono::duration<double>(now - impl_->lastTrackTime).count();
     
-    if (elapsed >= m_config.trackInterval) {
-        m_trackPoints.push_back(m_mapCoordinate);
+    if (elapsed >= impl_->config.trackInterval) {
+        impl_->trackPoints.push_back(impl_->mapCoordinate);
         
-        if (m_trackPoints.size() > static_cast<size_t>(m_config.maxTrackPoints)) {
-            m_trackPoints.erase(m_trackPoints.begin());
+        if (impl_->trackPoints.size() > static_cast<size_t>(impl_->config.maxTrackPoints)) {
+            impl_->trackPoints.erase(impl_->trackPoints.begin());
         }
         
-        m_lastTrackTime = now;
+        impl_->lastTrackTime = now;
     }
 }
 
 void LocationDisplayHandler::ApplySmoothing() {
-    double factor = m_config.smoothFactor;
+    double factor = impl_->config.smoothFactor;
     
-    m_smoothedPosition.latitude = m_smoothedPosition.latitude * (1.0 - factor) + 
-                                   m_position.latitude * factor;
-    m_smoothedPosition.longitude = m_smoothedPosition.longitude * (1.0 - factor) + 
-                                    m_position.longitude * factor;
-    m_smoothedPosition.altitude = m_smoothedPosition.altitude * (1.0 - factor) + 
-                                   m_position.altitude * factor;
-    m_smoothedPosition.accuracy = m_position.accuracy;
-    m_smoothedPosition.speed = m_smoothedPosition.speed * (1.0 - factor) + 
-                                m_position.speed * factor;
-    m_smoothedPosition.bearing = m_position.bearing;
-    m_smoothedPosition.source = m_position.source;
-    m_smoothedPosition.status = m_position.status;
-    m_smoothedPosition.timestamp = m_position.timestamp;
-    m_smoothedPosition.satelliteCount = m_position.satelliteCount;
-    m_smoothedPosition.hdop = m_position.hdop;
-    m_smoothedPosition.vdop = m_position.vdop;
+    impl_->smoothedPosition.latitude = impl_->smoothedPosition.latitude * (1.0 - factor) + 
+                                   impl_->position.latitude * factor;
+    impl_->smoothedPosition.longitude = impl_->smoothedPosition.longitude * (1.0 - factor) + 
+                                    impl_->position.longitude * factor;
+    impl_->smoothedPosition.altitude = impl_->smoothedPosition.altitude * (1.0 - factor) + 
+                                   impl_->position.altitude * factor;
+    impl_->smoothedPosition.accuracy = impl_->position.accuracy;
+    impl_->smoothedPosition.speed = impl_->smoothedPosition.speed * (1.0 - factor) + 
+                                impl_->position.speed * factor;
+    impl_->smoothedPosition.bearing = impl_->position.bearing;
+    impl_->smoothedPosition.source = impl_->position.source;
+    impl_->smoothedPosition.status = impl_->position.status;
+    impl_->smoothedPosition.timestamp = impl_->position.timestamp;
+    impl_->smoothedPosition.satelliteCount = impl_->position.satelliteCount;
+    impl_->smoothedPosition.hdop = impl_->position.hdop;
+    impl_->smoothedPosition.vdop = impl_->position.vdop;
 }
 
 void LocationDisplayHandler::NotifyPositionChanged() {
-    if (m_positionChangedCallback) {
-        m_positionChangedCallback(m_position);
+    if (impl_->positionChangedCallback) {
+        impl_->positionChangedCallback(impl_->position);
     }
 }
 
 void LocationDisplayHandler::NotifyHeadingChanged() {
-    if (m_headingChangedCallback) {
-        m_headingChangedCallback(m_heading);
+    if (impl_->headingChangedCallback) {
+        impl_->headingChangedCallback(impl_->heading);
     }
 }
 
 void LocationDisplayHandler::NotifySpeedChanged() {
-    if (m_speedChangedCallback) {
-        m_speedChangedCallback(m_speed);
+    if (impl_->speedChangedCallback) {
+        impl_->speedChangedCallback(impl_->speed);
     }
 }
 
 void LocationDisplayHandler::NotifyLocationUpdated() {
-    if (m_locationUpdatedCallback) {
-        m_locationUpdatedCallback(GetLocationInfo());
+    if (impl_->locationUpdatedCallback) {
+        impl_->locationUpdatedCallback(GetLocationInfo());
     }
 }
 

@@ -5,23 +5,101 @@
 namespace ogc {
 namespace graph {
 
+struct PanZoomHandler::Impl {
+    std::string name;
+    int priority = 100;
+    bool enabled = true;
+    
+    PanZoomState state;
+    InertiaParams inertia;
+    ZoomParams zoomParams;
+    
+    int viewportWidth = 800;
+    int viewportHeight = 600;
+    
+    bool isPanning = false;
+    bool isZooming = false;
+    bool isAnimating = false;
+    bool animationEnabled = true;
+    
+    double lastMouseX = 0.0;
+    double lastMouseY = 0.0;
+    double panStartX = 0.0;
+    double panStartY = 0.0;
+    
+    double velocityX = 0.0;
+    double velocityY = 0.0;
+    std::chrono::steady_clock::time_point lastMoveTime;
+    
+    double targetZoom = 1.0;
+    double startZoom = 1.0;
+    double zoomCenterX = 0.0;
+    double zoomCenterY = 0.0;
+    std::chrono::steady_clock::time_point animationStartTime;
+    int animationDurationMs = 200;
+    
+    double initialPinchDistance = 0.0;
+    double initialPinchZoom = 1.0;
+    Coordinate initialPinchCenter;
+    bool isPinching = false;
+    
+    ExtentChangedCallback extentChangedCallback;
+    ZoomChangedCallback zoomChangedCallback;
+    CenterChangedCallback centerChangedCallback;
+    RotationChangedCallback rotationChangedCallback;
+    
+    std::function<Coordinate(double, double)> screenToWorld;
+    std::function<Coordinate(double, double)> worldToScreen;
+    
+    Impl(const std::string& n) : name(n) {
+        lastMoveTime = std::chrono::steady_clock::now();
+        animationStartTime = std::chrono::steady_clock::now();
+    }
+};
+
 std::unique_ptr<PanZoomHandler> PanZoomHandler::Create(const std::string& name) {
     return std::unique_ptr<PanZoomHandler>(new PanZoomHandler(name));
 }
 
 PanZoomHandler::PanZoomHandler(const std::string& name)
-    : m_name(name)
+    : impl_(std::make_unique<Impl>(name))
 {
-    m_lastMoveTime = std::chrono::steady_clock::now();
-    m_animationStartTime = std::chrono::steady_clock::now();
 }
 
 PanZoomHandler::~PanZoomHandler() {
     CancelAnimation();
 }
 
+std::string PanZoomHandler::GetName() const { return impl_->name; }
+int PanZoomHandler::GetPriority() const { return impl_->priority; }
+void PanZoomHandler::SetPriority(int priority) { impl_->priority = priority; }
+bool PanZoomHandler::IsEnabled() const { return impl_->enabled; }
+void PanZoomHandler::SetEnabled(bool enabled) { impl_->enabled = enabled; }
+Envelope PanZoomHandler::GetExtent() const { return impl_->state.extent; }
+Coordinate PanZoomHandler::GetCenter() const { return Coordinate(impl_->state.centerX, impl_->state.centerY); }
+double PanZoomHandler::GetZoom() const { return impl_->state.zoom; }
+double PanZoomHandler::GetRotation() const { return impl_->state.rotation; }
+bool PanZoomHandler::HasConstraints() const { return impl_->state.hasConstraints; }
+void PanZoomHandler::SetMinZoom(double minZoom) { impl_->state.minZoom = minZoom; }
+double PanZoomHandler::GetMinZoom() const { return impl_->state.minZoom; }
+void PanZoomHandler::SetMaxZoom(double maxZoom) { impl_->state.maxZoom = maxZoom; }
+double PanZoomHandler::GetMaxZoom() const { return impl_->state.maxZoom; }
+int PanZoomHandler::GetViewportWidth() const { return impl_->viewportWidth; }
+int PanZoomHandler::GetViewportHeight() const { return impl_->viewportHeight; }
+void PanZoomHandler::SetInertiaEnabled(bool enabled) { impl_->inertia.enabled = enabled; }
+bool PanZoomHandler::IsInertiaEnabled() const { return impl_->inertia.enabled; }
+void PanZoomHandler::SetInertiaFriction(double friction) { impl_->inertia.friction = friction; }
+double PanZoomHandler::GetInertiaFriction() const { return impl_->inertia.friction; }
+void PanZoomHandler::SetAnimationEnabled(bool enabled) { impl_->animationEnabled = enabled; }
+bool PanZoomHandler::IsAnimationEnabled() const { return impl_->animationEnabled; }
+void PanZoomHandler::SetZoomParams(const ZoomParams& params) { impl_->zoomParams = params; }
+ZoomParams PanZoomHandler::GetZoomParams() const { return impl_->zoomParams; }
+bool PanZoomHandler::IsAnimating() const { return impl_->isAnimating; }
+InteractionState PanZoomHandler::GetState() const { return impl_->isPanning ? InteractionState::kPan : InteractionState::kNone; }
+const PanZoomState& PanZoomHandler::GetPanZoomState() const { return impl_->state; }
+
 bool PanZoomHandler::HandleEvent(const InteractionEvent& event) {
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
@@ -50,85 +128,85 @@ bool PanZoomHandler::HandleEvent(const InteractionEvent& event) {
 }
 
 void PanZoomHandler::SetExtent(const Envelope& extent) {
-    m_state.extent = extent;
+    impl_->state.extent = extent;
     
     double width = extent.GetWidth();
     double height = extent.GetHeight();
     
     if (width > 0 && height > 0) {
-        m_state.centerX = extent.GetCentre().x;
-        m_state.centerY = extent.GetCentre().y;
+        impl_->state.centerX = extent.GetCentre().x;
+        impl_->state.centerY = extent.GetCentre().y;
         
-        double scaleX = m_viewportWidth / width;
-        double scaleY = m_viewportHeight / height;
-        m_state.zoom = std::min(scaleX, scaleY) * 0.9;
-        m_state.zoom = ClampZoom(m_state.zoom);
+        double scaleX = impl_->viewportWidth / width;
+        double scaleY = impl_->viewportHeight / height;
+        impl_->state.zoom = std::min(scaleX, scaleY) * 0.9;
+        impl_->state.zoom = ClampZoom(impl_->state.zoom);
     }
     
     ApplyConstraints();
     UpdateExtent();
     
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::SetCenter(double x, double y) {
     auto clamped = ClampCenter(x, y);
-    m_state.centerX = clamped.x;
-    m_state.centerY = clamped.y;
+    impl_->state.centerX = clamped.x;
+    impl_->state.centerY = clamped.y;
     
     UpdateExtent();
     
-    if (m_centerChangedCallback) {
-        m_centerChangedCallback(m_state.centerX, m_state.centerY);
+    if (impl_->centerChangedCallback) {
+        impl_->centerChangedCallback(impl_->state.centerX, impl_->state.centerY);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::SetZoom(double zoom) {
-    m_state.zoom = ClampZoom(zoom);
+    impl_->state.zoom = ClampZoom(zoom);
     
     UpdateExtent();
     
-    if (m_zoomChangedCallback) {
-        m_zoomChangedCallback(m_state.zoom);
+    if (impl_->zoomChangedCallback) {
+        impl_->zoomChangedCallback(impl_->state.zoom);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::SetRotation(double degrees) {
-    m_state.rotation = ClampRotation(degrees);
+    impl_->state.rotation = ClampRotation(degrees);
     
     UpdateExtent();
     
-    if (m_rotationChangedCallback) {
-        m_rotationChangedCallback(m_state.rotation);
+    if (impl_->rotationChangedCallback) {
+        impl_->rotationChangedCallback(impl_->state.rotation);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::SetConstraints(const Envelope& constraints) {
-    m_state.constraints = constraints;
-    m_state.hasConstraints = true;
+    impl_->state.constraints = constraints;
+    impl_->state.hasConstraints = true;
     ApplyConstraints();
 }
 
 void PanZoomHandler::ClearConstraints() {
-    m_state.hasConstraints = false;
+    impl_->state.hasConstraints = false;
 }
 
 void PanZoomHandler::Pan(double dx, double dy) {
-    double worldDx = dx / m_state.zoom;
-    double worldDy = dy / m_state.zoom;
+    double worldDx = dx / impl_->state.zoom;
+    double worldDy = dy / impl_->state.zoom;
     
-    SetCenter(m_state.centerX - worldDx, m_state.centerY + worldDy);
+    SetCenter(impl_->state.centerX - worldDx, impl_->state.centerY + worldDy);
 }
 
 void PanZoomHandler::PanTo(double x, double y) {
@@ -136,12 +214,12 @@ void PanZoomHandler::PanTo(double x, double y) {
 }
 
 void PanZoomHandler::ZoomIn(double factor) {
-    double newZoom = m_state.zoom * factor;
+    double newZoom = impl_->state.zoom * factor;
     SetZoom(newZoom);
 }
 
 void PanZoomHandler::ZoomOut(double factor) {
-    double newZoom = m_state.zoom / factor;
+    double newZoom = impl_->state.zoom / factor;
     SetZoom(newZoom);
 }
 
@@ -152,32 +230,32 @@ void PanZoomHandler::ZoomTo(double zoom) {
 void PanZoomHandler::ZoomToPoint(double screenX, double screenY, double factor) {
     Coordinate worldBefore = ScreenToWorld(screenX, screenY);
     
-    double newZoom = m_state.zoom * factor;
+    double newZoom = impl_->state.zoom * factor;
     newZoom = ClampZoom(newZoom);
     
-    m_state.zoom = newZoom;
+    impl_->state.zoom = newZoom;
     
     Coordinate worldAfter = ScreenToWorld(screenX, screenY);
     
     double dx = worldAfter.x - worldBefore.x;
     double dy = worldAfter.y - worldBefore.y;
     
-    m_state.centerX -= dx;
-    m_state.centerY -= dy;
+    impl_->state.centerX -= dx;
+    impl_->state.centerY -= dy;
     
     ApplyConstraints();
     UpdateExtent();
     
-    if (m_zoomChangedCallback) {
-        m_zoomChangedCallback(m_state.zoom);
+    if (impl_->zoomChangedCallback) {
+        impl_->zoomChangedCallback(impl_->state.zoom);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::Rotate(double degrees) {
-    SetRotation(m_state.rotation + degrees);
+    SetRotation(impl_->state.rotation + degrees);
 }
 
 void PanZoomHandler::RotateTo(double degrees) {
@@ -189,42 +267,42 @@ void PanZoomHandler::ResetRotation() {
 }
 
 void PanZoomHandler::SetViewportSize(int width, int height) {
-    m_viewportWidth = width;
-    m_viewportHeight = height;
+    impl_->viewportWidth = width;
+    impl_->viewportHeight = height;
     UpdateExtent();
 }
 
 void PanZoomHandler::SetExtentChangedCallback(ExtentChangedCallback callback) {
-    m_extentChangedCallback = callback;
+    impl_->extentChangedCallback = callback;
 }
 
 void PanZoomHandler::SetZoomChangedCallback(ZoomChangedCallback callback) {
-    m_zoomChangedCallback = callback;
+    impl_->zoomChangedCallback = callback;
 }
 
 void PanZoomHandler::SetCenterChangedCallback(CenterChangedCallback callback) {
-    m_centerChangedCallback = callback;
+    impl_->centerChangedCallback = callback;
 }
 
 void PanZoomHandler::SetRotationChangedCallback(RotationChangedCallback callback) {
-    m_rotationChangedCallback = callback;
+    impl_->rotationChangedCallback = callback;
 }
 
 void PanZoomHandler::UpdateAnimation() {
-    if (m_isPanning && m_inertia.enabled) {
+    if (impl_->isPanning && impl_->inertia.enabled) {
         UpdateInertia();
     }
     
-    if (m_isZooming && m_animationEnabled) {
+    if (impl_->isZooming && impl_->animationEnabled) {
         UpdateZoomAnimation();
     }
 }
 
 void PanZoomHandler::CancelAnimation() {
-    m_isAnimating = false;
-    m_isZooming = false;
-    m_velocityX = 0.0;
-    m_velocityY = 0.0;
+    impl_->isAnimating = false;
+    impl_->isZooming = false;
+    impl_->velocityX = 0.0;
+    impl_->velocityY = 0.0;
 }
 
 void PanZoomHandler::FitToExtent(const Envelope& extent) {
@@ -239,205 +317,205 @@ void PanZoomHandler::FitToExtent(const Envelope& extent) {
         return;
     }
     
-    double scaleX = m_viewportWidth / width;
-    double scaleY = m_viewportHeight / height;
+    double scaleX = impl_->viewportWidth / width;
+    double scaleY = impl_->viewportHeight / height;
     double scale = std::min(scaleX, scaleY) * 0.9;
     
-    m_state.zoom = ClampZoom(scale);
-    m_state.centerX = extent.GetCentre().x;
-    m_state.centerY = extent.GetCentre().y;
+    impl_->state.zoom = ClampZoom(scale);
+    impl_->state.centerX = extent.GetCentre().x;
+    impl_->state.centerY = extent.GetCentre().y;
     
     ApplyConstraints();
     UpdateExtent();
     
-    if (m_zoomChangedCallback) {
-        m_zoomChangedCallback(m_state.zoom);
+    if (impl_->zoomChangedCallback) {
+        impl_->zoomChangedCallback(impl_->state.zoom);
     }
-    if (m_centerChangedCallback) {
-        m_centerChangedCallback(m_state.centerX, m_state.centerY);
+    if (impl_->centerChangedCallback) {
+        impl_->centerChangedCallback(impl_->state.centerX, impl_->state.centerY);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 void PanZoomHandler::FitToAll() {
-    if (m_state.hasConstraints) {
-        FitToExtent(m_state.constraints);
+    if (impl_->state.hasConstraints) {
+        FitToExtent(impl_->state.constraints);
     }
 }
 
 void PanZoomHandler::SetPanZoomState(const PanZoomState& state) {
-    m_state = state;
-    m_state.zoom = ClampZoom(m_state.zoom);
-    m_state.rotation = ClampRotation(m_state.rotation);
+    impl_->state = state;
+    impl_->state.zoom = ClampZoom(impl_->state.zoom);
+    impl_->state.rotation = ClampRotation(impl_->state.rotation);
     ApplyConstraints();
     UpdateExtent();
 }
 
 void PanZoomHandler::SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform) {
-    m_screenToWorld = transform;
+    impl_->screenToWorld = transform;
 }
 
 void PanZoomHandler::SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform) {
-    m_worldToScreen = transform;
+    impl_->worldToScreen = transform;
 }
 
 Coordinate PanZoomHandler::ScreenToWorld(double screenX, double screenY) const {
-    if (m_screenToWorld) {
-        return m_screenToWorld(screenX, screenY);
+    if (impl_->screenToWorld) {
+        return impl_->screenToWorld(screenX, screenY);
     }
     
-    double x = m_state.centerX + (screenX - m_viewportWidth / 2.0) / m_state.zoom;
-    double y = m_state.centerY - (screenY - m_viewportHeight / 2.0) / m_state.zoom;
+    double x = impl_->state.centerX + (screenX - impl_->viewportWidth / 2.0) / impl_->state.zoom;
+    double y = impl_->state.centerY - (screenY - impl_->viewportHeight / 2.0) / impl_->state.zoom;
     return Coordinate(x, y);
 }
 
 Coordinate PanZoomHandler::WorldToScreen(double worldX, double worldY) const {
-    if (m_worldToScreen) {
-        return m_worldToScreen(worldX, worldY);
+    if (impl_->worldToScreen) {
+        return impl_->worldToScreen(worldX, worldY);
     }
     
-    double x = (worldX - m_state.centerX) * m_state.zoom + m_viewportWidth / 2.0;
-    double y = m_viewportHeight / 2.0 - (worldY - m_state.centerY) * m_state.zoom;
+    double x = (worldX - impl_->state.centerX) * impl_->state.zoom + impl_->viewportWidth / 2.0;
+    double y = impl_->viewportHeight / 2.0 - (worldY - impl_->state.centerY) * impl_->state.zoom;
     return Coordinate(x, y);
 }
 
 void PanZoomHandler::UpdateExtent() {
-    double halfWidth = m_viewportWidth / (2.0 * m_state.zoom);
-    double halfHeight = m_viewportHeight / (2.0 * m_state.zoom);
+    double halfWidth = impl_->viewportWidth / (2.0 * impl_->state.zoom);
+    double halfHeight = impl_->viewportHeight / (2.0 * impl_->state.zoom);
     
-    m_state.extent = Envelope(
-        m_state.centerX - halfWidth,
-        m_state.centerY - halfHeight,
-        m_state.centerX + halfWidth,
-        m_state.centerY + halfHeight
+    impl_->state.extent = Envelope(
+        impl_->state.centerX - halfWidth,
+        impl_->state.centerY - halfHeight,
+        impl_->state.centerX + halfWidth,
+        impl_->state.centerY + halfHeight
     );
 }
 
 void PanZoomHandler::ApplyConstraints() {
-    if (!m_state.hasConstraints) {
+    if (!impl_->state.hasConstraints) {
         return;
     }
     
-    auto clamped = ClampCenter(m_state.centerX, m_state.centerY);
-    m_state.centerX = clamped.x;
-    m_state.centerY = clamped.y;
+    auto clamped = ClampCenter(impl_->state.centerX, impl_->state.centerY);
+    impl_->state.centerX = clamped.x;
+    impl_->state.centerY = clamped.y;
 }
 
 void PanZoomHandler::StartInertia(double velocityX, double velocityY) {
-    m_velocityX = velocityX;
-    m_velocityY = velocityY;
-    m_isPanning = true;
-    m_isAnimating = true;
+    impl_->velocityX = velocityX;
+    impl_->velocityY = velocityY;
+    impl_->isPanning = true;
+    impl_->isAnimating = true;
 }
 
 void PanZoomHandler::UpdateInertia() {
-    if (!m_isAnimating) {
+    if (!impl_->isAnimating) {
         return;
     }
     
-    if (std::abs(m_velocityX) < m_inertia.velocityThreshold && 
-        std::abs(m_velocityY) < m_inertia.velocityThreshold) {
-        m_velocityX = 0.0;
-        m_velocityY = 0.0;
-        m_isAnimating = false;
+    if (std::abs(impl_->velocityX) < impl_->inertia.velocityThreshold && 
+        std::abs(impl_->velocityY) < impl_->inertia.velocityThreshold) {
+        impl_->velocityX = 0.0;
+        impl_->velocityY = 0.0;
+        impl_->isAnimating = false;
         return;
     }
     
-    Pan(-m_velocityX, m_velocityY);
+    Pan(-impl_->velocityX, impl_->velocityY);
     
-    m_velocityX *= m_inertia.friction;
-    m_velocityY *= m_inertia.friction;
+    impl_->velocityX *= impl_->inertia.friction;
+    impl_->velocityY *= impl_->inertia.friction;
 }
 
 void PanZoomHandler::StartZoomAnimation(double targetZoom, double screenX, double screenY) {
-    m_targetZoom = ClampZoom(targetZoom);
-    m_startZoom = m_state.zoom;
-    m_zoomCenterX = screenX;
-    m_zoomCenterY = screenY;
-    m_animationStartTime = std::chrono::steady_clock::now();
-    m_isZooming = true;
-    m_isAnimating = true;
+    impl_->targetZoom = ClampZoom(targetZoom);
+    impl_->startZoom = impl_->state.zoom;
+    impl_->zoomCenterX = screenX;
+    impl_->zoomCenterY = screenY;
+    impl_->animationStartTime = std::chrono::steady_clock::now();
+    impl_->isZooming = true;
+    impl_->isAnimating = true;
 }
 
 void PanZoomHandler::UpdateZoomAnimation() {
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-        now - m_animationStartTime).count();
+        now - impl_->animationStartTime).count();
     
-    if (elapsed >= m_animationDurationMs) {
-        m_state.zoom = m_targetZoom;
-        m_isZooming = false;
-        m_isAnimating = false;
+    if (elapsed >= impl_->animationDurationMs) {
+        impl_->state.zoom = impl_->targetZoom;
+        impl_->isZooming = false;
+        impl_->isAnimating = false;
         UpdateExtent();
         
-        if (m_zoomChangedCallback) {
-            m_zoomChangedCallback(m_state.zoom);
+        if (impl_->zoomChangedCallback) {
+            impl_->zoomChangedCallback(impl_->state.zoom);
         }
-        if (m_extentChangedCallback) {
-            m_extentChangedCallback(m_state.extent);
+        if (impl_->extentChangedCallback) {
+            impl_->extentChangedCallback(impl_->state.extent);
         }
         return;
     }
     
-    double t = static_cast<double>(elapsed) / m_animationDurationMs;
+    double t = static_cast<double>(elapsed) / impl_->animationDurationMs;
     t = t * t * (3 - 2 * t);
     
-    double currentZoom = m_startZoom + (m_targetZoom - m_startZoom) * t;
+    double currentZoom = impl_->startZoom + (impl_->targetZoom - impl_->startZoom) * t;
     
-    Coordinate worldBefore = ScreenToWorld(m_zoomCenterX, m_zoomCenterY);
-    m_state.zoom = currentZoom;
-    Coordinate worldAfter = ScreenToWorld(m_zoomCenterX, m_zoomCenterY);
+    Coordinate worldBefore = ScreenToWorld(impl_->zoomCenterX, impl_->zoomCenterY);
+    impl_->state.zoom = currentZoom;
+    Coordinate worldAfter = ScreenToWorld(impl_->zoomCenterX, impl_->zoomCenterY);
     
-    m_state.centerX -= (worldAfter.x - worldBefore.x);
-    m_state.centerY -= (worldAfter.y - worldBefore.y);
+    impl_->state.centerX -= (worldAfter.x - worldBefore.x);
+    impl_->state.centerY -= (worldAfter.y - worldBefore.y);
     
     ApplyConstraints();
     UpdateExtent();
     
-    if (m_zoomChangedCallback) {
-        m_zoomChangedCallback(m_state.zoom);
+    if (impl_->zoomChangedCallback) {
+        impl_->zoomChangedCallback(impl_->state.zoom);
     }
-    if (m_extentChangedCallback) {
-        m_extentChangedCallback(m_state.extent);
+    if (impl_->extentChangedCallback) {
+        impl_->extentChangedCallback(impl_->state.extent);
     }
 }
 
 bool PanZoomHandler::HandleMouseDown(const InteractionEvent& event) {
     if (event.button == MouseButton::kLeft || event.button == MouseButton::kMiddle) {
-        m_isPanning = true;
-        m_panStartX = event.screenX;
-        m_panStartY = event.screenY;
-        m_lastMouseX = event.screenX;
-        m_lastMouseY = event.screenY;
-        m_velocityX = 0.0;
-        m_velocityY = 0.0;
-        m_lastMoveTime = std::chrono::steady_clock::now();
+        impl_->isPanning = true;
+        impl_->panStartX = event.screenX;
+        impl_->panStartY = event.screenY;
+        impl_->lastMouseX = event.screenX;
+        impl_->lastMouseY = event.screenY;
+        impl_->velocityX = 0.0;
+        impl_->velocityY = 0.0;
+        impl_->lastMoveTime = std::chrono::steady_clock::now();
         return true;
     }
     return false;
 }
 
 bool PanZoomHandler::HandleMouseMove(const InteractionEvent& event) {
-    if (m_isPanning) {
-        double dx = event.screenX - m_lastMouseX;
-        double dy = event.screenY - m_lastMouseY;
+    if (impl_->isPanning) {
+        double dx = event.screenX - impl_->lastMouseX;
+        double dy = event.screenY - impl_->lastMouseY;
         
         Pan(dx, dy);
         
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - m_lastMoveTime).count();
+            now - impl_->lastMoveTime).count();
         
         if (elapsed > 0) {
-            m_velocityX = dx / elapsed * 16.0;
-            m_velocityY = dy / elapsed * 16.0;
+            impl_->velocityX = dx / elapsed * 16.0;
+            impl_->velocityY = dy / elapsed * 16.0;
         }
         
-        m_lastMouseX = event.screenX;
-        m_lastMouseY = event.screenY;
-        m_lastMoveTime = now;
+        impl_->lastMouseX = event.screenX;
+        impl_->lastMouseY = event.screenY;
+        impl_->lastMoveTime = now;
         
         return true;
     }
@@ -445,13 +523,13 @@ bool PanZoomHandler::HandleMouseMove(const InteractionEvent& event) {
 }
 
 bool PanZoomHandler::HandleMouseUp(const InteractionEvent& event) {
-    if (m_isPanning && (event.button == MouseButton::kLeft || event.button == MouseButton::kMiddle)) {
-        m_isPanning = false;
+    if (impl_->isPanning && (event.button == MouseButton::kLeft || event.button == MouseButton::kMiddle)) {
+        impl_->isPanning = false;
         
-        if (m_inertia.enabled && 
-            (std::abs(m_velocityX) > m_inertia.velocityThreshold || 
-             std::abs(m_velocityY) > m_inertia.velocityThreshold)) {
-            m_isAnimating = true;
+        if (impl_->inertia.enabled && 
+            (std::abs(impl_->velocityX) > impl_->inertia.velocityThreshold || 
+             std::abs(impl_->velocityY) > impl_->inertia.velocityThreshold)) {
+            impl_->isAnimating = true;
         }
         
         return true;
@@ -460,10 +538,10 @@ bool PanZoomHandler::HandleMouseUp(const InteractionEvent& event) {
 }
 
 bool PanZoomHandler::HandleWheel(const InteractionEvent& event) {
-    double factor = event.delta > 0 ? m_zoomParams.factor : 1.0 / m_zoomParams.factor;
+    double factor = event.delta > 0 ? impl_->zoomParams.factor : 1.0 / impl_->zoomParams.factor;
     
-    if (m_zoomParams.animate && m_animationEnabled) {
-        StartZoomAnimation(m_state.zoom * factor, event.screenX, event.screenY);
+    if (impl_->zoomParams.animate && impl_->animationEnabled) {
+        StartZoomAnimation(impl_->state.zoom * factor, event.screenX, event.screenY);
     } else {
         ZoomToPoint(event.screenX, event.screenY, factor);
     }
@@ -481,16 +559,16 @@ bool PanZoomHandler::HandleKeyDown(const InteractionEvent& event) {
             ZoomOut();
             return true;
         case 37:
-            Pan(m_viewportWidth * 0.1, 0);
+            Pan(impl_->viewportWidth * 0.1, 0);
             return true;
         case 38:
-            Pan(0, m_viewportHeight * 0.1);
+            Pan(0, impl_->viewportHeight * 0.1);
             return true;
         case 39:
-            Pan(-m_viewportWidth * 0.1, 0);
+            Pan(-impl_->viewportWidth * 0.1, 0);
             return true;
         case 40:
-            Pan(0, -m_viewportHeight * 0.1);
+            Pan(0, -impl_->viewportHeight * 0.1);
             return true;
         default:
             return false;
@@ -499,23 +577,23 @@ bool PanZoomHandler::HandleKeyDown(const InteractionEvent& event) {
 
 bool PanZoomHandler::HandleTouchStart(const InteractionEvent& event) {
     if (event.touchPositions.size() == 1) {
-        m_isPanning = true;
-        m_lastMouseX = event.touchPositions[0].x;
-        m_lastMouseY = event.touchPositions[0].y;
-        m_velocityX = 0.0;
-        m_velocityY = 0.0;
-        m_lastMoveTime = std::chrono::steady_clock::now();
+        impl_->isPanning = true;
+        impl_->lastMouseX = event.touchPositions[0].x;
+        impl_->lastMouseY = event.touchPositions[0].y;
+        impl_->velocityX = 0.0;
+        impl_->velocityY = 0.0;
+        impl_->lastMoveTime = std::chrono::steady_clock::now();
         return true;
     } else if (event.touchPositions.size() == 2) {
-        m_isPinching = true;
-        m_isPanning = false;
+        impl_->isPinching = true;
+        impl_->isPanning = false;
         
         double dx = event.touchPositions[1].x - event.touchPositions[0].x;
         double dy = event.touchPositions[1].y - event.touchPositions[0].y;
-        m_initialPinchDistance = std::sqrt(dx * dx + dy * dy);
-        m_initialPinchZoom = m_state.zoom;
+        impl_->initialPinchDistance = std::sqrt(dx * dx + dy * dy);
+        impl_->initialPinchZoom = impl_->state.zoom;
         
-        m_initialPinchCenter = Coordinate(
+        impl_->initialPinchCenter = Coordinate(
             (event.touchPositions[0].x + event.touchPositions[1].x) / 2.0,
             (event.touchPositions[0].y + event.touchPositions[1].y) / 2.0
         );
@@ -526,37 +604,37 @@ bool PanZoomHandler::HandleTouchStart(const InteractionEvent& event) {
 }
 
 bool PanZoomHandler::HandleTouchMove(const InteractionEvent& event) {
-    if (m_isPanning && event.touchPositions.size() == 1) {
-        double dx = event.touchPositions[0].x - m_lastMouseX;
-        double dy = event.touchPositions[0].y - m_lastMouseY;
+    if (impl_->isPanning && event.touchPositions.size() == 1) {
+        double dx = event.touchPositions[0].x - impl_->lastMouseX;
+        double dy = event.touchPositions[0].y - impl_->lastMouseY;
         
         Pan(dx, dy);
         
         auto now = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - m_lastMoveTime).count();
+            now - impl_->lastMoveTime).count();
         
         if (elapsed > 0) {
-            m_velocityX = dx / elapsed * 16.0;
-            m_velocityY = dy / elapsed * 16.0;
+            impl_->velocityX = dx / elapsed * 16.0;
+            impl_->velocityY = dy / elapsed * 16.0;
         }
         
-        m_lastMouseX = event.touchPositions[0].x;
-        m_lastMouseY = event.touchPositions[0].y;
-        m_lastMoveTime = now;
+        impl_->lastMouseX = event.touchPositions[0].x;
+        impl_->lastMouseY = event.touchPositions[0].y;
+        impl_->lastMoveTime = now;
         
         return true;
-    } else if (m_isPinching && event.touchPositions.size() == 2) {
+    } else if (impl_->isPinching && event.touchPositions.size() == 2) {
         double dx = event.touchPositions[1].x - event.touchPositions[0].x;
         double dy = event.touchPositions[1].y - event.touchPositions[0].y;
         double distance = std::sqrt(dx * dx + dy * dy);
         
-        if (m_initialPinchDistance > 0) {
-            double scale = distance / m_initialPinchDistance;
-            double newZoom = m_initialPinchZoom * scale;
+        if (impl_->initialPinchDistance > 0) {
+            double scale = distance / impl_->initialPinchDistance;
+            double newZoom = impl_->initialPinchZoom * scale;
             newZoom = ClampZoom(newZoom);
             
-            ZoomToPoint(m_initialPinchCenter.x, m_initialPinchCenter.y, newZoom / m_state.zoom);
+            ZoomToPoint(impl_->initialPinchCenter.x, impl_->initialPinchCenter.y, newZoom / impl_->state.zoom);
         }
         
         return true;
@@ -565,18 +643,18 @@ bool PanZoomHandler::HandleTouchMove(const InteractionEvent& event) {
 }
 
 bool PanZoomHandler::HandleTouchEnd(const InteractionEvent& event) {
-    if (m_isPanning) {
-        m_isPanning = false;
+    if (impl_->isPanning) {
+        impl_->isPanning = false;
         
-        if (m_inertia.enabled && 
-            (std::abs(m_velocityX) > m_inertia.velocityThreshold || 
-             std::abs(m_velocityY) > m_inertia.velocityThreshold)) {
-            m_isAnimating = true;
+        if (impl_->inertia.enabled && 
+            (std::abs(impl_->velocityX) > impl_->inertia.velocityThreshold || 
+             std::abs(impl_->velocityY) > impl_->inertia.velocityThreshold)) {
+            impl_->isAnimating = true;
         }
         
         return true;
-    } else if (m_isPinching) {
-        m_isPinching = false;
+    } else if (impl_->isPinching) {
+        impl_->isPinching = false;
         return true;
     }
     return false;
@@ -584,14 +662,14 @@ bool PanZoomHandler::HandleTouchEnd(const InteractionEvent& event) {
 
 bool PanZoomHandler::HandleDoubleClick(const InteractionEvent& event) {
     if (event.button == MouseButton::kLeft) {
-        ZoomToPoint(event.screenX, event.screenY, m_zoomParams.factor);
+        ZoomToPoint(event.screenX, event.screenY, impl_->zoomParams.factor);
         return true;
     }
     return false;
 }
 
 double PanZoomHandler::ClampZoom(double zoom) const {
-    return std::max(m_state.minZoom, std::min(m_state.maxZoom, zoom));
+    return std::max(impl_->state.minZoom, std::min(impl_->state.maxZoom, zoom));
 }
 
 double PanZoomHandler::ClampRotation(double rotation) const {
@@ -601,17 +679,17 @@ double PanZoomHandler::ClampRotation(double rotation) const {
 }
 
 Coordinate PanZoomHandler::ClampCenter(double x, double y) const {
-    if (!m_state.hasConstraints) {
+    if (!impl_->state.hasConstraints) {
         return Coordinate(x, y);
     }
     
-    double halfWidth = m_viewportWidth / (2.0 * m_state.zoom);
-    double halfHeight = m_viewportHeight / (2.0 * m_state.zoom);
+    double halfWidth = impl_->viewportWidth / (2.0 * impl_->state.zoom);
+    double halfHeight = impl_->viewportHeight / (2.0 * impl_->state.zoom);
     
-    double minX = m_state.constraints.GetMinX() + halfWidth;
-    double maxX = m_state.constraints.GetMaxX() - halfWidth;
-    double minY = m_state.constraints.GetMinY() + halfHeight;
-    double maxY = m_state.constraints.GetMaxY() - halfHeight;
+    double minX = impl_->state.constraints.GetMinX() + halfWidth;
+    double maxX = impl_->state.constraints.GetMaxX() - halfWidth;
+    double minY = impl_->state.constraints.GetMinY() + halfHeight;
+    double maxY = impl_->state.constraints.GetMaxY() - halfHeight;
     
     if (minX > maxX) {
         x = (minX + maxX) / 2.0;

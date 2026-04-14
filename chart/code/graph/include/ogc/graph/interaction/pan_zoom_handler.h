@@ -52,36 +52,36 @@ public:
     
     ~PanZoomHandler() override;
     
-    std::string GetName() const override { return m_name; }
-    int GetPriority() const override { return m_priority; }
-    void SetPriority(int priority) override { m_priority = priority; }
+    std::string GetName() const override;
+    int GetPriority() const override;
+    void SetPriority(int priority) override;
     
-    bool IsEnabled() const override { return m_enabled; }
-    void SetEnabled(bool enabled) override { m_enabled = enabled; }
+    bool IsEnabled() const override;
+    void SetEnabled(bool enabled) override;
     
     bool HandleEvent(const InteractionEvent& event) override;
     
     void SetExtent(const Envelope& extent);
-    Envelope GetExtent() const { return m_state.extent; }
+    Envelope GetExtent() const;
     
     void SetCenter(double x, double y);
-    Coordinate GetCenter() const { return Coordinate(m_state.centerX, m_state.centerY); }
+    Coordinate GetCenter() const;
     
     void SetZoom(double zoom);
-    double GetZoom() const { return m_state.zoom; }
+    double GetZoom() const;
     
     void SetRotation(double degrees);
-    double GetRotation() const { return m_state.rotation; }
+    double GetRotation() const;
     
     void SetConstraints(const Envelope& constraints);
     void ClearConstraints();
-    bool HasConstraints() const { return m_state.hasConstraints; }
+    bool HasConstraints() const;
     
-    void SetMinZoom(double minZoom) { m_state.minZoom = minZoom; }
-    double GetMinZoom() const { return m_state.minZoom; }
+    void SetMinZoom(double minZoom);
+    double GetMinZoom() const;
     
-    void SetMaxZoom(double maxZoom) { m_state.maxZoom = maxZoom; }
-    double GetMaxZoom() const { return m_state.maxZoom; }
+    void SetMaxZoom(double maxZoom);
+    double GetMaxZoom() const;
     
     void Pan(double dx, double dy);
     void PanTo(double x, double y);
@@ -96,20 +96,20 @@ public:
     void ResetRotation();
     
     void SetViewportSize(int width, int height);
-    int GetViewportWidth() const { return m_viewportWidth; }
-    int GetViewportHeight() const { return m_viewportHeight; }
+    int GetViewportWidth() const;
+    int GetViewportHeight() const;
     
-    void SetInertiaEnabled(bool enabled) { m_inertia.enabled = enabled; }
-    bool IsInertiaEnabled() const { return m_inertia.enabled; }
+    void SetInertiaEnabled(bool enabled);
+    bool IsInertiaEnabled() const;
     
-    void SetInertiaFriction(double friction) { m_inertia.friction = friction; }
-    double GetInertiaFriction() const { return m_inertia.friction; }
+    void SetInertiaFriction(double friction);
+    double GetInertiaFriction() const;
     
-    void SetAnimationEnabled(bool enabled) { m_animationEnabled = enabled; }
-    bool IsAnimationEnabled() const { return m_animationEnabled; }
+    void SetAnimationEnabled(bool enabled);
+    bool IsAnimationEnabled() const;
     
-    void SetZoomParams(const ZoomParams& params) { m_zoomParams = params; }
-    ZoomParams GetZoomParams() const { return m_zoomParams; }
+    void SetZoomParams(const ZoomParams& params);
+    ZoomParams GetZoomParams() const;
     
     void SetExtentChangedCallback(ExtentChangedCallback callback);
     void SetZoomChangedCallback(ZoomChangedCallback callback);
@@ -117,15 +117,15 @@ public:
     void SetRotationChangedCallback(RotationChangedCallback callback);
     
     void UpdateAnimation();
-    bool IsAnimating() const { return m_isAnimating; }
+    bool IsAnimating() const;
     void CancelAnimation();
     
     void FitToExtent(const Envelope& extent);
     void FitToAll();
     
-    InteractionState GetState() const override { return m_isPanning ? InteractionState::kPan : InteractionState::kNone; }
+    InteractionState GetState() const override;
     
-    const PanZoomState& GetPanZoomState() const { return m_state; }
+    const PanZoomState& GetPanZoomState() const;
     void SetPanZoomState(const PanZoomState& state);
     
     void SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform);
@@ -158,50 +158,8 @@ private:
     double ClampRotation(double rotation) const;
     Coordinate ClampCenter(double x, double y) const;
     
-    std::string m_name;
-    int m_priority = 100;
-    bool m_enabled = true;
-    
-    PanZoomState m_state;
-    InertiaParams m_inertia;
-    ZoomParams m_zoomParams;
-    
-    int m_viewportWidth = 800;
-    int m_viewportHeight = 600;
-    
-    bool m_isPanning = false;
-    bool m_isZooming = false;
-    bool m_isAnimating = false;
-    bool m_animationEnabled = true;
-    
-    double m_lastMouseX = 0.0;
-    double m_lastMouseY = 0.0;
-    double m_panStartX = 0.0;
-    double m_panStartY = 0.0;
-    
-    double m_velocityX = 0.0;
-    double m_velocityY = 0.0;
-    std::chrono::steady_clock::time_point m_lastMoveTime;
-    
-    double m_targetZoom = 1.0;
-    double m_startZoom = 1.0;
-    double m_zoomCenterX = 0.0;
-    double m_zoomCenterY = 0.0;
-    std::chrono::steady_clock::time_point m_animationStartTime;
-    int m_animationDurationMs = 200;
-    
-    double m_initialPinchDistance = 0.0;
-    double m_initialPinchZoom = 1.0;
-    Coordinate m_initialPinchCenter;
-    bool m_isPinching = false;
-    
-    ExtentChangedCallback m_extentChangedCallback;
-    ZoomChangedCallback m_zoomChangedCallback;
-    CenterChangedCallback m_centerChangedCallback;
-    RotationChangedCallback m_rotationChangedCallback;
-    
-    std::function<Coordinate(double, double)> m_screenToWorld;
-    std::function<Coordinate(double, double)> m_worldToScreen;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

@@ -6,34 +6,51 @@
 namespace ogc {
 namespace graph {
 
+struct LayerControlPanel::Impl {
+    LayerManager* layerManager = nullptr;
+    
+    std::vector<LayerControlInfo> layers;
+    std::vector<LayerGroupInfo> groups;
+    std::string selectedLayerId;
+    std::string currentPreset;
+    
+    LayerChangedCallback layerChangedCallback;
+    OrderChangedCallback orderChangedCallback;
+    SelectionChangedCallback selectionChangedCallback;
+};
+
 std::unique_ptr<LayerControlPanel> LayerControlPanel::Create() {
     return std::unique_ptr<LayerControlPanel>(new LayerControlPanel());
 }
 
-LayerControlPanel::LayerControlPanel() {
+LayerControlPanel::LayerControlPanel()
+    : impl_(std::make_unique<Impl>())
+{
 }
 
 LayerControlPanel::~LayerControlPanel() {
 }
 
 void LayerControlPanel::SetLayerManager(LayerManager* manager) {
-    m_layerManager = manager;
+    impl_->layerManager = manager;
     if (manager) {
         RefreshLayerList();
     }
 }
 
+LayerManager* LayerControlPanel::GetLayerManager() const { return impl_->layerManager; }
+
 void LayerControlPanel::RefreshLayerList() {
-    m_layers.clear();
+    impl_->layers.clear();
     
-    if (!m_layerManager) {
+    if (!impl_->layerManager) {
         return;
     }
     
-    int count = m_layerManager->GetLayerCount();
+    int count = impl_->layerManager->GetLayerCount();
     
     for (int i = 0; i < count; ++i) {
-        const LayerItem* item = m_layerManager->GetLayer(i);
+        const LayerItem* item = impl_->layerManager->GetLayer(i);
         if (!item) {
             continue;
         }
@@ -47,14 +64,16 @@ void LayerControlPanel::RefreshLayerList() {
         info.isLocked = false;
         info.isExpanded = true;
         
-        m_layers.push_back(info);
+        impl_->layers.push_back(info);
     }
 }
 
+const std::vector<LayerControlInfo>& LayerControlPanel::GetLayers() const { return impl_->layers; }
+
 void LayerControlPanel::SetLayerVisible(const std::string& layerId, bool visible) {
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
     if (index >= 0) {
-        m_layerManager->SetLayerVisibility(index, 
+        impl_->layerManager->SetLayerVisibility(index, 
             visible ? LayerVisibility::kVisible : LayerVisibility::kHidden);
     }
     
@@ -73,9 +92,9 @@ bool LayerControlPanel::IsLayerVisible(const std::string& layerId) const {
 void LayerControlPanel::SetLayerOpacity(const std::string& layerId, double opacity) {
     opacity = std::max(0.0, std::min(1.0, opacity));
     
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
     if (index >= 0) {
-        m_layerManager->SetLayerOpacity(index, opacity);
+        impl_->layerManager->SetLayerOpacity(index, opacity);
     }
     
     auto* layer = FindLayer(layerId);
@@ -91,37 +110,37 @@ double LayerControlPanel::GetLayerOpacity(const std::string& layerId) const {
 }
 
 void LayerControlPanel::MoveLayerUp(const std::string& layerId) {
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
     if (index > 0) {
-        m_layerManager->MoveLayerUp(index);
+        impl_->layerManager->MoveLayerUp(index);
         RefreshLayerList();
         NotifyOrderChanged();
     }
 }
 
 void LayerControlPanel::MoveLayerDown(const std::string& layerId) {
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
-    if (index >= 0 && index < m_layerManager->GetLayerCount() - 1) {
-        m_layerManager->MoveLayerDown(index);
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
+    if (index >= 0 && index < impl_->layerManager->GetLayerCount() - 1) {
+        impl_->layerManager->MoveLayerDown(index);
         RefreshLayerList();
         NotifyOrderChanged();
     }
 }
 
 void LayerControlPanel::MoveLayerToTop(const std::string& layerId) {
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
     if (index > 0) {
-        m_layerManager->MoveLayer(index, 0);
+        impl_->layerManager->MoveLayer(index, 0);
         RefreshLayerList();
         NotifyOrderChanged();
     }
 }
 
 void LayerControlPanel::MoveLayerToBottom(const std::string& layerId) {
-    int index = m_layerManager ? m_layerManager->GetLayerIndex(layerId) : -1;
-    int count = m_layerManager ? m_layerManager->GetLayerCount() : 0;
+    int index = impl_->layerManager ? impl_->layerManager->GetLayerIndex(layerId) : -1;
+    int count = impl_->layerManager ? impl_->layerManager->GetLayerCount() : 0;
     if (index >= 0 && index < count - 1) {
-        m_layerManager->MoveLayer(index, count - 1);
+        impl_->layerManager->MoveLayer(index, count - 1);
         RefreshLayerList();
         NotifyOrderChanged();
     }
@@ -141,18 +160,20 @@ bool LayerControlPanel::IsLayerLocked(const std::string& layerId) const {
 }
 
 void LayerControlPanel::SelectLayer(const std::string& layerId) {
-    m_selectedLayerId = layerId;
+    impl_->selectedLayerId = layerId;
     NotifySelectionChanged(layerId);
 }
 
 void LayerControlPanel::DeselectLayer() {
-    std::string oldId = m_selectedLayerId;
-    m_selectedLayerId.clear();
+    std::string oldId = impl_->selectedLayerId;
+    impl_->selectedLayerId.clear();
     NotifySelectionChanged(oldId);
 }
 
+std::string LayerControlPanel::GetSelectedLayer() const { return impl_->selectedLayerId; }
+
 bool LayerControlPanel::IsLayerSelected(const std::string& layerId) const {
-    return m_selectedLayerId == layerId;
+    return impl_->selectedLayerId == layerId;
 }
 
 void LayerControlPanel::ToggleLayerExpansion(const std::string& layerId) {
@@ -180,49 +201,51 @@ std::string LayerControlPanel::GetLayerGroup(const std::string& layerId) const {
 }
 
 void LayerControlPanel::CreateGroup(const std::string& groupId, const std::string& groupName) {
-    auto it = std::find_if(m_groups.begin(), m_groups.end(),
+    auto it = std::find_if(impl_->groups.begin(), impl_->groups.end(),
         [&groupId](const LayerGroupInfo& info) { return info.groupId == groupId; });
     
-    if (it == m_groups.end()) {
+    if (it == impl_->groups.end()) {
         LayerGroupInfo group;
         group.groupId = groupId;
         group.groupName = groupName;
-        m_groups.push_back(group);
+        impl_->groups.push_back(group);
     }
 }
 
 void LayerControlPanel::DeleteGroup(const std::string& groupId) {
-    auto it = std::find_if(m_groups.begin(), m_groups.end(),
+    auto it = std::find_if(impl_->groups.begin(), impl_->groups.end(),
         [&groupId](const LayerGroupInfo& info) { return info.groupId == groupId; });
     
-    if (it != m_groups.end()) {
-        for (auto& layer : m_layers) {
+    if (it != impl_->groups.end()) {
+        for (auto& layer : impl_->layers) {
             if (layer.group == groupId) {
                 layer.group.clear();
             }
         }
-        m_groups.erase(it);
+        impl_->groups.erase(it);
     }
 }
 
 void LayerControlPanel::ToggleGroupExpansion(const std::string& groupId) {
-    auto it = std::find_if(m_groups.begin(), m_groups.end(),
+    auto it = std::find_if(impl_->groups.begin(), impl_->groups.end(),
         [&groupId](const LayerGroupInfo& info) { return info.groupId == groupId; });
     
-    if (it != m_groups.end()) {
+    if (it != impl_->groups.end()) {
         it->expanded = !it->expanded;
     }
 }
 
 bool LayerControlPanel::IsGroupExpanded(const std::string& groupId) const {
-    auto it = std::find_if(m_groups.begin(), m_groups.end(),
+    auto it = std::find_if(impl_->groups.begin(), impl_->groups.end(),
         [&groupId](const LayerGroupInfo& info) { return info.groupId == groupId; });
     
-    return it != m_groups.end() ? it->expanded : true;
+    return it != impl_->groups.end() ? it->expanded : true;
 }
 
+const std::vector<LayerGroupInfo>& LayerControlPanel::GetGroups() const { return impl_->groups; }
+
 void LayerControlPanel::SetGroupVisible(const std::string& groupId, bool visible) {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         if (layer.group == groupId) {
             SetLayerVisible(layer.layerId, visible);
         }
@@ -230,7 +253,7 @@ void LayerControlPanel::SetGroupVisible(const std::string& groupId, bool visible
 }
 
 bool LayerControlPanel::IsGroupVisible(const std::string& groupId) const {
-    for (const auto& layer : m_layers) {
+    for (const auto& layer : impl_->layers) {
         if (layer.group == groupId && layer.visible) {
             return true;
         }
@@ -239,7 +262,7 @@ bool LayerControlPanel::IsGroupVisible(const std::string& groupId) const {
 }
 
 void LayerControlPanel::SetGroupOpacity(const std::string& groupId, double opacity) {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         if (layer.group == groupId) {
             SetLayerOpacity(layer.layerId, opacity);
         }
@@ -247,7 +270,7 @@ void LayerControlPanel::SetGroupOpacity(const std::string& groupId, double opaci
 }
 
 double LayerControlPanel::GetGroupOpacity(const std::string& groupId) const {
-    for (const auto& layer : m_layers) {
+    for (const auto& layer : impl_->layers) {
         if (layer.group == groupId) {
             return layer.opacity;
         }
@@ -256,72 +279,78 @@ double LayerControlPanel::GetGroupOpacity(const std::string& groupId) const {
 }
 
 void LayerControlPanel::ShowAllLayers() {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         SetLayerVisible(layer.layerId, true);
     }
 }
 
 void LayerControlPanel::HideAllLayers() {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         SetLayerVisible(layer.layerId, false);
     }
 }
 
 void LayerControlPanel::LockAllLayers() {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         layer.isLocked = true;
     }
 }
 
 void LayerControlPanel::UnlockAllLayers() {
-    for (auto& layer : m_layers) {
+    for (auto& layer : impl_->layers) {
         layer.isLocked = false;
     }
 }
 
 void LayerControlPanel::SetLayerChangedCallback(LayerChangedCallback callback) {
-    m_layerChangedCallback = callback;
+    impl_->layerChangedCallback = callback;
 }
 
 void LayerControlPanel::SetOrderChangedCallback(OrderChangedCallback callback) {
-    m_orderChangedCallback = callback;
+    impl_->orderChangedCallback = callback;
 }
 
 void LayerControlPanel::SetSelectionChangedCallback(SelectionChangedCallback callback) {
-    m_selectionChangedCallback = callback;
+    impl_->selectionChangedCallback = callback;
 }
+
+size_t LayerControlPanel::GetLayerCount() const { return impl_->layers.size(); }
 
 bool LayerControlPanel::HasLayer(const std::string& layerId) const {
     return FindLayer(layerId) != nullptr;
 }
 
+bool LayerControlPanel::HasLayers() const {
+    return !impl_->layers.empty();
+}
+
 LayerControlInfo* LayerControlPanel::FindLayer(const std::string& layerId) {
-    auto it = std::find_if(m_layers.begin(), m_layers.end(),
+    auto it = std::find_if(impl_->layers.begin(), impl_->layers.end(),
         [&layerId](const LayerControlInfo& info) { return info.layerId == layerId; });
     
-    return it != m_layers.end() ? &(*it) : nullptr;
+    return it != impl_->layers.end() ? &(*it) : nullptr;
 }
 
 const LayerControlInfo* LayerControlPanel::FindLayer(const std::string& layerId) const {
-    auto it = std::find_if(m_layers.begin(), m_layers.end(),
+    auto it = std::find_if(impl_->layers.begin(), impl_->layers.end(),
         [&layerId](const LayerControlInfo& info) { return info.layerId == layerId; });
     
-    return it != m_layers.end() ? &(*it) : nullptr;
+    return it != impl_->layers.end() ? &(*it) : nullptr;
 }
 
 void LayerControlPanel::SortLayersByOrder() {
-    std::sort(m_layers.begin(), m_layers.end(),
+    std::sort(impl_->layers.begin(), impl_->layers.end(),
         [](const LayerControlInfo& a, const LayerControlInfo& b) { return a.order < b.order; });
 }
 
 void LayerControlPanel::SortLayersByName() {
-    std::sort(m_layers.begin(), m_layers.end(),
+    std::sort(impl_->layers.begin(), impl_->layers.end(),
         [](const LayerControlInfo& a, const LayerControlInfo& b) { return a.layerName < b.layerName; });
 }
 
 std::vector<std::string> LayerControlPanel::GetVisibleLayerIds() const {
     std::vector<std::string> ids;
-    for (const auto& layer : m_layers) {
+    for (const auto& layer : impl_->layers) {
         if (layer.visible) {
             ids.push_back(layer.layerId);
         }
@@ -331,23 +360,25 @@ std::vector<std::string> LayerControlPanel::GetVisibleLayerIds() const {
 
 std::vector<std::string> LayerControlPanel::GetAllLayerIds() const {
     std::vector<std::string> ids;
-    for (const auto& layer : m_layers) {
+    for (const auto& layer : impl_->layers) {
         ids.push_back(layer.layerId);
     }
     return ids;
 }
 
 void LayerControlPanel::ApplyPreset(const std::string& presetName) {
-    m_currentPreset = presetName;
+    impl_->currentPreset = presetName;
 }
 
+std::string LayerControlPanel::GetCurrentPreset() const { return impl_->currentPreset; }
+
 void LayerControlPanel::SavePreset(const std::string& presetName) {
-    m_currentPreset = presetName;
+    impl_->currentPreset = presetName;
 }
 
 void LayerControlPanel::DeletePreset(const std::string& presetName) {
-    if (m_currentPreset == presetName) {
-        m_currentPreset.clear();
+    if (impl_->currentPreset == presetName) {
+        impl_->currentPreset.clear();
     }
 }
 
@@ -356,26 +387,26 @@ std::vector<std::string> LayerControlPanel::GetAvailablePresets() const {
 }
 
 void LayerControlPanel::NotifyLayerChanged(const std::string& layerId) {
-    if (m_layerChangedCallback) {
-        m_layerChangedCallback(layerId);
+    if (impl_->layerChangedCallback) {
+        impl_->layerChangedCallback(layerId);
     }
 }
 
 void LayerControlPanel::NotifyOrderChanged() {
-    if (m_orderChangedCallback) {
-        m_orderChangedCallback();
+    if (impl_->orderChangedCallback) {
+        impl_->orderChangedCallback();
     }
 }
 
 void LayerControlPanel::NotifySelectionChanged(const std::string& layerId) {
-    if (m_selectionChangedCallback) {
-        m_selectionChangedCallback(layerId);
+    if (impl_->selectionChangedCallback) {
+        impl_->selectionChangedCallback(layerId);
     }
 }
 
 void LayerControlPanel::UpdateLayerOrder() {
-    for (size_t i = 0; i < m_layers.size(); ++i) {
-        m_layers[i].order = static_cast<int>(i);
+    for (size_t i = 0; i < impl_->layers.size(); ++i) {
+        impl_->layers[i].order = static_cast<int>(i);
     }
 }
 

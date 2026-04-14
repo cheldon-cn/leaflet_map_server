@@ -11,10 +11,23 @@ using ogc::proj::CoordinateTransformerPtr;
 TransformManagerPtr TransformManager::s_instance = nullptr;
 std::mutex TransformManager::s_instanceMutex;
 
+struct TransformManager::Impl {
+    mutable std::mutex mutex;
+    std::unordered_map<std::string, ogc::proj::CoordinateTransformerPtr> cache;
+    size_t maxCacheSize;
+    bool enableCache;
+    
+    Impl()
+        : maxCacheSize(100)
+        , enableCache(true) {
+    }
+};
+
 TransformManager::TransformManager()
-    : m_maxCacheSize(100)
-    , m_enableCache(true) {
+    : impl_(std::make_unique<Impl>()) {
 }
+
+TransformManager::~TransformManager() = default;
 
 TransformManagerPtr TransformManager::GetInstance() {
     if (!s_instance) {
@@ -33,21 +46,21 @@ std::string TransformManager::MakeKey(const std::string& sourceCRS, const std::s
 CoordinateTransformerPtr TransformManager::GetTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
     std::string key = MakeKey(sourceCRS, targetCRS);
     
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_enableCache) {
-        auto it = m_cache.find(key);
-        if (it != m_cache.end()) {
+    if (impl_->enableCache) {
+        auto it = impl_->cache.find(key);
+        if (it != impl_->cache.end()) {
             return it->second;
         }
     }
     
     auto transformer = CreateTransformer(sourceCRS, targetCRS);
-    if (transformer && m_enableCache) {
-        if (m_cache.size() >= m_maxCacheSize) {
-            m_cache.clear();
+    if (transformer && impl_->enableCache) {
+        if (impl_->cache.size() >= impl_->maxCacheSize) {
+            impl_->cache.clear();
         }
-        m_cache[key] = transformer;
+        impl_->cache[key] = transformer;
     }
     
     return transformer;
@@ -58,61 +71,61 @@ void TransformManager::RegisterTransformer(const std::string& sourceCRS, const s
     
     std::string key = MakeKey(sourceCRS, targetCRS);
     
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_enableCache) {
-        if (m_cache.size() >= m_maxCacheSize && m_cache.find(key) == m_cache.end()) {
-            m_cache.clear();
+    if (impl_->enableCache) {
+        if (impl_->cache.size() >= impl_->maxCacheSize && impl_->cache.find(key) == impl_->cache.end()) {
+            impl_->cache.clear();
         }
-        m_cache[key] = transformer;
+        impl_->cache[key] = transformer;
     }
 }
 
 void TransformManager::UnregisterTransformer(const std::string& sourceCRS, const std::string& targetCRS) {
     std::string key = MakeKey(sourceCRS, targetCRS);
     
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_cache.erase(key);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->cache.erase(key);
 }
 
 bool TransformManager::HasTransformer(const std::string& sourceCRS, const std::string& targetCRS) const {
     std::string key = MakeKey(sourceCRS, targetCRS);
     
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_cache.find(key) != m_cache.end();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->cache.find(key) != impl_->cache.end();
 }
 
 void TransformManager::ClearCache() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_cache.clear();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->cache.clear();
 }
 
 size_t TransformManager::GetCacheSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_cache.size();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->cache.size();
 }
 
 void TransformManager::SetMaxCacheSize(size_t maxSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_maxCacheSize = maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->maxCacheSize = maxSize;
 }
 
 size_t TransformManager::GetMaxCacheSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_maxCacheSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->maxCacheSize;
 }
 
 void TransformManager::SetEnableCache(bool enable) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_enableCache = enable;
-    if (!m_enableCache) {
-        m_cache.clear();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->enableCache = enable;
+    if (!impl_->enableCache) {
+        impl_->cache.clear();
     }
 }
 
 bool TransformManager::IsCacheEnabled() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_enableCache;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->enableCache;
 }
 
 CoordinateTransformerPtr TransformManager::CreateTransformer(const std::string& sourceCRS, const std::string& targetCRS) {

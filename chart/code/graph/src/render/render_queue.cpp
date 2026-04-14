@@ -1,19 +1,45 @@
 #include "ogc/graph/render/render_queue.h"
 #include <algorithm>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
 
 namespace ogc {
 namespace graph {
 
+struct RenderQueue::Impl {
+    struct TaskComparator {
+        bool operator()(const RenderTaskPtr& a, const RenderTaskPtr& b) const {
+            return a->GetPriorityValue() < b->GetPriorityValue();
+        }
+    };
+    
+    mutable std::mutex mutex;
+    std::condition_variable condition;
+    std::priority_queue<RenderTaskPtr, std::vector<RenderTaskPtr>, TaskComparator> queue;
+    std::vector<RenderTaskPtr> allTasks;
+    size_t maxSize;
+    bool priorityMode;
+    bool paused;
+    RenderQueueStats stats;
+    
+    TaskEventHandler onTaskEnqueued;
+    TaskEventHandler onTaskDequeued;
+    TaskEventHandler onTaskCompleted;
+    TaskEventHandler onTaskFailed;
+    
+    Impl() : maxSize(1000), priorityMode(true), paused(false) {}
+    explicit Impl(size_t maxSz) : maxSize(maxSz), priorityMode(true), paused(false) {}
+};
+
 RenderQueue::RenderQueue()
-    : m_maxSize(1000)
-    , m_priorityMode(true)
-    , m_paused(false) {
+    : impl_(std::make_unique<Impl>())
+{
 }
 
 RenderQueue::RenderQueue(size_t maxQueueSize)
-    : m_maxSize(maxQueueSize)
-    , m_priorityMode(true)
-    , m_paused(false) {
+    : impl_(std::make_unique<Impl>(maxQueueSize))
+{
 }
 
 RenderQueue::~RenderQueue() {
@@ -25,9 +51,9 @@ bool RenderQueue::Enqueue(RenderTaskPtr task) {
         return false;
     }
     
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_queue.size() >= m_maxSize) {
+    if (impl_->queue.size() >= impl_->maxSize) {
         return false;
     }
     
@@ -36,30 +62,30 @@ bool RenderQueue::Enqueue(RenderTaskPtr task) {
     }
     
     task->SetState(RenderTaskState::kQueued);
-    m_queue.push(task);
-    m_allTasks.push_back(task);
-    m_stats.totalTasks++;
-    m_stats.pendingTasks++;
+    impl_->queue.push(task);
+    impl_->allTasks.push_back(task);
+    impl_->stats.totalTasks++;
+    impl_->stats.pendingTasks++;
     
     NotifyEnqueued(task);
-    m_condition.notify_one();
+    impl_->condition.notify_one();
     
     return true;
 }
 
 RenderTaskPtr RenderQueue::Dequeue() {
-    std::unique_lock<std::mutex> lock(m_mutex);
+    std::unique_lock<std::mutex> lock(impl_->mutex);
     
-    m_condition.wait(lock, [this] { return !m_queue.empty() && !m_paused; });
+    impl_->condition.wait(lock, [this] { return !impl_->queue.empty() && !impl_->paused; });
     
-    if (m_queue.empty()) {
+    if (impl_->queue.empty()) {
         return nullptr;
     }
     
-    RenderTaskPtr task = m_queue.top();
-    m_queue.pop();
+    RenderTaskPtr task = impl_->queue.top();
+    impl_->queue.pop();
     
-    m_stats.pendingTasks--;
+    impl_->stats.pendingTasks--;
     
     NotifyDequeued(task);
     
@@ -67,27 +93,27 @@ RenderTaskPtr RenderQueue::Dequeue() {
 }
 
 RenderTaskPtr RenderQueue::TryDequeue(int64_t timeoutMs) {
-    std::unique_lock<std::mutex> lock(m_mutex);
+    std::unique_lock<std::mutex> lock(impl_->mutex);
     
     if (timeoutMs > 0) {
-        if (!m_condition.wait_for(lock, std::chrono::milliseconds(timeoutMs), 
-            [this] { return !m_queue.empty() && !m_paused; })) {
+        if (!impl_->condition.wait_for(lock, std::chrono::milliseconds(timeoutMs), 
+            [this] { return !impl_->queue.empty() && !impl_->paused; })) {
             return nullptr;
         }
     } else {
-        if (m_queue.empty() || m_paused) {
+        if (impl_->queue.empty() || impl_->paused) {
             return nullptr;
         }
     }
     
-    if (m_queue.empty()) {
+    if (impl_->queue.empty()) {
         return nullptr;
     }
     
-    RenderTaskPtr task = m_queue.top();
-    m_queue.pop();
+    RenderTaskPtr task = impl_->queue.top();
+    impl_->queue.pop();
     
-    m_stats.pendingTasks--;
+    impl_->stats.pendingTasks--;
     
     NotifyDequeued(task);
     
@@ -95,83 +121,83 @@ RenderTaskPtr RenderQueue::TryDequeue(int64_t timeoutMs) {
 }
 
 RenderTaskPtr RenderQueue::Peek() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_queue.empty()) {
+    if (impl_->queue.empty()) {
         return nullptr;
     }
     
-    return m_queue.top();
+    return impl_->queue.top();
 }
 
 bool RenderQueue::IsEmpty() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_queue.empty();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->queue.empty();
 }
 
 size_t RenderQueue::GetSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_queue.size();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->queue.size();
 }
 
 size_t RenderQueue::GetMaxSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->maxSize;
 }
 
 void RenderQueue::SetMaxSize(size_t maxSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_maxSize = maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->maxSize = maxSize;
 }
 
 void RenderQueue::Clear() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    while (!m_queue.empty()) {
-        m_queue.pop();
+    while (!impl_->queue.empty()) {
+        impl_->queue.pop();
     }
-    m_allTasks.clear();
-    m_stats.pendingTasks = 0;
+    impl_->allTasks.clear();
+    impl_->stats.pendingTasks = 0;
 }
 
 void RenderQueue::CancelAll() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    while (!m_queue.empty()) {
-        auto task = m_queue.top();
+    while (!impl_->queue.empty()) {
+        auto task = impl_->queue.top();
         if (task) {
             task->Cancel();
-            m_stats.cancelledTasks++;
+            impl_->stats.cancelledTasks++;
         }
-        m_queue.pop();
+        impl_->queue.pop();
     }
     
-    for (auto& task : m_allTasks) {
+    for (auto& task : impl_->allTasks) {
         if (task && task->IsPending()) {
             task->Cancel();
-            m_stats.cancelledTasks++;
+            impl_->stats.cancelledTasks++;
         }
     }
     
-    m_allTasks.clear();
-    m_stats.pendingTasks = 0;
+    impl_->allTasks.clear();
+    impl_->stats.pendingTasks = 0;
 }
 
 void RenderQueue::RemoveTask(const std::string& taskId) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    m_allTasks.erase(
-        std::remove_if(m_allTasks.begin(), m_allTasks.end(),
+    impl_->allTasks.erase(
+        std::remove_if(impl_->allTasks.begin(), impl_->allTasks.end(),
             [&taskId](const RenderTaskPtr& task) {
                 return task && task->GetId() == taskId;
             }),
-        m_allTasks.end());
+        impl_->allTasks.end());
 }
 
 RenderTaskPtr RenderQueue::GetTask(const std::string& taskId) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& task : m_allTasks) {
+    for (const auto& task : impl_->allTasks) {
         if (task && task->GetId() == taskId) {
             return task;
         }
@@ -181,9 +207,9 @@ RenderTaskPtr RenderQueue::GetTask(const std::string& taskId) const {
 }
 
 bool RenderQueue::HasTask(const std::string& taskId) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& task : m_allTasks) {
+    for (const auto& task : impl_->allTasks) {
         if (task && task->GetId() == taskId) {
             return true;
         }
@@ -193,89 +219,89 @@ bool RenderQueue::HasTask(const std::string& taskId) const {
 }
 
 RenderQueueStats RenderQueue::GetStats() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_stats;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->stats;
 }
 
 void RenderQueue::ResetStats() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_stats = RenderQueueStats();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->stats = RenderQueueStats();
 }
 
 void RenderQueue::SetOnTaskEnqueued(TaskEventHandler handler) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_onTaskEnqueued = handler;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->onTaskEnqueued = handler;
 }
 
 void RenderQueue::SetOnTaskDequeued(TaskEventHandler handler) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_onTaskDequeued = handler;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->onTaskDequeued = handler;
 }
 
 void RenderQueue::SetOnTaskCompleted(TaskEventHandler handler) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_onTaskCompleted = handler;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->onTaskCompleted = handler;
 }
 
 void RenderQueue::SetOnTaskFailed(TaskEventHandler handler) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_onTaskFailed = handler;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->onTaskFailed = handler;
 }
 
 void RenderQueue::SetPriorityMode(bool enable) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_priorityMode = enable;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->priorityMode = enable;
 }
 
 bool RenderQueue::IsPriorityModeEnabled() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_priorityMode;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->priorityMode;
 }
 
 void RenderQueue::Pause() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_paused = true;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->paused = true;
 }
 
 void RenderQueue::Resume() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_paused = false;
-    m_condition.notify_all();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->paused = false;
+    impl_->condition.notify_all();
 }
 
 bool RenderQueue::IsPaused() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_paused;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->paused;
 }
 
 void RenderQueue::WaitForNotEmpty() {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_condition.wait(lock, [this] { return !m_queue.empty() && !m_paused; });
+    std::unique_lock<std::mutex> lock(impl_->mutex);
+    impl_->condition.wait(lock, [this] { return !impl_->queue.empty() && !impl_->paused; });
 }
 
 bool RenderQueue::WaitForNotEmpty(int64_t timeoutMs) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    return m_condition.wait_for(lock, std::chrono::milliseconds(timeoutMs),
-        [this] { return !m_queue.empty() && !m_paused; });
+    std::unique_lock<std::mutex> lock(impl_->mutex);
+    return impl_->condition.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+        [this] { return !impl_->queue.empty() && !impl_->paused; });
 }
 
 void RenderQueue::NotifyAll() {
-    m_condition.notify_all();
+    impl_->condition.notify_all();
 }
 
 void RenderQueue::UpdateStats() {
-    m_stats.pendingTasks = m_queue.size();
+    impl_->stats.pendingTasks = impl_->queue.size();
 }
 
 void RenderQueue::NotifyEnqueued(const RenderTaskPtr& task) {
-    if (m_onTaskEnqueued) {
-        m_onTaskEnqueued(task);
+    if (impl_->onTaskEnqueued) {
+        impl_->onTaskEnqueued(task);
     }
 }
 
 void RenderQueue::NotifyDequeued(const RenderTaskPtr& task) {
-    if (m_onTaskDequeued) {
-        m_onTaskDequeued(task);
+    if (impl_->onTaskDequeued) {
+        impl_->onTaskDequeued(task);
     }
 }
 

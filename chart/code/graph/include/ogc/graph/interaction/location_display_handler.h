@@ -112,18 +112,16 @@ public:
     
     ~LocationDisplayHandler() override;
     
-    std::string GetName() const override { return m_name; }
-    int GetPriority() const override { return m_priority; }
-    void SetPriority(int priority) override { m_priority = priority; }
+    std::string GetName() const override;
+    int GetPriority() const override;
+    void SetPriority(int priority) override;
     
-    bool IsEnabled() const override { return m_enabled; }
+    bool IsEnabled() const override;
     void SetEnabled(bool enabled) override;
     
     bool HandleEvent(const InteractionEvent& event) override;
     
-    InteractionState GetState() const override { 
-        return m_isActive ? InteractionState::kPan : InteractionState::kNone; 
-    }
+    InteractionState GetState() const override;
     
     void UpdatePosition(const Position& position);
     void UpdateHeading(const Heading& heading);
@@ -133,25 +131,25 @@ public:
     void SetPosition(double latitude, double longitude);
     void SetPositionAndHeading(double latitude, double longitude, double headingDegrees);
     
-    const Position& GetPosition() const { return m_position; }
-    const Heading& GetHeading() const { return m_heading; }
-    const Speed& GetSpeed() const { return m_speed; }
+    const Position& GetPosition() const;
+    const Heading& GetHeading() const;
+    const Speed& GetSpeed() const;
     LocationInfo GetLocationInfo() const;
     
     void SetMapCoordinate(const Coordinate& coord);
-    Coordinate GetMapCoordinate() const { return m_mapCoordinate; }
+    Coordinate GetMapCoordinate() const;
     
     void SetLocationStyle(const LocationStyle& style);
-    LocationStyle GetLocationStyle() const { return m_style; }
+    LocationStyle GetLocationStyle() const;
     
     void SetLocationConfig(const LocationConfig& config);
-    LocationConfig GetLocationConfig() const { return m_config; }
+    LocationConfig GetLocationConfig() const;
     
     void SetAutoCenter(bool enabled);
-    bool IsAutoCenter() const { return m_config.autoCenter; }
+    bool IsAutoCenter() const;
     
     void SetAutoRotate(bool enabled);
-    bool IsAutoRotate() const { return m_config.autoRotate; }
+    bool IsAutoRotate() const;
     
     void CenterOnPosition();
     void CenterOnPosition(double latitude, double longitude);
@@ -159,7 +157,7 @@ public:
     void SetViewportSize(int width, int height);
     
     void SetFeedbackManager(FeedbackManager* manager);
-    FeedbackManager* GetFeedbackManager() const { return m_feedbackManager; }
+    FeedbackManager* GetFeedbackManager() const;
     
     void SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform);
     void SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform);
@@ -177,18 +175,18 @@ public:
     
     void StartTrackRecording();
     void StopTrackRecording();
-    bool IsRecordingTrack() const { return m_isRecordingTrack; }
+    bool IsRecordingTrack() const;
     
     void ClearTrack();
-    const std::vector<Coordinate>& GetTrackPoints() const { return m_trackPoints; }
-    size_t GetTrackPointCount() const { return m_trackPoints.size(); }
+    const std::vector<Coordinate>& GetTrackPoints() const;
+    size_t GetTrackPointCount() const;
     
-    bool HasValidPosition() const { return m_hasValidPosition; }
-    bool HasValidHeading() const { return m_hasValidHeading; }
-    bool HasValidSpeed() const { return m_hasValidSpeed; }
+    bool HasValidPosition() const;
+    bool HasValidHeading() const;
+    bool HasValidSpeed() const;
     
     void ShowLocation(bool show);
-    bool IsLocationVisible() const { return m_showLocation; }
+    bool IsLocationVisible() const;
     
     double DistanceToPosition(double screenX, double screenY) const;
     bool IsNearPosition(double screenX, double screenY, double threshold) const;
@@ -205,48 +203,8 @@ private:
     void NotifySpeedChanged();
     void NotifyLocationUpdated();
     
-    std::string m_name;
-    int m_priority = 100;
-    bool m_enabled = true;
-    bool m_isActive = false;
-    bool m_showLocation = true;
-    
-    Position m_position;
-    Heading m_heading;
-    Speed m_speed;
-    Coordinate m_mapCoordinate;
-    
-    bool m_hasValidPosition = false;
-    bool m_hasValidHeading = false;
-    bool m_hasValidSpeed = false;
-    
-    LocationStyle m_style;
-    LocationConfig m_config;
-    
-    int m_viewportWidth = 800;
-    int m_viewportHeight = 600;
-    
-    FeedbackManager* m_feedbackManager = nullptr;
-    int64_t m_feedbackId = 0;
-    int64_t m_trackFeedbackId = 0;
-    
-    std::function<Coordinate(double, double)> m_screenToWorld;
-    std::function<Coordinate(double, double)> m_worldToScreen;
-    std::function<void(double, double)> m_centerCallback;
-    std::function<void(double)> m_rotateCallback;
-    std::function<void(const Envelope&)> m_extentCallback;
-    
-    PositionChangedCallback m_positionChangedCallback;
-    HeadingChangedCallback m_headingChangedCallback;
-    SpeedChangedCallback m_speedChangedCallback;
-    LocationUpdatedCallback m_locationUpdatedCallback;
-    
-    bool m_isRecordingTrack = false;
-    std::vector<Coordinate> m_trackPoints;
-    std::chrono::system_clock::time_point m_lastTrackTime;
-    
-    Position m_smoothedPosition;
-    Heading m_smoothedHeading;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

@@ -4,177 +4,204 @@
 namespace ogc {
 namespace graph {
 
+struct RenderTask::Impl {
+    std::string id;
+    DrawParams params;
+    Envelope extent;
+    RenderTaskPriority priority;
+    std::atomic<RenderTaskState> state;
+    std::atomic<double> progress;
+    ogc::draw::DrawResult result;
+    std::string error;
+    RenderTaskStats stats;
+    void* userData;
+    std::string tag;
+    RenderTaskCallback callback;
+    int64_t timeout;
+    std::chrono::steady_clock::time_point createdTime;
+    
+    Impl()
+        : priority(RenderTaskPriority::kNormal)
+        , state(RenderTaskState::kPending)
+        , progress(0.0)
+        , userData(nullptr)
+        , timeout(0)
+        , createdTime(std::chrono::steady_clock::now()) {
+    }
+    
+    Impl(const std::string& id_, const DrawParams& params_)
+        : id(id_)
+        , params(params_)
+        , priority(RenderTaskPriority::kNormal)
+        , state(RenderTaskState::kPending)
+        , progress(0.0)
+        , userData(nullptr)
+        , timeout(0)
+        , createdTime(std::chrono::steady_clock::now()) {
+    }
+};
+
 RenderTask::RenderTask()
-    : m_priority(RenderTaskPriority::kNormal)
-    , m_state(RenderTaskState::kPending)
-    , m_progress(0.0)
-    , m_userData(nullptr)
-    , m_timeout(0)
-    , m_createdTime(std::chrono::steady_clock::now()) {
+    : impl_(std::make_unique<Impl>()) {
 }
 
 RenderTask::RenderTask(const std::string& id, const DrawParams& params)
-    : m_id(id)
-    , m_params(params)
-    , m_priority(RenderTaskPriority::kNormal)
-    , m_state(RenderTaskState::kPending)
-    , m_progress(0.0)
-    , m_userData(nullptr)
-    , m_timeout(0)
-    , m_createdTime(std::chrono::steady_clock::now()) {
+    : impl_(std::make_unique<Impl>(id, params)) {
 }
 
+RenderTask::~RenderTask() = default;
+
 void RenderTask::SetId(const std::string& id) {
-    m_id = id;
+    impl_->id = id;
 }
 
 std::string RenderTask::GetId() const {
-    return m_id;
+    return impl_->id;
 }
 
 void RenderTask::SetParams(const DrawParams& params) {
-    m_params = params;
+    impl_->params = params;
 }
 
 DrawParams RenderTask::GetParams() const {
-    return m_params;
+    return impl_->params;
 }
 
 void RenderTask::SetExtent(const Envelope& extent) {
-    m_extent = extent;
+    impl_->extent = extent;
 }
 
 Envelope RenderTask::GetExtent() const {
-    return m_extent;
+    return impl_->extent;
 }
 
 void RenderTask::SetPriority(RenderTaskPriority priority) {
-    m_priority = priority;
+    impl_->priority = priority;
 }
 
 RenderTaskPriority RenderTask::GetPriority() const {
-    return m_priority;
+    return impl_->priority;
 }
 
 void RenderTask::SetState(RenderTaskState state) {
-    m_state.store(state);
+    impl_->state.store(state);
 }
 
 RenderTaskState RenderTask::GetState() const {
-    return m_state.load();
+    return impl_->state.load();
 }
 
 void RenderTask::SetProgress(double progress) {
-    m_progress.store(std::max(0.0, std::min(1.0, progress)));
+    impl_->progress.store(std::max(0.0, std::min(1.0, progress)));
 }
 
 double RenderTask::GetProgress() const {
-    return m_progress.load();
+    return impl_->progress.load();
 }
 
 void RenderTask::SetResult(const ogc::draw::DrawResult& result) {
-    m_result = result;
+    impl_->result = result;
 }
 
 ogc::draw::DrawResult RenderTask::GetResult() const {
-    return m_result;
+    return impl_->result;
 }
 
 void RenderTask::SetError(const std::string& error) {
-    m_error = error;
+    impl_->error = error;
 }
 
 std::string RenderTask::GetError() const {
-    return m_error;
+    return impl_->error;
 }
 
 void RenderTask::SetStats(const RenderTaskStats& stats) {
-    m_stats = stats;
+    impl_->stats = stats;
 }
 
 RenderTaskStats RenderTask::GetStats() const {
-    return m_stats;
+    return impl_->stats;
 }
 
 void RenderTask::SetUserData(void* data) {
-    m_userData = data;
+    impl_->userData = data;
 }
 
 void* RenderTask::GetUserData() const {
-    return m_userData;
+    return impl_->userData;
 }
 
 void RenderTask::SetTag(const std::string& tag) {
-    m_tag = tag;
+    impl_->tag = tag;
 }
 
 std::string RenderTask::GetTag() const {
-    return m_tag;
+    return impl_->tag;
 }
 
 void RenderTask::SetCallback(RenderTaskCallback callback) {
-    m_callback = callback;
+    impl_->callback = callback;
 }
 
 RenderTaskCallback RenderTask::GetCallback() const {
-    return m_callback;
+    return impl_->callback;
 }
 
 void RenderTask::SetTimeout(int64_t milliseconds) {
-    m_timeout = milliseconds;
+    impl_->timeout = milliseconds;
 }
 
 int64_t RenderTask::GetTimeout() const {
-    return m_timeout;
+    return impl_->timeout;
 }
 
 bool RenderTask::IsPending() const {
-    return m_state.load() == RenderTaskState::kPending;
+    return impl_->state.load() == RenderTaskState::kPending;
 }
 
 bool RenderTask::IsRunning() const {
-    return m_state.load() == RenderTaskState::kRunning;
+    return impl_->state.load() == RenderTaskState::kRunning;
 }
 
 bool RenderTask::IsCompleted() const {
-    return m_state.load() == RenderTaskState::kCompleted;
+    return impl_->state.load() == RenderTaskState::kCompleted;
 }
 
 bool RenderTask::IsFailed() const {
-    return m_state.load() == RenderTaskState::kFailed;
+    return impl_->state.load() == RenderTaskState::kFailed;
 }
 
 bool RenderTask::IsCancelled() const {
-    return m_state.load() == RenderTaskState::kCancelled;
+    return impl_->state.load() == RenderTaskState::kCancelled;
 }
 
 bool RenderTask::IsTimedOut() const {
-    if (m_timeout <= 0) {
+    if (impl_->timeout <= 0) {
         return false;
     }
     
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - m_createdTime).count();
+        std::chrono::steady_clock::now() - impl_->createdTime).count();
     
-    return elapsed > m_timeout;
+    return elapsed > impl_->timeout;
 }
 
 void RenderTask::Cancel() {
     RenderTaskState expected = RenderTaskState::kPending;
-    m_state.compare_exchange_strong(expected, RenderTaskState::kCancelled);
+    impl_->state.compare_exchange_strong(expected, RenderTaskState::kCancelled);
     
     expected = RenderTaskState::kQueued;
-    m_state.compare_exchange_strong(expected, RenderTaskState::kCancelled);
+    impl_->state.compare_exchange_strong(expected, RenderTaskState::kCancelled);
 }
 
 void RenderTask::NotifyCompletion() {
-    if (m_callback) {
-        m_callback(std::const_pointer_cast<RenderTask>(shared_from_this()));
+    if (impl_->callback) {
+        impl_->callback(std::const_pointer_cast<RenderTask>(shared_from_this()));
     }
 }
 
 int RenderTask::GetPriorityValue() const {
-    return static_cast<int>(m_priority);
+    return static_cast<int>(impl_->priority);
 }
 
 bool RenderTask::operator<(const RenderTask& other) const {
@@ -182,7 +209,7 @@ bool RenderTask::operator<(const RenderTask& other) const {
 }
 
 void RenderTask::UpdateState(RenderTaskState state) {
-    m_state.store(state);
+    impl_->state.store(state);
 }
 
 RenderTaskPtr RenderTask::Create() {

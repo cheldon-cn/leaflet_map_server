@@ -16,7 +16,7 @@ typedef std::shared_ptr<TransformManager> TransformManagerPtr;
 
 class OGC_GRAPH_API TransformManager {
 public:
-    ~TransformManager() = default;
+    ~TransformManager();
     
     static TransformManagerPtr GetInstance();
     
@@ -66,10 +66,8 @@ private:
     static TransformManagerPtr s_instance;
     static std::mutex s_instanceMutex;
     
-    mutable std::mutex m_mutex;
-    std::unordered_map<std::string, ogc::proj::CoordinateTransformerPtr> m_cache;
-    size_t m_maxCacheSize;
-    bool m_enableCache;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

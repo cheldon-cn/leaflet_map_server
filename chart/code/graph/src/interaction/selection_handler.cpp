@@ -5,12 +5,49 @@
 namespace ogc {
 namespace graph {
 
+struct SelectionHandler::Impl {
+    std::string name;
+    int priority = 90;
+    bool enabled = true;
+    
+    SelectionParams params;
+    std::set<std::string> selectedFeatures;
+    Envelope selectionEnvelope;
+    
+    LayerManager* layerManager = nullptr;
+    HitTester* hitTester = nullptr;
+    FeedbackManager* feedbackManager = nullptr;
+    
+    bool isSelecting = false;
+    bool isBoxSelecting = false;
+    bool isShiftPressed = false;
+    bool isCtrlPressed = false;
+    
+    double startX = 0.0;
+    double startY = 0.0;
+    double currentX = 0.0;
+    double currentY = 0.0;
+    
+    int viewportWidth = 800;
+    int viewportHeight = 600;
+    
+    uint64_t feedbackId = 0;
+    
+    SelectionChangedCallback selectionChangedCallback;
+    FeatureSelectedCallback featureSelectedCallback;
+    
+    std::function<Coordinate(double, double)> screenToWorld;
+    std::function<Coordinate(double, double)> worldToScreen;
+    
+    Impl(const std::string& n) : name(n) {}
+};
+
 std::unique_ptr<SelectionHandler> SelectionHandler::Create(const std::string& name) {
     return std::unique_ptr<SelectionHandler>(new SelectionHandler(name));
 }
 
 SelectionHandler::SelectionHandler(const std::string& name)
-    : m_name(name)
+    : impl_(std::make_unique<Impl>(name))
 {
 }
 
@@ -18,13 +55,35 @@ SelectionHandler::~SelectionHandler() {
     ClearSelectionFeedback();
 }
 
+std::string SelectionHandler::GetName() const { return impl_->name; }
+int SelectionHandler::GetPriority() const { return impl_->priority; }
+void SelectionHandler::SetPriority(int priority) { impl_->priority = priority; }
+bool SelectionHandler::IsEnabled() const { return impl_->enabled; }
+void SelectionHandler::SetEnabled(bool enabled) { impl_->enabled = enabled; }
+
+InteractionState SelectionHandler::GetState() const { 
+    return impl_->isSelecting ? InteractionState::kSelect : InteractionState::kNone; 
+}
+
+LayerManager* SelectionHandler::GetLayerManager() const { return impl_->layerManager; }
+SelectionMode SelectionHandler::GetSelectionMode() const { return impl_->params.mode; }
+double SelectionHandler::GetTolerance() const { return impl_->params.tolerance; }
+SelectionParams SelectionHandler::GetSelectionParams() const { return impl_->params; }
+SelectionStyle SelectionHandler::GetSelectionStyle() const { return impl_->params.style; }
+const std::set<std::string>& SelectionHandler::GetSelectedFeatures() const { return impl_->selectedFeatures; }
+size_t SelectionHandler::GetSelectionCount() const { return impl_->selectedFeatures.size(); }
+bool SelectionHandler::HasSelection() const { return !impl_->selectedFeatures.empty(); }
+HitTester* SelectionHandler::GetHitTester() const { return impl_->hitTester; }
+FeedbackManager* SelectionHandler::GetFeedbackManager() const { return impl_->feedbackManager; }
+const Envelope& SelectionHandler::GetSelectionEnvelope() const { return impl_->selectionEnvelope; }
+
 bool SelectionHandler::HandleEvent(const InteractionEvent& event) {
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
-    m_isShiftPressed = event.isShift;
-    m_isCtrlPressed = event.isCtrl;
+    impl_->isShiftPressed = event.isShift;
+    impl_->isCtrlPressed = event.isCtrl;
     
     switch (event.type) {
         case InteractionEventType::kMouseDown:
@@ -41,34 +100,34 @@ bool SelectionHandler::HandleEvent(const InteractionEvent& event) {
 }
 
 void SelectionHandler::SetLayerManager(LayerManager* manager) {
-    m_layerManager = manager;
+    impl_->layerManager = manager;
 }
 
 void SelectionHandler::SetSelectionMode(SelectionMode mode) {
-    m_params.mode = mode;
+    impl_->params.mode = mode;
 }
 
 void SelectionHandler::SetTolerance(double tolerance) {
-    m_params.tolerance = tolerance;
+    impl_->params.tolerance = tolerance;
 }
 
 void SelectionHandler::SetSelectionParams(const SelectionParams& params) {
-    m_params = params;
+    impl_->params = params;
 }
 
 void SelectionHandler::SetSelectionStyle(const SelectionStyle& style) {
-    m_params.style = style;
+    impl_->params.style = style;
 }
 
 void SelectionHandler::SelectFeature(const std::string& featureId) {
-    if (m_selectedFeatures.insert(featureId).second) {
+    if (impl_->selectedFeatures.insert(featureId).second) {
         UpdateSelectionFeedback();
         NotifySelectionChanged();
     }
 }
 
 void SelectionHandler::DeselectFeature(const std::string& featureId) {
-    if (m_selectedFeatures.erase(featureId) > 0) {
+    if (impl_->selectedFeatures.erase(featureId) > 0) {
         UpdateSelectionFeedback();
         NotifySelectionChanged();
     }
@@ -85,7 +144,7 @@ void SelectionHandler::ToggleFeature(const std::string& featureId) {
 void SelectionHandler::SelectFeatures(const std::set<std::string>& featureIds) {
     bool changed = false;
     for (const auto& id : featureIds) {
-        if (m_selectedFeatures.insert(id).second) {
+        if (impl_->selectedFeatures.insert(id).second) {
             changed = true;
         }
     }
@@ -96,27 +155,27 @@ void SelectionHandler::SelectFeatures(const std::set<std::string>& featureIds) {
 }
 
 void SelectionHandler::ClearSelection() {
-    if (!m_selectedFeatures.empty()) {
-        m_selectedFeatures.clear();
-        m_selectionEnvelope = Envelope();
+    if (!impl_->selectedFeatures.empty()) {
+        impl_->selectedFeatures.clear();
+        impl_->selectionEnvelope = Envelope();
         ClearSelectionFeedback();
         NotifySelectionChanged();
     }
 }
 
 bool SelectionHandler::IsFeatureSelected(const std::string& featureId) const {
-    return m_selectedFeatures.find(featureId) != m_selectedFeatures.end();
+    return impl_->selectedFeatures.find(featureId) != impl_->selectedFeatures.end();
 }
 
 void SelectionHandler::SelectByEnvelope(const Envelope& envelope) {
-    if (!m_layerManager || !m_hitTester) {
+    if (!impl_->layerManager || !impl_->hitTester) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, envelope, HitTestMode::kBox);
+    auto result = impl_->hitTester->HitTest(impl_->layerManager, envelope, HitTestMode::kBox);
     
     if (result && !result->IsEmpty()) {
-        bool addToSelection = m_isShiftPressed || m_isCtrlPressed;
+        bool addToSelection = impl_->isShiftPressed || impl_->isCtrlPressed;
         if (!addToSelection) {
             ClearSelection();
         }
@@ -131,18 +190,18 @@ void SelectionHandler::SelectByEnvelope(const Envelope& envelope) {
 }
 
 void SelectionHandler::SelectByPoint(double screenX, double screenY) {
-    PerformPointSelection(screenX, screenY, m_isShiftPressed || m_isCtrlPressed);
+    PerformPointSelection(screenX, screenY, impl_->isShiftPressed || impl_->isCtrlPressed);
 }
 
 void SelectionHandler::SelectByGeometry(const Geometry* geometry) {
-    if (!geometry || !m_layerManager || !m_hitTester) {
+    if (!geometry || !impl_->layerManager || !impl_->hitTester) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, geometry, HitTestMode::kPolygon);
+    auto result = impl_->hitTester->HitTest(impl_->layerManager, geometry, HitTestMode::kPolygon);
     
     if (result && !result->IsEmpty()) {
-        bool addToSelection = m_isShiftPressed || m_isCtrlPressed;
+        bool addToSelection = impl_->isShiftPressed || impl_->isCtrlPressed;
         if (!addToSelection) {
             ClearSelection();
         }
@@ -157,46 +216,46 @@ void SelectionHandler::SelectByGeometry(const Geometry* geometry) {
 }
 
 void SelectionHandler::SetSelectionChangedCallback(SelectionChangedCallback callback) {
-    m_selectionChangedCallback = callback;
+    impl_->selectionChangedCallback = callback;
 }
 
 void SelectionHandler::SetFeatureSelectedCallback(FeatureSelectedCallback callback) {
-    m_featureSelectedCallback = callback;
+    impl_->featureSelectedCallback = callback;
 }
 
 void SelectionHandler::SetHitTester(HitTester* hitTester) {
-    m_hitTester = hitTester;
+    impl_->hitTester = hitTester;
 }
 
 void SelectionHandler::SetFeedbackManager(FeedbackManager* manager) {
-    m_feedbackManager = manager;
+    impl_->feedbackManager = manager;
 }
 
 void SelectionHandler::SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform) {
-    m_screenToWorld = transform;
+    impl_->screenToWorld = transform;
 }
 
 void SelectionHandler::SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform) {
-    m_worldToScreen = transform;
+    impl_->worldToScreen = transform;
 }
 
 Coordinate SelectionHandler::ScreenToWorld(double screenX, double screenY) const {
-    if (m_screenToWorld) {
-        return m_screenToWorld(screenX, screenY);
+    if (impl_->screenToWorld) {
+        return impl_->screenToWorld(screenX, screenY);
     }
     return Coordinate(screenX, screenY);
 }
 
 Coordinate SelectionHandler::WorldToScreen(double worldX, double worldY) const {
-    if (m_worldToScreen) {
-        return m_worldToScreen(worldX, worldY);
+    if (impl_->worldToScreen) {
+        return impl_->worldToScreen(worldX, worldY);
     }
     return Coordinate(worldX, worldY);
 }
 
 void SelectionHandler::SetViewportSize(int width, int height) {
-    m_viewportWidth = width;
-    m_viewportHeight = height;
+    impl_->viewportWidth = width;
+    impl_->viewportHeight = height;
 }
 
 bool SelectionHandler::HandleMouseDown(const InteractionEvent& event) {
@@ -204,60 +263,60 @@ bool SelectionHandler::HandleMouseDown(const InteractionEvent& event) {
         return false;
     }
     
-    m_isSelecting = true;
-    m_startX = event.screenX;
-    m_startY = event.screenY;
-    m_currentX = event.screenX;
-    m_currentY = event.screenY;
+    impl_->isSelecting = true;
+    impl_->startX = event.screenX;
+    impl_->startY = event.screenY;
+    impl_->currentX = event.screenX;
+    impl_->currentY = event.screenY;
     
-    if (m_params.enableBoxSelection && !m_isShiftPressed) {
-        m_isBoxSelecting = false;
+    if (impl_->params.enableBoxSelection && !impl_->isShiftPressed) {
+        impl_->isBoxSelecting = false;
     }
     
     return true;
 }
 
 bool SelectionHandler::HandleMouseMove(const InteractionEvent& event) {
-    if (!m_isSelecting) {
+    if (!impl_->isSelecting) {
         return false;
     }
     
-    m_currentX = event.screenX;
-    m_currentY = event.screenY;
+    impl_->currentX = event.screenX;
+    impl_->currentY = event.screenY;
     
-    double dx = std::abs(m_currentX - m_startX);
-    double dy = std::abs(m_currentY - m_startY);
+    double dx = std::abs(impl_->currentX - impl_->startX);
+    double dy = std::abs(impl_->currentY - impl_->startY);
     
-    if (m_params.enableBoxSelection && (dx > m_params.tolerance || dy > m_params.tolerance)) {
-        if (!m_isBoxSelecting) {
-            m_isBoxSelecting = true;
-            StartBoxSelection(m_startX, m_startY);
+    if (impl_->params.enableBoxSelection && (dx > impl_->params.tolerance || dy > impl_->params.tolerance)) {
+        if (!impl_->isBoxSelecting) {
+            impl_->isBoxSelecting = true;
+            StartBoxSelection(impl_->startX, impl_->startY);
         }
-        UpdateBoxSelection(m_currentX, m_currentY);
+        UpdateBoxSelection(impl_->currentX, impl_->currentY);
     }
     
     return true;
 }
 
 bool SelectionHandler::HandleMouseUp(const InteractionEvent& event) {
-    if (event.button != MouseButton::kLeft || !m_isSelecting) {
+    if (event.button != MouseButton::kLeft || !impl_->isSelecting) {
         return false;
     }
     
-    m_currentX = event.screenX;
-    m_currentY = event.screenY;
+    impl_->currentX = event.screenX;
+    impl_->currentY = event.screenY;
     
-    double dx = std::abs(m_currentX - m_startX);
-    double dy = std::abs(m_currentY - m_startY);
+    double dx = std::abs(impl_->currentX - impl_->startX);
+    double dy = std::abs(impl_->currentY - impl_->startY);
     
-    if (m_isBoxSelecting) {
+    if (impl_->isBoxSelecting) {
         EndBoxSelection();
-    } else if (dx <= m_params.tolerance && dy <= m_params.tolerance) {
-        PerformPointSelection(m_startX, m_startY, m_isShiftPressed || m_isCtrlPressed);
+    } else if (dx <= impl_->params.tolerance && dy <= impl_->params.tolerance) {
+        PerformPointSelection(impl_->startX, impl_->startY, impl_->isShiftPressed || impl_->isCtrlPressed);
     }
     
-    m_isSelecting = false;
-    m_isBoxSelecting = false;
+    impl_->isSelecting = false;
+    impl_->isBoxSelecting = false;
     
     return true;
 }
@@ -269,7 +328,7 @@ bool SelectionHandler::HandleKeyDown(const InteractionEvent& event) {
             return true;
         case 'A':
         case 'a':
-            if (m_isCtrlPressed) {
+            if (impl_->isCtrlPressed) {
                 return true;
             }
             break;
@@ -280,40 +339,40 @@ bool SelectionHandler::HandleKeyDown(const InteractionEvent& event) {
 }
 
 void SelectionHandler::StartBoxSelection(double screenX, double screenY) {
-    if (m_params.showFeedback && m_feedbackManager) {
+    if (impl_->params.showFeedback && impl_->feedbackManager) {
         auto item = FeedbackItem::Create(FeedbackType::kSelection);
         if (item) {
             item->SetEnvelope(Envelope(screenX, screenY, screenX, screenY));
             FeedbackConfig config;
-            config.strokeColor = m_params.style.strokeColor;
-            config.strokeWidth = m_params.style.strokeWidth;
-            config.opacity = m_params.style.strokeOpacity;
-            config.fillColor = m_params.style.fillColor;
+            config.strokeColor = impl_->params.style.strokeColor;
+            config.strokeWidth = impl_->params.style.strokeWidth;
+            config.opacity = impl_->params.style.strokeOpacity;
+            config.fillColor = impl_->params.style.fillColor;
             config.visible = true;
             item->SetConfig(config);
-            m_feedbackId = m_feedbackManager->AddFeedback(item);
+            impl_->feedbackId = impl_->feedbackManager->AddFeedback(item);
         }
     }
 }
 
 void SelectionHandler::UpdateBoxSelection(double screenX, double screenY) {
-    if (m_params.showFeedback && m_feedbackManager && m_feedbackId > 0) {
-        auto item = m_feedbackManager->GetFeedback(m_feedbackId);
+    if (impl_->params.showFeedback && impl_->feedbackManager && impl_->feedbackId > 0) {
+        auto item = impl_->feedbackManager->GetFeedback(impl_->feedbackId);
         if (item) {
-            double minX = std::min(m_startX, screenX);
-            double minY = std::min(m_startY, screenY);
-            double maxX = std::max(m_startX, screenX);
-            double maxY = std::max(m_startY, screenY);
+            double minX = std::min(impl_->startX, screenX);
+            double minY = std::min(impl_->startY, screenY);
+            double maxX = std::max(impl_->startX, screenX);
+            double maxY = std::max(impl_->startY, screenY);
             item->SetEnvelope(Envelope(minX, minY, maxX, maxY));
         }
     }
 }
 
 void SelectionHandler::EndBoxSelection() {
-    double minX = std::min(m_startX, m_currentX);
-    double minY = std::min(m_startY, m_currentY);
-    double maxX = std::max(m_startX, m_currentX);
-    double maxY = std::max(m_startY, m_currentY);
+    double minX = std::min(impl_->startX, impl_->currentX);
+    double minY = std::min(impl_->startY, impl_->currentY);
+    double maxX = std::max(impl_->startX, impl_->currentX);
+    double maxY = std::max(impl_->startY, impl_->currentY);
     
     Envelope screenEnvelope(minX, minY, maxX, maxY);
     
@@ -323,21 +382,21 @@ void SelectionHandler::EndBoxSelection() {
     
     ClearSelectionFeedback();
     
-    PerformBoxSelection(worldEnvelope, m_isShiftPressed || m_isCtrlPressed);
+    PerformBoxSelection(worldEnvelope, impl_->isShiftPressed || impl_->isCtrlPressed);
 }
 
 void SelectionHandler::CancelSelection() {
-    m_isSelecting = false;
-    m_isBoxSelecting = false;
+    impl_->isSelecting = false;
+    impl_->isBoxSelecting = false;
     ClearSelectionFeedback();
 }
 
 void SelectionHandler::PerformPointSelection(double screenX, double screenY, bool addToSelection) {
-    if (!m_layerManager || !m_hitTester) {
+    if (!impl_->layerManager || !impl_->hitTester) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, screenX, screenY, m_params.tolerance);
+    auto result = impl_->hitTester->HitTest(impl_->layerManager, screenX, screenY, impl_->params.tolerance);
     
     if (result && !result->IsEmpty()) {
         const auto& items = result->GetItems();
@@ -360,11 +419,11 @@ void SelectionHandler::PerformPointSelection(double screenX, double screenY, boo
 }
 
 void SelectionHandler::PerformBoxSelection(const Envelope& envelope, bool addToSelection) {
-    if (!m_layerManager || !m_hitTester) {
+    if (!impl_->layerManager || !impl_->hitTester) {
         return;
     }
     
-    auto result = m_hitTester->HitTest(m_layerManager, envelope, HitTestMode::kBox);
+    auto result = impl_->hitTester->HitTest(impl_->layerManager, envelope, HitTestMode::kBox);
     
     if (result && !result->IsEmpty()) {
         if (!addToSelection) {
@@ -383,7 +442,7 @@ void SelectionHandler::PerformBoxSelection(const Envelope& envelope, bool addToS
 }
 
 void SelectionHandler::UpdateSelectionFeedback() {
-    if (!m_params.showFeedback || !m_feedbackManager || m_selectedFeatures.empty()) {
+    if (!impl_->params.showFeedback || !impl_->feedbackManager || impl_->selectedFeatures.empty()) {
         return;
     }
     
@@ -392,27 +451,27 @@ void SelectionHandler::UpdateSelectionFeedback() {
     auto item = FeedbackItem::Create(FeedbackType::kSelection);
     if (item) {
         FeedbackConfig config;
-        config.strokeColor = m_params.style.strokeColor;
-        config.strokeWidth = m_params.style.strokeWidth;
-        config.opacity = m_params.style.strokeOpacity;
-        config.fillColor = m_params.style.fillColor;
+        config.strokeColor = impl_->params.style.strokeColor;
+        config.strokeWidth = impl_->params.style.strokeWidth;
+        config.opacity = impl_->params.style.strokeOpacity;
+        config.fillColor = impl_->params.style.fillColor;
         config.visible = true;
         item->SetConfig(config);
         
-        m_feedbackId = m_feedbackManager->AddFeedback(item);
+        impl_->feedbackId = impl_->feedbackManager->AddFeedback(item);
     }
 }
 
 void SelectionHandler::ClearSelectionFeedback() {
-    if (m_feedbackManager && m_feedbackId > 0) {
-        m_feedbackManager->RemoveFeedback(m_feedbackId);
-        m_feedbackId = 0;
+    if (impl_->feedbackManager && impl_->feedbackId > 0) {
+        impl_->feedbackManager->RemoveFeedback(impl_->feedbackId);
+        impl_->feedbackId = 0;
     }
 }
 
 void SelectionHandler::NotifySelectionChanged() {
-    if (m_selectionChangedCallback) {
-        m_selectionChangedCallback(m_selectedFeatures);
+    if (impl_->selectionChangedCallback) {
+        impl_->selectionChangedCallback(impl_->selectedFeatures);
     }
 }
 

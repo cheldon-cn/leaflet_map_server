@@ -8,7 +8,6 @@
 #include <vector>
 #include <memory>
 #include <functional>
-#include <mutex>
 
 namespace ogc {
 
@@ -39,7 +38,7 @@ struct LayerInfo {
     bool hasLabels;
 };
 
-class OGC_GRAPH_API ILayerRenderer {
+class ILayerRenderer {
 public:
     virtual ~ILayerRenderer() = default;
     
@@ -56,53 +55,49 @@ class OGC_GRAPH_API LayerConfig {
 public:
     LayerConfig();
     explicit LayerConfig(const std::string& name);
+    ~LayerConfig();
     
-    const std::string& GetName() const { return m_name; }
-    void SetName(const std::string& name) { m_name = name; }
+    LayerConfig(const LayerConfig& other);
+    LayerConfig& operator=(const LayerConfig& other);
     
-    LayerVisibility GetVisibility() const { return m_visibility; }
-    void SetVisibility(LayerVisibility visibility) { m_visibility = visibility; }
+    const std::string& GetName() const;
+    void SetName(const std::string& name);
     
-    double GetMinScale() const { return m_minScale; }
-    void SetMinScale(double scale) { m_minScale = scale; }
+    LayerVisibility GetVisibility() const;
+    void SetVisibility(LayerVisibility visibility);
     
-    double GetMaxScale() const { return m_maxScale; }
-    void SetMaxScale(double scale) { m_maxScale = scale; }
+    double GetMinScale() const;
+    void SetMinScale(double scale);
     
-    double GetOpacity() const { return m_opacity; }
-    void SetOpacity(double opacity) { m_opacity = std::max(0.0, std::min(1.0, opacity)); }
+    double GetMaxScale() const;
+    void SetMaxScale(double scale);
     
-    bool IsSelectable() const { return m_selectable; }
-    void SetSelectable(bool selectable) { m_selectable = selectable; }
+    double GetOpacity() const;
+    void SetOpacity(double opacity);
     
-    bool IsEditable() const { return m_editable; }
-    void SetEditable(bool editable) { m_editable = editable; }
+    bool IsSelectable() const;
+    void SetSelectable(bool selectable);
+    
+    bool IsEditable() const;
+    void SetEditable(bool editable);
     
     bool IsVisibleAtScale(double scale) const;
     
-    int GetZOrder() const { return m_zOrder; }
-    void SetZOrder(int zOrder) { m_zOrder = zOrder; }
+    int GetZOrder() const;
+    void SetZOrder(int zOrder);
     
     void SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer);
-    std::shared_ptr<Symbolizer> GetSymbolizer() const { return m_symbolizer; }
+    std::shared_ptr<Symbolizer> GetSymbolizer() const;
     
     void AddRule(std::shared_ptr<SymbolizerRule> rule);
     void ClearRules();
-    const std::vector<std::shared_ptr<SymbolizerRule>>& GetRules() const { return m_rules; }
+    const std::vector<std::shared_ptr<SymbolizerRule>>& GetRules() const;
     
     LayerConfigPtr Clone() const;
     
 private:
-    std::string m_name;
-    LayerVisibility m_visibility;
-    double m_minScale;
-    double m_maxScale;
-    double m_opacity;
-    bool m_selectable;
-    bool m_editable;
-    int m_zOrder;
-    std::shared_ptr<Symbolizer> m_symbolizer;
-    std::vector<std::shared_ptr<SymbolizerRule>> m_rules;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class LayerItem;
@@ -112,13 +107,17 @@ class OGC_GRAPH_API LayerItem {
 public:
     LayerItem();
     explicit LayerItem(CNLayer* layer, const LayerConfig& config);
+    ~LayerItem();
     
-    CNLayer* GetLayer() const { return m_layer; }
-    void SetLayer(CNLayer* layer) { m_layer = layer; }
+    LayerItem(const LayerItem& other);
+    LayerItem& operator=(const LayerItem& other);
     
-    const LayerConfig& GetConfig() const { return m_config; }
-    LayerConfig& GetConfig() { return m_config; }
-    void SetConfig(const LayerConfig& config) { m_config = config; }
+    CNLayer* GetLayer() const;
+    void SetLayer(CNLayer* layer);
+    
+    const LayerConfig& GetConfig() const;
+    LayerConfig& GetConfig();
+    void SetConfig(const LayerConfig& config);
     
     bool IsVisible() const;
     bool IsVisibleAtScale(double scale) const;
@@ -128,8 +127,8 @@ public:
     LayerItemPtr Clone() const;
     
 private:
-    CNLayer* m_layer;
-    LayerConfig m_config;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class LayerManager;
@@ -181,18 +180,15 @@ public:
     void SetLayerChangedCallback(LayerChangedCallback callback);
     
     void SetCurrentScale(double scale);
-    double GetCurrentScale() const { return m_currentScale; }
+    double GetCurrentScale() const;
     
     std::vector<LayerInfo> GetLayerInfos() const;
     
     LayerManagerPtr Clone() const;
     
 private:
-    std::vector<LayerItemPtr> m_layers;
-    std::vector<std::shared_ptr<ILayerRenderer>> m_renderers;
-    LayerChangedCallback m_layerChangedCallback;
-    double m_currentScale;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     void NotifyLayerChanged(int index);
 };

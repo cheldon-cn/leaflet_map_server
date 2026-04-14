@@ -6,16 +6,34 @@
 namespace ogc {
 namespace graph {
 
+struct AsyncRenderer::Impl {
+    AsyncRenderConfig config;
+    ProgressCallback progressCallback;
+    CompletionCallback completionCallback;
+    ErrorCallback errorCallback;
+    mutable std::mutex sessionsMutex;
+    std::map<std::string, RenderSessionPtr> sessions;
+    std::atomic<bool> shutdown;
+    std::atomic<size_t> nextRenderId;
+    
+    Impl()
+        : shutdown(false)
+        , nextRenderId(1) {
+    }
+    
+    Impl(const AsyncRenderConfig& cfg)
+        : config(cfg)
+        , shutdown(false)
+        , nextRenderId(1) {
+    }
+};
+
 AsyncRenderer::AsyncRenderer()
-    : m_config(AsyncRenderConfig::Default())
-    , m_shutdown(false)
-    , m_nextRenderId(1) {
+    : impl_(std::make_unique<Impl>()) {
 }
 
 AsyncRenderer::AsyncRenderer(const AsyncRenderConfig& config)
-    : m_config(config)
-    , m_shutdown(false)
-    , m_nextRenderId(1) {
+    : impl_(std::make_unique<Impl>(config)) {
 }
 
 AsyncRenderer::~AsyncRenderer() {
@@ -23,33 +41,33 @@ AsyncRenderer::~AsyncRenderer() {
 }
 
 void AsyncRenderer::SetConfig(const AsyncRenderConfig& config) {
-    m_config = config;
+    impl_->config = config;
 }
 
 AsyncRenderConfig AsyncRenderer::GetConfig() const {
-    return m_config;
+    return impl_->config;
 }
 
 void AsyncRenderer::SetProgressCallback(ProgressCallback callback) {
-    m_progressCallback = callback;
+    impl_->progressCallback = callback;
 }
 
 void AsyncRenderer::SetCompletionCallback(CompletionCallback callback) {
-    m_completionCallback = callback;
+    impl_->completionCallback = callback;
 }
 
 void AsyncRenderer::SetErrorCallback(ErrorCallback callback) {
-    m_errorCallback = callback;
+    impl_->errorCallback = callback;
 }
 
 std::string AsyncRenderer::GenerateRenderId() {
     std::ostringstream oss;
-    oss << "render_" << std::setfill('0') << std::setw(8) << m_nextRenderId++;
+    oss << "render_" << std::setfill('0') << std::setw(8) << impl_->nextRenderId++;
     return oss.str();
 }
 
 std::string AsyncRenderer::StartAsync(RenderQueuePtr queue) {
-    if (!queue || m_shutdown) {
+    if (!queue || impl_->shutdown) {
         return "";
     }
     
@@ -65,16 +83,16 @@ std::string AsyncRenderer::StartAsync(RenderQueuePtr queue) {
     session->stats.pendingTasks = queue->GetSize();
     session->stats.startTime = std::chrono::steady_clock::now();
     session->stats.isRunning = true;
-    session->progressCallback = m_progressCallback;
-    session->completionCallback = m_completionCallback;
-    session->errorCallback = m_errorCallback;
+    session->progressCallback = impl_->progressCallback;
+    session->completionCallback = impl_->completionCallback;
+    session->errorCallback = impl_->errorCallback;
     
     {
-        std::lock_guard<std::mutex> lock(m_sessionsMutex);
-        m_sessions[renderId] = session;
+        std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+        impl_->sessions[renderId] = session;
     }
     
-    size_t numWorkers = std::min(m_config.maxConcurrentTasks, queue->GetSize());
+    size_t numWorkers = std::min(impl_->config.maxConcurrentTasks, queue->GetSize());
     if (numWorkers == 0) {
         numWorkers = 1;
     }
@@ -87,7 +105,7 @@ std::string AsyncRenderer::StartAsync(RenderQueuePtr queue) {
 }
 
 std::string AsyncRenderer::StartAsync(const std::vector<RenderTaskPtr>& tasks) {
-    if (tasks.empty() || m_shutdown) {
+    if (tasks.empty() || impl_->shutdown) {
         return "";
     }
     
@@ -102,7 +120,7 @@ std::string AsyncRenderer::StartAsync(const std::vector<RenderTaskPtr>& tasks) {
 }
 
 std::string AsyncRenderer::StartAsync(RenderTaskPtr task) {
-    if (!task || m_shutdown) {
+    if (!task || impl_->shutdown) {
         return "";
     }
     
@@ -111,11 +129,11 @@ std::string AsyncRenderer::StartAsync(RenderTaskPtr task) {
 }
 
 void AsyncRenderer::WorkerThread(RenderSessionPtr session) {
-    while (!session->cancelled && !m_shutdown) {
+    while (!session->cancelled && !impl_->shutdown) {
         if (session->paused) {
             std::unique_lock<std::mutex> lock(session->mutex);
             session->cv.wait(lock, [&session, this] {
-                return !session->paused || session->cancelled || m_shutdown;
+                return !session->paused || session->cancelled || impl_->shutdown;
             });
             continue;
         }
@@ -151,7 +169,7 @@ void AsyncRenderer::WorkerThread(RenderSessionPtr session) {
 }
 
 void AsyncRenderer::ProcessTask(RenderSessionPtr session, RenderTaskPtr task) {
-    if (session->cancelled || m_shutdown) {
+    if (session->cancelled || impl_->shutdown) {
         task->Cancel();
         std::lock_guard<std::mutex> lock(session->mutex);
         session->stats.cancelledTasks++;
@@ -202,7 +220,7 @@ void AsyncRenderer::ProcessTask(RenderSessionPtr session, RenderTaskPtr task) {
 }
 
 void AsyncRenderer::UpdateProgress(RenderSessionPtr session) {
-    if (!m_config.enableProgressReporting) {
+    if (!impl_->config.enableProgressReporting) {
         return;
     }
     
@@ -228,84 +246,84 @@ void AsyncRenderer::UpdateProgress(RenderSessionPtr session) {
     
     if (session->progressCallback) {
         session->progressCallback(progress, message);
-    } else if (m_progressCallback) {
-        m_progressCallback(progress, message);
+    } else if (impl_->progressCallback) {
+        impl_->progressCallback(progress, message);
     }
 }
 
 void AsyncRenderer::ReportCompletion(RenderSessionPtr session, bool success, const std::string& message) {
     if (session->completionCallback) {
         session->completionCallback(success, message);
-    } else if (m_completionCallback) {
-        m_completionCallback(success, message);
+    } else if (impl_->completionCallback) {
+        impl_->completionCallback(success, message);
     }
 }
 
 void AsyncRenderer::ReportError(RenderSessionPtr session, const std::string& error) {
     if (session->errorCallback) {
         session->errorCallback(error);
-    } else if (m_errorCallback) {
-        m_errorCallback(error);
+    } else if (impl_->errorCallback) {
+        impl_->errorCallback(error);
     }
 }
 
 void AsyncRenderer::Cancel(const std::string& renderId) {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         it->second->cancelled = true;
         it->second->cv.notify_all();
     }
 }
 
 void AsyncRenderer::CancelAll() {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    for (auto& pair : m_sessions) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    for (auto& pair : impl_->sessions) {
         pair.second->cancelled = true;
         pair.second->cv.notify_all();
     }
 }
 
 bool AsyncRenderer::IsRunning(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->stats.isRunning;
     }
     return false;
 }
 
 bool AsyncRenderer::IsCompleted(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->completed;
     }
     return false;
 }
 
 bool AsyncRenderer::IsCancelled(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->cancelled;
     }
     return false;
 }
 
 double AsyncRenderer::GetProgress(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->stats.progress;
     }
     return 0.0;
 }
 
 AsyncRenderStats AsyncRenderer::GetStats(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->stats;
     }
     return AsyncRenderStats();
@@ -314,9 +332,9 @@ AsyncRenderStats AsyncRenderer::GetStats(const std::string& renderId) const {
 void AsyncRenderer::WaitForCompletion(const std::string& renderId) {
     std::vector<std::thread> workers;
     {
-        std::lock_guard<std::mutex> lock(m_sessionsMutex);
-        auto it = m_sessions.find(renderId);
-        if (it != m_sessions.end()) {
+        std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+        auto it = impl_->sessions.find(renderId);
+        if (it != impl_->sessions.end()) {
             workers = std::move(it->second->workers);
         }
     }
@@ -348,35 +366,35 @@ bool AsyncRenderer::WaitForCompletion(const std::string& renderId, int64_t timeo
 }
 
 void AsyncRenderer::Pause(const std::string& renderId) {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         it->second->paused = true;
     }
 }
 
 void AsyncRenderer::Resume(const std::string& renderId) {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         it->second->paused = false;
         it->second->cv.notify_all();
     }
 }
 
 bool AsyncRenderer::IsPaused(const std::string& renderId) const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    auto it = m_sessions.find(renderId);
-    if (it != m_sessions.end()) {
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    auto it = impl_->sessions.find(renderId);
+    if (it != impl_->sessions.end()) {
         return it->second->paused;
     }
     return false;
 }
 
 size_t AsyncRenderer::GetActiveRenderCount() const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
     size_t count = 0;
-    for (const auto& pair : m_sessions) {
+    for (const auto& pair : impl_->sessions) {
         if (pair.second->stats.isRunning) {
             count++;
         }
@@ -385,9 +403,9 @@ size_t AsyncRenderer::GetActiveRenderCount() const {
 }
 
 std::vector<std::string> AsyncRenderer::GetActiveRenderIds() const {
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
     std::vector<std::string> ids;
-    for (const auto& pair : m_sessions) {
+    for (const auto& pair : impl_->sessions) {
         if (pair.second->stats.isRunning) {
             ids.push_back(pair.first);
         }
@@ -396,24 +414,24 @@ std::vector<std::string> AsyncRenderer::GetActiveRenderIds() const {
 }
 
 void AsyncRenderer::SetMaxConcurrentTasks(size_t maxTasks) {
-    m_config.maxConcurrentTasks = maxTasks;
+    impl_->config.maxConcurrentTasks = maxTasks;
 }
 
 size_t AsyncRenderer::GetMaxConcurrentTasks() const {
-    return m_config.maxConcurrentTasks;
+    return impl_->config.maxConcurrentTasks;
 }
 
 void AsyncRenderer::Shutdown() {
-    if (m_shutdown) {
+    if (impl_->shutdown) {
         return;
     }
     
-    m_shutdown = true;
+    impl_->shutdown = true;
     
     std::vector<RenderSessionPtr> sessions;
     {
-        std::lock_guard<std::mutex> lock(m_sessionsMutex);
-        for (auto& pair : m_sessions) {
+        std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+        for (auto& pair : impl_->sessions) {
             pair.second->cancelled = true;
             pair.second->paused = false;
             pair.second->cv.notify_all();
@@ -429,12 +447,12 @@ void AsyncRenderer::Shutdown() {
         }
     }
     
-    std::lock_guard<std::mutex> lock(m_sessionsMutex);
-    m_sessions.clear();
+    std::lock_guard<std::mutex> lock(impl_->sessionsMutex);
+    impl_->sessions.clear();
 }
 
 bool AsyncRenderer::IsShutdown() const {
-    return m_shutdown;
+    return impl_->shutdown;
 }
 
 AsyncRendererPtr AsyncRenderer::Create() {
@@ -445,48 +463,63 @@ AsyncRendererPtr AsyncRenderer::Create(const AsyncRenderConfig& config) {
     return std::make_shared<AsyncRenderer>(config);
 }
 
+struct AsyncRenderBuilder::Impl {
+    AsyncRenderConfig config;
+    ProgressCallback progressCallback;
+    CompletionCallback completionCallback;
+    ErrorCallback errorCallback;
+    std::vector<RenderTaskPtr> tasks;
+    RenderQueuePtr queue;
+    
+    Impl()
+        : config(AsyncRenderConfig::Default()) {
+    }
+};
+
 AsyncRenderBuilder::AsyncRenderBuilder()
-    : m_config(AsyncRenderConfig::Default()) {
+    : impl_(std::make_unique<Impl>()) {
 }
 
+AsyncRenderBuilder::~AsyncRenderBuilder() = default;
+
 AsyncRenderBuilder& AsyncRenderBuilder::SetMaxConcurrentTasks(size_t maxTasks) {
-    m_config.maxConcurrentTasks = maxTasks;
+    impl_->config.maxConcurrentTasks = maxTasks;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::SetTaskTimeout(int64_t timeoutMs) {
-    m_config.taskTimeoutMs = timeoutMs;
+    impl_->config.taskTimeoutMs = timeoutMs;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::EnableProgressReporting(bool enable) {
-    m_config.enableProgressReporting = enable;
+    impl_->config.enableProgressReporting = enable;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::EnableCancellation(bool enable) {
-    m_config.enableCancellation = enable;
+    impl_->config.enableCancellation = enable;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::SetProgressCallback(ProgressCallback callback) {
-    m_progressCallback = callback;
+    impl_->progressCallback = callback;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::SetCompletionCallback(CompletionCallback callback) {
-    m_completionCallback = callback;
+    impl_->completionCallback = callback;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::SetErrorCallback(ErrorCallback callback) {
-    m_errorCallback = callback;
+    impl_->errorCallback = callback;
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::AddTask(RenderTaskPtr task) {
     if (task) {
-        m_tasks.push_back(task);
+        impl_->tasks.push_back(task);
     }
     return *this;
 }
@@ -494,28 +527,28 @@ AsyncRenderBuilder& AsyncRenderBuilder::AddTask(RenderTaskPtr task) {
 AsyncRenderBuilder& AsyncRenderBuilder::AddTasks(const std::vector<RenderTaskPtr>& tasks) {
     for (const auto& task : tasks) {
         if (task) {
-            m_tasks.push_back(task);
+            impl_->tasks.push_back(task);
         }
     }
     return *this;
 }
 
 AsyncRenderBuilder& AsyncRenderBuilder::SetQueue(RenderQueuePtr queue) {
-    m_queue = queue;
+    impl_->queue = queue;
     return *this;
 }
 
 AsyncRendererPtr AsyncRenderBuilder::Build() {
-    auto renderer = AsyncRenderer::Create(m_config);
+    auto renderer = AsyncRenderer::Create(impl_->config);
     
-    if (m_progressCallback) {
-        renderer->SetProgressCallback(m_progressCallback);
+    if (impl_->progressCallback) {
+        renderer->SetProgressCallback(impl_->progressCallback);
     }
-    if (m_completionCallback) {
-        renderer->SetCompletionCallback(m_completionCallback);
+    if (impl_->completionCallback) {
+        renderer->SetCompletionCallback(impl_->completionCallback);
     }
-    if (m_errorCallback) {
-        renderer->SetErrorCallback(m_errorCallback);
+    if (impl_->errorCallback) {
+        renderer->SetErrorCallback(impl_->errorCallback);
     }
     
     return renderer;
@@ -524,10 +557,10 @@ AsyncRendererPtr AsyncRenderBuilder::Build() {
 std::string AsyncRenderBuilder::BuildAndStart() {
     auto renderer = Build();
     
-    if (m_queue) {
-        return renderer->StartAsync(m_queue);
-    } else if (!m_tasks.empty()) {
-        return renderer->StartAsync(m_tasks);
+    if (impl_->queue) {
+        return renderer->StartAsync(impl_->queue);
+    } else if (!impl_->tasks.empty()) {
+        return renderer->StartAsync(impl_->tasks);
     }
     
     return "";

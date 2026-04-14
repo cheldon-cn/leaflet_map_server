@@ -14,120 +14,141 @@ using ogc::Geometry;
 namespace ogc {
 namespace graph {
 
+struct LabelEngine::Impl {
+    std::string labelProperty;
+    ogc::draw::Font font;
+    uint32_t color;
+    uint32_t haloColor;
+    double haloRadius;
+    double minDistance;
+    double maxDistance;
+    int priority;
+    bool allowOverlap;
+    bool followLine;
+    double maxAngleDelta;
+    LabelConflictResolverPtr conflictResolver;
+    
+    Impl()
+        : color(0xFF000000)
+        , haloColor(0xFFFFFFFF)
+        , haloRadius(0.0)
+        , minDistance(0.0)
+        , maxDistance(256.0)
+        , priority(0)
+        , allowOverlap(false)
+        , followLine(false)
+        , maxAngleDelta(22.5) {
+    }
+};
+
 LabelEngine::LabelEngine()
-    : m_color(0xFF000000)
-    , m_haloColor(0xFFFFFFFF)
-    , m_haloRadius(0.0)
-    , m_minDistance(0.0)
-    , m_maxDistance(256.0)
-    , m_priority(0)
-    , m_allowOverlap(false)
-    , m_followLine(false)
-    , m_maxAngleDelta(22.5) {
+    : impl_(std::make_unique<Impl>()) {
 }
 
+LabelEngine::~LabelEngine() = default;
+
 void LabelEngine::SetLabelProperty(const std::string& propertyName) {
-    m_labelProperty = propertyName;
+    impl_->labelProperty = propertyName;
 }
 
 std::string LabelEngine::GetLabelProperty() const {
-    return m_labelProperty;
+    return impl_->labelProperty;
 }
 
 void LabelEngine::SetFont(const ogc::draw::Font& font) {
-    m_font = font;
+    impl_->font = font;
 }
 
 ogc::draw::Font LabelEngine::GetFont() const {
-    return m_font;
+    return impl_->font;
 }
 
 void LabelEngine::SetColor(uint32_t color) {
-    m_color = color;
+    impl_->color = color;
 }
 
 uint32_t LabelEngine::GetColor() const {
-    return m_color;
+    return impl_->color;
 }
 
 void LabelEngine::SetHaloColor(uint32_t color) {
-    m_haloColor = color;
+    impl_->haloColor = color;
 }
 
 uint32_t LabelEngine::GetHaloColor() const {
-    return m_haloColor;
+    return impl_->haloColor;
 }
 
 void LabelEngine::SetHaloRadius(double radius) {
-    m_haloRadius = radius;
+    impl_->haloRadius = radius;
 }
 
 double LabelEngine::GetHaloRadius() const {
-    return m_haloRadius;
+    return impl_->haloRadius;
 }
 
 void LabelEngine::SetMinDistance(double distance) {
-    m_minDistance = distance;
+    impl_->minDistance = distance;
 }
 
 double LabelEngine::GetMinDistance() const {
-    return m_minDistance;
+    return impl_->minDistance;
 }
 
 void LabelEngine::SetMaxDistance(double distance) {
-    m_maxDistance = distance;
+    impl_->maxDistance = distance;
 }
 
 double LabelEngine::GetMaxDistance() const {
-    return m_maxDistance;
+    return impl_->maxDistance;
 }
 
 void LabelEngine::SetPriority(int priority) {
-    m_priority = priority;
+    impl_->priority = priority;
 }
 
 int LabelEngine::GetPriority() const {
-    return m_priority;
+    return impl_->priority;
 }
 
 void LabelEngine::SetAllowOverlap(bool allow) {
-    m_allowOverlap = allow;
+    impl_->allowOverlap = allow;
 }
 
 bool LabelEngine::GetAllowOverlap() const {
-    return m_allowOverlap;
+    return impl_->allowOverlap;
 }
 
 void LabelEngine::SetFollowLine(bool follow) {
-    m_followLine = follow;
+    impl_->followLine = follow;
 }
 
 bool LabelEngine::GetFollowLine() const {
-    return m_followLine;
+    return impl_->followLine;
 }
 
 void LabelEngine::SetMaxAngleDelta(double delta) {
-    m_maxAngleDelta = delta;
+    impl_->maxAngleDelta = delta;
 }
 
 double LabelEngine::GetMaxAngleDelta() const {
-    return m_maxAngleDelta;
+    return impl_->maxAngleDelta;
 }
 
 void LabelEngine::SetConflictResolver(LabelConflictResolverPtr resolver) {
-    m_conflictResolver = resolver;
+    impl_->conflictResolver = resolver;
 }
 
 LabelConflictResolverPtr LabelEngine::GetConflictResolver() const {
-    return m_conflictResolver;
+    return impl_->conflictResolver;
 }
 
 std::string LabelEngine::GetLabelText(const CNFeature* feature) const {
-    if (!feature || m_labelProperty.empty()) {
+    if (!feature || impl_->labelProperty.empty()) {
         return "";
     }
     
-    return feature->GetFieldAsString(m_labelProperty.c_str());
+    return feature->GetFieldAsString(impl_->labelProperty.c_str());
 }
 
 std::vector<LabelInfo> LabelEngine::GenerateLabels(const std::vector<const CNFeature*>& features, ogc::draw::DrawContext& context) {
@@ -168,11 +189,11 @@ std::vector<LabelInfo> LabelEngine::GenerateLabels(const CNFeature* feature, ogc
         info.x = placement.x;
         info.y = placement.y;
         info.rotation = placement.rotation;
-        info.priority = m_priority;
+        info.priority = impl_->priority;
         info.featureId = feature->GetFID();
         
-        double textWidth = text.length() * m_font.GetSize() * 0.6;
-        double textHeight = m_font.GetSize();
+        double textWidth = text.length() * impl_->font.GetSize() * 0.6;
+        double textHeight = impl_->font.GetSize();
         info.width = textWidth;
         info.height = textHeight;
         
@@ -361,16 +382,16 @@ ogc::draw::DrawResult LabelEngine::RenderLabels(const std::vector<LabelInfo>& la
             context.Translate(-label.x, -label.y);
         }
         
-        if (m_haloRadius > 0.0) {
-            ogc::draw::Color haloColor(m_haloColor);
-            context.DrawText(label.x - 1, label.y, label.text, m_font, haloColor);
-            context.DrawText(label.x + 1, label.y, label.text, m_font, haloColor);
-            context.DrawText(label.x, label.y - 1, label.text, m_font, haloColor);
-            context.DrawText(label.x, label.y + 1, label.text, m_font, haloColor);
+        if (impl_->haloRadius > 0.0) {
+            ogc::draw::Color haloColor(impl_->haloColor);
+            context.DrawText(label.x - 1, label.y, label.text, impl_->font, haloColor);
+            context.DrawText(label.x + 1, label.y, label.text, impl_->font, haloColor);
+            context.DrawText(label.x, label.y - 1, label.text, impl_->font, haloColor);
+            context.DrawText(label.x, label.y + 1, label.text, impl_->font, haloColor);
         }
         
-        ogc::draw::Color textColor(m_color);
-        context.DrawText(label.x, label.y, label.text, m_font, textColor);
+        ogc::draw::Color textColor(impl_->color);
+        context.DrawText(label.x, label.y, label.text, impl_->font, textColor);
         
         if (label.rotation != 0.0) {
             context.Restore();
