@@ -15,7 +15,7 @@ protected:
     static void SetUpTestCase() {
         GDALInitializer::Instance().Initialize();
         ChartParser::Instance().Initialize();
-        Logger::Instance().SetLevel(LogLevel::Off);
+        Logger::Instance().SetLevel(LogLevel::kNone);
     }
     
     static void TearDownTestCase() {
@@ -168,7 +168,7 @@ TEST_F(PerformanceBenchmarkTest, GenerateReport_CreatesFile) {
 class ScopedTimerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        Logger::Instance().SetLevel(LogLevel::Off);
+        Logger::Instance().SetLevel(LogLevel::kNone);
     }
 };
 

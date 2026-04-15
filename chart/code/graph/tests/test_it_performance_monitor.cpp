@@ -10,6 +10,7 @@
 #include <thread>
 
 using namespace ogc::base;
+using namespace ogc::draw;
 using ogc::base::PerformanceMonitor;
 using ogc::base::PerformanceMetricsCollector;
 using ogc::Envelope;

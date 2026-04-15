@@ -3,7 +3,7 @@
 
 #include "ogc/cache/tile/tile_cache.h"
 #include <vector>
-#include <mutex>
+#include <memory>
 
 namespace ogc {
 namespace cache {
@@ -12,7 +12,7 @@ class OGC_CACHE_API MultiLevelTileCache : public TileCache {
 public:
     MultiLevelTileCache();
     explicit MultiLevelTileCache(const std::vector<TileCachePtr>& caches);
-    ~MultiLevelTileCache() override = default;
+    ~MultiLevelTileCache() override;
     
     void AddCache(const TileCachePtr& cache, int priority = -1);
     void RemoveCache(size_t index);
@@ -58,13 +58,8 @@ public:
     static std::shared_ptr<MultiLevelTileCache> Create(const std::vector<TileCachePtr>& caches);
     
 private:
-    std::string m_name;
-    bool m_enabled;
-    bool m_promoteOnHit;
-    bool m_writeThrough;
-    bool m_writeBack;
-    std::vector<TileCachePtr> m_caches;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     void PromoteTile(const TileKey& key, const TileData& tile, size_t fromLevel) const;
     void WriteToHigherLevels(const TileKey& key, const TileData& tile, size_t startLevel) const;

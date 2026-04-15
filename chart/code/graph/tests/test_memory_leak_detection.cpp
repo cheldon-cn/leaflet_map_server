@@ -20,6 +20,8 @@
 
 using namespace ogc;
 using namespace ogc::draw;
+using namespace ogc::graph;
+using namespace ogc::proj;
 
 class MemoryLeakDetectionTest : public ::testing::Test {
 protected:

@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <ctime>
+#include <map>
+#include <mutex>
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -17,18 +19,31 @@
 namespace ogc {
 namespace cache {
 
+struct DiskTileCache::Impl {
+    std::string cachePath;
+    std::string name;
+    size_t maxSize;
+    size_t currentSize;
+    size_t tileCount;
+    bool enabled;
+    bool compressionEnabled;
+    int64_t expirationTime;
+    mutable std::mutex mutex;
+    
+    mutable std::map<TileKey, CacheIndex> index;
+    mutable bool indexLoaded;
+    
+    Impl() : maxSize(0), currentSize(0), tileCount(0), enabled(true),
+             compressionEnabled(false), expirationTime(0), indexLoaded(false) {}
+};
+
 DiskTileCache::DiskTileCache(const std::string& cachePath, size_t maxSize)
-    : m_cachePath(cachePath)
-    , m_name("DiskTileCache")
-    , m_maxSize(maxSize)
-    , m_currentSize(0)
-    , m_tileCount(0)
-    , m_enabled(true)
-    , m_compressionEnabled(false)
-    , m_expirationTime(0)
-    , m_indexLoaded(false)
+    : impl_(new Impl())
 {
-    EnsureDirectoryExists(m_cachePath);
+    impl_->cachePath = cachePath;
+    impl_->name = "DiskTileCache";
+    impl_->maxSize = maxSize;
+    EnsureDirectoryExists(impl_->cachePath);
     LoadIndex();
 }
 
@@ -37,14 +52,14 @@ DiskTileCache::~DiskTileCache() {
 }
 
 bool DiskTileCache::HasTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
-    auto it = m_index.find(key);
-    if (it == m_index.end()) {
+    auto it = impl_->index.find(key);
+    if (it == impl_->index.end()) {
         return false;
     }
     
@@ -56,16 +71,16 @@ bool DiskTileCache::HasTile(const TileKey& key) const {
 }
 
 TileData DiskTileCache::GetTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     TileData result;
     
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return result;
     }
     
-    auto it = m_index.find(key);
-    if (it == m_index.end()) {
+    auto it = impl_->index.find(key);
+    if (it == impl_->index.end()) {
         return result;
     }
     
@@ -93,9 +108,9 @@ bool DiskTileCache::PutTile(const TileKey& key, const TileData& tile) {
 }
 
 bool DiskTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (!m_enabled || data.empty()) {
+    if (!impl_->enabled || data.empty()) {
         return false;
     }
     
@@ -104,13 +119,13 @@ bool DiskTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>& data
         return false;
     }
     
-    auto existingIt = m_index.find(key);
-    if (existingIt != m_index.end()) {
-        m_currentSize -= existingIt->second.size;
-        m_tileCount--;
+    auto existingIt = impl_->index.find(key);
+    if (existingIt != impl_->index.end()) {
+        impl_->currentSize -= existingIt->second.size;
+        impl_->tileCount--;
     }
     
-    while (m_currentSize + data.size() > m_maxSize && !m_index.empty()) {
+    while (impl_->currentSize + data.size() > impl_->maxSize && !impl_->index.empty()) {
         RemoveLRU();
     }
     
@@ -119,26 +134,26 @@ bool DiskTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>& data
     }
     
     UpdateIndex(key, filePath, data.size());
-    m_currentSize += data.size();
-    m_tileCount++;
+    impl_->currentSize += data.size();
+    impl_->tileCount++;
     
     return true;
 }
 
 bool DiskTileCache::RemoveTile(const TileKey& key) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    auto it = m_index.find(key);
-    if (it == m_index.end()) {
+    auto it = impl_->index.find(key);
+    if (it == impl_->index.end()) {
         return false;
     }
     
     std::string filePath = it->second.filePath;
     
     if (remove(filePath.c_str()) == 0 || errno == ENOENT) {
-        m_currentSize -= it->second.size;
-        m_tileCount--;
-        m_index.erase(it);
+        impl_->currentSize -= it->second.size;
+        impl_->tileCount--;
+        impl_->index.erase(it);
         return true;
     }
     
@@ -146,106 +161,106 @@ bool DiskTileCache::RemoveTile(const TileKey& key) {
 }
 
 void DiskTileCache::Clear() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& pair : m_index) {
+    for (const auto& pair : impl_->index) {
         remove(pair.second.filePath.c_str());
     }
     
-    m_index.clear();
-    m_currentSize = 0;
-    m_tileCount = 0;
+    impl_->index.clear();
+    impl_->currentSize = 0;
+    impl_->tileCount = 0;
     
     SaveIndex();
 }
 
 size_t DiskTileCache::GetTileCount() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_tileCount;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->tileCount;
 }
 
 size_t DiskTileCache::GetSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_currentSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->currentSize;
 }
 
 size_t DiskTileCache::GetMaxSize() const {
-    return m_maxSize;
+    return impl_->maxSize;
 }
 
 void DiskTileCache::SetMaxSize(size_t maxSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_maxSize = maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->maxSize = maxSize;
     
-    while (m_currentSize > m_maxSize && !m_index.empty()) {
+    while (impl_->currentSize > impl_->maxSize && !impl_->index.empty()) {
         RemoveLRU();
     }
 }
 
 bool DiskTileCache::IsFull() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_currentSize >= m_maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->currentSize >= impl_->maxSize;
 }
 
 std::string DiskTileCache::GetName() const {
-    return m_name;
+    return impl_->name;
 }
 
 void DiskTileCache::SetName(const std::string& name) {
-    m_name = name;
+    impl_->name = name;
 }
 
 bool DiskTileCache::IsEnabled() const {
-    return m_enabled;
+    return impl_->enabled;
 }
 
 void DiskTileCache::SetEnabled(bool enabled) {
-    m_enabled = enabled;
+    impl_->enabled = enabled;
 }
 
 void DiskTileCache::Flush() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     SaveIndex();
 }
 
 bool DiskTileCache::SetCachePath(const std::string& path) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     if (!EnsureDirectoryExists(path)) {
         return false;
     }
     
-    m_cachePath = path;
-    m_indexLoaded = false;
-    m_index.clear();
-    m_currentSize = 0;
-    m_tileCount = 0;
+    impl_->cachePath = path;
+    impl_->indexLoaded = false;
+    impl_->index.clear();
+    impl_->currentSize = 0;
+    impl_->tileCount = 0;
     
     return LoadIndex();
 }
 
 std::string DiskTileCache::GetCachePath() const {
-    return m_cachePath;
+    return impl_->cachePath;
 }
 
 void DiskTileCache::SetCompressionEnabled(bool enabled) {
-    m_compressionEnabled = enabled;
+    impl_->compressionEnabled = enabled;
 }
 
 bool DiskTileCache::IsCompressionEnabled() const {
-    return m_compressionEnabled;
+    return impl_->compressionEnabled;
 }
 
 void DiskTileCache::SetExpirationTime(int64_t seconds) {
-    m_expirationTime = seconds;
+    impl_->expirationTime = seconds;
 }
 
 int64_t DiskTileCache::GetExpirationTime() const {
-    return m_expirationTime;
+    return impl_->expirationTime;
 }
 
 void DiskTileCache::Cleanup() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     RemoveExpired();
 }
 
@@ -254,7 +269,7 @@ std::shared_ptr<DiskTileCache> DiskTileCache::Create(const std::string& cachePat
 }
 
 std::string DiskTileCache::GetTileFilePath(const TileKey& key) const {
-    return GetTileFilePath(m_cachePath, key.x, key.y, key.z);
+    return GetTileFilePath(impl_->cachePath, key.x, key.y, key.z);
 }
 
 std::string DiskTileCache::GetTileFilePath(const std::string& cachePath, int x, int y, int z) const {
@@ -304,7 +319,7 @@ bool DiskTileCache::EnsureDirectoryExists(const std::string& path) const {
 }
 
 bool DiskTileCache::LoadIndex() {
-    if (m_indexLoaded) {
+    if (impl_->indexLoaded) {
         return true;
     }
     
@@ -312,13 +327,13 @@ bool DiskTileCache::LoadIndex() {
     std::ifstream file(indexPath, std::ios::binary);
     
     if (!file.is_open()) {
-        m_indexLoaded = true;
+        impl_->indexLoaded = true;
         return true;
     }
     
-    m_index.clear();
-    m_currentSize = 0;
-    m_tileCount = 0;
+    impl_->index.clear();
+    impl_->currentSize = 0;
+    impl_->tileCount = 0;
     
     int64_t currentTime = static_cast<int64_t>(std::time(nullptr));
     
@@ -352,7 +367,7 @@ bool DiskTileCache::LoadIndex() {
         entry.timestamp = timestamp;
         entry.lastAccess = lastAccess;
         
-        if (m_expirationTime > 0 && currentTime - timestamp > m_expirationTime) {
+        if (impl_->expirationTime > 0 && currentTime - timestamp > impl_->expirationTime) {
             remove(filePath.c_str());
             continue;
         }
@@ -362,12 +377,12 @@ bool DiskTileCache::LoadIndex() {
             continue;
         }
         
-        m_index[key] = entry;
-        m_currentSize += size;
-        m_tileCount++;
+        impl_->index[key] = entry;
+        impl_->currentSize += size;
+        impl_->tileCount++;
     }
     
-    m_indexLoaded = true;
+    impl_->indexLoaded = true;
     return true;
 }
 
@@ -381,7 +396,7 @@ bool DiskTileCache::SaveIndex() {
         return false;
     }
     
-    for (const auto& pair : m_index) {
+    for (const auto& pair : impl_->index) {
         const CacheIndex& entry = pair.second;
         
         int z = entry.key.z;
@@ -421,35 +436,35 @@ void DiskTileCache::UpdateIndex(const TileKey& key, const std::string& filePath,
     entry.timestamp = static_cast<int64_t>(std::time(nullptr));
     entry.lastAccess = entry.timestamp;
     
-    m_index[key] = entry;
+    impl_->index[key] = entry;
 }
 
 void DiskTileCache::RemoveFromIndex(const TileKey& key) const {
-    auto it = m_index.find(key);
-    if (it != m_index.end()) {
+    auto it = impl_->index.find(key);
+    if (it != impl_->index.end()) {
         remove(it->second.filePath.c_str());
-        const_cast<size_t&>(m_currentSize) -= it->second.size;
-        const_cast<size_t&>(m_tileCount)--;
-        m_index.erase(it);
+        const_cast<size_t&>(impl_->currentSize) -= it->second.size;
+        const_cast<size_t&>(impl_->tileCount)--;
+        impl_->index.erase(it);
     }
 }
 
 bool DiskTileCache::IsExpired(const CacheIndex& entry) const {
-    if (m_expirationTime <= 0) {
+    if (impl_->expirationTime <= 0) {
         return false;
     }
     
     int64_t currentTime = static_cast<int64_t>(std::time(nullptr));
-    return (currentTime - entry.timestamp) > m_expirationTime;
+    return (currentTime - entry.timestamp) > impl_->expirationTime;
 }
 
 void DiskTileCache::RemoveExpired() {
-    if (m_expirationTime <= 0) {
+    if (impl_->expirationTime <= 0) {
         return;
     }
     
     std::vector<TileKey> expiredKeys;
-    for (const auto& pair : m_index) {
+    for (const auto& pair : impl_->index) {
         if (IsExpired(pair.second)) {
             expiredKeys.push_back(pair.first);
         }
@@ -461,12 +476,12 @@ void DiskTileCache::RemoveExpired() {
 }
 
 void DiskTileCache::RemoveLRU() {
-    if (m_index.empty()) {
+    if (impl_->index.empty()) {
         return;
     }
     
-    auto oldest = m_index.begin();
-    for (auto it = m_index.begin(); it != m_index.end(); ++it) {
+    auto oldest = impl_->index.begin();
+    for (auto it = impl_->index.begin(); it != impl_->index.end(); ++it) {
         if (it->second.lastAccess < oldest->second.lastAccess) {
             oldest = it;
         }
@@ -476,7 +491,7 @@ void DiskTileCache::RemoveLRU() {
 }
 
 std::string DiskTileCache::GetIndexPath() const {
-    std::string indexPath = m_cachePath;
+    std::string indexPath = impl_->cachePath;
     if (!indexPath.empty() && indexPath.back() != '/' && indexPath.back() != '\\') {
         indexPath += "/";
     }

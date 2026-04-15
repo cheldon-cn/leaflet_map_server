@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <memory>
 
 namespace ogc {
 namespace draw {
@@ -25,6 +26,12 @@ public:
     Image();
     Image(int width, int height, int channels);
     Image(int width, int height, int channels, const uint8_t* data);
+    ~Image();
+    
+    Image(const Image& other);
+    Image& operator=(const Image& other);
+    Image(Image&& other) noexcept;
+    Image& operator=(Image&& other) noexcept;
     
     int GetWidth() const;
     int GetHeight() const;
@@ -56,20 +63,9 @@ public:
     static Image Solid(int width, int height, const Color& color);
 
 private:
-    int m_width;
-    int m_height;
-    int m_channels;
-    std::vector<uint8_t> m_data;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
-
-inline int Image::GetWidth() const { return m_width; }
-inline int Image::GetHeight() const { return m_height; }
-inline int Image::GetChannels() const { return m_channels; }
-inline uint8_t* Image::GetData() { return m_data.empty() ? nullptr : m_data.data(); }
-inline const uint8_t* Image::GetData() const { return m_data.empty() ? nullptr : m_data.data(); }
-inline size_t Image::GetDataSize() const { return m_data.size(); }
-inline bool Image::IsValid() const { return m_width > 0 && m_height > 0 && m_channels > 0 && !m_data.empty(); }
-inline bool Image::IsEmpty() const { return m_data.empty(); }
 
 }  
 }  

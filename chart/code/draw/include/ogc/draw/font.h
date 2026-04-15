@@ -3,6 +3,7 @@
 
 #include "ogc/draw/export.h"
 #include <string>
+#include <memory>
 
 namespace ogc {
 namespace draw {
@@ -32,6 +33,12 @@ public:
     Font(const std::string& family, double size);
     Font(const std::string& family, double size, FontStyle style);
     Font(const std::string& family, double size, FontWeight weight, bool italic = false);
+    ~Font();
+    
+    Font(const Font& other);
+    Font& operator=(const Font& other);
+    Font(Font&& other) noexcept;
+    Font& operator=(Font&& other) noexcept;
     
     const std::string& GetFamily() const;
     double GetSize() const;
@@ -80,26 +87,9 @@ public:
     bool operator!=(const Font& other) const;
 
 private:
-    std::string m_family;
-    double m_size;
-    FontStyle m_style;
-    FontWeight m_weight;
-    bool m_italic;
-    bool m_underline;
-    bool m_strikethrough;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
-
-inline const std::string& Font::GetFamily() const { return m_family; }
-inline double Font::GetSize() const { return m_size; }
-inline FontStyle Font::GetStyle() const { return m_style; }
-inline FontWeight Font::GetWeight() const { return m_weight; }
-inline bool Font::IsItalic() const { return m_italic; }
-inline bool Font::IsUnderline() const { return m_underline; }
-inline bool Font::IsStrikethrough() const { return m_strikethrough; }
-inline bool Font::IsBold() const { 
-    return m_weight == FontWeight::kBold || m_weight == FontWeight::kExtraBold ||
-           m_style == FontStyle::kBold || m_style == FontStyle::kBoldItalic;
-}
 
 }  
 }  

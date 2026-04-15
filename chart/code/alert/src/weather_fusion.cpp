@@ -41,18 +41,24 @@ double RadiansToDegrees(double radians) {
 
 }
 
-WeatherFusion::WeatherFusion() {
+struct WeatherFusion::Impl {
+    std::map<std::string, WeatherSourceConfig> sourceConfigs;
+    std::vector<WeatherObservation> observations;
+    std::vector<WeatherForecast> forecasts;
+};
+
+WeatherFusion::WeatherFusion() : impl_(new Impl()) {
 }
 
 WeatherFusion::~WeatherFusion() {
 }
 
 void WeatherFusion::AddObservation(const WeatherObservation& observation) {
-    m_observations.push_back(observation);
+    impl_->observations.push_back(observation);
 }
 
 void WeatherFusion::AddForecast(const WeatherForecast& forecast) {
-    m_forecasts.push_back(forecast);
+    impl_->forecasts.push_back(forecast);
 }
 
 WeatherFusionResult WeatherFusion::Fuse(const Coordinate& location, 
@@ -74,14 +80,14 @@ WeatherFusionResult WeatherFusion::Fuse(const Coordinate& location,
     std::vector<std::pair<double, double>> precipitationValues;
     std::vector<std::pair<double, double>> waveHeightValues;
     
-    for (const auto& obs : m_observations) {
+    for (const auto& obs : impl_->observations) {
         double distanceWeight = CalculateDistanceWeight(obs.location, location, 
                                                          kMaxObservationDistanceKm);
         double timeWeight = CalculateTimeWeight(obs.observation_time, time, 
                                                  kMaxObservationAgeSeconds);
         
-        auto configIt = m_sourceConfigs.find(obs.source_id);
-        double sourceWeight = configIt != m_sourceConfigs.end() ? 
+        auto configIt = impl_->sourceConfigs.find(obs.source_id);
+        double sourceWeight = configIt != impl_->sourceConfigs.end() ? 
                               configIt->second.weight : 1.0;
         
         double totalWeight = distanceWeight * timeWeight * sourceWeight * obs.confidence;
@@ -126,40 +132,40 @@ WeatherFusionResult WeatherFusion::Fuse(const Coordinate& location,
 
 std::vector<WeatherForecast> WeatherFusion::GetActiveAlerts(
     const Coordinate& location, const DateTime& time) {
-    return WeatherAlertMatcher::MatchAlerts(m_forecasts, location, time);
+    return WeatherAlertMatcher::MatchAlerts(impl_->forecasts, location, time);
 }
 
 void WeatherFusion::SetSourceConfig(const WeatherSourceConfig& config) {
-    m_sourceConfigs[config.source_id] = config;
+    impl_->sourceConfigs[config.source_id] = config;
 }
 
 WeatherSourceConfig WeatherFusion::GetSourceConfig(const std::string& source_id) const {
-    auto it = m_sourceConfigs.find(source_id);
-    if (it != m_sourceConfigs.end()) {
+    auto it = impl_->sourceConfigs.find(source_id);
+    if (it != impl_->sourceConfigs.end()) {
         return it->second;
     }
     return WeatherSourceConfig();
 }
 
 void WeatherFusion::RemoveExpiredData(const DateTime& cutoff_time) {
-    m_observations.erase(
-        std::remove_if(m_observations.begin(), m_observations.end(),
+    impl_->observations.erase(
+        std::remove_if(impl_->observations.begin(), impl_->observations.end(),
             [&cutoff_time](const WeatherObservation& obs) {
                 return obs.observation_time < cutoff_time;
             }),
-        m_observations.end());
+        impl_->observations.end());
     
-    m_forecasts.erase(
-        std::remove_if(m_forecasts.begin(), m_forecasts.end(),
+    impl_->forecasts.erase(
+        std::remove_if(impl_->forecasts.begin(), impl_->forecasts.end(),
             [&cutoff_time](const WeatherForecast& forecast) {
                 return forecast.valid_to < cutoff_time;
             }),
-        m_forecasts.end());
+        impl_->forecasts.end());
 }
 
 void WeatherFusion::Clear() {
-    m_observations.clear();
-    m_forecasts.clear();
+    impl_->observations.clear();
+    impl_->forecasts.clear();
 }
 
 double WeatherFusion::CalculateDistanceWeight(const Coordinate& obs_location,

@@ -128,15 +128,11 @@ public:
     std::string EscapeString(const std::string& value) const override;
     
     std::string GetLastError() const;
-    PGconn* GetRawConnection() { return m_conn; }
+    PGconn* GetRawConnection();
 
 private:
-    PGconn* m_conn;
-    bool m_isTransaction;
-    std::string m_lastError;
-    ConnectionInfo m_connectionInfo;
-    TransactionIsolation m_isolationLevel;
-    int64_t m_rowsAffected;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     Result CheckConnection();
     Result ExecuteInternal(const std::string& sql, PGresult*& result);
@@ -147,10 +143,10 @@ public:
     explicit PostGISStatement(PGconn* conn, const std::string& name);
     ~PostGISStatement() override;
     
-    void SetConnection(PGconn* conn) { m_conn = conn; }
+    void SetConnection(PGconn* conn);
     
-    const std::string& GetName() const override { return m_name; }
-    const std::string& GetSql() const override { return m_sql; }
+    const std::string& GetName() const override;
+    const std::string& GetSql() const override;
     
     Result BindInt(int paramIndex, int32_t value) override;
     Result BindInt64(int paramIndex, int64_t value) override;
@@ -185,13 +181,8 @@ public:
     int GetParameterIndex(const std::string& paramName) const override;
 
 private:
-    PGconn* m_conn;
-    std::string m_name;
-    std::string m_sql;
-    std::vector<std::vector<char>> m_paramValues;
-    std::vector<int> m_paramLengths;
-    std::vector<unsigned int> m_paramTypes;
-    std::vector<int> m_paramFormats;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     Result Prepare();
 };
@@ -237,14 +228,8 @@ public:
     bool HasGeometry(int columnIndex) const;
 
 private:
-    PGresult* m_result;
-    int m_currentRow;
-    int m_numRows;
-    int m_numColumns;
-    Result m_lastError;
-    
-    std::vector<std::string> m_columnNames;
-    std::vector<unsigned int> m_columnTypes;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     void InitializeColumns();
     ColumnType ConvertPgType(unsigned int pgType) const;

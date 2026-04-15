@@ -1,28 +1,46 @@
 #include "ogc/cache/tile/memory_tile_cache.h"
 #include <chrono>
 #include <algorithm>
+#include <unordered_map>
+#include <list>
+#include <mutex>
 
 namespace ogc {
 namespace cache {
 
+struct MemoryTileCache::Impl {
+    mutable std::mutex mutex;
+    std::unordered_map<TileKey, TileData> cache;
+    mutable std::list<TileKey> lruList;
+    mutable std::unordered_map<TileKey, std::list<TileKey>::iterator> lruMap;
+    size_t maxSize;
+    size_t currentSize;
+    std::string name;
+    bool enabled;
+    int64_t expirationTime;
+    
+    Impl() : maxSize(0), currentSize(0), enabled(true), expirationTime(3600) {}
+};
+
 MemoryTileCache::MemoryTileCache(size_t maxSize)
-    : m_maxSize(maxSize)
-    , m_currentSize(0)
-    , m_name("MemoryTileCache")
-    , m_enabled(true)
-    , m_expirationTime(3600) {
+    : impl_(new Impl())
+{
+    impl_->maxSize = maxSize;
+    impl_->name = "MemoryTileCache";
 }
 
+MemoryTileCache::~MemoryTileCache() = default;
+
 bool MemoryTileCache::HasTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_cache.find(key) != m_cache.end();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->cache.find(key) != impl_->cache.end();
 }
 
 TileData MemoryTileCache::GetTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    auto it = m_cache.find(key);
-    if (it == m_cache.end()) {
+    auto it = impl_->cache.find(key);
+    if (it == impl_->cache.end()) {
         return TileData();
     }
     
@@ -32,25 +50,25 @@ TileData MemoryTileCache::GetTile(const TileKey& key) const {
 }
 
 bool MemoryTileCache::PutTile(const TileKey& key, const TileData& tile) {
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    auto it = m_cache.find(key);
-    if (it != m_cache.end()) {
-        m_currentSize -= it->second.GetSize();
+    auto it = impl_->cache.find(key);
+    if (it != impl_->cache.end()) {
+        impl_->currentSize -= it->second.GetSize();
         it->second = tile;
-        m_currentSize += tile.GetSize();
+        impl_->currentSize += tile.GetSize();
         UpdateAccessOrder(key);
         return true;
     }
     
-    m_cache[key] = tile;
-    m_currentSize += tile.GetSize();
-    m_lruList.push_front(key);
-    m_lruMap[key] = m_lruList.begin();
+    impl_->cache[key] = tile;
+    impl_->currentSize += tile.GetSize();
+    impl_->lruList.push_front(key);
+    impl_->lruMap[key] = impl_->lruList.begin();
     
     EvictIfNeeded();
     
@@ -69,134 +87,134 @@ bool MemoryTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>& da
 }
 
 bool MemoryTileCache::RemoveTile(const TileKey& key) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    auto it = m_cache.find(key);
-    if (it == m_cache.end()) {
+    auto it = impl_->cache.find(key);
+    if (it == impl_->cache.end()) {
         return false;
     }
     
-    m_currentSize -= it->second.GetSize();
-    m_cache.erase(it);
+    impl_->currentSize -= it->second.GetSize();
+    impl_->cache.erase(it);
     
-    auto lruIt = m_lruMap.find(key);
-    if (lruIt != m_lruMap.end()) {
-        m_lruList.erase(lruIt->second);
-        m_lruMap.erase(lruIt);
+    auto lruIt = impl_->lruMap.find(key);
+    if (lruIt != impl_->lruMap.end()) {
+        impl_->lruList.erase(lruIt->second);
+        impl_->lruMap.erase(lruIt);
     }
     
     return true;
 }
 
 void MemoryTileCache::Clear() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_cache.clear();
-    m_lruList.clear();
-    m_lruMap.clear();
-    m_currentSize = 0;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->cache.clear();
+    impl_->lruList.clear();
+    impl_->lruMap.clear();
+    impl_->currentSize = 0;
 }
 
 size_t MemoryTileCache::GetTileCount() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_cache.size();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->cache.size();
 }
 
 size_t MemoryTileCache::GetSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_currentSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->currentSize;
 }
 
 size_t MemoryTileCache::GetMaxSize() const {
-    return m_maxSize;
+    return impl_->maxSize;
 }
 
 void MemoryTileCache::SetMaxSize(size_t maxSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_maxSize = maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->maxSize = maxSize;
     EvictIfNeeded();
 }
 
 bool MemoryTileCache::IsFull() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_currentSize >= m_maxSize;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->currentSize >= impl_->maxSize;
 }
 
 std::string MemoryTileCache::GetName() const {
-    return m_name;
+    return impl_->name;
 }
 
 void MemoryTileCache::SetName(const std::string& name) {
-    m_name = name;
+    impl_->name = name;
 }
 
 bool MemoryTileCache::IsEnabled() const {
-    return m_enabled;
+    return impl_->enabled;
 }
 
 void MemoryTileCache::SetEnabled(bool enabled) {
-    m_enabled = enabled;
+    impl_->enabled = enabled;
 }
 
 void MemoryTileCache::SetExpirationTime(int64_t seconds) {
-    m_expirationTime = seconds;
+    impl_->expirationTime = seconds;
 }
 
 int64_t MemoryTileCache::GetExpirationTime() const {
-    return m_expirationTime;
+    return impl_->expirationTime;
 }
 
 void MemoryTileCache::Cleanup() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_expirationTime <= 0) {
+    if (impl_->expirationTime <= 0) {
         return;
     }
     
     auto now = std::chrono::system_clock::now().time_since_epoch().count();
-    auto expirationNs = m_expirationTime * 1000000000LL;
+    auto expirationNs = impl_->expirationTime * 1000000000LL;
     
     std::vector<TileKey> toRemove;
-    for (const auto& pair : m_cache) {
+    for (const auto& pair : impl_->cache) {
         if (now - pair.second.timestamp > expirationNs) {
             toRemove.push_back(pair.first);
         }
     }
     
     for (const auto& key : toRemove) {
-        auto it = m_cache.find(key);
-        if (it != m_cache.end()) {
-            m_currentSize -= it->second.GetSize();
-            m_cache.erase(it);
+        auto it = impl_->cache.find(key);
+        if (it != impl_->cache.end()) {
+            impl_->currentSize -= it->second.GetSize();
+            impl_->cache.erase(it);
             
-            auto lruIt = m_lruMap.find(key);
-            if (lruIt != m_lruMap.end()) {
-                m_lruList.erase(lruIt->second);
-                m_lruMap.erase(lruIt);
+            auto lruIt = impl_->lruMap.find(key);
+            if (lruIt != impl_->lruMap.end()) {
+                impl_->lruList.erase(lruIt->second);
+                impl_->lruMap.erase(lruIt);
             }
         }
     }
 }
 
 void MemoryTileCache::EvictIfNeeded() {
-    while (m_currentSize > m_maxSize && !m_lruList.empty()) {
-        TileKey oldest = m_lruList.back();
-        m_lruList.pop_back();
-        m_lruMap.erase(oldest);
+    while (impl_->currentSize > impl_->maxSize && !impl_->lruList.empty()) {
+        TileKey oldest = impl_->lruList.back();
+        impl_->lruList.pop_back();
+        impl_->lruMap.erase(oldest);
         
-        auto it = m_cache.find(oldest);
-        if (it != m_cache.end()) {
-            m_currentSize -= it->second.GetSize();
-            m_cache.erase(it);
+        auto it = impl_->cache.find(oldest);
+        if (it != impl_->cache.end()) {
+            impl_->currentSize -= it->second.GetSize();
+            impl_->cache.erase(it);
         }
     }
 }
 
 void MemoryTileCache::UpdateAccessOrder(const TileKey& key) const {
-    auto lruIt = m_lruMap.find(key);
-    if (lruIt != m_lruMap.end()) {
-        m_lruList.erase(lruIt->second);
-        m_lruList.push_front(key);
-        m_lruMap[key] = m_lruList.begin();
+    auto lruIt = impl_->lruMap.find(key);
+    if (lruIt != impl_->lruMap.end()) {
+        impl_->lruList.erase(lruIt->second);
+        impl_->lruList.push_front(key);
+        impl_->lruMap[key] = impl_->lruList.begin();
     }
 }
 

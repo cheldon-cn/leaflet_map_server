@@ -8,12 +8,12 @@ using namespace chart::parser;
 class LoggerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        Logger::Instance().SetLevel(LogLevel::Trace);
+        Logger::Instance().SetLevel(LogLevel::kTrace);
         Logger::Instance().SetConsoleOutput(false);
     }
     
     void TearDown() override {
-        Logger::Instance().SetLevel(LogLevel::Off);
+        Logger::Instance().SetLevel(LogLevel::kNone);
         Logger::Instance().SetConsoleOutput(false);
     }
 };
@@ -25,16 +25,16 @@ TEST_F(LoggerTest, Instance_ReturnsSingleton) {
 }
 
 TEST_F(LoggerTest, SetLevel_UpdatesLevel) {
-    Logger::Instance().SetLevel(LogLevel::Debug);
-    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::Debug);
+    Logger::Instance().SetLevel(LogLevel::kDebug);
+    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::kDebug);
     
-    Logger::Instance().SetLevel(LogLevel::Error);
-    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::Error);
+    Logger::Instance().SetLevel(LogLevel::kError);
+    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::kError);
 }
 
 TEST_F(LoggerTest, GetLevel_ReturnsCurrentLevel) {
-    Logger::Instance().SetLevel(LogLevel::Warn);
-    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::Warn);
+    Logger::Instance().SetLevel(LogLevel::kWarning);
+    EXPECT_EQ(Logger::Instance().GetLevel(), LogLevel::kWarning);
 }
 
 TEST_F(LoggerTest, SetConsoleOutput_EnablesOutput) {
@@ -52,63 +52,69 @@ TEST_F(LoggerTest, SetLogFile_CreatesLogFile) {
 }
 
 TEST_F(LoggerTest, Log_TraceLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Trace);
-    Logger::Instance().Log(LogLevel::Trace, "test.cpp", 10, "testFunc", "trace message");
+    Logger::Instance().SetLevel(LogLevel::kTrace);
+    Logger::Instance().LogWithLocation(LogLevel::kTrace, "test.cpp", 10, "testFunc", "trace message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_DebugLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Debug);
-    Logger::Instance().Log(LogLevel::Debug, "test.cpp", 20, "testFunc", "debug message");
+    Logger::Instance().SetLevel(LogLevel::kDebug);
+    Logger::Instance().LogWithLocation(LogLevel::kDebug, "test.cpp", 20, "testFunc", "debug message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_InfoLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Info);
-    Logger::Instance().Log(LogLevel::Info, "test.cpp", 30, "testFunc", "info message");
+    Logger::Instance().SetLevel(LogLevel::kInfo);
+    Logger::Instance().LogWithLocation(LogLevel::kInfo, "test.cpp", 30, "testFunc", "info message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_WarnLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Warn);
-    Logger::Instance().Log(LogLevel::Warn, "test.cpp", 40, "testFunc", "warn message");
+    Logger::Instance().SetLevel(LogLevel::kWarning);
+    Logger::Instance().LogWithLocation(LogLevel::kWarning, "test.cpp", 40, "testFunc", "warn message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_ErrorLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Error);
-    Logger::Instance().Log(LogLevel::Error, "test.cpp", 50, "testFunc", "error message");
+    Logger::Instance().SetLevel(LogLevel::kError);
+    Logger::Instance().LogWithLocation(LogLevel::kError, "test.cpp", 50, "testFunc", "error message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_FatalLevel_LogsMessage) {
-    Logger::Instance().SetLevel(LogLevel::Fatal);
-    Logger::Instance().Log(LogLevel::Fatal, "test.cpp", 60, "testFunc", "fatal message");
+    Logger::Instance().SetLevel(LogLevel::kFatal);
+    Logger::Instance().LogWithLocation(LogLevel::kFatal, "test.cpp", 60, "testFunc", "fatal message");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_BelowLevel_DoesNotLog) {
-    Logger::Instance().SetLevel(LogLevel::Error);
-    Logger::Instance().Log(LogLevel::Debug, "test.cpp", 70, "testFunc", "should not log");
+    Logger::Instance().SetLevel(LogLevel::kError);
+    Logger::Instance().LogWithLocation(LogLevel::kDebug, "test.cpp", 70, "testFunc", "should not log");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_OffLevel_DoesNotLog) {
-    Logger::Instance().SetLevel(LogLevel::Off);
-    Logger::Instance().Log(LogLevel::Error, "test.cpp", 80, "testFunc", "should not log");
+    Logger::Instance().SetLevel(LogLevel::kNone);
+    Logger::Instance().LogWithLocation(LogLevel::kError, "test.cpp", 80, "testFunc", "should not log");
     SUCCEED();
 }
 
 TEST_F(LoggerTest, Log_AllLevelsInOrder) {
-    Logger::Instance().SetLevel(LogLevel::Trace);
+    Logger::Instance().SetLevel(LogLevel::kTrace);
     
-    Logger::Instance().Log(LogLevel::Trace, "test.cpp", 1, "func", "trace");
-    Logger::Instance().Log(LogLevel::Debug, "test.cpp", 2, "func", "debug");
-    Logger::Instance().Log(LogLevel::Info, "test.cpp", 3, "func", "info");
-    Logger::Instance().Log(LogLevel::Warn, "test.cpp", 4, "func", "warn");
-    Logger::Instance().Log(LogLevel::Error, "test.cpp", 5, "func", "error");
-    Logger::Instance().Log(LogLevel::Fatal, "test.cpp", 6, "func", "fatal");
+    Logger::Instance().LogWithLocation(LogLevel::kTrace, "test.cpp", 1, "func", "trace");
+    Logger::Instance().LogWithLocation(LogLevel::kDebug, "test.cpp", 2, "func", "debug");
+    Logger::Instance().LogWithLocation(LogLevel::kInfo, "test.cpp", 3, "func", "info");
+    Logger::Instance().LogWithLocation(LogLevel::kWarning, "test.cpp", 4, "func", "warn");
+    Logger::Instance().LogWithLocation(LogLevel::kError, "test.cpp", 5, "func", "error");
+    Logger::Instance().LogWithLocation(LogLevel::kFatal, "test.cpp", 6, "func", "fatal");
     
+    SUCCEED();
+}
+
+TEST_F(LoggerTest, Log_SimpleMessage) {
+    Logger::Instance().SetLevel(LogLevel::kInfo);
+    Logger::Instance().Log(LogLevel::kInfo, "simple message");
     SUCCEED();
 }
 
@@ -116,20 +122,20 @@ class LogLevelTest : public ::testing::Test {
 };
 
 TEST_F(LogLevelTest, LevelValues_AreOrdered) {
-    EXPECT_LT(static_cast<int>(LogLevel::Trace), static_cast<int>(LogLevel::Debug));
-    EXPECT_LT(static_cast<int>(LogLevel::Debug), static_cast<int>(LogLevel::Info));
-    EXPECT_LT(static_cast<int>(LogLevel::Info), static_cast<int>(LogLevel::Warn));
-    EXPECT_LT(static_cast<int>(LogLevel::Warn), static_cast<int>(LogLevel::Error));
-    EXPECT_LT(static_cast<int>(LogLevel::Error), static_cast<int>(LogLevel::Fatal));
-    EXPECT_LT(static_cast<int>(LogLevel::Fatal), static_cast<int>(LogLevel::Off));
+    EXPECT_LT(static_cast<int>(LogLevel::kTrace), static_cast<int>(LogLevel::kDebug));
+    EXPECT_LT(static_cast<int>(LogLevel::kDebug), static_cast<int>(LogLevel::kInfo));
+    EXPECT_LT(static_cast<int>(LogLevel::kInfo), static_cast<int>(LogLevel::kWarning));
+    EXPECT_LT(static_cast<int>(LogLevel::kWarning), static_cast<int>(LogLevel::kError));
+    EXPECT_LT(static_cast<int>(LogLevel::kError), static_cast<int>(LogLevel::kFatal));
+    EXPECT_LT(static_cast<int>(LogLevel::kFatal), static_cast<int>(LogLevel::kNone));
 }
 
 TEST_F(LogLevelTest, TraceLevel_IsLowest) {
-    EXPECT_EQ(static_cast<int>(LogLevel::Trace), 0);
+    EXPECT_EQ(static_cast<int>(LogLevel::kTrace), 0);
 }
 
 TEST_F(LogLevelTest, OffLevel_IsHighest) {
-    EXPECT_EQ(static_cast<int>(LogLevel::Off), 6);
+    EXPECT_EQ(static_cast<int>(LogLevel::kNone), 6);
 }
 
 class FormatStringTest : public ::testing::Test {

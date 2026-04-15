@@ -9,6 +9,7 @@
 #include <memory>
 
 using namespace ogc::proj;
+using namespace ogc::draw;
 using ogc::Coordinate;
 using ogc::Envelope;
 

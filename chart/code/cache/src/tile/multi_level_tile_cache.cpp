@@ -1,85 +1,89 @@
 #include "ogc/cache/tile/multi_level_tile_cache.h"
 #include <algorithm>
+#include <mutex>
 
 namespace ogc {
 namespace cache {
 
-MultiLevelTileCache::MultiLevelTileCache()
-    : m_name("MultiLevelTileCache")
-    , m_enabled(true)
-    , m_promoteOnHit(true)
-    , m_writeThrough(true)
-    , m_writeBack(false)
-{
-}
+struct MultiLevelTileCache::Impl {
+    std::string name;
+    bool enabled;
+    bool promoteOnHit;
+    bool writeThrough;
+    bool writeBack;
+    std::vector<TileCachePtr> caches;
+    mutable std::mutex mutex;
+    
+    Impl() : name("MultiLevelTileCache"), enabled(true), promoteOnHit(true),
+             writeThrough(true), writeBack(false) {}
+};
+
+MultiLevelTileCache::MultiLevelTileCache() : impl_(new Impl()) {}
 
 MultiLevelTileCache::MultiLevelTileCache(const std::vector<TileCachePtr>& caches)
-    : m_name("MultiLevelTileCache")
-    , m_enabled(true)
-    , m_promoteOnHit(true)
-    , m_writeThrough(true)
-    , m_writeBack(false)
-    , m_caches(caches)
-{
+    : impl_(new Impl()) {
+    impl_->caches = caches;
 }
 
+MultiLevelTileCache::~MultiLevelTileCache() = default;
+
 void MultiLevelTileCache::AddCache(const TileCachePtr& cache, int priority) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     if (!cache) {
         return;
     }
     
-    if (priority < 0 || static_cast<size_t>(priority) >= m_caches.size()) {
-        m_caches.push_back(cache);
+    if (priority < 0 || static_cast<size_t>(priority) >= impl_->caches.size()) {
+        impl_->caches.push_back(cache);
     } else {
-        m_caches.insert(m_caches.begin() + priority, cache);
+        impl_->caches.insert(impl_->caches.begin() + priority, cache);
     }
 }
 
 void MultiLevelTileCache::RemoveCache(size_t index) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (index < m_caches.size()) {
-        m_caches.erase(m_caches.begin() + index);
+    if (index < impl_->caches.size()) {
+        impl_->caches.erase(impl_->caches.begin() + index);
     }
 }
 
 void MultiLevelTileCache::RemoveCache(const std::string& name) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    m_caches.erase(
-        std::remove_if(m_caches.begin(), m_caches.end(),
+    impl_->caches.erase(
+        std::remove_if(impl_->caches.begin(), impl_->caches.end(),
             [&name](const TileCachePtr& cache) {
                 return cache && cache->GetName() == name;
             }),
-        m_caches.end());
+        impl_->caches.end());
 }
 
 void MultiLevelTileCache::ClearCaches() {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    m_caches.clear();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    impl_->caches.clear();
 }
 
 size_t MultiLevelTileCache::GetCacheCount() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_caches.size();
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->caches.size();
 }
 
 TileCachePtr MultiLevelTileCache::GetCache(size_t index) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (index < m_caches.size()) {
-        return m_caches[index];
+    if (index < impl_->caches.size()) {
+        return impl_->caches[index];
     }
     
     return nullptr;
 }
 
 TileCachePtr MultiLevelTileCache::GetCache(const std::string& name) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache && cache->GetName() == name) {
             return cache;
         }
@@ -89,18 +93,18 @@ TileCachePtr MultiLevelTileCache::GetCache(const std::string& name) const {
 }
 
 std::vector<TileCachePtr> MultiLevelTileCache::GetCaches() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_caches;
+    std::lock_guard<std::mutex> lock(impl_->mutex);
+    return impl_->caches;
 }
 
 bool MultiLevelTileCache::HasTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return false;
     }
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache && cache->IsEnabled() && cache->HasTile(key)) {
             return true;
         }
@@ -110,16 +114,16 @@ bool MultiLevelTileCache::HasTile(const TileKey& key) const {
 }
 
 TileData MultiLevelTileCache::GetTile(const TileKey& key) const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     TileData result;
     
-    if (!m_enabled) {
+    if (!impl_->enabled) {
         return result;
     }
     
-    for (size_t i = 0; i < m_caches.size(); ++i) {
-        const auto& cache = m_caches[i];
+    for (size_t i = 0; i < impl_->caches.size(); ++i) {
+        const auto& cache = impl_->caches[i];
         if (!cache || !cache->IsEnabled()) {
             continue;
         }
@@ -127,7 +131,7 @@ TileData MultiLevelTileCache::GetTile(const TileKey& key) const {
         if (cache->HasTile(key)) {
             result = cache->GetTile(key);
             if (result.IsValid()) {
-                if (m_promoteOnHit && i > 0) {
+                if (impl_->promoteOnHit && i > 0) {
                     PromoteTile(key, result, i);
                 }
                 return result;
@@ -143,16 +147,16 @@ bool MultiLevelTileCache::PutTile(const TileKey& key, const TileData& tile) {
 }
 
 bool MultiLevelTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>& data) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (!m_enabled || data.empty() || m_caches.empty()) {
+    if (!impl_->enabled || data.empty() || impl_->caches.empty()) {
         return false;
     }
     
     bool success = false;
     
-    if (m_writeThrough) {
-        for (const auto& cache : m_caches) {
+    if (impl_->writeThrough) {
+        for (const auto& cache : impl_->caches) {
             if (cache && cache->IsEnabled()) {
                 if (cache->PutTile(key, data)) {
                     success = true;
@@ -160,8 +164,8 @@ bool MultiLevelTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>
             }
         }
     } else {
-        if (m_caches[0] && m_caches[0]->IsEnabled()) {
-            success = m_caches[0]->PutTile(key, data);
+        if (impl_->caches[0] && impl_->caches[0]->IsEnabled()) {
+            success = impl_->caches[0]->PutTile(key, data);
         }
     }
     
@@ -169,11 +173,11 @@ bool MultiLevelTileCache::PutTile(const TileKey& key, const std::vector<uint8_t>
 }
 
 bool MultiLevelTileCache::RemoveTile(const TileKey& key) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     bool removed = false;
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache && cache->RemoveTile(key)) {
             removed = true;
         }
@@ -183,9 +187,9 @@ bool MultiLevelTileCache::RemoveTile(const TileKey& key) {
 }
 
 void MultiLevelTileCache::Clear() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             cache->Clear();
         }
@@ -193,10 +197,10 @@ void MultiLevelTileCache::Clear() {
 }
 
 size_t MultiLevelTileCache::GetTileCount() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     size_t count = 0;
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             count += cache->GetTileCount();
         }
@@ -206,10 +210,10 @@ size_t MultiLevelTileCache::GetTileCount() const {
 }
 
 size_t MultiLevelTileCache::GetSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     size_t size = 0;
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             size += cache->GetSize();
         }
@@ -219,10 +223,10 @@ size_t MultiLevelTileCache::GetSize() const {
 }
 
 size_t MultiLevelTileCache::GetMaxSize() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     size_t maxSize = 0;
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             maxSize += cache->GetMaxSize();
         }
@@ -232,14 +236,14 @@ size_t MultiLevelTileCache::GetMaxSize() const {
 }
 
 void MultiLevelTileCache::SetMaxSize(size_t maxSize) {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    if (m_caches.empty()) {
+    if (impl_->caches.empty()) {
         return;
     }
     
-    size_t perCacheSize = maxSize / m_caches.size();
-    for (const auto& cache : m_caches) {
+    size_t perCacheSize = maxSize / impl_->caches.size();
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             cache->SetMaxSize(perCacheSize);
         }
@@ -247,37 +251,37 @@ void MultiLevelTileCache::SetMaxSize(size_t maxSize) {
 }
 
 bool MultiLevelTileCache::IsFull() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache && !cache->IsFull()) {
             return false;
         }
     }
     
-    return !m_caches.empty();
+    return !impl_->caches.empty();
 }
 
 std::string MultiLevelTileCache::GetName() const {
-    return m_name;
+    return impl_->name;
 }
 
 void MultiLevelTileCache::SetName(const std::string& name) {
-    m_name = name;
+    impl_->name = name;
 }
 
 bool MultiLevelTileCache::IsEnabled() const {
-    return m_enabled;
+    return impl_->enabled;
 }
 
 void MultiLevelTileCache::SetEnabled(bool enabled) {
-    m_enabled = enabled;
+    impl_->enabled = enabled;
 }
 
 void MultiLevelTileCache::Flush() {
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
-    for (const auto& cache : m_caches) {
+    for (const auto& cache : impl_->caches) {
         if (cache) {
             cache->Flush();
         }
@@ -285,27 +289,27 @@ void MultiLevelTileCache::Flush() {
 }
 
 void MultiLevelTileCache::SetPromoteOnHit(bool promote) {
-    m_promoteOnHit = promote;
+    impl_->promoteOnHit = promote;
 }
 
 bool MultiLevelTileCache::IsPromoteOnHit() const {
-    return m_promoteOnHit;
+    return impl_->promoteOnHit;
 }
 
 void MultiLevelTileCache::SetWriteThrough(bool writeThrough) {
-    m_writeThrough = writeThrough;
+    impl_->writeThrough = writeThrough;
 }
 
 bool MultiLevelTileCache::IsWriteThrough() const {
-    return m_writeThrough;
+    return impl_->writeThrough;
 }
 
 void MultiLevelTileCache::SetWriteBack(bool writeBack) {
-    m_writeBack = writeBack;
+    impl_->writeBack = writeBack;
 }
 
 bool MultiLevelTileCache::IsWriteBack() const {
-    return m_writeBack;
+    return impl_->writeBack;
 }
 
 std::shared_ptr<MultiLevelTileCache> MultiLevelTileCache::Create() {
@@ -318,7 +322,7 @@ std::shared_ptr<MultiLevelTileCache> MultiLevelTileCache::Create(const std::vect
 
 void MultiLevelTileCache::PromoteTile(const TileKey& key, const TileData& tile, size_t fromLevel) const {
     for (size_t i = 0; i < fromLevel; ++i) {
-        const auto& cache = m_caches[i];
+        const auto& cache = impl_->caches[i];
         if (cache && cache->IsEnabled() && !cache->HasTile(key)) {
             cache->PutTile(key, tile);
         }
@@ -327,7 +331,7 @@ void MultiLevelTileCache::PromoteTile(const TileKey& key, const TileData& tile, 
 
 void MultiLevelTileCache::WriteToHigherLevels(const TileKey& key, const TileData& tile, size_t startLevel) const {
     for (size_t i = startLevel; i > 0; --i) {
-        const auto& cache = m_caches[i - 1];
+        const auto& cache = impl_->caches[i - 1];
         if (cache && cache->IsEnabled() && !cache->HasTile(key)) {
             cache->PutTile(key, tile);
         }

@@ -11,6 +11,7 @@
 #include <memory>
 
 using namespace ogc::cache;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 class IntegrationMemoryCacheTest : public ::testing::Test {

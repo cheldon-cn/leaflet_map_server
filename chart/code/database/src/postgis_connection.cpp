@@ -69,12 +69,23 @@ std::string PostGISOptions::ToConnectionString() const {
     return oss.str();
 }
 
+struct PostGISConnection::Impl {
+    PGconn* conn;
+    bool isTransaction;
+    std::string lastError;
+    ConnectionInfo connectionInfo;
+    TransactionIsolation isolationLevel;
+    int64_t rowsAffected;
+    
+    Impl() : conn(nullptr), isTransaction(false), isolationLevel(TransactionIsolation::kReadCommitted), rowsAffected(0) {}
+};
+
 PostGISConnectionPtr PostGISConnection::Create() {
     return std::make_unique<PostGISConnection>();
 }
 
 PostGISConnection::PostGISConnection()
-    : m_conn(nullptr), m_isTransaction(false) {
+    : impl_(new Impl()) {
 }
 
 PostGISConnection::~PostGISConnection() {
@@ -84,13 +95,13 @@ PostGISConnection::~PostGISConnection() {
 Result PostGISConnection::Connect(const std::string& connectionString) {
     Disconnect();
     
-    m_conn = PQconnectdb(connectionString.c_str());
+    impl_->conn = PQconnectdb(connectionString.c_str());
     
-    if (PQstatus(m_conn) != CONNECTION_OK) {
-        m_lastError = PQerrorMessage(m_conn);
-        PQfinish(m_conn);
-        m_conn = nullptr;
-        return Result::Error(DbResult::kConnectionFailed, m_lastError);
+    if (PQstatus(impl_->conn) != CONNECTION_OK) {
+        impl_->lastError = PQerrorMessage(impl_->conn);
+        PQfinish(impl_->conn);
+        impl_->conn = nullptr;
+        return Result::Error(DbResult::kConnectionFailed, impl_->lastError);
     }
     
     return Result::Success();
@@ -101,23 +112,23 @@ Result PostGISConnection::Connect(const PostGISOptions& options) {
 }
 
 void PostGISConnection::Disconnect() {
-    if (m_conn) {
-        if (m_isTransaction) {
-            PQexec(m_conn, "ROLLBACK");
+    if (impl_->conn) {
+        if (impl_->isTransaction) {
+            PQexec(impl_->conn, "ROLLBACK");
         }
-        PQfinish(m_conn);
-        m_conn = nullptr;
+        PQfinish(impl_->conn);
+        impl_->conn = nullptr;
     }
 }
 
 bool PostGISConnection::IsConnected() const {
-    return m_conn && PQstatus(m_conn) == CONNECTION_OK;
+    return impl_->conn && PQstatus(impl_->conn) == CONNECTION_OK;
 }
 
 bool PostGISConnection::Ping() const {
-    if (!m_conn) return false;
+    if (!impl_->conn) return false;
     
-    PGresult* res = PQexec(m_conn, "SELECT 1");
+    PGresult* res = PQexec(impl_->conn, "SELECT 1");
     bool ok = PQresultStatus(res) == PGRES_TUPLES_OK;
     PQclear(res);
     
@@ -125,7 +136,7 @@ bool PostGISConnection::Ping() const {
 }
 
 Result PostGISConnection::BeginTransaction() {
-    if (m_isTransaction) {
+    if (impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "Transaction already in progress");
     }
     
@@ -133,7 +144,7 @@ Result PostGISConnection::BeginTransaction() {
     Result result = ExecuteInternal("BEGIN", res);
     
     if (result.IsSuccess()) {
-        m_isTransaction = true;
+        impl_->isTransaction = true;
     }
     
     if (res) PQclear(res);
@@ -141,7 +152,7 @@ Result PostGISConnection::BeginTransaction() {
 }
 
 Result PostGISConnection::Commit() {
-    if (!m_isTransaction) {
+    if (!impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "No transaction in progress");
     }
     
@@ -149,7 +160,7 @@ Result PostGISConnection::Commit() {
     Result result = ExecuteInternal("COMMIT", res);
     
     if (result.IsSuccess()) {
-        m_isTransaction = false;
+        impl_->isTransaction = false;
     }
     
     if (res) PQclear(res);
@@ -157,7 +168,7 @@ Result PostGISConnection::Commit() {
 }
 
 Result PostGISConnection::Rollback() {
-    if (!m_isTransaction) {
+    if (!impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "No transaction in progress");
     }
     
@@ -165,7 +176,7 @@ Result PostGISConnection::Rollback() {
     Result result = ExecuteInternal("ROLLBACK", res);
     
     if (result.IsSuccess()) {
-        m_isTransaction = false;
+        impl_->isTransaction = false;
     }
     
     if (res) PQclear(res);
@@ -199,17 +210,17 @@ Result PostGISConnection::ExecuteQuery(const std::string& sql, DbResultSetPtr& r
 }
 
 Result PostGISConnection::PrepareStatement(const std::string& name, const std::string& sql, DbStatementPtr& stmt) {
-    PGresult* res = PQprepare(m_conn, name.c_str(), sql.c_str(), 0, nullptr);
+    PGresult* res = PQprepare(impl_->conn, name.c_str(), sql.c_str(), 0, nullptr);
     
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        m_lastError = PQerrorMessage(m_conn);
+        impl_->lastError = PQerrorMessage(impl_->conn);
         PQclear(res);
-        return Result::Error(DbResult::kPrepareError, m_lastError);
+        return Result::Error(DbResult::kPrepareError, impl_->lastError);
     }
     
     PQclear(res);
     
-    stmt = std::make_unique<PostGISStatement>(m_conn, name);
+    stmt = std::make_unique<PostGISStatement>(impl_->conn, name);
     stmt->Reset();
     
     return Result::Success();
@@ -274,11 +285,11 @@ Result PostGISConnection::InsertGeometry(const std::string& table,
 }
 
 std::string PostGISConnection::GetLastError() const {
-    return m_lastError;
+    return impl_->lastError;
 }
 
 Result PostGISConnection::CheckConnection() {
-    if (!m_conn || PQstatus(m_conn) != CONNECTION_OK) {
+    if (!impl_->conn || PQstatus(impl_->conn) != CONNECTION_OK) {
         return Result::Error(DbResult::kNotConnected, "Not connected to database");
     }
     return Result::Success();
@@ -290,7 +301,7 @@ Result PostGISConnection::ExecuteInternal(const std::string& sql, PGresult*& res
         return connResult;
     }
     
-    result = PQexec(m_conn, sql.c_str());
+    result = PQexec(impl_->conn, sql.c_str());
     
     ExecStatusType status = PQresultStatus(result);
     
@@ -298,76 +309,91 @@ Result PostGISConnection::ExecuteInternal(const std::string& sql, PGresult*& res
         return Result::Success();
     }
     
-    m_lastError = PQerrorMessage(m_conn);
+    impl_->lastError = PQerrorMessage(impl_->conn);
     
     if (status == PGRES_FATAL_ERROR) {
-        return Result::Error(DbResult::kExecutionError, m_lastError);
+        return Result::Error(DbResult::kExecutionError, impl_->lastError);
     }
     
-    return Result::Error(DbResult::kUnknownError, m_lastError);
+    return Result::Error(DbResult::kUnknownError, impl_->lastError);
 }
+
+struct PostGISStatement::Impl {
+    PGconn* conn;
+    std::string name;
+    std::string sql;
+    std::vector<std::vector<char>> paramValues;
+    std::vector<int> paramLengths;
+    std::vector<unsigned int> paramTypes;
+    std::vector<int> paramFormats;
+    
+    Impl(PGconn* c, const std::string& n) : conn(c), name(n) {}
+};
 
 PostGISStatement::PostGISStatement(PGconn* conn, const std::string& name)
-    : m_conn(conn), m_name(name) {
+    : impl_(new Impl(conn, name)) {
 }
 
-PostGISStatement::~PostGISStatement() {
-}
+PostGISStatement::~PostGISStatement() = default;
+
+void PostGISStatement::SetConnection(PGconn* conn) { impl_->conn = conn; }
+const std::string& PostGISStatement::GetName() const { return impl_->name; }
+const std::string& PostGISStatement::GetSql() const { return impl_->sql; }
 
 Result PostGISStatement::BindInt(int paramIndex, int32_t value) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].clear();
-    m_paramValues[paramIndex] = std::vector<char>(sizeof(int32_t));
-    std::memcpy(m_paramValues[paramIndex].data(), &value, sizeof(int32_t));
-    m_paramLengths[paramIndex] = sizeof(int32_t);
-    m_paramFormats[paramIndex] = 1;
-    m_paramTypes[paramIndex] = INT4OID;
+    impl_->paramValues[paramIndex].clear();
+    impl_->paramValues[paramIndex] = std::vector<char>(sizeof(int32_t));
+    std::memcpy(impl_->paramValues[paramIndex].data(), &value, sizeof(int32_t));
+    impl_->paramLengths[paramIndex] = sizeof(int32_t);
+    impl_->paramFormats[paramIndex] = 1;
+    impl_->paramTypes[paramIndex] = INT4OID;
     
     return Result::Success();
 }
 
 Result PostGISStatement::BindInt64(int paramIndex, int64_t value) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].clear();
-    m_paramValues[paramIndex] = std::vector<char>(sizeof(int64_t));
-    std::memcpy(m_paramValues[paramIndex].data(), &value, sizeof(int64_t));
-    m_paramLengths[paramIndex] = sizeof(int64_t);
-    m_paramFormats[paramIndex] = 1;
-    m_paramTypes[paramIndex] = INT8OID;
+    impl_->paramValues[paramIndex].clear();
+    impl_->paramValues[paramIndex] = std::vector<char>(sizeof(int64_t));
+    std::memcpy(impl_->paramValues[paramIndex].data(), &value, sizeof(int64_t));
+    impl_->paramLengths[paramIndex] = sizeof(int64_t);
+    impl_->paramFormats[paramIndex] = 1;
+    impl_->paramTypes[paramIndex] = INT8OID;
     
     return Result::Success();
 }
 
 Result PostGISStatement::BindDouble(int paramIndex, double value) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].clear();
-    m_paramValues[paramIndex] = std::vector<char>(sizeof(double));
-    std::memcpy(m_paramValues[paramIndex].data(), &value, sizeof(double));
-    m_paramLengths[paramIndex] = sizeof(double);
-    m_paramFormats[paramIndex] = 1;
-    m_paramTypes[paramIndex] = FLOAT8OID;
+    impl_->paramValues[paramIndex].clear();
+    impl_->paramValues[paramIndex] = std::vector<char>(sizeof(double));
+    std::memcpy(impl_->paramValues[paramIndex].data(), &value, sizeof(double));
+    impl_->paramLengths[paramIndex] = sizeof(double);
+    impl_->paramFormats[paramIndex] = 1;
+    impl_->paramTypes[paramIndex] = FLOAT8OID;
     
     return Result::Success();
 }
 
 Result PostGISStatement::BindString(int paramIndex, const std::string& value) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].assign(value.begin(), value.end());
-    m_paramLengths[paramIndex] = static_cast<int>(value.length());
-    m_paramFormats[paramIndex] = 0;
-    m_paramTypes[paramIndex] = TEXTOID;
+    impl_->paramValues[paramIndex].assign(value.begin(), value.end());
+    impl_->paramLengths[paramIndex] = static_cast<int>(value.length());
+    impl_->paramFormats[paramIndex] = 0;
+    impl_->paramTypes[paramIndex] = TEXTOID;
     
     return Result::Success();
 }
@@ -377,7 +403,7 @@ Result PostGISStatement::BindGeometry(int paramIndex, const Geometry* geometry) 
         return Result::Error(DbResult::kInvalidGeometry, "Geometry is null");
     }
     
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
@@ -390,10 +416,10 @@ Result PostGISStatement::BindGeometry(int paramIndex, const Geometry* geometry) 
         return result;
     }
     
-    m_paramValues[paramIndex].assign(wkb.begin(), wkb.end());
-    m_paramLengths[paramIndex] = static_cast<int>(wkb.size());
-    m_paramFormats[paramIndex] = 1;
-    m_paramTypes[paramIndex] = BYTEAOID;
+    impl_->paramValues[paramIndex].assign(wkb.begin(), wkb.end());
+    impl_->paramLengths[paramIndex] = static_cast<int>(wkb.size());
+    impl_->paramFormats[paramIndex] = 1;
+    impl_->paramTypes[paramIndex] = BYTEAOID;
     
     return Result::Success();
 }
@@ -404,24 +430,24 @@ Result PostGISStatement::Execute() {
 }
 
 Result PostGISStatement::ExecuteQuery(DbResultSetPtr& result) {
-    if (!m_conn) {
+    if (!impl_->conn) {
         return Result::Error(DbResult::kNotConnected, "Not connected");
     }
     
-    std::vector<const char*> paramValues(m_paramValues.size());
-    for (size_t i = 0; i < m_paramValues.size(); ++i) {
-        if (!m_paramValues[i].empty()) {
-            paramValues[i] = m_paramValues[i].data();
+    std::vector<const char*> paramValues(impl_->paramValues.size());
+    for (size_t i = 0; i < impl_->paramValues.size(); ++i) {
+        if (!impl_->paramValues[i].empty()) {
+            paramValues[i] = impl_->paramValues[i].data();
         } else {
             paramValues[i] = "";
         }
     }
     
-    PGresult* res = PQexecPrepared(m_conn, m_name.c_str(),
+    PGresult* res = PQexecPrepared(impl_->conn, impl_->name.c_str(),
         static_cast<int>(paramValues.size()),
         paramValues.data(),
-        m_paramLengths.data(),
-        m_paramFormats.data(),
+        impl_->paramLengths.data(),
+        impl_->paramFormats.data(),
         0);
     
     ExecStatusType status = PQresultStatus(res);
@@ -436,17 +462,17 @@ Result PostGISStatement::ExecuteQuery(DbResultSetPtr& result) {
         return Result::Success();
     }
     
-    std::string error = PQerrorMessage(m_conn);
+    std::string error = PQerrorMessage(impl_->conn);
     PQclear(res);
     return Result::Error(DbResult::kExecutionError, error);
 }
 
 Result PostGISStatement::Reset() {
-    for (auto& param : m_paramValues) {
+    for (auto& param : impl_->paramValues) {
         param.clear();
     }
-    std::fill(m_paramLengths.begin(), m_paramLengths.end(), 0);
-    std::fill(m_paramFormats.begin(), m_paramFormats.end(), 0);
+    std::fill(impl_->paramLengths.begin(), impl_->paramLengths.end(), 0);
+    std::fill(impl_->paramFormats.begin(), impl_->paramFormats.end(), 0);
     return Result::Success();
 }
 
@@ -463,7 +489,7 @@ int64_t PostGISStatement::GetRowsAffected() const {
 }
 
 int PostGISStatement::GetParameterCount() const {
-    return static_cast<int>(m_paramValues.size());
+    return static_cast<int>(impl_->paramValues.size());
 }
 
 int PostGISStatement::GetParameterIndex(const std::string& paramName) const {
@@ -475,14 +501,14 @@ Result PostGISStatement::BindBool(int paramIndex, bool value) {
 }
 
 Result PostGISStatement::BindNull(int paramIndex) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].clear();
-    m_paramLengths[paramIndex] = 0;
-    m_paramFormats[paramIndex] = 0;
-    m_paramTypes[paramIndex] = 0;
+    impl_->paramValues[paramIndex].clear();
+    impl_->paramLengths[paramIndex] = 0;
+    impl_->paramFormats[paramIndex] = 0;
+    impl_->paramTypes[paramIndex] = 0;
     
     return Result::Success();
 }
@@ -492,14 +518,14 @@ Result PostGISStatement::BindBlob(int paramIndex, const std::vector<uint8_t>& da
 }
 
 Result PostGISStatement::BindBlob(int paramIndex, const uint8_t* data, size_t size) {
-    if (paramIndex < 0 || paramIndex >= static_cast<int>(m_paramValues.size())) {
+    if (paramIndex < 0 || paramIndex >= static_cast<int>(impl_->paramValues.size())) {
         return Result::Error(DbResult::kInvalidParameter, "Invalid parameter index");
     }
     
-    m_paramValues[paramIndex].assign(reinterpret_cast<const char*>(data), reinterpret_cast<const char*>(data) + size);
-    m_paramLengths[paramIndex] = static_cast<int>(size);
-    m_paramFormats[paramIndex] = 1;
-    m_paramTypes[paramIndex] = BYTEAOID;
+    impl_->paramValues[paramIndex].assign(reinterpret_cast<const char*>(data), reinterpret_cast<const char*>(data) + size);
+    impl_->paramLengths[paramIndex] = static_cast<int>(size);
+    impl_->paramFormats[paramIndex] = 1;
+    impl_->paramTypes[paramIndex] = BYTEAOID;
     
     return Result::Success();
 }
@@ -547,93 +573,108 @@ Result PostGISStatement::BindGeometry(const std::string& paramName, const Geomet
     return BindGeometry(GetParameterIndex(paramName), geometry);
 }
 
+struct PostGISResultSet::Impl {
+    PGresult* result;
+    int currentRow;
+    int numRows;
+    int numColumns;
+    Result lastError;
+    std::vector<std::string> columnNames;
+    std::vector<unsigned int> columnTypes;
+    
+    Impl(PGresult* r) : result(r), currentRow(-1), numRows(0), numColumns(0) {
+        if (result) {
+            numRows = PQntuples(result);
+            numColumns = PQnfields(result);
+        }
+    }
+};
+
 PostGISResultSet::PostGISResultSet(PGresult* result)
-    : m_result(result), m_currentRow(-1), m_numRows(0), m_numColumns(0), m_lastError() {
-    if (m_result) {
-        m_numRows = PQntuples(m_result);
-        m_numColumns = PQnfields(m_result);
+    : impl_(new Impl(result)) {
+    if (impl_->result) {
         InitializeColumns();
     }
 }
 
 PostGISResultSet::~PostGISResultSet() {
-    if (m_result) {
-        PQclear(m_result);
-        m_result = nullptr;
+    if (impl_->result) {
+        PQclear(impl_->result);
+        impl_->result = nullptr;
     }
 }
 
 bool PostGISResultSet::Next() {
-    if (!m_result || m_currentRow >= m_numRows - 1) {
+    if (!impl_->result || impl_->currentRow >= impl_->numRows - 1) {
         return false;
     }
-    ++m_currentRow;
+    ++impl_->currentRow;
     return true;
 }
 
 bool PostGISResultSet::IsEOF() const {
-    return !m_result || m_currentRow >= m_numRows || m_currentRow < 0;
+    return !impl_->result || impl_->currentRow >= impl_->numRows || impl_->currentRow < 0;
 }
 
 int32_t PostGISResultSet::GetInt(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return 0;
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return 0;
     }
     
-    return static_cast<int32_t>(std::atoi(PQgetvalue(m_result, m_currentRow, columnIndex)));
+    return static_cast<int32_t>(std::atoi(PQgetvalue(impl_->result, impl_->currentRow, columnIndex)));
 }
 
 int64_t PostGISResultSet::GetInt64(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return 0;
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return 0;
     }
     
-    return std::stoll(PQgetvalue(m_result, m_currentRow, columnIndex));
+    return std::stoll(PQgetvalue(impl_->result, impl_->currentRow, columnIndex));
 }
 
 double PostGISResultSet::GetDouble(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return 0.0;
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return 0.0;
     }
     
-    return std::stod(PQgetvalue(m_result, m_currentRow, columnIndex));
+    return std::stod(PQgetvalue(impl_->result, impl_->currentRow, columnIndex));
 }
 
 std::string PostGISResultSet::GetString(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return "";
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return "";
     }
     
-    return std::string(PQgetvalue(m_result, m_currentRow, columnIndex));
+    return std::string(PQgetvalue(impl_->result, impl_->currentRow, columnIndex));
 }
 
 GeometryPtr PostGISResultSet::GetGeometry(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return nullptr;
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return nullptr;
     }
     
-    int len = PQgetlength(m_result, m_currentRow, columnIndex);
-    const char* value = PQgetvalue(m_result, m_currentRow, columnIndex);
+    int len = PQgetlength(impl_->result, impl_->currentRow, columnIndex);
+    const char* value = PQgetvalue(impl_->result, impl_->currentRow, columnIndex);
     
     if (!value || len <= 0) {
         return nullptr;
@@ -653,41 +694,41 @@ GeometryPtr PostGISResultSet::GetGeometry(int columnIndex) const {
 }
 
 int PostGISResultSet::GetColumnCount() const {
-    return m_numColumns;
+    return impl_->numColumns;
 }
 
 std::string PostGISResultSet::GetColumnName(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns || !m_result) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns || !impl_->result) {
         return "";
     }
     
-    return std::string(PQfname(m_result, columnIndex));
+    return std::string(PQfname(impl_->result, columnIndex));
 }
 
 ColumnType PostGISResultSet::GetColumnType(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return ColumnType::kUnknown;
     }
     
-    return ConvertPgType(m_columnTypes[columnIndex]);
+    return ConvertPgType(impl_->columnTypes[columnIndex]);
 }
 
 bool PostGISResultSet::HasGeometry(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns) {
         return false;
     }
     
-    unsigned int typeOid = m_columnTypes[columnIndex];
+    unsigned int typeOid = impl_->columnTypes[columnIndex];
     return typeOid == BYTEAOID || typeOid == 1784;
 }
 
 void PostGISResultSet::Reset() {
-    m_currentRow = -1;
+    impl_->currentRow = -1;
 }
 
 int PostGISResultSet::GetColumnIndex(const std::string& columnName) const {
-    for (int i = 0; i < m_numColumns; ++i) {
-        if (m_columnNames[i] == columnName) {
+    for (int i = 0; i < impl_->numColumns; ++i) {
+        if (impl_->columnNames[i] == columnName) {
             return i;
         }
     }
@@ -695,10 +736,10 @@ int PostGISResultSet::GetColumnIndex(const std::string& columnName) const {
 }
 
 bool PostGISResultSet::IsNull(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns || m_currentRow < 0) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns || impl_->currentRow < 0) {
         return true;
     }
-    return PQgetisnull(m_result, m_currentRow, columnIndex);
+    return PQgetisnull(impl_->result, impl_->currentRow, columnIndex);
 }
 
 bool PostGISResultSet::IsNull(const std::string& columnName) const {
@@ -730,16 +771,16 @@ bool PostGISResultSet::GetBool(const std::string& columnName) const {
 }
 
 std::vector<uint8_t> PostGISResultSet::GetBlob(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_numColumns || m_currentRow < 0) {
+    if (columnIndex < 0 || columnIndex >= impl_->numColumns || impl_->currentRow < 0) {
         return {};
     }
     
-    if (PQgetisnull(m_result, m_currentRow, columnIndex)) {
+    if (PQgetisnull(impl_->result, impl_->currentRow, columnIndex)) {
         return {};
     }
     
-    const char* data = PQgetvalue(m_result, m_currentRow, columnIndex);
-    int len = PQgetlength(m_result, m_currentRow, columnIndex);
+    const char* data = PQgetvalue(impl_->result, impl_->currentRow, columnIndex);
+    int len = PQgetlength(impl_->result, impl_->currentRow, columnIndex);
     
     if (!data || len <= 0) {
         return {};
@@ -758,24 +799,24 @@ GeometryPtr PostGISResultSet::GetGeometry(const std::string& columnName) const {
 }
 
 int64_t PostGISResultSet::GetRowCount() const {
-    return m_numRows;
+    return impl_->numRows;
 }
 
 int64_t PostGISResultSet::GetCurrentRow() const {
-    return m_currentRow;
+    return impl_->currentRow;
 }
 
 Result PostGISResultSet::GetLastError() const {
-    return m_lastError;
+    return impl_->lastError;
 }
 
 void PostGISResultSet::InitializeColumns() {
-    m_columnNames.resize(m_numColumns);
-    m_columnTypes.resize(m_numColumns);
+    impl_->columnNames.resize(impl_->numColumns);
+    impl_->columnTypes.resize(impl_->numColumns);
     
-    for (int i = 0; i < m_numColumns; ++i) {
-        m_columnNames[i] = PQfname(m_result, i);
-        m_columnTypes[i] = PQftype(m_result, i);
+    for (int i = 0; i < impl_->numColumns; ++i) {
+        impl_->columnNames[i] = PQfname(impl_->result, i);
+        impl_->columnTypes[i] = PQftype(impl_->result, i);
     }
 }
 
@@ -800,7 +841,7 @@ ColumnType PostGISResultSet::ConvertPgType(unsigned int pgType) const {
 }
 
 bool PostGISConnection::InTransaction() const {
-    return m_isTransaction;
+    return impl_->isTransaction;
 }
 
 Result PostGISConnection::InsertGeometries(const std::string& table,
@@ -978,7 +1019,7 @@ bool PostGISConnection::SpatialTableExists(const std::string& tableName) const {
     sql << "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '" 
         << tableName << "')";
     
-    PGresult* res = PQexec(m_conn, sql.str().c_str());
+    PGresult* res = PQexec(impl_->conn, sql.str().c_str());
     bool exists = false;
     if (res && PQresultStatus(res) == PGRES_TUPLES_OK && PQntuples(res) > 0) {
         exists = (strcmp(PQgetvalue(res, 0, 0), "t") == 0);
@@ -994,7 +1035,7 @@ Result PostGISConnection::GetTableInfo(const std::string& tableName, TableInfo& 
     sql << "SELECT f_geometry_column, srid, type, coord_dimension FROM geometry_columns "
         << "WHERE f_table_name = '" << tableName << "'";
     
-    PGresult* res = PQexec(m_conn, sql.str().c_str());
+    PGresult* res = PQexec(impl_->conn, sql.str().c_str());
     if (res && PQresultStatus(res) == PGRES_TUPLES_OK && PQntuples(res) > 0) {
         info.geomColumn = PQgetvalue(res, 0, 0);
         info.srid = std::atoi(PQgetvalue(res, 0, 1));
@@ -1014,7 +1055,7 @@ Result PostGISConnection::GetColumns(const std::string& tableName, std::vector<C
     sql << "SELECT column_name, data_type, is_nullable FROM information_schema.columns "
         << "WHERE table_name = '" << tableName << "'";
     
-    PGresult* res = PQexec(m_conn, sql.str().c_str());
+    PGresult* res = PQexec(impl_->conn, sql.str().c_str());
     if (res && PQresultStatus(res) == PGRES_TUPLES_OK) {
         int numRows = PQntuples(res);
         for (int i = 0; i < numRows; ++i) {
@@ -1034,13 +1075,13 @@ DatabaseType PostGISConnection::GetType() const {
 }
 
 std::string PostGISConnection::GetVersion() const {
-    if (!m_conn) return "";
-    int version = PQserverVersion(m_conn);
+    if (!impl_->conn) return "";
+    int version = PQserverVersion(impl_->conn);
     return std::to_string(version);
 }
 
 int64_t PostGISConnection::GetLastInsertId() const {
-    PGresult* res = PQexec(m_conn, "SELECT lastval()");
+    PGresult* res = PQexec(impl_->conn, "SELECT lastval()");
     int64_t id = 0;
     if (res && PQresultStatus(res) == PGRES_TUPLES_OK && PQntuples(res) > 0) {
         id = std::stoll(PQgetvalue(res, 0, 0));
@@ -1050,28 +1091,32 @@ int64_t PostGISConnection::GetLastInsertId() const {
 }
 
 int64_t PostGISConnection::GetRowsAffected() const {
-    return m_rowsAffected;
+    return impl_->rowsAffected;
 }
 
 Result PostGISConnection::SetIsolationLevel(TransactionIsolation level) {
-    m_isolationLevel = level;
+    impl_->isolationLevel = level;
     return Result::Success();
 }
 
 TransactionIsolation PostGISConnection::GetIsolationLevel() const {
-    return m_isolationLevel;
+    return impl_->isolationLevel;
 }
 
 const ConnectionInfo& PostGISConnection::GetConnectionInfo() const {
-    return m_connectionInfo;
+    return impl_->connectionInfo;
 }
 
 std::string PostGISConnection::EscapeString(const std::string& value) const {
-    if (!m_conn) return value;
-    char* escaped = PQescapeLiteral(m_conn, value.c_str(), value.length());
+    if (!impl_->conn) return value;
+    char* escaped = PQescapeLiteral(impl_->conn, value.c_str(), value.length());
     std::string result = escaped ? escaped : value;
     if (escaped) PQfreemem(escaped);
     return result;
+}
+
+PGconn* PostGISConnection::GetRawConnection() {
+    return impl_->conn;
 }
 
 }

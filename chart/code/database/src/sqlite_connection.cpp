@@ -25,12 +25,24 @@ std::string SpatiaLiteOptions::ToConnectionString() const {
     return oss.str();
 }
 
+struct SpatiaLiteConnection::Impl {
+    sqlite3* db;
+    bool isTransaction;
+    std::string lastError;
+    bool spatialInitialized;
+    ConnectionInfo connectionInfo;
+    TransactionIsolation isolationLevel;
+    int64_t rowsAffected;
+    
+    Impl() : db(nullptr), isTransaction(false), spatialInitialized(false), isolationLevel(TransactionIsolation::kReadCommitted), rowsAffected(0) {}
+};
+
 SpatiaLiteConnectionPtr SpatiaLiteConnection::Create() {
     return std::make_unique<SpatiaLiteConnection>();
 }
 
 SpatiaLiteConnection::SpatiaLiteConnection()
-    : m_db(nullptr), m_isTransaction(false), m_spatialInitialized(false) {
+    : impl_(new Impl()) {
 }
 
 SpatiaLiteConnection::~SpatiaLiteConnection() {
@@ -41,16 +53,16 @@ Result SpatiaLiteConnection::Connect(const std::string& connectionString) {
     Disconnect();
     
     int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
-    int rc = sqlite3_open_v2(connectionString.c_str(), &m_db, flags, nullptr);
+    int rc = sqlite3_open_v2(connectionString.c_str(), &impl_->db, flags, nullptr);
     
     if (rc != SQLITE_OK) {
-        m_lastError = sqlite3_errmsg(m_db);
-        sqlite3_close(m_db);
-        m_db = nullptr;
-        return Result::Error(DbResult::kConnectionFailed, m_lastError);
+        impl_->lastError = sqlite3_errmsg(impl_->db);
+        sqlite3_close(impl_->db);
+        impl_->db = nullptr;
+        return Result::Error(DbResult::kConnectionFailed, impl_->lastError);
     }
     
-    sqlite3_busy_timeout(m_db, 5000);
+    sqlite3_busy_timeout(impl_->db, 5000);
     
     return Result::Success();
 }
@@ -62,43 +74,43 @@ Result SpatiaLiteConnection::Connect(const SpatiaLiteOptions& options) {
         flags = SQLITE_OPEN_READONLY;
     }
     
-    int rc = sqlite3_open_v2(options.databasePath.c_str(), &m_db, flags, nullptr);
+    int rc = sqlite3_open_v2(options.databasePath.c_str(), &impl_->db, flags, nullptr);
     
     if (rc != SQLITE_OK) {
-        m_lastError = sqlite3_errmsg(m_db);
-        sqlite3_close(m_db);
-        m_db = nullptr;
-        return Result::Error(DbResult::kConnectionFailed, m_lastError);
+        impl_->lastError = sqlite3_errmsg(impl_->db);
+        sqlite3_close(impl_->db);
+        impl_->db = nullptr;
+        return Result::Error(DbResult::kConnectionFailed, impl_->lastError);
     }
     
     std::string cachePragma = "PRAGMA cache_size = " + options.cacheSize;
-    sqlite3_exec(m_db, cachePragma.c_str(), nullptr, nullptr, nullptr);
+    sqlite3_exec(impl_->db, cachePragma.c_str(), nullptr, nullptr, nullptr);
     
     std::string timeoutPragma = "PRAGMA busy_timeout = " + std::to_string(options.connectionTimeout);
-    sqlite3_exec(m_db, timeoutPragma.c_str(), nullptr, nullptr, nullptr);
+    sqlite3_exec(impl_->db, timeoutPragma.c_str(), nullptr, nullptr, nullptr);
     
     return Result::Success();
 }
 
 void SpatiaLiteConnection::Disconnect() {
-    if (m_db) {
-        if (m_isTransaction) {
-            sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+    if (impl_->db) {
+        if (impl_->isTransaction) {
+            sqlite3_exec(impl_->db, "ROLLBACK", nullptr, nullptr, nullptr);
         }
-        sqlite3_close(m_db);
-        m_db = nullptr;
+        sqlite3_close(impl_->db);
+        impl_->db = nullptr;
     }
 }
 
 bool SpatiaLiteConnection::IsConnected() const {
-    return m_db != nullptr;
+    return impl_->db != nullptr;
 }
 
 bool SpatiaLiteConnection::Ping() const {
-    if (!m_db) return false;
+    if (!impl_->db) return false;
     
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(m_db, "SELECT 1", -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, "SELECT 1", -1, &stmt, nullptr);
     
     if (rc != SQLITE_OK) {
         return false;
@@ -111,42 +123,42 @@ bool SpatiaLiteConnection::Ping() const {
 }
 
 Result SpatiaLiteConnection::BeginTransaction() {
-    if (m_isTransaction) {
+    if (impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "Transaction already in progress");
     }
     
     Result result = Execute("BEGIN TRANSACTION");
     
     if (result.IsSuccess()) {
-        m_isTransaction = true;
+        impl_->isTransaction = true;
     }
     
     return result;
 }
 
 Result SpatiaLiteConnection::Commit() {
-    if (!m_isTransaction) {
+    if (!impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "No transaction in progress");
     }
     
     Result result = Execute("COMMIT");
     
     if (result.IsSuccess()) {
-        m_isTransaction = false;
+        impl_->isTransaction = false;
     }
     
     return result;
 }
 
 Result SpatiaLiteConnection::Rollback() {
-    if (!m_isTransaction) {
+    if (!impl_->isTransaction) {
         return Result::Error(DbResult::kTransactionError, "No transaction in progress");
     }
     
     Result result = Execute("ROLLBACK");
     
     if (result.IsSuccess()) {
-        m_isTransaction = false;
+        impl_->isTransaction = false;
     }
     
     return result;
@@ -154,12 +166,12 @@ Result SpatiaLiteConnection::Rollback() {
 
 Result SpatiaLiteConnection::Execute(const std::string& sql) {
     char* errMsg = nullptr;
-    int rc = sqlite3_exec(m_db, sql.c_str(), nullptr, nullptr, &errMsg);
+    int rc = sqlite3_exec(impl_->db, sql.c_str(), nullptr, nullptr, &errMsg);
     
     if (rc != SQLITE_OK) {
-        m_lastError = errMsg ? errMsg : "Unknown error";
+        impl_->lastError = errMsg ? errMsg : "Unknown error";
         if (errMsg) sqlite3_free(errMsg);
-        return Result::Error(DbResult::kExecutionError, m_lastError);
+        return Result::Error(DbResult::kExecutionError, impl_->lastError);
     }
     
     return Result::Success();
@@ -179,7 +191,7 @@ Result SpatiaLiteConnection::ExecuteQuery(const std::string& sql, DbResultSetPtr
 }
 
 Result SpatiaLiteConnection::PrepareStatement(const std::string& name, const std::string& sql, DbStatementPtr& stmt) {
-    stmt = std::make_unique<SpatiaLiteStatement>(m_db, sql);
+    stmt = std::make_unique<SpatiaLiteStatement>(impl_->db, sql);
     stmt->Reset();
     
     return Result::Success();
@@ -233,12 +245,12 @@ Result SpatiaLiteConnection::InsertGeometry(const std::string& table,
     sql << ")";
     
     char* errMsg = nullptr;
-    int rc = sqlite3_exec(m_db, sql.str().c_str(), nullptr, nullptr, &errMsg);
+    int rc = sqlite3_exec(impl_->db, sql.str().c_str(), nullptr, nullptr, &errMsg);
     
     if (rc != SQLITE_OK) {
-        m_lastError = errMsg ? errMsg : "Unknown error";
+        impl_->lastError = errMsg ? errMsg : "Unknown error";
         if (errMsg) sqlite3_free(errMsg);
-        return Result::Error(DbResult::kExecutionError, m_lastError);
+        return Result::Error(DbResult::kExecutionError, impl_->lastError);
     }
     
     outId = GetLastInsertRowId();
@@ -253,7 +265,7 @@ Result SpatiaLiteConnection::InitializeSpatialMetaData() {
     Result result = Execute("SELECT InitSpatialMetadata(1)");
     
     if (result.IsSuccess()) {
-        m_spatialInitialized = true;
+        impl_->spatialInitialized = true;
     }
     
     return result;
@@ -271,11 +283,11 @@ Result SpatiaLiteConnection::CreateSpatialIndex(const std::string& table, const 
 }
 
 std::string SpatiaLiteConnection::GetLastError() const {
-    return m_lastError;
+    return impl_->lastError;
 }
 
 Result SpatiaLiteConnection::CheckConnection() {
-    if (!m_db) {
+    if (!impl_->db) {
         return Result::Error(DbResult::kNotConnected, "Not connected to database");
     }
     return Result::Success();
@@ -287,11 +299,11 @@ Result SpatiaLiteConnection::ExecuteInternal(const std::string& sql, sqlite3_stm
         return connResult;
     }
     
-    int rc = sqlite3_prepare_v2(m_db, sql.c_str(), -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, sql.c_str(), -1, &stmt, nullptr);
     
     if (rc != SQLITE_OK) {
-        m_lastError = sqlite3_errmsg(m_db);
-        return Result::Error(DbResult::kPrepareError, m_lastError);
+        impl_->lastError = sqlite3_errmsg(impl_->db);
+        return Result::Error(DbResult::kPrepareError, impl_->lastError);
     }
     
     rc = sqlite3_step(stmt);
@@ -305,31 +317,44 @@ Result SpatiaLiteConnection::ExecuteInternal(const std::string& sql, sqlite3_stm
         return Result::Success();
     }
     
-    m_lastError = sqlite3_errmsg(m_db);
-    return Result::Error(DbResult::kExecutionError, m_lastError);
+    impl_->lastError = sqlite3_errmsg(impl_->db);
+    return Result::Error(DbResult::kExecutionError, impl_->lastError);
 }
 
 int SpatiaLiteConnection::GetLastInsertRowId() const {
-    return static_cast<int>(sqlite3_last_insert_rowid(m_db));
+    return static_cast<int>(sqlite3_last_insert_rowid(impl_->db));
 }
 
+struct SpatiaLiteStatement::Impl {
+    sqlite3* db;
+    sqlite3_stmt* stmt;
+    std::string sql;
+    std::vector<std::string> bindStrings;
+    
+    Impl(sqlite3* d, const std::string& s) : db(d), stmt(nullptr), sql(s) {}
+};
+
 SpatiaLiteStatement::SpatiaLiteStatement(sqlite3* db, const std::string& sql)
-    : m_db(db), m_stmt(nullptr), m_sql(sql) {
+    : impl_(new Impl(db, sql)) {
 }
 
 SpatiaLiteStatement::~SpatiaLiteStatement() {
     Finalize();
 }
 
+void SpatiaLiteStatement::SetConnection(sqlite3* db) { impl_->db = db; }
+const std::string& SpatiaLiteStatement::GetName() const { return impl_->sql; }
+const std::string& SpatiaLiteStatement::GetSql() const { return impl_->sql; }
+
 Result SpatiaLiteStatement::BindInt(int paramIndex, int32_t value) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
         }
     }
     
-    int rc = sqlite3_bind_int(m_stmt, paramIndex + 1, value);
+    int rc = sqlite3_bind_int(impl_->stmt, paramIndex + 1, value);
     
     if (rc != SQLITE_OK) {
         return Result::Error(DbResult::kBindError, "Failed to bind int");
@@ -339,14 +364,14 @@ Result SpatiaLiteStatement::BindInt(int paramIndex, int32_t value) {
 }
 
 Result SpatiaLiteStatement::BindInt64(int paramIndex, int64_t value) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
         }
     }
     
-    int rc = sqlite3_bind_int64(m_stmt, paramIndex + 1, value);
+    int rc = sqlite3_bind_int64(impl_->stmt, paramIndex + 1, value);
     
     if (rc != SQLITE_OK) {
         return Result::Error(DbResult::kBindError, "Failed to bind int64");
@@ -356,14 +381,14 @@ Result SpatiaLiteStatement::BindInt64(int paramIndex, int64_t value) {
 }
 
 Result SpatiaLiteStatement::BindDouble(int paramIndex, double value) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
         }
     }
     
-    int rc = sqlite3_bind_double(m_stmt, paramIndex + 1, value);
+    int rc = sqlite3_bind_double(impl_->stmt, paramIndex + 1, value);
     
     if (rc != SQLITE_OK) {
         return Result::Error(DbResult::kBindError, "Failed to bind double");
@@ -373,15 +398,15 @@ Result SpatiaLiteStatement::BindDouble(int paramIndex, double value) {
 }
 
 Result SpatiaLiteStatement::BindString(int paramIndex, const std::string& value) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
         }
     }
     
-    m_bindStrings.push_back(value);
-    int rc = sqlite3_bind_text(m_stmt, paramIndex + 1, value.c_str(), -1, SQLITE_TRANSIENT);
+    impl_->bindStrings.push_back(value);
+    int rc = sqlite3_bind_text(impl_->stmt, paramIndex + 1, value.c_str(), -1, SQLITE_TRANSIENT);
     
     if (rc != SQLITE_OK) {
         return Result::Error(DbResult::kBindError, "Failed to bind string");
@@ -395,7 +420,7 @@ Result SpatiaLiteStatement::BindGeometry(int paramIndex, const Geometry* geometr
         return Result::Error(DbResult::kInvalidGeometry, "Geometry is null");
     }
     
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
@@ -411,7 +436,7 @@ Result SpatiaLiteStatement::BindGeometry(int paramIndex, const Geometry* geometr
         return wkbResult;
     }
     
-    int rc = sqlite3_bind_blob(m_stmt, paramIndex + 1, wkb.data(), static_cast<int>(wkb.size()), SQLITE_TRANSIENT);
+    int rc = sqlite3_bind_blob(impl_->stmt, paramIndex + 1, wkb.data(), static_cast<int>(wkb.size()), SQLITE_TRANSIENT);
     
     if (rc != SQLITE_OK) {
         return Result::Error(DbResult::kBindError, "Failed to bind geometry");
@@ -421,79 +446,79 @@ Result SpatiaLiteStatement::BindGeometry(int paramIndex, const Geometry* geometr
 }
 
 Result SpatiaLiteStatement::Execute() {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result result = Prepare();
         if (!result.IsSuccess()) {
             return result;
         }
     }
     
-    int rc = sqlite3_step(m_stmt);
+    int rc = sqlite3_step(impl_->stmt);
     
     if (rc == SQLITE_DONE || rc == SQLITE_ROW) {
-        sqlite3_reset(m_stmt);
+        sqlite3_reset(impl_->stmt);
         return Result::Success();
     }
     
-    std::string error = sqlite3_errmsg(m_db);
+    std::string error = sqlite3_errmsg(impl_->db);
     return Result::Error(DbResult::kExecutionError, error);
 }
 
 Result SpatiaLiteStatement::ExecuteQuery(DbResultSetPtr& result) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         Result prepResult = Prepare();
         if (!prepResult.IsSuccess()) {
             return prepResult;
         }
     }
     
-    result = std::make_unique<SpatiaLiteResultSet>(m_stmt);
-    m_stmt = nullptr;
+    result = std::make_unique<SpatiaLiteResultSet>(impl_->stmt);
+    impl_->stmt = nullptr;
     
     return Result::Success();
 }
 
 Result SpatiaLiteStatement::Reset() {
-    if (m_stmt) {
-        sqlite3_reset(m_stmt);
-        sqlite3_clear_bindings(m_stmt);
+    if (impl_->stmt) {
+        sqlite3_reset(impl_->stmt);
+        sqlite3_clear_bindings(impl_->stmt);
     }
-    m_bindStrings.clear();
+    impl_->bindStrings.clear();
     return Result::Success();
 }
 
 Result SpatiaLiteStatement::ClearBindings() {
-    if (m_stmt) {
-        sqlite3_clear_bindings(m_stmt);
+    if (impl_->stmt) {
+        sqlite3_clear_bindings(impl_->stmt);
     }
-    m_bindStrings.clear();
+    impl_->bindStrings.clear();
     return Result::Success();
 }
 
 int64_t SpatiaLiteStatement::GetLastInsertId() const {
-    if (m_db) {
-        return sqlite3_last_insert_rowid(m_db);
+    if (impl_->db) {
+        return sqlite3_last_insert_rowid(impl_->db);
     }
     return 0;
 }
 
 int64_t SpatiaLiteStatement::GetRowsAffected() const {
-    if (m_db) {
-        return sqlite3_changes(m_db);
+    if (impl_->db) {
+        return sqlite3_changes(impl_->db);
     }
     return 0;
 }
 
 int SpatiaLiteStatement::GetParameterCount() const {
-    if (m_stmt) {
-        return sqlite3_bind_parameter_count(m_stmt);
+    if (impl_->stmt) {
+        return sqlite3_bind_parameter_count(impl_->stmt);
     }
     return 0;
 }
 
 int SpatiaLiteStatement::GetParameterIndex(const std::string& paramName) const {
-    if (m_stmt) {
-        return sqlite3_bind_parameter_index(m_stmt, paramName.c_str());
+    if (impl_->stmt) {
+        return sqlite3_bind_parameter_index(impl_->stmt, paramName.c_str());
     }
     return 0;
 }
@@ -503,13 +528,13 @@ Result SpatiaLiteStatement::BindBool(int paramIndex, bool value) {
 }
 
 Result SpatiaLiteStatement::BindNull(int paramIndex) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         return Result::Error(DbResult::kNotConnected, "Statement not prepared");
     }
     
-    int rc = sqlite3_bind_null(m_stmt, paramIndex + 1);
+    int rc = sqlite3_bind_null(impl_->stmt, paramIndex + 1);
     if (rc != SQLITE_OK) {
-        return Result::Error(DbResult::kBindError, sqlite3_errmsg(m_db));
+        return Result::Error(DbResult::kBindError, sqlite3_errmsg(impl_->db));
     }
     
     return Result::Success();
@@ -520,13 +545,13 @@ Result SpatiaLiteStatement::BindBlob(int paramIndex, const std::vector<uint8_t>&
 }
 
 Result SpatiaLiteStatement::BindBlob(int paramIndex, const uint8_t* data, size_t size) {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         return Result::Error(DbResult::kNotConnected, "Statement not prepared");
     }
     
-    int rc = sqlite3_bind_blob(m_stmt, paramIndex + 1, data, static_cast<int>(size), SQLITE_TRANSIENT);
+    int rc = sqlite3_bind_blob(impl_->stmt, paramIndex + 1, data, static_cast<int>(size), SQLITE_TRANSIENT);
     if (rc != SQLITE_OK) {
-        return Result::Error(DbResult::kBindError, sqlite3_errmsg(m_db));
+        return Result::Error(DbResult::kBindError, sqlite3_errmsg(impl_->db));
     }
     
     return Result::Success();
@@ -576,18 +601,18 @@ Result SpatiaLiteStatement::BindGeometry(const std::string& paramName, const Geo
 }
 
 Result SpatiaLiteStatement::Prepare() {
-    if (!m_db || m_sql.empty()) {
+    if (!impl_->db || impl_->sql.empty()) {
         return Result::Error(DbResult::kPrepareError, "Invalid database or SQL");
     }
     
-    if (m_stmt) {
-        sqlite3_finalize(m_stmt);
+    if (impl_->stmt) {
+        sqlite3_finalize(impl_->stmt);
     }
     
-    int rc = sqlite3_prepare_v2(m_db, m_sql.c_str(), -1, &m_stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, impl_->sql.c_str(), -1, &impl_->stmt, nullptr);
     
     if (rc != SQLITE_OK) {
-        std::string error = sqlite3_errmsg(m_db);
+        std::string error = sqlite3_errmsg(impl_->db);
         return Result::Error(DbResult::kPrepareError, error);
     }
     
@@ -595,71 +620,85 @@ Result SpatiaLiteStatement::Prepare() {
 }
 
 Result SpatiaLiteStatement::Finalize() {
-    if (m_stmt) {
-        sqlite3_finalize(m_stmt);
-        m_stmt = nullptr;
+    if (impl_->stmt) {
+        sqlite3_finalize(impl_->stmt);
+        impl_->stmt = nullptr;
     }
     return Result::Success();
 }
 
+struct SpatiaLiteResultSet::Impl {
+    sqlite3_stmt* stmt;
+    int columnCount;
+    int64_t currentRow;
+    Result lastError;
+    std::vector<std::string> columnNames;
+    std::vector<int> columnTypes;
+    
+    Impl(sqlite3_stmt* s) : stmt(s), columnCount(0), currentRow(0) {
+        if (stmt) {
+            columnCount = sqlite3_column_count(stmt);
+        }
+    }
+};
+
 SpatiaLiteResultSet::SpatiaLiteResultSet(sqlite3_stmt* stmt)
-    : m_stmt(stmt), m_columnCount(0), m_currentRow(0), m_lastError() {
-    if (m_stmt) {
-        m_columnCount = sqlite3_column_count(m_stmt);
+    : impl_(new Impl(stmt)) {
+    if (impl_->stmt) {
         InitializeColumns();
     }
 }
 
 SpatiaLiteResultSet::~SpatiaLiteResultSet() {
-    if (m_stmt) {
-        sqlite3_finalize(m_stmt);
-        m_stmt = nullptr;
+    if (impl_->stmt) {
+        sqlite3_finalize(impl_->stmt);
+        impl_->stmt = nullptr;
     }
 }
 
 bool SpatiaLiteResultSet::Next() {
-    if (!m_stmt) {
+    if (!impl_->stmt) {
         return false;
     }
     
-    int rc = sqlite3_step(m_stmt);
+    int rc = sqlite3_step(impl_->stmt);
     return rc == SQLITE_ROW;
 }
 
 bool SpatiaLiteResultSet::IsEOF() const {
-    return m_stmt == nullptr;
+    return impl_->stmt == nullptr;
 }
 
 int32_t SpatiaLiteResultSet::GetInt(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return 0;
     }
     
-    return static_cast<int32_t>(sqlite3_column_int(m_stmt, columnIndex));
+    return static_cast<int32_t>(sqlite3_column_int(impl_->stmt, columnIndex));
 }
 
 int64_t SpatiaLiteResultSet::GetInt64(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return 0;
     }
     
-    return sqlite3_column_int64(m_stmt, columnIndex);
+    return sqlite3_column_int64(impl_->stmt, columnIndex);
 }
 
 double SpatiaLiteResultSet::GetDouble(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return 0.0;
     }
     
-    return sqlite3_column_double(m_stmt, columnIndex);
+    return sqlite3_column_double(impl_->stmt, columnIndex);
 }
 
 std::string SpatiaLiteResultSet::GetString(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return "";
     }
     
-    const unsigned char* text = sqlite3_column_text(m_stmt, columnIndex);
+    const unsigned char* text = sqlite3_column_text(impl_->stmt, columnIndex);
     if (!text) {
         return "";
     }
@@ -668,12 +707,12 @@ std::string SpatiaLiteResultSet::GetString(int columnIndex) const {
 }
 
 GeometryPtr SpatiaLiteResultSet::GetGeometry(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return nullptr;
     }
     
-    const void* blob = sqlite3_column_blob(m_stmt, columnIndex);
-    int len = sqlite3_column_bytes(m_stmt, columnIndex);
+    const void* blob = sqlite3_column_blob(impl_->stmt, columnIndex);
+    int len = sqlite3_column_bytes(impl_->stmt, columnIndex);
     
     if (!blob || len <= 0) {
         return nullptr;
@@ -693,44 +732,44 @@ GeometryPtr SpatiaLiteResultSet::GetGeometry(int columnIndex) const {
 }
 
 int SpatiaLiteResultSet::GetColumnCount() const {
-    return m_columnCount;
+    return impl_->columnCount;
 }
 
 std::string SpatiaLiteResultSet::GetColumnName(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return "";
     }
     
-    const char* name = sqlite3_column_name(m_stmt, columnIndex);
+    const char* name = sqlite3_column_name(impl_->stmt, columnIndex);
     return name ? std::string(name) : "";
 }
 
 ColumnType SpatiaLiteResultSet::GetColumnType(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount) {
         return ColumnType::kUnknown;
     }
     
-    return ConvertSqliteType(sqlite3_column_type(m_stmt, columnIndex));
+    return ConvertSqliteType(sqlite3_column_type(impl_->stmt, columnIndex));
 }
 
 bool SpatiaLiteResultSet::HasGeometry(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return false;
     }
     
-    return sqlite3_column_type(m_stmt, columnIndex) == SQLITE_BLOB;
+    return sqlite3_column_type(impl_->stmt, columnIndex) == SQLITE_BLOB;
 }
 
 void SpatiaLiteResultSet::Reset() {
-    if (m_stmt) {
-        sqlite3_reset(m_stmt);
-        m_currentRow = 0;
+    if (impl_->stmt) {
+        sqlite3_reset(impl_->stmt);
+        impl_->currentRow = 0;
     }
 }
 
 int SpatiaLiteResultSet::GetColumnIndex(const std::string& columnName) const {
-    for (int i = 0; i < m_columnCount; ++i) {
-        if (m_columnNames[i] == columnName) {
+    for (int i = 0; i < impl_->columnCount; ++i) {
+        if (impl_->columnNames[i] == columnName) {
             return i;
         }
     }
@@ -738,10 +777,10 @@ int SpatiaLiteResultSet::GetColumnIndex(const std::string& columnName) const {
 }
 
 bool SpatiaLiteResultSet::IsNull(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return true;
     }
-    return sqlite3_column_type(m_stmt, columnIndex) == SQLITE_NULL;
+    return sqlite3_column_type(impl_->stmt, columnIndex) == SQLITE_NULL;
 }
 
 bool SpatiaLiteResultSet::IsNull(const std::string& columnName) const {
@@ -773,12 +812,12 @@ bool SpatiaLiteResultSet::GetBool(const std::string& columnName) const {
 }
 
 std::vector<uint8_t> SpatiaLiteResultSet::GetBlob(int columnIndex) const {
-    if (columnIndex < 0 || columnIndex >= m_columnCount || !m_stmt) {
+    if (columnIndex < 0 || columnIndex >= impl_->columnCount || !impl_->stmt) {
         return {};
     }
     
-    const void* blob = sqlite3_column_blob(m_stmt, columnIndex);
-    int size = sqlite3_column_bytes(m_stmt, columnIndex);
+    const void* blob = sqlite3_column_blob(impl_->stmt, columnIndex);
+    int size = sqlite3_column_bytes(impl_->stmt, columnIndex);
     
     if (!blob || size <= 0) {
         return {};
@@ -801,21 +840,21 @@ int64_t SpatiaLiteResultSet::GetRowCount() const {
 }
 
 int64_t SpatiaLiteResultSet::GetCurrentRow() const {
-    return m_currentRow;
+    return impl_->currentRow;
 }
 
 Result SpatiaLiteResultSet::GetLastError() const {
-    return m_lastError;
+    return impl_->lastError;
 }
 
 void SpatiaLiteResultSet::InitializeColumns() {
-    m_columnNames.resize(m_columnCount);
-    m_columnTypes.resize(m_columnCount);
+    impl_->columnNames.resize(impl_->columnCount);
+    impl_->columnTypes.resize(impl_->columnCount);
     
-    for (int i = 0; i < m_columnCount; ++i) {
-        const char* name = sqlite3_column_name(m_stmt, i);
-        m_columnNames[i] = name ? name : "";
-        m_columnTypes[i] = sqlite3_column_type(m_stmt, i);
+    for (int i = 0; i < impl_->columnCount; ++i) {
+        const char* name = sqlite3_column_name(impl_->stmt, i);
+        impl_->columnNames[i] = name ? name : "";
+        impl_->columnTypes[i] = sqlite3_column_type(impl_->stmt, i);
     }
 }
 
@@ -831,7 +870,7 @@ ColumnType SpatiaLiteResultSet::ConvertSqliteType(int sqliteType) const {
 }
 
 bool SpatiaLiteConnection::InTransaction() const {
-    return m_isTransaction;
+    return impl_->isTransaction;
 }
 
 Result SpatiaLiteConnection::InsertGeometries(const std::string& table,
@@ -1007,7 +1046,7 @@ bool SpatiaLiteConnection::SpatialTableExists(const std::string& tableName) cons
     sql << "SELECT name FROM sqlite_master WHERE type='table' AND name='" << tableName << "'";
     
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, sql.str().c_str(), -1, &stmt, nullptr);
     bool exists = false;
     if (rc == SQLITE_OK) {
         exists = (sqlite3_step(stmt) == SQLITE_ROW);
@@ -1024,7 +1063,7 @@ Result SpatiaLiteConnection::GetTableInfo(const std::string& tableName, TableInf
         << "WHERE f_table_name = '" << tableName << "'";
     
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, sql.str().c_str(), -1, &stmt, nullptr);
     if (rc == SQLITE_OK && sqlite3_step(stmt) == SQLITE_ROW) {
         info.geomColumn = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         info.srid = sqlite3_column_int(stmt, 1);
@@ -1044,7 +1083,7 @@ Result SpatiaLiteConnection::GetColumns(const std::string& tableName, std::vecto
     sql << "PRAGMA table_info(" << tableName << ")";
     
     sqlite3_stmt* stmt = nullptr;
-    int rc = sqlite3_prepare_v2(m_db, sql.str().c_str(), -1, &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(impl_->db, sql.str().c_str(), -1, &stmt, nullptr);
     if (rc == SQLITE_OK) {
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             ColumnInfo col;
@@ -1068,24 +1107,24 @@ std::string SpatiaLiteConnection::GetVersion() const {
 }
 
 int64_t SpatiaLiteConnection::GetLastInsertId() const {
-    return sqlite3_last_insert_rowid(m_db);
+    return sqlite3_last_insert_rowid(impl_->db);
 }
 
 int64_t SpatiaLiteConnection::GetRowsAffected() const {
-    return m_rowsAffected;
+    return impl_->rowsAffected;
 }
 
 Result SpatiaLiteConnection::SetIsolationLevel(TransactionIsolation level) {
-    m_isolationLevel = level;
+    impl_->isolationLevel = level;
     return Result::Success();
 }
 
 TransactionIsolation SpatiaLiteConnection::GetIsolationLevel() const {
-    return m_isolationLevel;
+    return impl_->isolationLevel;
 }
 
 const ConnectionInfo& SpatiaLiteConnection::GetConnectionInfo() const {
-    return m_connectionInfo;
+    return impl_->connectionInfo;
 }
 
 std::string SpatiaLiteConnection::EscapeString(const std::string& value) const {
@@ -1099,6 +1138,10 @@ std::string SpatiaLiteConnection::EscapeString(const std::string& value) const {
         }
     }
     return result;
+}
+
+sqlite3* SpatiaLiteConnection::GetRawConnection() {
+    return impl_->db;
 }
 
 }

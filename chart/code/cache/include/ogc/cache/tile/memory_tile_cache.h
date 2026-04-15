@@ -2,9 +2,7 @@
 #define OGC_CACHE_MEMORY_TILE_CACHE_H
 
 #include "ogc/cache/tile/tile_cache.h"
-#include <unordered_map>
-#include <list>
-#include <mutex>
+#include <memory>
 
 namespace ogc {
 namespace cache {
@@ -12,7 +10,7 @@ namespace cache {
 class OGC_CACHE_API MemoryTileCache : public TileCache {
 public:
     explicit MemoryTileCache(size_t maxSize = 100 * 1024 * 1024);
-    ~MemoryTileCache() override = default;
+    ~MemoryTileCache() override;
     
     bool HasTile(const TileKey& key) const override;
     TileData GetTile(const TileKey& key) const override;
@@ -41,18 +39,11 @@ public:
     static std::shared_ptr<MemoryTileCache> Create(size_t maxSize = 100 * 1024 * 1024);
 
 private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    
     void EvictIfNeeded();
     void UpdateAccessOrder(const TileKey& key) const;
-    
-    mutable std::mutex m_mutex;
-    std::unordered_map<TileKey, TileData> m_cache;
-    mutable std::list<TileKey> m_lruList;
-    mutable std::unordered_map<TileKey, std::list<TileKey>::iterator> m_lruMap;
-    size_t m_maxSize;
-    size_t m_currentSize;
-    std::string m_name;
-    bool m_enabled;
-    int64_t m_expirationTime;
 };
 
 }

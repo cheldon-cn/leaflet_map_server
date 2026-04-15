@@ -12,6 +12,8 @@
 #include <memory>
 
 using namespace ogc::graph;
+using namespace ogc::draw;
+using namespace ogc::symbology;
 using ogc::Envelope;
 using ogc::CNLayer;
 using ogc::CNMemoryLayer;
@@ -19,16 +21,16 @@ using ogc::GeomType;
 
 class DummyLayerRenderer : public ILayerRenderer {
 public:
-    DrawResult Render(CNLayer* layer, DrawContext& context) override {
+    DrawResult Render(CNLayer* layer, ogc::draw::DrawContext& context) override {
         return DrawResult::kSuccess;
     }
     
-    DrawResult RenderSelection(CNLayer* layer, DrawContext& context, 
+    DrawResult RenderSelection(CNLayer* layer, ogc::draw::DrawContext& context, 
                                 const std::vector<int64_t>& featureIds) override {
         return DrawResult::kSuccess;
     }
     
-    DrawResult RenderLabels(CNLayer* layer, DrawContext& context) override {
+    DrawResult RenderLabels(CNLayer* layer, ogc::draw::DrawContext& context) override {
         return DrawResult::kSuccess;
     }
 };

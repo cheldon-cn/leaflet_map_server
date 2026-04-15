@@ -394,7 +394,11 @@ std::unique_ptr<INoticeParser> INoticeParser::Create() {
     return std::unique_ptr<INoticeParser>(new NoticeParser());
 }
 
-NoticeProvider::NoticeProvider() {
+struct NoticeProvider::Impl {
+    std::map<std::string, NavigationNotice> notices;
+};
+
+NoticeProvider::NoticeProvider() : impl_(new Impl()) {
 }
 
 NoticeProvider::~NoticeProvider() {
@@ -403,7 +407,7 @@ NoticeProvider::~NoticeProvider() {
 std::vector<NavigationNotice> NoticeProvider::GetNotices(const NoticeFilter& filter) {
     std::vector<NavigationNotice> result;
     
-    for (const auto& pair : m_notices) {
+    for (const auto& pair : impl_->notices) {
         if (MatchesFilter(pair.second, filter)) {
             result.push_back(pair.second);
         }
@@ -418,23 +422,23 @@ std::vector<NavigationNotice> NoticeProvider::GetNotices(const NoticeFilter& fil
 }
 
 NavigationNotice NoticeProvider::GetNoticeById(const std::string& notice_id) {
-    auto it = m_notices.find(notice_id);
-    if (it != m_notices.end()) {
+    auto it = impl_->notices.find(notice_id);
+    if (it != impl_->notices.end()) {
         return it->second;
     }
     return NavigationNotice();
 }
 
 void NoticeProvider::AddNotice(const NavigationNotice& notice) {
-    m_notices[notice.notice_id] = notice;
+    impl_->notices[notice.notice_id] = notice;
 }
 
 void NoticeProvider::UpdateNotice(const NavigationNotice& notice) {
-    m_notices[notice.notice_id] = notice;
+    impl_->notices[notice.notice_id] = notice;
 }
 
 void NoticeProvider::RemoveNotice(const std::string& notice_id) {
-    m_notices.erase(notice_id);
+    impl_->notices.erase(notice_id);
 }
 
 bool NoticeProvider::MatchesFilter(const NavigationNotice& notice, const NoticeFilter& filter) const {

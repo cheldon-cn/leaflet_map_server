@@ -10,6 +10,8 @@
 #include <memory>
 
 using namespace ogc::graph;
+using namespace ogc::draw;
+using namespace ogc::cache;
 
 class IntegrationTileIndexTest : public ::testing::Test {
 protected:

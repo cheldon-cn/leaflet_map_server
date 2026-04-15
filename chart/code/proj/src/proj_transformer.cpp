@@ -19,19 +19,27 @@
 namespace ogc {
 namespace proj {
 
+struct ProjTransformer::Impl {
+    void* projContext;
+    void* projTransform;
+    void* projInverseTransform;
+    std::string sourceCRS;
+    std::string targetCRS;
+    std::string name;
+    std::string description;
+    bool valid;
+    mutable std::mutex mutex;
+    
+    Impl() : projContext(nullptr), projTransform(nullptr), projInverseTransform(nullptr), valid(false) {}
+};
+
 ProjTransformer::ProjTransformer()
-    : m_projContext(nullptr)
-    , m_projTransform(nullptr)
-    , m_projInverseTransform(nullptr)
-    , m_valid(false)
+    : impl_(new Impl())
 {
 }
 
 ProjTransformer::ProjTransformer(const std::string& sourceCRS, const std::string& targetCRS)
-    : m_projContext(nullptr)
-    , m_projTransform(nullptr)
-    , m_projInverseTransform(nullptr)
-    , m_valid(false)
+    : impl_(new Impl())
 {
     Initialize(sourceCRS, targetCRS);
 }
@@ -43,7 +51,7 @@ ProjTransformer::~ProjTransformer()
 
 bool ProjTransformer::IsValid() const
 {
-    return m_valid;
+    return impl_->valid;
 }
 
 ogc::Coordinate ProjTransformer::Transform(const ogc::Coordinate& coord) const
@@ -62,12 +70,12 @@ ogc::Coordinate ProjTransformer::TransformInverse(const ogc::Coordinate& coord) 
 
 void ProjTransformer::Transform(double& x, double& y) const
 {
-    if (!m_valid) {
+    if (!impl_->valid) {
         return;
     }
     
 #ifdef OGC_USE_PROJ
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     PJ_COORD input;
     PJ_COORD output;
@@ -75,7 +83,7 @@ void ProjTransformer::Transform(double& x, double& y) const
     input.xy.x = x;
     input.xy.y = y;
     
-    output = proj_trans(static_cast<PJ*>(m_projTransform), PJ_FWD, input);
+    output = proj_trans(static_cast<PJ*>(impl_->projTransform), PJ_FWD, input);
     
     x = output.xy.x;
     y = output.xy.y;
@@ -87,12 +95,12 @@ void ProjTransformer::Transform(double& x, double& y) const
 
 void ProjTransformer::TransformInverse(double& x, double& y) const
 {
-    if (!m_valid) {
+    if (!impl_->valid) {
         return;
     }
     
 #ifdef OGC_USE_PROJ
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(impl_->mutex);
     
     PJ_COORD input;
     PJ_COORD output;
@@ -100,7 +108,7 @@ void ProjTransformer::TransformInverse(double& x, double& y) const
     input.xy.x = x;
     input.xy.y = y;
     
-    output = proj_trans(static_cast<PJ*>(m_projTransform), PJ_INV, input);
+    output = proj_trans(static_cast<PJ*>(impl_->projTransform), PJ_INV, input);
     
     x = output.xy.x;
     y = output.xy.y;
@@ -112,7 +120,7 @@ void ProjTransformer::TransformInverse(double& x, double& y) const
 
 void ProjTransformer::TransformArray(double* x, double* y, size_t count) const
 {
-    if (!m_valid || !x || !y || count == 0) {
+    if (!impl_->valid || !x || !y || count == 0) {
         return;
     }
     
@@ -123,7 +131,7 @@ void ProjTransformer::TransformArray(double* x, double* y, size_t count) const
 
 void ProjTransformer::TransformArrayInverse(double* x, double* y, size_t count) const
 {
-    if (!m_valid || !x || !y || count == 0) {
+    if (!impl_->valid || !x || !y || count == 0) {
         return;
     }
     
@@ -134,7 +142,7 @@ void ProjTransformer::TransformArrayInverse(double* x, double* y, size_t count) 
 
 ogc::Envelope ProjTransformer::Transform(const ogc::Envelope& env) const
 {
-    if (!m_valid) {
+    if (!impl_->valid) {
         return env;
     }
     
@@ -171,7 +179,7 @@ ogc::Envelope ProjTransformer::Transform(const ogc::Envelope& env) const
 
 ogc::Envelope ProjTransformer::TransformInverse(const ogc::Envelope& env) const
 {
-    if (!m_valid) {
+    if (!impl_->valid) {
         return env;
     }
     
@@ -218,63 +226,63 @@ ogc::GeometryPtr ProjTransformer::TransformInverse(const ogc::Geometry* geometry
 
 std::string ProjTransformer::GetSourceCRS() const
 {
-    return m_sourceCRS;
+    return impl_->sourceCRS;
 }
 
 std::string ProjTransformer::GetTargetCRS() const
 {
-    return m_targetCRS;
+    return impl_->targetCRS;
 }
 
 std::string ProjTransformer::GetName() const
 {
-    return m_name;
+    return impl_->name;
 }
 
 std::string ProjTransformer::GetDescription() const
 {
-    return m_description;
+    return impl_->description;
 }
 
 CoordinateTransformerPtr ProjTransformer::Clone() const
 {
-    return Create(m_sourceCRS, m_targetCRS);
+    return Create(impl_->sourceCRS, impl_->targetCRS);
 }
 
 bool ProjTransformer::Initialize(const std::string& sourceCRS, const std::string& targetCRS)
 {
     DestroyTransform();
     
-    m_sourceCRS = sourceCRS;
-    m_targetCRS = targetCRS;
-    m_valid = false;
+    impl_->sourceCRS = sourceCRS;
+    impl_->targetCRS = targetCRS;
+    impl_->valid = false;
     
     std::stringstream ss;
     ss << "ProjTransform[" << sourceCRS << " -> " << targetCRS << "]";
-    m_name = ss.str();
+    impl_->name = ss.str();
     
 #ifdef OGC_USE_PROJ
-    m_projContext = proj_context_create();
-    if (!m_projContext) {
+    impl_->projContext = proj_context_create();
+    if (!impl_->projContext) {
         return false;
     }
     
     std::string normalizedSource = NormalizeCRS(sourceCRS);
     std::string normalizedTarget = NormalizeCRS(targetCRS);
     
-    m_projTransform = proj_create_crs_to_crs(
-        static_cast<PJ_CONTEXT*>(m_projContext),
+    impl_->projTransform = proj_create_crs_to_crs(
+        static_cast<PJ_CONTEXT*>(impl_->projContext),
         normalizedSource.c_str(),
         normalizedTarget.c_str(),
         nullptr);
     
-    if (!m_projTransform) {
-        proj_context_destroy(static_cast<PJ_CONTEXT*>(m_projContext));
-        m_projContext = nullptr;
+    if (!impl_->projTransform) {
+        proj_context_destroy(static_cast<PJ_CONTEXT*>(impl_->projContext));
+        impl_->projContext = nullptr;
         return false;
     }
     
-    m_valid = true;
+    impl_->valid = true;
     return true;
 #else
     return false;
@@ -283,7 +291,7 @@ bool ProjTransformer::Initialize(const std::string& sourceCRS, const std::string
 
 void ProjTransformer::SetDescription(const std::string& description)
 {
-    m_description = description;
+    impl_->description = description;
 }
 
 ProjTransformerPtr ProjTransformer::Create(const std::string& sourceCRS, const std::string& targetCRS)
@@ -332,16 +340,16 @@ std::string ProjTransformer::GetProjVersion()
 void ProjTransformer::DestroyTransform()
 {
 #ifdef OGC_USE_PROJ
-    if (m_projTransform) {
-        proj_destroy(static_cast<PJ*>(m_projTransform));
-        m_projTransform = nullptr;
+    if (impl_->projTransform) {
+        proj_destroy(static_cast<PJ*>(impl_->projTransform));
+        impl_->projTransform = nullptr;
     }
-    if (m_projContext) {
-        proj_context_destroy(static_cast<PJ_CONTEXT*>(m_projContext));
-        m_projContext = nullptr;
+    if (impl_->projContext) {
+        proj_context_destroy(static_cast<PJ_CONTEXT*>(impl_->projContext));
+        impl_->projContext = nullptr;
     }
 #endif
-    m_valid = false;
+    impl_->valid = false;
 }
 
 std::string ProjTransformer::NormalizeCRS(const std::string& crs) const

@@ -120,6 +120,11 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
             ${GEOM_SOURCE_DIR}/include
             ${FEATURE_SOURCE_DIR}/include
             ${LAYER_SOURCE_DIR}/include
+            ${DRAW_SOURCE_DIR}/include
+            ${BASE_SOURCE_DIR}/include
+            ${SYMBOLOGY_SOURCE_DIR}/include
+            ${CACHE_SOURCE_DIR}/include
+            ${PROJ_MODULE_SOURCE_DIR}/include
     )
     
     target_link_libraries(${TEST_NAME}

@@ -11,6 +11,7 @@
 #include <thread>
 
 using namespace ogc::graph;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 class TestRenderTaskForIT : public BasicRenderTask {

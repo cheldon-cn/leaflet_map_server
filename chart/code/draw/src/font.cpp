@@ -5,82 +5,87 @@
 namespace ogc {
 namespace draw {
 
-Font::Font()
-    : m_family("Arial")
-    , m_size(12.0)
-    , m_style(FontStyle::kNormal)
-    , m_weight(FontWeight::kNormal)
-    , m_italic(false)
-    , m_underline(false)
-    , m_strikethrough(false) {
-}
+struct Font::Impl {
+    std::string family;
+    double size;
+    FontStyle style;
+    FontWeight weight;
+    bool italic;
+    bool underline;
+    bool strikethrough;
+    
+    Impl() : family("Arial"), size(12.0), style(FontStyle::kNormal), 
+             weight(FontWeight::kNormal), italic(false), underline(false), strikethrough(false) {}
+    Impl(const std::string& f, double s) : family(f), size(s), style(FontStyle::kNormal),
+             weight(FontWeight::kNormal), italic(false), underline(false), strikethrough(false) {}
+    Impl(const std::string& f, double s, FontStyle st) : family(f), size(s), style(st),
+             weight(FontWeight::kNormal), italic(st == FontStyle::kItalic || st == FontStyle::kBoldItalic),
+             underline(false), strikethrough(false) {}
+    Impl(const std::string& f, double s, FontWeight w, bool i) : family(f), size(s),
+             style(i ? FontStyle::kItalic : FontStyle::kNormal), weight(w), italic(i),
+             underline(false), strikethrough(false) {}
+};
 
-Font::Font(const std::string& family, double size)
-    : m_family(family)
-    , m_size(size)
-    , m_style(FontStyle::kNormal)
-    , m_weight(FontWeight::kNormal)
-    , m_italic(false)
-    , m_underline(false)
-    , m_strikethrough(false) {
-}
+Font::Font() : impl_(new Impl()) {}
 
-Font::Font(const std::string& family, double size, FontStyle style)
-    : m_family(family)
-    , m_size(size)
-    , m_style(style)
-    , m_weight(FontWeight::kNormal)
-    , m_italic(style == FontStyle::kItalic || style == FontStyle::kBoldItalic)
-    , m_underline(false)
-    , m_strikethrough(false) {
-}
+Font::Font(const std::string& family, double size) : impl_(new Impl(family, size)) {}
+
+Font::Font(const std::string& family, double size, FontStyle style) 
+    : impl_(new Impl(family, size, style)) {}
 
 Font::Font(const std::string& family, double size, FontWeight weight, bool italic)
-    : m_family(family)
-    , m_size(size)
-    , m_style(italic ? FontStyle::kItalic : FontStyle::kNormal)
-    , m_weight(weight)
-    , m_italic(italic)
-    , m_underline(false)
-    , m_strikethrough(false) {
+    : impl_(new Impl(family, size, weight, italic)) {}
+
+Font::~Font() = default;
+
+Font::Font(const Font& other) : impl_(new Impl(*other.impl_)) {}
+
+Font& Font::operator=(const Font& other) {
+    if (this != &other) {
+        *impl_ = *other.impl_;
+    }
+    return *this;
 }
 
-void Font::SetFamily(const std::string& family) {
-    m_family = family;
+Font::Font(Font&& other) noexcept : impl_(std::move(other.impl_)) {
+    other.impl_.reset(new Impl());
 }
 
-void Font::SetSize(double size) {
-    m_size = size;
+Font& Font::operator=(Font&& other) noexcept {
+    if (this != &other) {
+        impl_ = std::move(other.impl_);
+        other.impl_.reset(new Impl());
+    }
+    return *this;
 }
 
-void Font::SetStyle(FontStyle style) {
-    m_style = style;
+const std::string& Font::GetFamily() const { return impl_->family; }
+double Font::GetSize() const { return impl_->size; }
+FontStyle Font::GetStyle() const { return impl_->style; }
+FontWeight Font::GetWeight() const { return impl_->weight; }
+bool Font::IsItalic() const { return impl_->italic; }
+bool Font::IsUnderline() const { return impl_->underline; }
+bool Font::IsStrikethrough() const { return impl_->strikethrough; }
+bool Font::IsBold() const { 
+    return impl_->weight == FontWeight::kBold || impl_->weight == FontWeight::kExtraBold ||
+           impl_->style == FontStyle::kBold || impl_->style == FontStyle::kBoldItalic;
 }
 
-void Font::SetWeight(FontWeight weight) {
-    m_weight = weight;
-}
-
-void Font::SetItalic(bool italic) {
-    m_italic = italic;
-}
-
+void Font::SetFamily(const std::string& family) { impl_->family = family; }
+void Font::SetSize(double size) { impl_->size = size; }
+void Font::SetStyle(FontStyle style) { impl_->style = style; }
+void Font::SetWeight(FontWeight weight) { impl_->weight = weight; }
+void Font::SetItalic(bool italic) { impl_->italic = italic; }
 void Font::SetBold(bool bold) {
     if (bold) {
-        m_weight = FontWeight::kBold;
+        impl_->weight = FontWeight::kBold;
     }
 }
-
-void Font::SetUnderline(bool underline) {
-    m_underline = underline;
-}
-
-void Font::SetStrikethrough(bool strikethrough) {
-    m_strikethrough = strikethrough;
-}
+void Font::SetUnderline(bool underline) { impl_->underline = underline; }
+void Font::SetStrikethrough(bool strikethrough) { impl_->strikethrough = strikethrough; }
 
 std::string Font::GetStyleString() const {
-    switch (m_style) {
+    switch (impl_->style) {
         case FontStyle::kNormal:     return "Normal";
         case FontStyle::kBold:       return "Bold";
         case FontStyle::kItalic:     return "Italic";
@@ -90,7 +95,7 @@ std::string Font::GetStyleString() const {
 }
 
 std::string Font::GetWeightString() const {
-    switch (m_weight) {
+    switch (impl_->weight) {
         case FontWeight::kThin:       return "Thin";
         case FontWeight::kExtraLight: return "ExtraLight";
         case FontWeight::kLight:      return "Light";
@@ -106,59 +111,41 @@ std::string Font::GetWeightString() const {
 
 std::string Font::ToString() const {
     std::ostringstream oss;
-    oss << m_family << " " << m_size << "pt";
-    if (m_weight != FontWeight::kNormal) {
+    oss << impl_->family << " " << impl_->size << "pt";
+    if (impl_->weight != FontWeight::kNormal) {
         oss << " " << GetWeightString();
     }
-    if (m_italic) {
+    if (impl_->italic) {
         oss << " Italic";
     }
-    if (m_underline) {
+    if (impl_->underline) {
         oss << " Underline";
     }
-    if (m_strikethrough) {
+    if (impl_->strikethrough) {
         oss << " Strikethrough";
     }
     return oss.str();
 }
 
-double Font::GetLineHeight() const {
-    return m_size * 1.2;
-}
+double Font::GetLineHeight() const { return impl_->size * 1.2; }
+double Font::GetAscent() const { return impl_->size * 0.8; }
+double Font::GetDescent() const { return impl_->size * 0.2; }
 
-double Font::GetAscent() const {
-    return m_size * 0.8;
-}
-
-double Font::GetDescent() const {
-    return m_size * 0.2;
-}
-
-bool Font::IsValid() const {
-    return !m_family.empty() && m_size > 0;
-}
-
-bool Font::IsEmpty() const {
-    return m_family.empty() && m_size == 0;
-}
-
-bool Font::IsVisible() const {
-    return IsValid() && m_size > 0;
-}
+bool Font::IsValid() const { return !impl_->family.empty() && impl_->size > 0; }
+bool Font::IsEmpty() const { return impl_->family.empty() && impl_->size == 0; }
+bool Font::IsVisible() const { return IsValid() && impl_->size > 0; }
 
 void Font::Reset() {
-    m_family = "Arial";
-    m_size = 12.0;
-    m_style = FontStyle::kNormal;
-    m_weight = FontWeight::kNormal;
-    m_italic = false;
-    m_underline = false;
-    m_strikethrough = false;
+    impl_->family = "Arial";
+    impl_->size = 12.0;
+    impl_->style = FontStyle::kNormal;
+    impl_->weight = FontWeight::kNormal;
+    impl_->italic = false;
+    impl_->underline = false;
+    impl_->strikethrough = false;
 }
 
-Font Font::Default() {
-    return Font("Arial", 12.0);
-}
+Font Font::Default() { return Font("Arial", 12.0); }
 
 Font Font::FromString(const std::string& str) {
     Font font;
@@ -166,7 +153,7 @@ Font Font::FromString(const std::string& str) {
     std::string token;
     
     if (std::getline(iss, token, ' ')) {
-        font.m_family = token;
+        font.impl_->family = token;
     }
     if (std::getline(iss, token, ' ')) {
         size_t ptPos = token.find("pt");
@@ -174,22 +161,22 @@ Font Font::FromString(const std::string& str) {
             token = token.substr(0, ptPos);
         }
         try {
-            font.m_size = std::stod(token);
+            font.impl_->size = std::stod(token);
         } catch (...) {
-            font.m_size = 12.0;
+            font.impl_->size = 12.0;
         }
     }
     
     std::string remaining;
     while (std::getline(iss, token, ' ')) {
         if (token == "Bold" || token == "Bold") {
-            font.m_weight = FontWeight::kBold;
+            font.impl_->weight = FontWeight::kBold;
         } else if (token == "Italic") {
-            font.m_italic = true;
+            font.impl_->italic = true;
         } else if (token == "Underline") {
-            font.m_underline = true;
+            font.impl_->underline = true;
         } else if (token == "Strikethrough") {
-            font.m_strikethrough = true;
+            font.impl_->strikethrough = true;
         }
     }
     
@@ -198,54 +185,54 @@ Font Font::FromString(const std::string& str) {
 
 Font Font::WithFamily(const std::string& family) const {
     Font f = *this;
-    f.m_family = family;
+    f.impl_->family = family;
     return f;
 }
 
 Font Font::WithSize(double size) const {
     Font f = *this;
-    f.m_size = size;
+    f.impl_->size = size;
     return f;
 }
 
 Font Font::WithWeight(FontWeight weight) const {
     Font f = *this;
-    f.m_weight = weight;
+    f.impl_->weight = weight;
     return f;
 }
 
 Font Font::WithStyle(FontStyle style) const {
     Font f = *this;
-    f.m_style = style;
+    f.impl_->style = style;
     return f;
 }
 
 Font Font::WithItalic(bool italic) const {
     Font f = *this;
-    f.m_italic = italic;
+    f.impl_->italic = italic;
     return f;
 }
 
 Font Font::WithUnderline(bool underline) const {
     Font f = *this;
-    f.m_underline = underline;
+    f.impl_->underline = underline;
     return f;
 }
 
 Font Font::WithStrikethrough(bool strikethrough) const {
     Font f = *this;
-    f.m_strikethrough = strikethrough;
+    f.impl_->strikethrough = strikethrough;
     return f;
 }
 
 bool Font::operator==(const Font& other) const {
-    return m_family == other.m_family &&
-           m_size == other.m_size &&
-           m_style == other.m_style &&
-           m_weight == other.m_weight &&
-           m_italic == other.m_italic &&
-           m_underline == other.m_underline &&
-           m_strikethrough == other.m_strikethrough;
+    return impl_->family == other.impl_->family &&
+           impl_->size == other.impl_->size &&
+           impl_->style == other.impl_->style &&
+           impl_->weight == other.impl_->weight &&
+           impl_->italic == other.impl_->italic &&
+           impl_->underline == other.impl_->underline &&
+           impl_->strikethrough == other.impl_->strikethrough;
 }
 
 bool Font::operator!=(const Font& other) const {

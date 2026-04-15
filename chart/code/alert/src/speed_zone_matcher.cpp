@@ -30,27 +30,31 @@ double HaversineDistance(const Coordinate& from, const Coordinate& to) {
 
 }
 
-SpeedZoneMatcher::SpeedZoneMatcher() {
+struct SpeedZoneMatcher::Impl {
+    std::map<std::string, SpeedZone> zones;
+};
+
+SpeedZoneMatcher::SpeedZoneMatcher() : impl_(new Impl()) {
 }
 
 SpeedZoneMatcher::~SpeedZoneMatcher() {
 }
 
 void SpeedZoneMatcher::AddZone(const SpeedZone& zone) {
-    m_zones[zone.zone_id] = zone;
+    impl_->zones[zone.zone_id] = zone;
 }
 
 void SpeedZoneMatcher::RemoveZone(const std::string& zone_id) {
-    m_zones.erase(zone_id);
+    impl_->zones.erase(zone_id);
 }
 
 void SpeedZoneMatcher::UpdateZone(const SpeedZone& zone) {
-    m_zones[zone.zone_id] = zone;
+    impl_->zones[zone.zone_id] = zone;
 }
 
 SpeedZone SpeedZoneMatcher::GetZone(const std::string& zone_id) const {
-    auto it = m_zones.find(zone_id);
-    if (it != m_zones.end()) {
+    auto it = impl_->zones.find(zone_id);
+    if (it != impl_->zones.end()) {
         return it->second;
     }
     return SpeedZone();
@@ -61,7 +65,7 @@ std::vector<SpeedZoneMatch> SpeedZoneMatcher::Match(const Coordinate& position,
                                                      const DateTime& time) {
     std::vector<SpeedZoneMatch> matches;
     
-    for (const auto& pair : m_zones) {
+    for (const auto& pair : impl_->zones) {
         const SpeedZone& zone = pair.second;
         
         if (!IsZoneActive(zone, time)) {
@@ -96,7 +100,7 @@ std::vector<SpeedZoneMatch> SpeedZoneMatcher::Match(const Coordinate& position,
 std::vector<SpeedZone> SpeedZoneMatcher::GetZonesAtPosition(const Coordinate& position) {
     std::vector<SpeedZone> result;
     
-    for (const auto& pair : m_zones) {
+    for (const auto& pair : impl_->zones) {
         if (IsInsideZone(position, pair.second)) {
             result.push_back(pair.second);
         }
@@ -109,7 +113,7 @@ std::vector<SpeedZone> SpeedZoneMatcher::GetNearbyZones(const Coordinate& positi
                                                          double radius_km) {
     std::vector<std::pair<double, SpeedZone>> zones_with_distance;
     
-    for (const auto& pair : m_zones) {
+    for (const auto& pair : impl_->zones) {
         double distance = CalculateDistanceToZone(position, pair.second);
         if (distance <= radius_km) {
             zones_with_distance.push_back({distance, pair.second});
@@ -130,7 +134,7 @@ std::vector<SpeedZone> SpeedZoneMatcher::GetNearbyZones(const Coordinate& positi
 }
 
 void SpeedZoneMatcher::Clear() {
-    m_zones.clear();
+    impl_->zones.clear();
 }
 
 bool SpeedZoneMatcher::IsZoneActive(const SpeedZone& zone, const DateTime& time) const {

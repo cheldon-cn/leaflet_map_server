@@ -9,8 +9,8 @@ namespace ogc {
 template<typename T>
 ObjectPool<T>::~ObjectPool() = default;
 
-template class ObjectPool<Point>;
-template class ObjectPool<LineString>;
-template class ObjectPool<Polygon>;
+template class OGC_GEOM_API ObjectPool<Point>;
+template class OGC_GEOM_API ObjectPool<LineString>;
+template class OGC_GEOM_API ObjectPool<Polygon>;
 
 }

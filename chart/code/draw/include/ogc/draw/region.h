@@ -4,6 +4,7 @@
 #include "ogc/draw/export.h"
 #include "ogc/draw/geometry_types.h"
 #include <vector>
+#include <memory>
 
 namespace ogc {
 namespace draw {
@@ -23,7 +24,7 @@ public:
     bool IsValid() const;
     
     size_t GetRectCount() const;
-    const std::vector<Rect>& GetRects() const;
+    std::vector<Rect> GetRects() const;
     
     Rect GetBounds() const;
     
@@ -62,13 +63,9 @@ public:
     static Region FromRects(const std::vector<Rect>& rects);
 
 private:
-    std::vector<Rect> m_rects;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
-
-inline bool Region::IsEmpty() const { return m_rects.empty(); }
-inline bool Region::IsValid() const { return true; }
-inline size_t Region::GetRectCount() const { return m_rects.size(); }
-inline const std::vector<Rect>& Region::GetRects() const { return m_rects; }
 
 }  
 }  

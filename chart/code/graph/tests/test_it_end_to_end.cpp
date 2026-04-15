@@ -24,6 +24,8 @@
 
 using namespace ogc;
 using namespace ogc::draw;
+using namespace ogc::graph;
+using namespace ogc::proj;
 
 class EndToEndIntegrationTest : public ::testing::Test {
 protected:

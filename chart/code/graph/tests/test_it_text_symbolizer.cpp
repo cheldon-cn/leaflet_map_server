@@ -13,6 +13,7 @@
 
 using namespace ogc::symbology;
 using namespace ogc;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 class IntegrationTextSymbolizerTest : public ::testing::Test {

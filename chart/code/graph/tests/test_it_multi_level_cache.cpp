@@ -19,6 +19,7 @@
 #endif
 
 using namespace ogc::cache;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 namespace {

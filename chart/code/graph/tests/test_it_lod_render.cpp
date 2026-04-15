@@ -10,6 +10,7 @@
 #include <memory>
 
 using namespace ogc::graph;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 class LodRenderITTest : public ::testing::Test {

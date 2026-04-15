@@ -12,6 +12,7 @@
 #include <memory>
 
 using namespace ogc::graph;
+using namespace ogc::draw;
 using ogc::Envelope;
 
 class IntegrationLabelConflictTest : public ::testing::Test {
