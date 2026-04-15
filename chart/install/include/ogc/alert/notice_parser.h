@@ -126,7 +126,8 @@ public:
     void RemoveNotice(const std::string& notice_id) override;
 
 private:
-    std::map<std::string, NavigationNotice> m_notices;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     bool MatchesFilter(const NavigationNotice& notice, const NoticeFilter& filter) const;
     bool IsInRadius(const Coordinate& center, double radius_km, 

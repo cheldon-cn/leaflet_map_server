@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include <map>
 
 namespace ogc {
 namespace graph {
@@ -56,7 +55,7 @@ public:
     ~DayNightModeManager();
     
     void SetMode(DisplayMode mode);
-    DisplayMode GetMode() const { return m_currentMode; }
+    DisplayMode GetMode() const;
     
     void SetDayMode();
     void SetNightMode();
@@ -64,15 +63,15 @@ public:
     void SetDawnMode();
     void SetCustomMode(const std::string& schemeName);
     
-    bool IsDayMode() const { return m_currentMode == DisplayMode::kDay; }
-    bool IsNightMode() const { return m_currentMode == DisplayMode::kNight; }
-    bool IsDuskMode() const { return m_currentMode == DisplayMode::kDusk; }
-    bool IsDawnMode() const { return m_currentMode == DisplayMode::kDawn; }
-    bool IsCustomMode() const { return m_currentMode == DisplayMode::kCustom; }
+    bool IsDayMode() const;
+    bool IsNightMode() const;
+    bool IsDuskMode() const;
+    bool IsDawnMode() const;
+    bool IsCustomMode() const;
     
-    const ColorScheme& GetCurrentScheme() const { return m_currentScheme; }
-    const ColorScheme& GetDayScheme() const { return m_dayScheme; }
-    const ColorScheme& GetNightScheme() const { return m_nightScheme; }
+    const ColorScheme& GetCurrentScheme() const;
+    const ColorScheme& GetDayScheme() const;
+    const ColorScheme& GetNightScheme() const;
     
     void SetDayScheme(const ColorScheme& scheme);
     void SetNightScheme(const ColorScheme& scheme);
@@ -84,15 +83,15 @@ public:
     std::vector<std::string> GetAvailableSchemes() const;
     
     void SetTransitionDuration(double seconds);
-    double GetTransitionDuration() const { return m_transitionDuration; }
+    double GetTransitionDuration() const;
     
     void StartTransition(DisplayMode targetMode);
     void UpdateTransition(double deltaTime);
-    bool IsTransitioning() const { return m_transition.isActive; }
-    double GetTransitionProgress() const { return m_transition.progress; }
+    bool IsTransitioning() const;
+    double GetTransitionProgress() const;
     
     void SetAutoModeSwitch(bool enabled);
-    bool IsAutoModeSwitchEnabled() const { return m_autoModeSwitch; }
+    bool IsAutoModeSwitchEnabled() const;
     
     void SetDayTimeRange(int startHour, int endHour);
     void SetNightTimeRange(int startHour, int endHour);
@@ -105,13 +104,13 @@ public:
     ogc::draw::Color TransformColor(const ogc::draw::Color& color) const;
     ogc::draw::Color TransformColorForMode(const ogc::draw::Color& color, DisplayMode mode) const;
     
-    double GetContrast() const { return m_currentScheme.contrast; }
+    double GetContrast() const;
     void SetContrast(double contrast);
     
-    double GetBrightness() const { return m_currentScheme.brightness; }
+    double GetBrightness() const;
     void SetBrightness(double brightness);
     
-    double GetSaturation() const { return m_currentScheme.saturation; }
+    double GetSaturation() const;
     void SetSaturation(double saturation);
     
     void ResetToDefaults();
@@ -130,28 +129,8 @@ private:
     void NotifyTransitionProgress();
     void NotifyColorSchemeChanged();
     
-    DisplayMode m_currentMode = DisplayMode::kDay;
-    ColorScheme m_currentScheme;
-    ColorScheme m_dayScheme;
-    ColorScheme m_nightScheme;
-    ColorScheme m_duskScheme;
-    ColorScheme m_dawnScheme;
-    
-    ModeTransition m_transition;
-    double m_transitionDuration = 1.0;
-    
-    bool m_autoModeSwitch = false;
-    int m_dayStartHour = 6;
-    int m_dayEndHour = 18;
-    int m_nightStartHour = 20;
-    int m_nightEndHour = 6;
-    
-    std::map<std::string, ColorScheme> m_customSchemes;
-    std::string m_currentCustomScheme;
-    
-    ModeChangedCallback m_modeChangedCallback;
-    TransitionProgressCallback m_transitionProgressCallback;
-    ColorSchemeChangedCallback m_colorSchemeChangedCallback;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

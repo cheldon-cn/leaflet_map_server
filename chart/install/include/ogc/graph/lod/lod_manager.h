@@ -19,7 +19,7 @@ class OGC_GRAPH_API LODManager {
 public:
     LODManager();
     explicit LODManager(LODStrategyPtr strategy);
-    ~LODManager() = default;
+    ~LODManager();
     
     void SetStrategy(LODStrategyPtr strategy);
     LODStrategyPtr GetStrategy() const;
@@ -72,13 +72,8 @@ private:
     bool IsLODInRange(int lod) const;
     LODLevelPtr GetLODLevelInternal(int level) const;
     
-    LODStrategyPtr m_strategy;
-    std::vector<LODLevelPtr> m_levels;
-    int m_minLOD;
-    int m_maxLOD;
-    double m_transitionFactor;
-    bool m_enableTransitions;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

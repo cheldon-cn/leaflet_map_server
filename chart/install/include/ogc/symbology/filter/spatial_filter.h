@@ -25,6 +25,7 @@ public:
     SpatialFilter(SpatialOperator op, const Geometry* geometry);
     SpatialFilter(SpatialOperator op, const Envelope& envelope);
     SpatialFilter(SpatialOperator op, std::shared_ptr<Geometry> geometry);
+    ~SpatialFilter() override;
     
     FilterType GetType() const override { return FilterType::kSpatial; }
     
@@ -34,21 +35,21 @@ public:
     std::string ToString() const override;
     FilterPtr Clone() const override;
     
-    SpatialOperator GetOperator() const { return m_operator; }
-    void SetOperator(SpatialOperator op) { m_operator = op; }
+    SpatialOperator GetOperator() const;
+    void SetOperator(SpatialOperator op);
     
-    const Geometry* GetGeometry() const { return m_geometry.get(); }
+    const Geometry* GetGeometry() const;
     void SetGeometry(const Geometry* geometry);
     void SetGeometry(std::shared_ptr<Geometry> geometry);
     
-    const Envelope& GetEnvelope() const { return m_envelope; }
+    const Envelope& GetEnvelope() const;
     void SetEnvelope(const Envelope& envelope);
     
-    bool HasGeometry() const { return m_geometry != nullptr; }
-    bool HasEnvelope() const { return m_hasEnvelope; }
+    bool HasGeometry() const;
+    bool HasEnvelope() const;
     
-    void SetPropertyName(const std::string& name) { m_propertyName = name; }
-    std::string GetPropertyName() const { return m_propertyName; }
+    void SetPropertyName(const std::string& name);
+    std::string GetPropertyName() const;
     
     static std::string OperatorToString(SpatialOperator op);
     static SpatialOperator StringToOperator(const std::string& str);
@@ -57,11 +58,8 @@ private:
     bool EvaluateGeometry(const Geometry* testGeom) const;
     bool EvaluateEnvelope(const Geometry* testGeom) const;
     
-    SpatialOperator m_operator;
-    std::shared_ptr<Geometry> m_geometry;
-    Envelope m_envelope;
-    bool m_hasEnvelope;
-    std::string m_propertyName;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 typedef std::shared_ptr<SpatialFilter> SpatialFilterPtr;

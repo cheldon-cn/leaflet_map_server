@@ -72,44 +72,27 @@ public:
     
     void Shutdown();
     
-    PoolConfig GetConfig() const { return m_config; }
+    PoolConfig GetConfig() const;
     
     void SetConfig(const PoolConfig& config);
     
-    int GetTotalConnections() const { return m_totalConnections.load(); }
+    int GetTotalConnections() const;
     
     int GetAvailableConnections() const;
     
     int GetInUseConnections() const;
     
-    void SetValidator(ConnectionValidator validator) { m_validator = validator; }
+    void SetValidator(ConnectionValidator validator);
     
-    void SetFactory(ConnectionFactory factory) { m_factory = factory; }
+    void SetFactory(ConnectionFactory factory);
     
     void StartHealthCheck();
     
     void StopHealthCheck();
 
 private:
-    DatabaseType m_dbType;
-    PoolConfig m_config;
-    std::string m_connectionString;
-    PostGISOptions m_postgisOptions;
-    SpatiaLiteOptions m_sqliteOptions;
-    
-    std::vector<PooledConnection> m_connections;
-    std::queue<size_t> m_availableIndices;
-    
-    mutable std::mutex m_mutex;
-    std::condition_variable m_condition;
-    
-    std::atomic<bool> m_running;
-    std::atomic<int> m_totalConnections;
-    std::thread m_healthCheckThread;
-    std::thread m_shrinkThread;
-    
-    ConnectionValidator m_validator;
-    ConnectionFactory m_factory;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     Result CreateConnection(PooledConnection& pooled);
     

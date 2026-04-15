@@ -79,7 +79,8 @@ public:
     void Clear() override;
 
 private:
-    std::map<std::string, SpeedZone> m_zones;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     bool IsZoneActive(const SpeedZone& zone, const DateTime& time) const;
     double CalculateDistanceToZone(const Coordinate& position, const SpeedZone& zone) const;

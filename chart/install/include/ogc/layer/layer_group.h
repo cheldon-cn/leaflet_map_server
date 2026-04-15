@@ -39,6 +39,7 @@ public:
     CNLayerWrapper& operator=(const CNLayerWrapper&) = delete;
     CNLayerWrapper(CNLayerWrapper&&) = default;
     CNLayerWrapper& operator=(CNLayerWrapper&&) = default;
+    ~CNLayerWrapper();
     
     CNLayerNodeType GetNodeType() const override {
         return CNLayerNodeType::kLayer;
@@ -57,24 +58,23 @@ public:
     CNLayer* GetLayer();
     const CNLayer* GetLayer() const;
 
-    int GetZOrder() const override { return z_order_; }
-    void SetZOrder(int z_order) override { z_order_ = z_order; }
+    int GetZOrder() const override;
+    void SetZOrder(int z_order) override;
     
 private:
-    std::unique_ptr<CNLayer> layer_;
-    bool visible_ = true;
-    int z_order_ = 0;
-    CNLayerNode* parent_ = nullptr;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class OGC_LAYER_API CNLayerGroup : public CNLayerNode {
 public:
-    CNLayerGroup() = default;
+    CNLayerGroup();
     explicit CNLayerGroup(const std::string& name);
     CNLayerGroup(const CNLayerGroup&) = delete;
     CNLayerGroup& operator=(const CNLayerGroup&) = delete;
-    CNLayerGroup(CNLayerGroup&&) = default;
-    CNLayerGroup& operator=(CNLayerGroup&&) = default;
+    CNLayerGroup(CNLayerGroup&&) noexcept;
+    CNLayerGroup& operator=(CNLayerGroup&&) noexcept;
+    ~CNLayerGroup();
 
     CNLayerNodeType GetNodeType() const override {
         return CNLayerNodeType::kGroup;
@@ -114,18 +114,14 @@ public:
     CNStatus CommitTransaction();
     CNStatus RollbackTransaction();
 
-    int GetZOrder() const override { return z_order_; }
-    void SetZOrder(int z_order) override { z_order_ = z_order; }
+    int GetZOrder() const override;
+    void SetZOrder(int z_order) override;
 
     void SortByZOrder();
 
 private:
-    std::string name_;
-    bool visible_ = true;
-    int z_order_ = 0;
-    CNLayerNode* parent_ = nullptr;
-    std::vector<std::unique_ptr<CNLayerWrapper>> layers_;
-    std::vector<std::unique_ptr<CNLayerGroup>> groups_;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 using CNLayerGroupPtr = std::unique_ptr<CNLayerGroup>;

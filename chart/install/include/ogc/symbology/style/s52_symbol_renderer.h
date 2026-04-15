@@ -73,7 +73,7 @@ public:
     std::string GenerateCacheKey(const std::string& symbolId, 
                                   const StyleRule* rule) const;
     
-    bool IsInitialized() const { return m_initialized; }
+    bool IsInitialized() const;
 
 private:
     S52SymbolRenderer();
@@ -99,11 +99,8 @@ private:
                               double x, double y,
                               double scale);
     
-    bool m_initialized;
-    double m_defaultSymbolSize;
-    double m_defaultLineWidth;
-    std::map<std::string, SymbolizerPtr> m_symbolizerCache;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

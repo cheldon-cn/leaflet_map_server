@@ -58,7 +58,7 @@ class GeometryConstVisitor;
  */
 class OGC_GEOM_API Geometry {
 public:
-    virtual ~Geometry() = default;
+    virtual ~Geometry();
     
     Geometry(const Geometry&) = delete;
     Geometry& operator=(const Geometry&) = delete;
@@ -72,7 +72,7 @@ public:
     virtual GeomType GetGeometryType() const noexcept = 0;
     
     /**
-     * @brief 获取几何类型名称字符�?
+     * @brief 获取几何类型名称字符�?
      */
     virtual const char* GetGeometryTypeString() const noexcept = 0;
     
@@ -92,38 +92,34 @@ public:
     virtual bool IsEmpty() const noexcept = 0;
     
     /**
-     * @brief 验证几何有效�?
+     * @brief 验证几何有效�?
      */
     virtual bool IsValid(std::string* reason = nullptr) const;
     
     /**
-     * @brief 判断是否为简单几�?
+     * @brief 判断是否为简单几�?
      */
     virtual bool IsSimple() const;
     
     /**
-     * @brief 判断是否�?D几何
+     * @brief 判断是否�?D几何
      */
     virtual bool Is3D() const noexcept = 0;
     
     /**
-     * @brief 判断是否包含测量�?
+     * @brief 判断是否包含测量�?
      */
     virtual bool IsMeasured() const noexcept = 0;
     
     /**
      * @brief 获取空间参考ID
      */
-    int GetSRID() const noexcept {
-        return m_srid.load(std::memory_order_relaxed);
-    }
+    int GetSRID() const noexcept;
     
     /**
      * @brief 设置空间参考ID
      */
-    void SetSRID(int srid) noexcept {
-        m_srid.store(srid, std::memory_order_relaxed);
-    }
+    void SetSRID(int srid) noexcept;
     
     virtual GeomResult Transform(int targetSRID, GeometryPtr& result) const;
     virtual GeomResult Transform(const std::string& targetCRS, GeometryPtr& result) const;
@@ -207,25 +203,23 @@ public:
     virtual GeometryPtr GetMinimumBoundingRectangle() const;
     
 protected:
-    Geometry() = default;
+    Geometry();
     
-    mutable std::mutex m_cache_mutex;
-    mutable std::unique_ptr<Envelope> m_envelope_cache;
-    mutable std::unique_ptr<Coordinate> m_centroid_cache;
-    
-    std::atomic<int> m_srid{0};
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     virtual Envelope ComputeEnvelope() const = 0;
     virtual Coordinate ComputeCentroid() const;
     
-    void InvalidateCache() const {
-        std::unique_lock<std::mutex> lock(m_cache_mutex);
-        m_envelope_cache.reset();
-        m_centroid_cache.reset();
-    }
-    
+    void InvalidateCache() const;
     bool EnvelopeDisjoint(const Geometry* other) const;
     bool EnvelopeIntersects(const Geometry* other) const;
+    
+    const Envelope& GetEnvelopeCache() const;
+    void SetEnvelopeCache(std::unique_ptr<Envelope> env) const;
+    const Coordinate& GetCentroidCache() const;
+    void SetCentroidCache(std::unique_ptr<Coordinate> coord) const;
+    std::mutex& GetCacheMutex() const;
 };
 
 }

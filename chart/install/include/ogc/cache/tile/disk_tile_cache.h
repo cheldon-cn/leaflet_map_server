@@ -3,9 +3,8 @@
 
 #include "ogc/cache/tile/tile_cache.h"
 #include <string>
-#include <map>
-#include <mutex>
 #include <cstdint>
+#include <memory>
 
 namespace ogc {
 namespace cache {
@@ -50,16 +49,6 @@ public:
     static std::shared_ptr<DiskTileCache> Create(const std::string& cachePath, size_t maxSize = 1024 * 1024 * 1024);
     
 private:
-    std::string m_cachePath;
-    std::string m_name;
-    size_t m_maxSize;
-    size_t m_currentSize;
-    size_t m_tileCount;
-    bool m_enabled;
-    bool m_compressionEnabled;
-    int64_t m_expirationTime;
-    mutable std::mutex m_mutex;
-    
     struct CacheIndex {
         TileKey key;
         std::string filePath;
@@ -68,8 +57,8 @@ private:
         int64_t lastAccess;
     };
     
-    mutable std::map<TileKey, CacheIndex> m_index;
-    mutable bool m_indexLoaded;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     std::string GetTileFilePath(const TileKey& key) const;
     std::string GetTileFilePath(const std::string& cachePath, int x, int y, int z) const;

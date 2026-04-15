@@ -14,10 +14,10 @@ using CompositeSymbolizerPtr = std::shared_ptr<CompositeSymbolizer>;
 class OGC_SYMBOLOGY_API CompositeSymbolizer : public Symbolizer {
 public:
     CompositeSymbolizer();
-    ~CompositeSymbolizer() override = default;
+    ~CompositeSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kComposite; }
-    std::string GetName() const override { return m_name.empty() ? "CompositeSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;

@@ -25,10 +25,10 @@ class OGC_SYMBOLOGY_API PointSymbolizer : public Symbolizer {
 public:
     PointSymbolizer();
     explicit PointSymbolizer(double size, uint32_t color);
-    ~PointSymbolizer() override = default;
+    ~PointSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kPoint; }
-    std::string GetName() const override { return m_name.empty() ? "PointSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -68,16 +68,8 @@ private:
     ogc::draw::DrawResult DrawPoint(ogc::draw::DrawContextPtr context, double x, double y, const ogc::draw::DrawStyle& style);
     ogc::draw::DrawResult DrawSymbol(ogc::draw::DrawContextPtr context, double x, double y, double size, PointSymbolType type, const ogc::draw::DrawStyle& style);
     
-    PointSymbolType m_symbolType;
-    double m_size;
-    uint32_t m_color;
-    uint32_t m_strokeColor;
-    double m_strokeWidth;
-    double m_rotation;
-    double m_anchorX;
-    double m_anchorY;
-    double m_displacementX;
-    double m_displacementY;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

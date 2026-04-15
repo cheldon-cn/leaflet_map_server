@@ -40,10 +40,10 @@ public:
     ~LayerControlPanel();
     
     void SetLayerManager(LayerManager* manager);
-    LayerManager* GetLayerManager() const { return m_layerManager; }
+    LayerManager* GetLayerManager() const;
     
     void RefreshLayerList();
-    const std::vector<LayerControlInfo>& GetLayers() const { return m_layers; }
+    const std::vector<LayerControlInfo>& GetLayers() const;
     
     void SetLayerVisible(const std::string& layerId, bool visible);
     bool IsLayerVisible(const std::string& layerId) const;
@@ -61,7 +61,7 @@ public:
     
     void SelectLayer(const std::string& layerId);
     void DeselectLayer();
-    std::string GetSelectedLayer() const { return m_selectedLayerId; }
+    std::string GetSelectedLayer() const;
     bool IsLayerSelected(const std::string& layerId) const;
     
     void ToggleLayerExpansion(const std::string& layerId);
@@ -74,7 +74,7 @@ public:
     void DeleteGroup(const std::string& groupId);
     void ToggleGroupExpansion(const std::string& groupId);
     bool IsGroupExpanded(const std::string& groupId) const;
-    const std::vector<LayerGroupInfo>& GetGroups() const { return m_groups; }
+    const std::vector<LayerGroupInfo>& GetGroups() const;
     
     void SetGroupVisible(const std::string& groupId, bool visible);
     bool IsGroupVisible(const std::string& groupId) const;
@@ -91,8 +91,9 @@ public:
     void SetOrderChangedCallback(OrderChangedCallback callback);
     void SetSelectionChangedCallback(SelectionChangedCallback callback);
     
-    size_t GetLayerCount() const { return m_layers.size(); }
+    size_t GetLayerCount() const;
     bool HasLayer(const std::string& layerId) const;
+    bool HasLayers() const;
     
     LayerControlInfo* FindLayer(const std::string& layerId);
     const LayerControlInfo* FindLayer(const std::string& layerId) const;
@@ -104,7 +105,7 @@ public:
     std::vector<std::string> GetAllLayerIds() const;
     
     void ApplyPreset(const std::string& presetName);
-    std::string GetCurrentPreset() const { return m_currentPreset; }
+    std::string GetCurrentPreset() const;
     
     void SavePreset(const std::string& presetName);
     void DeletePreset(const std::string& presetName);
@@ -118,16 +119,8 @@ private:
     void NotifySelectionChanged(const std::string& layerId);
     void UpdateLayerOrder();
     
-    LayerManager* m_layerManager = nullptr;
-    
-    std::vector<LayerControlInfo> m_layers;
-    std::vector<LayerGroupInfo> m_groups;
-    std::string m_selectedLayerId;
-    std::string m_currentPreset;
-    
-    LayerChangedCallback m_layerChangedCallback;
-    OrderChangedCallback m_orderChangedCallback;
-    SelectionChangedCallback m_selectionChangedCallback;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

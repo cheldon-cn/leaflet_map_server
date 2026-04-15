@@ -114,9 +114,8 @@ public:
     void Clear() override;
 
 private:
-    std::map<std::string, WeatherSourceConfig> m_sourceConfigs;
-    std::vector<WeatherObservation> m_observations;
-    std::vector<WeatherForecast> m_forecasts;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     double CalculateDistanceWeight(const Coordinate& obs_location,
                                     const Coordinate& target_location,

@@ -34,7 +34,7 @@ typedef std::shared_ptr<LabelEngine> LabelEnginePtr;
 class OGC_GRAPH_API LabelEngine {
 public:
     LabelEngine();
-    ~LabelEngine() = default;
+    ~LabelEngine();
     
     void SetLabelProperty(const std::string& propertyName);
     std::string GetLabelProperty() const;
@@ -90,18 +90,8 @@ private:
     std::string GetLabelText(const CNFeature* feature) const;
     LabelPlacementResult PlaceLabelInternal(const Geometry* geometry, const std::string& text, ogc::draw::DrawContext& context);
     
-    std::string m_labelProperty;
-    ogc::draw::Font m_font;
-    uint32_t m_color;
-    uint32_t m_haloColor;
-    double m_haloRadius;
-    double m_minDistance;
-    double m_maxDistance;
-    int m_priority;
-    bool m_allowOverlap;
-    bool m_followLine;
-    double m_maxAngleDelta;
-    LabelConflictResolverPtr m_conflictResolver;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

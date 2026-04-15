@@ -54,33 +54,31 @@ public:
     
     ~SelectionHandler() override;
     
-    std::string GetName() const override { return m_name; }
-    int GetPriority() const override { return m_priority; }
-    void SetPriority(int priority) override { m_priority = priority; }
+    std::string GetName() const override;
+    int GetPriority() const override;
+    void SetPriority(int priority) override;
     
-    bool IsEnabled() const override { return m_enabled; }
-    void SetEnabled(bool enabled) override { m_enabled = enabled; }
+    bool IsEnabled() const override;
+    void SetEnabled(bool enabled) override;
     
     bool HandleEvent(const InteractionEvent& event) override;
     
-    InteractionState GetState() const override { 
-        return m_isSelecting ? InteractionState::kSelect : InteractionState::kNone; 
-    }
+    InteractionState GetState() const override;
     
     void SetLayerManager(LayerManager* manager);
-    LayerManager* GetLayerManager() const { return m_layerManager; }
+    LayerManager* GetLayerManager() const;
     
     void SetSelectionMode(SelectionMode mode);
-    SelectionMode GetSelectionMode() const { return m_params.mode; }
+    SelectionMode GetSelectionMode() const;
     
     void SetTolerance(double tolerance);
-    double GetTolerance() const { return m_params.tolerance; }
+    double GetTolerance() const;
     
     void SetSelectionParams(const SelectionParams& params);
-    SelectionParams GetSelectionParams() const { return m_params; }
+    SelectionParams GetSelectionParams() const;
     
     void SetSelectionStyle(const SelectionStyle& style);
-    SelectionStyle GetSelectionStyle() const { return m_params.style; }
+    SelectionStyle GetSelectionStyle() const;
     
     void SelectFeature(const std::string& featureId);
     void DeselectFeature(const std::string& featureId);
@@ -89,9 +87,9 @@ public:
     void ClearSelection();
     
     bool IsFeatureSelected(const std::string& featureId) const;
-    const std::set<std::string>& GetSelectedFeatures() const { return m_selectedFeatures; }
-    size_t GetSelectionCount() const { return m_selectedFeatures.size(); }
-    bool HasSelection() const { return !m_selectedFeatures.empty(); }
+    const std::set<std::string>& GetSelectedFeatures() const;
+    size_t GetSelectionCount() const;
+    bool HasSelection() const;
     
     void SelectByEnvelope(const Envelope& envelope);
     void SelectByPoint(double screenX, double screenY);
@@ -101,10 +99,10 @@ public:
     void SetFeatureSelectedCallback(FeatureSelectedCallback callback);
     
     void SetHitTester(HitTester* hitTester);
-    HitTester* GetHitTester() const { return m_hitTester; }
+    HitTester* GetHitTester() const;
     
     void SetFeedbackManager(FeedbackManager* manager);
-    FeedbackManager* GetFeedbackManager() const { return m_feedbackManager; }
+    FeedbackManager* GetFeedbackManager() const;
     
     void SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform);
     void SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform);
@@ -114,7 +112,7 @@ public:
     
     void SetViewportSize(int width, int height);
     
-    const Envelope& GetSelectionEnvelope() const { return m_selectionEnvelope; }
+    const Envelope& GetSelectionEnvelope() const;
 
 private:
     explicit SelectionHandler(const std::string& name);
@@ -137,38 +135,8 @@ private:
     
     void NotifySelectionChanged();
     
-    std::string m_name;
-    int m_priority = 90;
-    bool m_enabled = true;
-    
-    SelectionParams m_params;
-    std::set<std::string> m_selectedFeatures;
-    Envelope m_selectionEnvelope;
-    
-    LayerManager* m_layerManager = nullptr;
-    HitTester* m_hitTester = nullptr;
-    FeedbackManager* m_feedbackManager = nullptr;
-    
-    bool m_isSelecting = false;
-    bool m_isBoxSelecting = false;
-    bool m_isShiftPressed = false;
-    bool m_isCtrlPressed = false;
-    
-    double m_startX = 0.0;
-    double m_startY = 0.0;
-    double m_currentX = 0.0;
-    double m_currentY = 0.0;
-    
-    int m_viewportWidth = 800;
-    int m_viewportHeight = 600;
-    
-    uint64_t m_feedbackId = 0;
-    
-    SelectionChangedCallback m_selectionChangedCallback;
-    FeatureSelectedCallback m_featureSelectedCallback;
-    
-    std::function<Coordinate(double, double)> m_screenToWorld;
-    std::function<Coordinate(double, double)> m_worldToScreen;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }  

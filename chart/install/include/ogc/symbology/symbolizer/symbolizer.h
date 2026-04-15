@@ -29,10 +29,10 @@ using SymbolizerPtr = std::shared_ptr<Symbolizer>;
 
 class OGC_SYMBOLOGY_API Symbolizer {
 public:
-    virtual ~Symbolizer() = default;
+    virtual ~Symbolizer();
     
     virtual SymbolizerType GetType() const = 0;
-    virtual std::string GetName() const = 0;
+    virtual std::string GetName() const;
     
     virtual ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) = 0;
     virtual ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) = 0;
@@ -70,13 +70,16 @@ protected:
     
     ogc::draw::DrawStyle MergeStyle(const ogc::draw::DrawStyle& base, const ogc::draw::DrawStyle& override) const;
     
-    std::string m_name;
-    ogc::draw::DrawStyle m_defaultStyle;
-    bool m_enabled;
-    double m_minScale;
-    double m_maxScale;
-    int m_zIndex;
-    double m_opacity;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    
+    std::string& NameRef();
+    ogc::draw::DrawStyle& DefaultStyleRef();
+    bool& EnabledRef();
+    double& MinScaleRef();
+    double& MaxScaleRef();
+    int& ZIndexRef();
+    double& OpacityRef();
 };
 
 }

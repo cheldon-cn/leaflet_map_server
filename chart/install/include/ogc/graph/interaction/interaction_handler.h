@@ -96,12 +96,14 @@ class OGC_GRAPH_API InteractionHandler : public IInteractionHandler {
 public:
     using EventCallback = std::function<bool(const InteractionEvent&)>;
     
+    ~InteractionHandler();
+    
     static InteractionHandlerPtr Create(const std::string& name);
     
     bool HandleEvent(const InteractionEvent& event) override;
     
-    InteractionState GetState() const override { return m_state; }
-    void SetState(InteractionState state) { m_state = state; }
+    InteractionState GetState() const override;
+    void SetState(InteractionState state);
     
     void SetEnabled(bool enabled) override { m_enabled = enabled; }
     bool IsEnabled() const override { return m_enabled; }
@@ -109,7 +111,7 @@ public:
     void SetPriority(int priority) override { m_priority = priority; }
     int GetPriority() const override { return m_priority; }
     
-    std::string GetName() const override { return m_name; }
+    std::string GetName() const override;
     
     void SetEventCallback(InteractionEventType type, EventCallback callback);
     void ClearEventCallback(InteractionEventType type);
@@ -122,12 +124,11 @@ protected:
     
 private:
     std::string m_name;
-    InteractionState m_state;
     bool m_enabled;
     int m_priority;
-    std::map<InteractionEventType, EventCallback> m_eventCallbacks;
-    std::map<InteractionState, EventCallback> m_stateCallbacks;
-    mutable std::mutex m_mutex;
+    
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class InteractionManager;
@@ -139,7 +140,7 @@ public:
     
     bool Initialize();
     void Finalize();
-    bool IsInitialized() const { return m_initialized; }
+    bool IsInitialized() const;
     
     void AddHandler(IInteractionHandler* handler);
     void RemoveHandler(IInteractionHandler* handler);
@@ -154,7 +155,7 @@ public:
     bool ProcessEvent(const InteractionEvent& event);
     
     void SetCurrentState(InteractionState state);
-    InteractionState GetCurrentState() const { return m_currentState; }
+    InteractionState GetCurrentState() const;
     
     void SetScreenToWorldTransform(std::function<Coordinate(double, double)> transform);
     void SetWorldToScreenTransform(std::function<Coordinate(double, double)> transform);
@@ -163,14 +164,14 @@ public:
     Coordinate WorldToScreen(double worldX, double worldY) const;
     
     void SetViewportSize(int width, int height);
-    int GetViewportWidth() const { return m_viewportWidth; }
-    int GetViewportHeight() const { return m_viewportHeight; }
+    int GetViewportWidth() const;
+    int GetViewportHeight() const;
     
     void SetExtent(const Envelope& extent);
-    Envelope GetExtent() const { return m_extent; }
+    Envelope GetExtent() const;
     
     void SetLayerManager(LayerManager* manager);
-    LayerManager* GetLayerManager() const { return m_layerManager; }
+    LayerManager* GetLayerManager() const;
     
 private:
     InteractionManager();
@@ -179,16 +180,8 @@ private:
     InteractionManager(const InteractionManager&) = delete;
     InteractionManager& operator=(const InteractionManager&) = delete;
     
-    bool m_initialized;
-    InteractionState m_currentState;
-    std::vector<IInteractionHandler*> m_handlers;
-    std::function<Coordinate(double, double)> m_screenToWorld;
-    std::function<Coordinate(double, double)> m_worldToScreen;
-    int m_viewportWidth;
-    int m_viewportHeight;
-    Envelope m_extent;
-    LayerManager* m_layerManager;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

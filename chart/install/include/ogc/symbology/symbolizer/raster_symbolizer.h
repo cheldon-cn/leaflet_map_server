@@ -41,10 +41,10 @@ using RasterSymbolizerPtr = std::shared_ptr<RasterSymbolizer>;
 class OGC_SYMBOLOGY_API RasterSymbolizer : public Symbolizer {
 public:
     RasterSymbolizer();
-    ~RasterSymbolizer() override = default;
+    ~RasterSymbolizer() override;
     
     SymbolizerType GetType() const override { return SymbolizerType::kRaster; }
-    std::string GetName() const override { return m_name.empty() ? "RasterSymbolizer" : m_name; }
+    std::string GetName() const override;
     
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry) override;
     ogc::draw::DrawResult Symbolize(ogc::draw::DrawContextPtr context, const Geometry* geometry, const ogc::draw::DrawStyle& style) override;
@@ -107,22 +107,8 @@ public:
 private:
     uint32_t InterpolateColor(double value, double minVal, double maxVal) const;
     
-    double m_opacity;
-    RasterChannelSelection m_channelSelection;
-    int m_redChannel;
-    int m_greenChannel;
-    int m_blueChannel;
-    int m_grayChannel;
-    bool m_contrastEnhancement;
-    double m_contrastValue;
-    double m_brightnessValue;
-    double m_gammaValue;
-    std::vector<ColorMapEntry> m_colorMap;
-    RasterChannelSelection m_colorMapType;
-    double m_minValue;
-    double m_maxValue;
-    std::string m_resampling;
-    std::string m_overlapBehavior;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }

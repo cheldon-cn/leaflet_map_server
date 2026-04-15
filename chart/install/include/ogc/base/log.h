@@ -66,16 +66,8 @@ private:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     
-    void WriteLog(LogLevel level, const std::string& message);
-    void WriteLogWithLocation(LogLevel level, const char* file, int line,
-                              const char* func, const std::string& message);
-    std::string GetTimestamp() const;
-    
-    LogLevel m_level;
-    std::ofstream m_file;
-    std::string m_filepath;
-    bool m_consoleOutput;
-    std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 class OGC_BASE_API LogHelper {
@@ -95,7 +87,6 @@ private:
 
 }  
 }  
-
 #define LOG_TRACE() ogc::base::LogHelper(ogc::base::LogLevel::kTrace)
 #define LOG_DEBUG() ogc::base::LogHelper(ogc::base::LogLevel::kDebug)
 #define LOG_INFO() ogc::base::LogHelper(ogc::base::LogLevel::kInfo)
@@ -121,5 +112,6 @@ private:
 #define LOG_FATAL_FMT(...) ogc::base::Logger::Instance().LogWithLocation( \
     ogc::base::LogLevel::kFatal, __FILE__, __LINE__, __func__, \
     ogc::base::FormatString(__VA_ARGS__))
+
 
 #endif  

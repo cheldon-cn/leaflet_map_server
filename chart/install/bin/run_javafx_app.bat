@@ -15,7 +15,7 @@ if not exist "%JAVA_HOME%\bin\java.exe" (
 
 set JAVA_EXE=%JAVA_HOME%\bin\java.exe
 
-set CLASSPATH=%SCRIPT_DIR%\javafx-app-1.0.0.jar;%SCRIPT_DIR%\javawrapper-1.0.0.jar
+set CLASSPATH=%SCRIPT_DIR%\javafx-app-2.1.0.jar;%SCRIPT_DIR%\javawrapper-2.1.0.jar
 
 set PATH=%SCRIPT_DIR%;%PATH%
 

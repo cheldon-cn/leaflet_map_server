@@ -126,16 +126,11 @@ public:
     Result InitializeSpatialMetaData();
     
     std::string GetLastError() const;
-    sqlite3* GetRawConnection() { return m_db; }
+    sqlite3* GetRawConnection();
 
 private:
-    sqlite3* m_db;
-    bool m_isTransaction;
-    std::string m_lastError;
-    bool m_spatialInitialized;
-    ConnectionInfo m_connectionInfo;
-    TransactionIsolation m_isolationLevel;
-    int64_t m_rowsAffected;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     Result CheckConnection();
     Result ExecuteInternal(const std::string& sql, sqlite3_stmt*& stmt, bool finalize = true);
@@ -147,10 +142,10 @@ public:
     explicit SpatiaLiteStatement(sqlite3* db, const std::string& sql);
     ~SpatiaLiteStatement() override;
     
-    void SetConnection(sqlite3* db) { m_db = db; }
+    void SetConnection(sqlite3* db);
     
-    const std::string& GetName() const override { return m_sql; }
-    const std::string& GetSql() const override { return m_sql; }
+    const std::string& GetName() const override;
+    const std::string& GetSql() const override;
     
     Result BindInt(int paramIndex, int32_t value) override;
     Result BindInt64(int paramIndex, int64_t value) override;
@@ -185,10 +180,8 @@ public:
     int GetParameterIndex(const std::string& paramName) const override;
 
 private:
-    sqlite3* m_db;
-    sqlite3_stmt* m_stmt;
-    std::string m_sql;
-    std::vector<std::string> m_bindStrings;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     Result Prepare();
     Result Finalize();
@@ -235,13 +228,8 @@ public:
     bool HasGeometry(int columnIndex) const;
 
 private:
-    sqlite3_stmt* m_stmt;
-    int m_columnCount;
-    int64_t m_currentRow;
-    Result m_lastError;
-    
-    std::vector<std::string> m_columnNames;
-    std::vector<int> m_columnTypes;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     void InitializeColumns();
     ColumnType ConvertSqliteType(int sqliteType) const;

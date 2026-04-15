@@ -2,7 +2,7 @@
 
 /**
  * @file field_value.h
- * @brief 字段值容�? */
+ * @brief 字段值容�? */
 
 #include "export.h"
 #include "ogc/feature/field_type.h"

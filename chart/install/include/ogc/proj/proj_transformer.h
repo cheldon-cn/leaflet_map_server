@@ -54,15 +54,8 @@ public:
     static std::string GetProjVersion();
     
 private:
-    void* m_projContext;
-    void* m_projTransform;
-    void* m_projInverseTransform;
-    std::string m_sourceCRS;
-    std::string m_targetCRS;
-    std::string m_name;
-    std::string m_description;
-    bool m_valid;
-    mutable std::mutex m_mutex;
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
     
     bool CreateTransform(const std::string& sourceCRS, const std::string& targetCRS);
     void DestroyTransform();
