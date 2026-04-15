@@ -6,6 +6,7 @@
 #include <memory>
 
 using namespace ogc::symbology;
+using namespace ogc::draw;
 using namespace ogc;
 
 class RuleEngineTest : public ::testing::Test {

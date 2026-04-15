@@ -6,6 +6,7 @@ set(SOURCES
     src/filter/logical_filter.cpp
     src/filter/spatial_filter.cpp
     src/filter/symbolizer_rule.cpp
+    src/filter/rule_engine.cpp
     src/style/sld_parser.cpp
     src/style/mapbox_style_parser.cpp
     src/style/s52_style_manager.cpp
@@ -27,6 +28,7 @@ set(HEADERS
     include/ogc/symbology/filter/logical_filter.h
     include/ogc/symbology/filter/spatial_filter.h
     include/ogc/symbology/filter/symbolizer_rule.h
+    include/ogc/symbology/filter/rule_engine.h
     include/ogc/symbology/style/sld_parser.h
     include/ogc/symbology/style/mapbox_style_parser.h
     include/ogc/symbology/style/s52_style_manager.h

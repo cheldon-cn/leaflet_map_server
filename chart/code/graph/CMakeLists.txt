@@ -84,6 +84,7 @@ set(OGC_GRAPH_SOURCES
     src/render/basic_render_task.cpp
     src/render/render_queue.cpp
     src/render/async_renderer.cpp
+    src/render/tile_renderer.cpp
     src/label/label_engine.cpp
     src/label/label_placement.cpp
     src/label/label_conflict.cpp

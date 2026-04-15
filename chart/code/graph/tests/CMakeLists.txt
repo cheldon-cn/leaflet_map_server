@@ -125,6 +125,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
             ${SYMBOLOGY_SOURCE_DIR}/include
             ${CACHE_SOURCE_DIR}/include
             ${PROJ_MODULE_SOURCE_DIR}/include
+            ${NAVI_SOURCE_DIR}/include
     )
     
     target_link_libraries(${TEST_NAME}

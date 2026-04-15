@@ -16,6 +16,7 @@
 #include <memory>
 
 using namespace ogc::symbology;
+using namespace ogc::draw;
 using ogc::Geometry;
 using ogc::GeometryFactory;
 using ogc::Envelope;

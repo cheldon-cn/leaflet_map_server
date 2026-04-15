@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <ogc/cache/tile/tile_renderer.h>
+#include <ogc/graph/render/tile_renderer.h>
 #include <ogc/cache/tile/tile_key.h>
 #include <ogc/cache/tile/memory_tile_cache.h>
 #include "ogc/geom/envelope.h"
@@ -7,6 +7,7 @@
 #include <cstdint>
 
 using namespace ogc::cache;
+using namespace ogc::draw;
 using namespace ogc;
 
 class TileRendererTest : public ::testing::Test {
