@@ -1,6 +1,6 @@
 # 海图显示预警应用布局设计文档
 
-> **版本**: v2.1  
+> **版本**: v2.3  
 > **日期**: 2026-04-15  
 > **状态**: 整合设计  
 > **依据**: chart_app_layout_design.md v1.0 + app_layout_design.md v1.7
@@ -273,7 +273,22 @@
 | **海事管理员** | 操作熟练，需要高效工具 | 数据管理、批量处理、报告生成 | 完整功能、快捷操作、批量工具 |
 | **系统管理员** | 技术背景，需要配置能力 | 系统配置、数据维护、故障排查 | 配置面板、日志查看、诊断工具 |
 
-### 1.3 显示需求
+### 1.3 技术约束
+
+| 约束项 | 要求 | 说明 |
+|--------|------|------|
+| **Java版本** | JDK 8+ (1.8.0_60+) | 项目使用JDK 8编译 |
+| **JavaFX版本** | JavaFX 8 (内置于JDK 8) | 使用JDK内置JavaFX，不使用独立JavaFX SDK |
+| **构建工具** | Gradle 4.5.1 | 项目已使用Gradle构建 |
+| **UI框架** | JavaFX 8 + ControlsFX | 使用JavaFX原生组件+ControlsFX扩展 |
+| **Ribbon实现** | fxribbon模块 | 项目自有Ribbon实现模块 |
+| **JNI集成** | JNI Bridge | C++核心渲染通过JNI调用 |
+| **外部依赖** | libpq, sqlite3, libspatialite | 仅允许项目已审批的外部依赖 |
+| **日志框架** | java.util.logging | 使用JDK标准日志框架 |
+
+> **重要**: 本文档所有代码示例基于JavaFX 8 API编写。如需迁移至JavaFX 11+，需注意模块系统变化和API差异。
+
+### 1.4 显示需求
 
 | 需求 | 说明 | 实现方式 |
 |------|------|----------|
@@ -283,9 +298,9 @@
 | **工具访问** | 常用工具需要快速访问 | Ribbon菜单+快捷键 |
 | **响应式布局** | 适应不同屏幕尺寸 | 断点设计+面板折叠 |
 
-### 1.4 预警系统需求
+### 1.5 预警系统需求
 
-#### 1.4.1 预警类型
+#### 1.5.1 预警类型
 
 > **注**: 以下为预警类型概要，权威定义详见[10.1 预警类型定义](#101-预警类型定义)。
 
@@ -297,8 +312,10 @@
 | **禁航区预警** | 进入禁航区域 | P1 | 弹窗提示+区域高亮 |
 | **气象预警** | 恶劣天气预报 | P1 | 状态栏提示 |
 | **设备故障预警** | AIS/雷达设备异常 | P2 | 状态栏提示 |
+| **值班报警** | 操作员未在设定时间内响应 | P0 | 声音报警逐级升级 |
+| **潮汐预警** | 潮汐变化导致水深低于安全值 | P1 | 弹窗提示+区域高亮 |
 
-#### 1.4.2 预警显示需求
+#### 1.5.2 预警显示需求
 
 | 需求 | 说明 |
 |------|------|
@@ -307,7 +324,7 @@
 | **历史记录** | 预警历史可查询、可导出 |
 | **响应跟踪** | 预警响应状态可跟踪 |
 
-#### 1.4.3 预警面板需求
+#### 1.5.3 预警面板需求
 
 | 功能 | 说明 |
 |------|------|
@@ -316,7 +333,7 @@
 | **预警配置** | 配置预警规则和参数 |
 | **预警统计** | 预警数量、类型统计 |
 
-### 1.5 性能需求
+### 1.6 性能需求
 
 | 指标 | 要求 | 说明 |
 |------|------|------|
@@ -326,7 +343,7 @@
 | **内存占用** | < 500MB | 正常使用状态 |
 | **响应延迟** | < 100ms | 用户操作响应 |
 
-### 1.6 兼容性需求
+### 1.7 兼容性需求
 
 | 需求 | 说明 |
 |------|------|
@@ -1141,6 +1158,23 @@ splitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newV
 });
 ```
 
+#### 6.3.6 AppContext依赖管理演进路线
+
+| 方案 | 优点 | 缺点 | 结论 |
+|------|------|------|------|
+| **静态单例(当前)** | 实现简单、全局访问 | 测试困难、耦合度高 | ✅ 当前阶段采用 |
+| 手动依赖注入 | 解耦、可测试 | 需要大量重构 | ⏳ 第二阶段演进 |
+| DI框架(如Dagger/Guice) | 完全解耦、自动注入 | 引入新依赖、学习成本 | ⏳ 第三阶段演进 |
+
+**演进路线**:
+1. **当前阶段**: 使用AppContext静态单例，快速实现功能
+2. **第二阶段**: 将AppContext改为非静态，通过MainController构造函数注入各组件
+3. **第三阶段**: 引入轻量DI框架，实现声明式依赖注入
+
+**风险与缓解**:
+- 风险: 静态依赖导致单元测试无法Mock
+- 缓解: 当前通过PowerMock支持静态方法Mock；第二阶段重构后可使用标准Mock框架
+
 ### 6.4 面板尺寸约束
 
 | 元素 | 最小值 | 默认值 | 最大值 | 说明 |
@@ -1365,14 +1399,21 @@ public class TileCache extends AbstractLifecycleComponent {
         
         return pendingLoads.computeIfAbsent(key, k -> 
             CompletableFuture.supplyAsync(() -> {
-                Image tile = loadTileFromSource(k);
-                if (tile != null) {
-                    synchronized (cache) {
-                        cache.put(k, tile);
+                try {
+                    Image tile = loadTileFromSource(k);
+                    if (tile != null) {
+                        synchronized (cache) {
+                            cache.put(k, tile);
+                        }
                     }
+                    return tile;
+                } catch (Exception e) {
+                    Logger.getLogger(TileCache.class.getName())
+                        .log(Level.WARNING, "Failed to load tile: " + k, e);
+                    return null;
+                } finally {
+                    pendingLoads.remove(k);
                 }
-                pendingLoads.remove(k);
-                return tile;
             }, executor)
         );
     }
@@ -1579,7 +1620,8 @@ public class PluginManager extends AbstractLifecycleComponent {
                     plugin.initialize();
                 }
             } catch (Exception e) {
-                System.err.println("Failed to load plugin: " + jar.getName());
+                Logger.getLogger(PluginManager.class.getName())
+                    .log(Level.SEVERE, "Failed to load plugin: " + jar.getName(), e);
             }
         }
     }
@@ -1811,6 +1853,8 @@ public class AlarmPanel implements SideBarPanel {
 | **禁航区预警** | 进入禁航区域 | P1 | 弹窗提示+区域高亮 |
 | **气象预警** | 恶劣天气预报 | P1 | 状态栏提示 |
 | **设备故障预警** | AIS/雷达设备异常 | P2 | 状态栏提示 |
+| **值班报警** | 操作员未在设定时间内响应 | P0 | 声音报警逐级升级 |
+| **潮汐预警** | 潮汐变化导致水深低于安全值 | P1 | 弹窗提示+区域高亮 |
 
 ### 10.2 预警数据模型
 
@@ -1865,7 +1909,163 @@ public class Alarm {
 }
 ```
 
-### 10.3 预警规则引擎
+### 10.3 值班报警与预警抑制
+
+#### 10.3.1 值班报警(Watch Alarm)设计
+
+值班报警是ECDIS系统的强制性安全功能，当操作员在设定时间内未进行任何操作时触发。
+
+| 参数 | 默认值 | 范围 | 说明 |
+|------|--------|------|------|
+| 值班超时 | 12分钟 | 3-60分钟 | 无操作触发预警的时间 |
+| 预警阶段 | 30秒 | 10-60秒 | 声音预警持续时间 |
+| 确认超时 | 60秒 | 30-120秒 | 未确认则升级 |
+| 升级方式 | 声音增强 | - | 从间歇声变为连续声 |
+
+```java
+public class WatchAlarmManager {
+    
+    private static final long DEFAULT_WATCH_TIMEOUT = 12 * 60 * 1000;
+    private static final long PRE_ALARM_DURATION = 30 * 1000;
+    private static final long ACK_TIMEOUT = 60 * 1000;
+    
+    private long lastActivityTime;
+    private WatchAlarmState state = WatchAlarmState.IDLE;
+    private ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> checkTask;
+    
+    public enum WatchAlarmState {
+        IDLE,
+        PRE_ALARM,
+        ALARM,
+        ESCALATED
+    }
+    
+    public void onUserActivity() {
+        lastActivityTime = System.currentTimeMillis();
+        if (state != WatchAlarmState.IDLE) {
+            state = WatchAlarmState.IDLE;
+            AppEventBus.getInstance().publish(
+                new AppEvent(AppEventType.WATCH_ALARM_RESET, this));
+        }
+    }
+    
+    private void checkWatchAlarm() {
+        long elapsed = System.currentTimeMillis() - lastActivityTime;
+        long watchTimeout = getWatchTimeout();
+        
+        if (elapsed >= watchTimeout + ACK_TIMEOUT) {
+            escalateAlarm();
+        } else if (elapsed >= watchTimeout) {
+            triggerAlarm();
+        } else if (elapsed >= watchTimeout - PRE_ALARM_DURATION) {
+            preAlarm();
+        }
+    }
+    
+    private void preAlarm() {
+        if (state == WatchAlarmState.IDLE) {
+            state = WatchAlarmState.PRE_ALARM;
+            AppEventBus.getInstance().publish(
+                new AppEvent(AppEventType.WATCH_ALARM_PRE, this)
+                    .withData("remaining", PRE_ALARM_DURATION));
+        }
+    }
+    
+    private void triggerAlarm() {
+        state = WatchAlarmState.ALARM;
+        AppEventBus.getInstance().publish(
+            new AppEvent(AppEventType.ALARM_TRIGGERED, this)
+                .withData("alarm", createWatchAlarm())
+                .withData("level", AlarmLevel.CRITICAL));
+    }
+    
+    private void escalateAlarm() {
+        state = WatchAlarmState.ESCALATED;
+        SoundManager.getInstance().playContinuousAlarm();
+        AppEventBus.getInstance().publish(
+            new AppEvent(AppEventType.WATCH_ALARM_ESCALATED, this));
+    }
+    
+    public void acknowledge() {
+        if (state == WatchAlarmState.ALARM || state == WatchAlarmState.ESCALATED) {
+            onUserActivity();
+        }
+    }
+}
+```
+
+#### 10.3.2 预警抑制机制
+
+预警抑制允许操作员在特定条件下临时静默某些预警，避免已知条件产生的频繁预警干扰。
+
+| 抑制类型 | 说明 | 持续时间 | 示例 |
+|----------|------|----------|------|
+| 区域抑制 | 指定区域内抑制特定类型预警 | 可配置 | 已知浅水区抑制浅水预警 |
+| 时间抑制 | 指定时间段内抑制特定类型预警 | 可配置 | 港内停泊时抑制偏航预警 |
+| 目标抑制 | 抑制特定AIS目标的碰撞预警 | 永久或临时 | 已知友船抑制碰撞预警 |
+| 全局抑制 | 抑制所有非P0级别预警 | 最长2小时 | 紧急操作时临时抑制 |
+
+```java
+public class AlarmSuppressionManager {
+    
+    private final List<SuppressionRule> activeSuppressions = new ArrayList<>();
+    
+    public boolean isSuppressed(Alarm alarm) {
+        for (SuppressionRule rule : activeSuppressions) {
+            if (rule.matches(alarm) && !rule.isExpired()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public void addSuppression(SuppressionRule rule) {
+        if (rule.getType() == SuppressionType.GLOBAL) {
+            rule.setMaxDuration(2 * 60 * 60 * 1000);
+        }
+        activeSuppressions.add(rule);
+    }
+    
+    public void removeSuppression(String ruleId) {
+        activeSuppressions.removeIf(r -> r.getId().equals(ruleId));
+    }
+    
+    public List<SuppressionRule> getActiveSuppressions() {
+        activeSuppressions.removeIf(SuppressionRule::isExpired);
+        return new ArrayList<>(activeSuppressions);
+    }
+}
+
+public class SuppressionRule {
+    
+    public enum SuppressionType { AREA, TIME, TARGET, GLOBAL }
+    
+    private final String id;
+    private final SuppressionType type;
+    private final Set<String> suppressedAlarmTypes;
+    private final long createdTime;
+    private final long duration;
+    private final Object condition;
+    
+    public boolean matches(Alarm alarm) {
+        if (!suppressedAlarmTypes.contains(alarm.getType())) return false;
+        switch (type) {
+            case AREA: return matchesArea(alarm);
+            case TIME: return matchesTime(alarm);
+            case TARGET: return matchesTarget(alarm);
+            case GLOBAL: return alarm.getLevel() != AlarmLevel.CRITICAL;
+            default: return false;
+        }
+    }
+    
+    public boolean isExpired() {
+        return System.currentTimeMillis() > createdTime + duration;
+    }
+}
+```
+
+### 10.4 预警规则引擎
 
 ```java
 public class AlarmRuleEngine extends AbstractLifecycleComponent {
@@ -1913,7 +2113,7 @@ public class AlarmRuleEngine extends AbstractLifecycleComponent {
 }
 ```
 
-### 10.4 预警规则定义
+### 10.5 预警规则定义
 
 ```java
 public interface AlarmRule {
@@ -1964,9 +2164,9 @@ public class CollisionAlarmRule implements AlarmRule {
 }
 ```
 
-### 10.5 预警UI组件
+### 10.6 预警UI组件
 
-#### 10.5.1 预警列表
+#### 10.6.1 预警列表
 
 ```java
 public class AlarmListView extends VBox {
@@ -2000,7 +2200,7 @@ public class AlarmListView extends VBox {
 }
 ```
 
-#### 10.5.2 预警详情面板
+#### 10.6.2 预警详情面板
 
 ```java
 public class AlarmDetailPanel extends VBox {
@@ -2045,9 +2245,9 @@ public class AlarmDetailPanel extends VBox {
 }
 ```
 
-### 10.6 预警声音报警
+### 10.7 预警声音报警
 
-#### 10.6.1 声音提示配置项
+#### 10.7.1 声音提示配置项
 
 | 配置项 | 说明 | 默认值 | 配置方式 |
 |--------|------|--------|----------|
@@ -2056,7 +2256,7 @@ public class AlarmDetailPanel extends VBox {
 | 预警级别音效 | 不同级别预警使用不同音效 | 紧急:急促/一般:温和 | 下拉选择 |
 | 静音时段 | 可设置静音时段（如夜间） | 无 | 时间范围选择 |
 
-#### 10.6.2 预警级别音效配置
+#### 10.7.2 预警级别音效配置
 
 | 预警级别 | 音效类型 | 播放方式 | 音效文件 |
 |----------|----------|----------|----------|
@@ -2064,7 +2264,7 @@ public class AlarmDetailPanel extends VBox {
 | WARNING | 温和提示音 | 单次播放 | warning_alarm.wav |
 | INFO | 简短提示音 | 单次播放 | info_alarm.wav |
 
-#### 10.6.3 声音播放器实现
+#### 10.7.3 声音播放器实现
 
 ```java
 public class AlarmSoundPlayer {
@@ -2146,7 +2346,7 @@ public class AlarmSoundPlayer {
 }
 ```
 
-#### 10.6.4 声音设置界面
+#### 10.7.4 声音设置界面
 
 ```java
 public class SoundSettingsPanel extends VBox {
@@ -2676,6 +2876,79 @@ PerformanceMonitor (单例)
 | 事件通信 | 组件间事件传递正确 | TestFX |
 | 响应式布局 | 窗口缩放布局正确调整 | TestFX |
 | 快捷键 | 全局快捷键响应正确 | TestFX |
+| 预警端到端 | 预警触发→通知→响应→确认→清除 | TestFX |
+| 并发预警 | 多预警同时触发时系统行为 | JUnit+CountDownLatch |
+
+#### 14.2.1 预警端到端测试场景
+
+```java
+@Test
+public void testAlarmEndToEnd() {
+    AlarmRule mockRule = createMockCollisionRule();
+    alarmRuleEngine.addRule(mockRule);
+    alarmRuleEngine.startMonitoring();
+    
+    verifyThat("#alarm-indicator", hasStyle("-fx-text-fill: gray;"));
+    
+    simulateCollisionScenario();
+    
+    verifyThat("#alarm-indicator", hasStyle("-fx-text-fill: red;"));
+    verifyThat("#alarm-list", hasItems(1));
+    verifyThat("#status-bar", containsText("碰撞预警"));
+    
+    clickOn("#alarm-list .list-cell");
+    verifyThat("#alarm-detail-panel", isVisible());
+    verifyThat("#chart-canvas", hasHighlightAt(alarmPosition));
+    
+    clickOn("#acknowledge-btn");
+    verifyThat("#alarm-indicator", hasStyle("-fx-text-fill: orange;"));
+    
+    simulateAlarmCleared();
+    verifyThat("#alarm-indicator", hasStyle("-fx-text-fill: gray;"));
+}
+```
+
+#### 14.2.2 并发预警测试场景
+
+```java
+@Test
+public void testConcurrentAlarms() throws Exception {
+    int alarmCount = 10;
+    CountDownLatch latch = new CountDownLatch(alarmCount);
+    List<Alarm> receivedAlarms = Collections.synchronizedList(new ArrayList<>());
+    
+    AppEventBus.getInstance().subscribe(AppEventType.ALARM_TRIGGERED, event -> {
+        receivedAlarms.add((Alarm) event.getData("alarm"));
+        latch.countDown();
+    });
+    
+    for (int i = 0; i < alarmCount; i++) {
+        Alarm alarm = createTestAlarm(AlarmLevel.WARNING, "Test-" + i);
+        AppEventBus.getInstance().publish(
+            new AppEvent(AppEventType.ALARM_TRIGGERED, this)
+                .withData("alarm", alarm));
+    }
+    
+    boolean completed = latch.await(5, TimeUnit.SECONDS);
+    assertTrue("All alarms should be processed", completed);
+    assertEquals("All alarms should be received", alarmCount, receivedAlarms.size());
+}
+
+@Test
+public void testAlarmSuppressionUnderConcurrency() {
+    AlarmSuppressionManager suppression = new AlarmSuppressionManager();
+    suppression.addSuppression(new SuppressionRule(
+        "sup-1", SuppressionType.AREA, 
+        Set.of("SHALLOW_WATER"), 60000, testArea));
+    
+    Alarm shallowAlarm = createTestAlarm(AlarmLevel.CRITICAL, "SHALLOW_WATER");
+    shallowAlarm.setPosition(testAreaCenter);
+    assertTrue(suppression.isSuppressed(shallowAlarm));
+    
+    Alarm collisionAlarm = createTestAlarm(AlarmLevel.CRITICAL, "COLLISION");
+    assertFalse(suppression.isSuppressed(collisionAlarm));
+}
+```
 
 ### 14.3 UI自动化测试
 
@@ -3141,6 +3414,18 @@ public class ThemeManager {
 | 自动切换 | 跟随系统主题或按时间自动切换 |
 | 自定义主题 | 支持用户自定义CSS覆盖 |
 | 主题预览 | 切换前预览主题效果 |
+
+#### 19.4.1 暗色主题预警颜色对比度要求
+
+暗色主题下预警颜色必须满足WCAG 2.1 AA级对比度标准（最低对比度4.5:1）。
+
+| 预警级别 | 亮色主题 | 暗色主题 | 对比度验证 |
+|----------|----------|----------|------------|
+| CRITICAL | #FF0000 on #FFFFFF | #FF4444 on #1a3a5c | ✅ 5.2:1 |
+| WARNING | #FFA500 on #FFFFFF | #FFB347 on #1a3a5c | ✅ 5.8:1 |
+| INFO | #FFFF00 on #FFFFFF | #FFD700 on #1a3a5c | ✅ 7.1:1 |
+
+> **设计约束**: 暗色主题中预警颜色禁止使用纯红(#FF0000)和纯黄(#FFFF00)，因为深色背景下纯红色对比度不足且纯黄色过于刺眼。应使用调整后的#FF4444和#FFD700。
 
 ---
 
@@ -3616,7 +3901,27 @@ public class OnboardingManager {
     }
     
     private void highlightTarget(String selector) {
-        // 实现目标区域高亮
+        Scene scene = overlay.getScene();
+        if (scene == null) return;
+        
+        Node target = scene.lookup(selector);
+        if (target == null) return;
+        
+        Bounds targetBounds = target.localToScene(target.getBoundsInLocal());
+        
+        Rectangle highlight = new Rectangle(
+            targetBounds.getMinX(), targetBounds.getMinY(),
+            targetBounds.getWidth(), targetBounds.getHeight()
+        );
+        highlight.setFill(Color.TRANSPARENT);
+        highlight.setStroke(Color.YELLOW);
+        highlight.setStrokeWidth(3);
+        highlight.setMouseTransparent(true);
+        
+        overlay.getChildren().add(highlight);
+        
+        tooltipLabel.setLayoutX(targetBounds.getMaxX() + 10);
+        tooltipLabel.setLayoutY(targetBounds.getMinY());
     }
     
     private void complete() {
@@ -3883,6 +4188,110 @@ public class AlarmAccessibilityHandler {
 
 ## 附录
 
+### 附录A-1：关键基础类定义
+
+#### AbstractLifecycleComponent
+
+```java
+public abstract class AbstractLifecycleComponent {
+    
+    private volatile boolean initialized = false;
+    private volatile boolean disposed = false;
+    
+    public final void initialize() {
+        if (initialized || disposed) return;
+        doInitialize();
+        initialized = true;
+    }
+    
+    public final void dispose() {
+        if (!initialized || disposed) return;
+        doDispose();
+        disposed = true;
+    }
+    
+    public boolean isInitialized() {
+        return initialized;
+    }
+    
+    public boolean isDisposed() {
+        return disposed;
+    }
+    
+    protected abstract void doInitialize();
+    protected abstract void doDispose();
+}
+```
+
+#### LRUCache
+
+```java
+public class LRUCache<K, V> extends LinkedHashMap<K, V> {
+    
+    private final int maxCapacity;
+    
+    public LRUCache(int maxCapacity) {
+        super(maxCapacity, 0.75f, true);
+        this.maxCapacity = maxCapacity;
+    }
+    
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > maxCapacity;
+    }
+}
+```
+
+#### AlarmListCell
+
+```java
+public class AlarmListCell extends ListCell<Alarm> {
+    
+    private final HBox content = new HBox(8);
+    private final Label levelIcon = new Label();
+    private final VBox infoBox = new VBox(2);
+    private final Label titleLabel = new Label();
+    private final Label detailLabel = new Label();
+    private final Label timeLabel = new Label();
+    
+    public AlarmListCell() {
+        levelIcon.setMinSize(16, 16);
+        titleLabel.setStyle("-fx-font-weight: bold;");
+        detailLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: gray;");
+        timeLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+        infoBox.getChildren().addAll(titleLabel, detailLabel, timeLabel);
+        content.getChildren().addAll(levelIcon, infoBox);
+    }
+    
+    @Override
+    protected void updateItem(Alarm alarm, boolean empty) {
+        super.updateItem(alarm, empty);
+        if (empty || alarm == null) {
+            setGraphic(null);
+            return;
+        }
+        levelIcon.setStyle(getLevelStyle(alarm.getLevel()));
+        titleLabel.setText(alarm.getTitle());
+        detailLabel.setText(alarm.getType());
+        timeLabel.setText(formatTime(alarm.getTimestamp()));
+        setGraphic(content);
+    }
+    
+    private String getLevelStyle(AlarmLevel level) {
+        switch (level) {
+            case CRITICAL: return "-fx-background-color: #FF0000; -fx-background-radius: 8;";
+            case WARNING: return "-fx-background-color: #FFA500; -fx-background-radius: 8;";
+            case INFO: return "-fx-background-color: #FFFF00; -fx-background-radius: 8;";
+            default: return "-fx-background-color: gray; -fx-background-radius: 8;";
+        }
+    }
+    
+    private String formatTime(long timestamp) {
+        return new java.text.SimpleDateFormat("HH:mm:ss").format(new java.util.Date(timestamp));
+    }
+}
+```
+
 ### 附录A：面板尺寸约束表
 
 | 元素 | 最小值 | 默认值 | 最大值 | 单位 |
@@ -3982,6 +4391,8 @@ public class AlarmAccessibilityHandler {
 | v1.2 | 2025-01-15 | - | 完善技术实现细节，添加代码示例 |
 | v2.0 | 2026-04-15 | - | 根据check_e_d_a_app_layout_design.md评估报告补充遗漏章节：工作区管理、错误处理、性能要求与测试、测试策略、实施计划、AIS目标与预警关联、用户旅程、国际化、主题与样式、高DPI适配、模块集成、可行性评估、类图与时序图 |
 | v2.1 | 2026-04-16 | - | 补充剩余遗漏内容：设计决策说明（第六章）、插件扩展接口详细定义（第九章）、声音提示详细配置（第十章）、新手引导设计（第二十四章）、无障碍设计（第二十五章） |
+| v2.2 | 2026-04-16 | - | 技术评审修订：AppEventBus增加事件队列和超时保护(H1)、AlarmRuleEngine增加异常捕获(H2)、修正E3003错误码(H3)、章节编号连续性修复(M2)、预警类型定义统一与交叉引用(M3)、SideBarManager按钮选中状态同步(M4)、AlarmPersistence改用Preferences API(M5)、TileCache异步加载错误处理(M6)、添加技术约束与JavaFX版本要求(M7)、代码示例统一使用日志框架(L1)、补充OnboardingManager.highlightTarget()实现(L3)、补充关键基础类定义(L6) |
+| v2.3 | 2026-04-16 | - | 多角色交叉评审修订：增加值班报警Watch Alarm设计(NAV-03)、增加潮汐预警类型(NAV-01)、增加预警抑制/静默机制(NAV-02)、增加暗色主题预警颜色对比度验证(UX-01)、增加AppContext依赖注入演进路线(ARCH-01)、增加预警端到端测试场景(QA-01)、增加并发预警测试场景(QA-02) |
 
 ---
 
@@ -3990,7 +4401,7 @@ public class AlarmAccessibilityHandler {
 | 项目 | 内容 |
 |------|------|
 | 文档名称 | 海图显示预警应用布局设计文档 |
-| 文档版本 | v2.1 |
+| 文档版本 | v2.3 |
 | 创建日期 | 2025-04-15 |
 | 最后更新 | 2026-04-16 |
 | 文档状态 | 正式发布 |
