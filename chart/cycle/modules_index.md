@@ -4,6 +4,17 @@
 > **项目**: Cycle Chart Application v1.0.0
 
 ---
+## ⚠️ 前置说明
+
+> **重要**: 在获取各模块详细信息之前，必须先了解以下内容：
+> 
+> 1. **编译与安装目录** - 了解项目的构建输出结构和安装路径配置
+> 2. **构建说明** - 确认所需构建环境和依赖
+> 3. **模块依赖关系** - 理解模块间的依赖层级，确保编译顺序正确
+>
+> 请先阅读以下章节，再查阅各模块详情。
+
+---
 
 ## 模块概览
 
@@ -36,6 +47,8 @@ javafx-app (依赖javawrapper, fxribbon)
 
 ## 编译与安装目录
 
+> **基准目录**: 本文档中所有路径均相对于**项目根目录**（即 `e:\program\trae\chart/`）
+
 ### 目录结构
 
 | 目录类型 | 路径 | 说明 |
@@ -54,9 +67,9 @@ javafx-app (依赖javawrapper, fxribbon)
 |------|----------|----------|------------|
 | chart_c_api | ogc_chart_c_api.dll/lib | build/test, build/lib | install/include/ogc/capi/ |
 | jni | ogc_chart_jni.dll | build/test | - |
-| javawrapper | javawrapper-1.0.0.jar | build/test | - |
-| fxribbon | fxribbon-1.0.0.jar | build/test | - |
-| javafx-app | javafx-app-1.0.0.jar | build/test | - |
+| javawrapper | javawrapper-[VERSION].jar | build/test | - |
+| fxribbon | fxribbon-[VERSION].jar | build/test | - |
+| javafx-app | javafx-app-[VERSION].jar | build/test | - |
 
 ---
 
@@ -375,7 +388,7 @@ cd cycle
 | JavaFX | 11+ |
 | JAVA_HOME | 必须设置 (`F:\enc\java`) |
 | CMake | 3.10+ |
-| C++编译器 | VS2017+ / GCC 7+ |
+| C++编译器 | VS2015+ / GCC 7+ |
 | Gradle | 4.5.1 (位于 `gradle/gradle-4.5.1/`) |
 | Gradle Wrapper | 配置使用本地 `gradle/gradle-4.5.1-all.zip` |
 

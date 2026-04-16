@@ -10,6 +10,16 @@
 #include <memory>
 
 using namespace ogc::graph;
+using ogc::draw::TileDevice;
+using ogc::draw::RasterImageDevice;
+using ogc::draw::DrawContext;
+using ogc::draw::DrawStyle;
+using ogc::draw::Pen;
+using ogc::draw::Color;
+using ogc::draw::PixelFormat;
+using ogc::draw::DrawResult;
+using ogc::draw::DeviceType;
+using ogc::draw::TileInfo;
 using ogc::Envelope;
 
 class IntegrationTileRenderTest : public ::testing::Test {

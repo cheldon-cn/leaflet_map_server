@@ -18,9 +18,9 @@ protected:
         track.totalDistance = 1000.0;
         track.totalDuration = 100.0;
         
-        TrackSegment segment;
+        PlaybackTrackSegment segment;
         for (int i = 0; i < 10; ++i) {
-            TrackPoint point;
+            PlaybackTrackPoint point;
             point.position = Coordinate(i * 100.0, i * 100.0);
             point.heading = i * 10.0;
             point.speed = 10.0;
@@ -94,7 +94,7 @@ TEST_F(TrackPlayerTest, SetPlaybackMode) {
 }
 
 TEST_F(TrackPlayerTest, GetCurrentPoint) {
-    TrackPoint point = player->GetCurrentPoint();
+    PlaybackTrackPoint point = player->GetCurrentPoint();
     EXPECT_DOUBLE_EQ(point.position.x, 0.0);
     EXPECT_DOUBLE_EQ(point.position.y, 0.0);
 }
@@ -119,7 +119,7 @@ TEST_F(TrackPlayerTest, SetLoopEnabled) {
 
 TEST_F(TrackPlayerTest, ProgressCallback) {
     double progress = -1.0;
-    player->SetProgressCallback([&progress](const TrackPoint&, double p) {
+    player->SetProgressCallback([&progress](const PlaybackTrackPoint&, double p) {
         progress = p;
     });
     
@@ -222,7 +222,7 @@ TEST_F(TrackPlayerTest, SeekClamped) {
 }
 
 TEST_F(TrackPlayerTest, TrackPointDefaults) {
-    TrackPoint point;
+    PlaybackTrackPoint point;
     EXPECT_DOUBLE_EQ(point.heading, 0.0);
     EXPECT_DOUBLE_EQ(point.speed, 0.0);
     EXPECT_DOUBLE_EQ(point.distance, 0.0);
@@ -230,7 +230,7 @@ TEST_F(TrackPlayerTest, TrackPointDefaults) {
 }
 
 TEST_F(TrackPlayerTest, TrackSegmentDefaults) {
-    TrackSegment segment;
+    PlaybackTrackSegment segment;
     EXPECT_TRUE(segment.points.empty());
     EXPECT_DOUBLE_EQ(segment.totalDistance, 0.0);
     EXPECT_DOUBLE_EQ(segment.totalDuration, 0.0);
@@ -250,12 +250,12 @@ TEST_F(TrackPlayerTest, TrackPlaybackDataGetPointCount) {
     TrackPlaybackData track;
     EXPECT_EQ(track.GetPointCount(), 0u);
     
-    TrackSegment segment;
+    PlaybackTrackSegment segment;
     segment.points.resize(5);
     track.segments.push_back(segment);
     EXPECT_EQ(track.GetPointCount(), 5u);
     
-    TrackSegment segment2;
+    PlaybackTrackSegment segment2;
     segment2.points.resize(3);
     track.segments.push_back(segment2);
     EXPECT_EQ(track.GetPointCount(), 8u);
@@ -266,8 +266,8 @@ TEST_F(TrackPlayerTest, TrackPlaybackDataGetBoundingBox) {
     Envelope env = track.GetBoundingBox();
     EXPECT_TRUE(env.IsNull());
     
-    TrackSegment segment;
-    TrackPoint p1, p2, p3;
+    PlaybackTrackSegment segment;
+    PlaybackTrackPoint p1, p2, p3;
     p1.position = Coordinate(0.0, 0.0);
     p2.position = Coordinate(100.0, 50.0);
     p3.position = Coordinate(50.0, 100.0);

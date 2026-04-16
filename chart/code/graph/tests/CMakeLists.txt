@@ -19,6 +19,7 @@ set(TEST_SOURCES
     test_layer_manager.cpp
     test_transform_manager.cpp
     test_rule_engine.cpp
+    test_track_recorder.cpp
     test_lod.cpp
     test_lod_manager.cpp
     test_render_task.cpp
@@ -60,7 +61,6 @@ set(TEST_SOURCES
     test_pan_zoom_handler.cpp
     test_selection_handler.cpp
     test_location_display_handler.cpp
-    test_track_recorder.cpp
     test_layer_control_panel.cpp
     test_day_night_mode_manager.cpp
     test_it_geometry.cpp
@@ -136,6 +136,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
             ogc_proj
             ogc_cache
             ogc_symbology
+            ogc_navi
             GTest::gtest
             GTest::gtest_main
     )

@@ -15,8 +15,8 @@ struct LayerConfig::Impl {
     bool selectable = true;
     bool editable = false;
     int zOrder = 0;
-    std::shared_ptr<Symbolizer> symbolizer;
-    std::vector<std::shared_ptr<SymbolizerRule>> rules;
+    std::shared_ptr<symbology::Symbolizer> symbolizer;
+    std::vector<std::shared_ptr<symbology::SymbolizerRule>> rules;
     
     Impl() = default;
     explicit Impl(const std::string& n) : name(n) {}
@@ -88,14 +88,14 @@ bool LayerConfig::IsVisibleAtScale(double scale) const
 int LayerConfig::GetZOrder() const { return impl_->zOrder; }
 void LayerConfig::SetZOrder(int zOrder) { impl_->zOrder = zOrder; }
 
-void LayerConfig::SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer)
+void LayerConfig::SetSymbolizer(std::shared_ptr<symbology::Symbolizer> symbolizer)
 {
     impl_->symbolizer = symbolizer;
 }
 
-std::shared_ptr<Symbolizer> LayerConfig::GetSymbolizer() const { return impl_->symbolizer; }
+std::shared_ptr<symbology::Symbolizer> LayerConfig::GetSymbolizer() const { return impl_->symbolizer; }
 
-void LayerConfig::AddRule(std::shared_ptr<SymbolizerRule> rule)
+void LayerConfig::AddRule(std::shared_ptr<symbology::SymbolizerRule> rule)
 {
     impl_->rules.push_back(rule);
 }
@@ -105,7 +105,7 @@ void LayerConfig::ClearRules()
     impl_->rules.clear();
 }
 
-const std::vector<std::shared_ptr<SymbolizerRule>>& LayerConfig::GetRules() const { return impl_->rules; }
+const std::vector<std::shared_ptr<symbology::SymbolizerRule>>& LayerConfig::GetRules() const { return impl_->rules; }
 
 LayerConfigPtr LayerConfig::Clone() const
 {

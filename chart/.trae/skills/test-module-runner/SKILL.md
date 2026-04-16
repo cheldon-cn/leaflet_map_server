@@ -40,10 +40,12 @@ Invoke this skill when:
 │                  Test Module Runner Flow                     │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Step 1: Parse Module Name                                  │
-│  ├── Extract module name from user input                    │
-│  ├── Validate module exists                                 │
-│  └── Pattern: code\[modulename]\tests                       │
+│  Step 1: Parse Input Source                                 │
+│  ├── 识别模块列表来源                                        │
+│  │   ├── code\modules.md → C++模块列表                      │
+│  │   ├── cycle\modules_index.md → Cycle模块列表             │
+│  │   └── code\[modulename]\tests → 单个模块                 │
+│  └── 确定编译目录和报告路径                                  │
 │                                                             │
 │  Step 2: Create Todo List                                   │
 │  ├── Compile the module tests                               │
@@ -65,30 +67,97 @@ Invoke this skill when:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Step 1: Parse Module Name
+### Step 1: Parse Input Source
 
-Extract the module name from user input:
-- Pattern: `code\[modulename]\tests` or `code/[modulename]/tests`
-- Example: "code\graph\tests" → module = "graph"
+**基准目录**: 所有路径均相对于**项目根目录**（即 `e:\program\trae\chart/`）
 
-**Input Validation**:
+**统一路径配置**：
+- 编译目录：`build/`
+- 测试目录：`build/test/`
+- 测试报告：`doc/0_test_report.md`
+
+#### 1.1 识别输入类型
+
+| 输入模式 | 说明 |
+|----------|------|
+| `*.md中所有模块` 或 `*.md文件中所有模块` | 从指定 md 文件解析模块列表 |
+| `code\[modulename]\tests` | 单个模块测试 |
+| `所有模块` | 默认读取 `code/modules.md` |
+
+#### 1.2 模块列表解析
+
+**从 md 文件解析模块概览**：
 
 ```
-IF input does not match pattern THEN
-  ├── Try to extract module name from context
-  ├── IF still cannot determine THEN
-  │   └── Ask user to specify module name
-  └── ELSE proceed with extracted name
-END IF
+1. 读取指定的 *.md 文件
+2. 定位"模块概览"章节（## 模块概览）
+3. 解析表格，提取模块信息：
+   - 第一列：模块名称
+   - 第二列：模块路径
+4. 按依赖顺序编译和测试各模块
+```
 
-IF module directory does not exist THEN
-  └── Output error: "Module [name] not found. Available modules: [list]"
+**表格解析规则**：
+
+```markdown
+## 模块概览
+
+| 模块 | 路径 | 说明 |
+|------|------|------|
+| base | code/base | 基础模块 |
+| geom | code/geom | 几何模块 |
+```
+
+解析结果：
+- 模块名：base, geom, ...
+- 模块路径：code/base, code/geom, ...
+
+**解析伪代码**：
+
+```
+FUNCTION ParseModuleList(mdFilePath):
+    content = ReadFile(mdFilePath)
+    
+    // 定位"模块概览"章节
+    overviewSection = ExtractSection(content, "## 模块概览", "##")
+    
+    // 解析表格
+    modules = []
+    FOR each line IN overviewSection:
+        IF line matches "| [模块名] | [路径] |" THEN
+            moduleName = Column[0]
+            modulePath = Column[1]
+            modules.Add({name: moduleName, path: modulePath})
+        END IF
+    END FOR
+    
+    RETURN modules
+END FUNCTION
+```
+
+#### 1.3 Input Validation
+
+```
+IF input matches "*.md中所有模块" THEN
+  ├── 提取 md 文件路径
+  ├── IF 文件不存在 THEN 报错
+  ├── 解析模块列表（调用 ParseModuleList）
+  └── 设置 reportPath = "doc/0_test_report.md"
+ELSE IF input matches "code\[modulename]\tests" THEN
+  ├── 提取模块名称
+  └── 设置 reportPath = "doc/0_test_report.md"
+ELSE IF input contains "所有模块" THEN
+  ├── 默认读取 code/modules.md
+  └── 设置 reportPath = "doc/0_test_report.md"
+ELSE
+  └── 尝试从上下文推断，或询问用户
 END IF
 ```
 
 **Error Messages**:
-- "无法识别模块名称，请使用格式: code\[modulename]\tests"
-- "模块 [name] 不存在，请检查模块名称"
+- "无法识别模块来源，请指定 md 文件路径，如: code/modules.md"
+- "文件 [path] 不存在"
+- "模块概览表格格式不正确，请检查 md 文件"
 
 ### Step 2: Create Todo List
 
@@ -159,11 +228,28 @@ Write-Host "Passed: $passed, Failed: $failed, Skipped: $skipped"
 
 ### Step 5: Update Test Report
 
-Update the test report file at `doc\0_test_report.md` with:
+**重要**: 测试完成后**必须**更新测试报告文件。
+
+#### 5.1 统一报告路径
+
+**报告路径**（相对于项目根目录）：`doc/0_test_report.md`
+
+无论输入来源是哪个 md 文件，测试报告统一输出到此路径。
+
+#### 5.2 报告内容
+
+更新测试报告文件，包含：
 1. Test summary table
 2. Detailed test results
 3. Skipped tests with reasons
 4. Any new tests added
+
+#### 5.3 增量更新策略
+
+**当对多个模块依次执行测试时**，采用增量更新策略：
+- 每完成2~3个模块测试后，立即更新报告
+- 防止因内容过多导致生成报告失败
+- 确保每个模块的测试结果都被记录
 
 ## Decision Guide
 
@@ -503,21 +589,71 @@ try {
 
 1. Display test progress in real-time
 2. Show summary at the end
-3. Update test report file
+3. **必须更新测试报告文件**（根据输入类型确定路径）
 4. Mark todos as completed
 
 ## Example Usage
 
+### Example 1: 从指定 md 文件测试所有模块
+
 User input:
 ```
-编译运行code\graph\tests中所有用例，单个用例执行时间超过5s,就跳过此用例
+对code\modules.md中所有模块分别进行编译，然后执行测试用例
+```
+
+Expected behavior:
+1. 读取 `code/modules.md`
+2. 解析"模块概览"表格，提取模块列表
+3. 编译目录：`build/`
+4. 报告路径：`doc/0_test_report.md`
+5. 按依赖顺序编译和测试各模块
+6. 更新 `doc/0_test_report.md`
+
+### Example 2: 从其他 md 文件测试模块
+
+User input:
+```
+对cycle\modules_index.md中所有模块进行编译测试
+```
+
+Expected behavior:
+1. 读取 `cycle/modules_index.md`
+2. 解析"模块概览"表格，提取模块列表
+3. 编译目录：`build/`
+4. 报告路径：`doc/0_test_report.md`
+5. 按依赖顺序编译和测试各模块
+6. 更新 `doc/0_test_report.md`
+
+### Example 3: 测试单个模块
+
+User input:
+```
+编译运行code\graph\tests中所有用例，单个用例执行时间超过10s就跳过
 ```
 
 Expected output:
-1. Compile graph module tests
-2. Run all test_*.exe files
-3. Skip tests exceeding 5 seconds
-4. Update doc\0_test_report.md with results
+1. 提取模块名称 = "graph"
+2. 编译目录：`build/`
+3. 报告路径：`doc/0_test_report.md`
+4. Compile graph module tests
+5. Run all test_*.exe files
+6. Skip tests exceeding 10 seconds
+7. Update `doc/0_test_report.md` with results
+
+### Example 4: 默认测试所有模块
+
+User input:
+```
+编译测试所有模块
+```
+
+Expected behavior:
+1. 默认读取 `code/modules.md`
+2. 解析"模块概览"表格，提取模块列表
+3. 编译目录：`build/`
+4. 报告路径：`doc/0_test_report.md`
+5. 按依赖顺序编译和测试各模块
+6. 更新 `doc/0_test_report.md`
 
 ### Complete Report Example
 
@@ -609,11 +745,33 @@ Expected output:
 
 ## File Paths
 
-| Path | Purpose |
-|------|---------|
-| `code\build\test\` | Test executable directory |
-| `doc\0_test_report.md` | Test report file |
-| `code\[module]\tests\` | Module test source directory |
+**基准目录**: 所有路径均相对于**项目根目录**（即 `e:\program\trae\chart/`）
+
+### 统一路径配置
+
+| 路径类型 | 路径 | 说明 |
+|----------|------|------|
+| 编译目录 | `build/` | CMake构建目录 |
+| 测试可执行 | `build/test/` | `.dll`、`.exe` 文件 |
+| 静态库/导入库 | `build/lib/` | `.lib` 文件 |
+| 测试报告 | `doc/0_test_report.md` | 测试报告文件 |
+
+### 模块列表文件
+
+| 文件 | 说明 |
+|------|------|
+| `code/modules.md` | C++模块列表（默认） |
+| `cycle/modules_index.md` | Cycle模块列表 |
+| 其他 `*.md` 文件 | 需包含"模块概览"章节 |
+
+### 模块源码目录
+
+模块测试源码位于：`[模块路径]/tests/`
+
+例如：
+- `code/base/tests/` - base 模块测试
+- `code/geom/tests/` - geom 模块测试
+- `cycle/core/tests/` - cycle core 模块测试
 
 ## Performance Optimization
 
