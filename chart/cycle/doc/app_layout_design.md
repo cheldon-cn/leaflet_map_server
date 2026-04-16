@@ -1,7 +1,8 @@
 # JavaFX应用布局设计
 
-> **版本**: v1.6  
-> **日期**: 2026-04-11
+> **版本**: v1.7  
+> **日期**: 2026-04-15  
+> **更新**: 根据javafx-app实际代码更新示例代码
 
 ---
 
@@ -262,43 +263,136 @@ MainView (BorderPane)
 ### 4.2 响应式行为
 
 ```java
-public class ResponsiveLayoutManager {
+public class ResponsiveLayoutManager extends AbstractLifecycleComponent {
+    
+    public enum LayoutMode {
+        COMPACT,
+        STANDARD,
+        WIDE
+    }
     
     private static final int COMPACT_WIDTH = 1024;
     private static final int STANDARD_WIDTH = 1440;
     
+    private final DoubleProperty windowWidth = new SimpleDoubleProperty();
+    private final DoubleProperty windowHeight = new SimpleDoubleProperty();
+    
+    private LayoutMode currentMode = LayoutMode.STANDARD;
+    private final List<Consumer<LayoutMode>> layoutChangeListeners = new ArrayList<>();
+    
+    private Region sideBar;
+    private Region rightPanel;
+    private Region statusBar;
+    
+    public void setSideBar(Region sideBar) {
+        this.sideBar = sideBar;
+    }
+    
+    public void setRightPanel(Region rightPanel) {
+        this.rightPanel = rightPanel;
+    }
+    
+    public void setStatusBar(Region statusBar) {
+        this.statusBar = statusBar;
+    }
+    
+    public void bindToWindow(Region root) {
+        windowWidth.bind(root.widthProperty());
+        windowHeight.bind(root.heightProperty());
+    }
+    
     public void onWindowResize(double width) {
+        LayoutMode newMode;
         if (width < COMPACT_WIDTH) {
-            applyCompactLayout();
+            newMode = LayoutMode.COMPACT;
         } else if (width < STANDARD_WIDTH) {
-            applyStandardLayout();
+            newMode = LayoutMode.STANDARD;
         } else {
-            applyWideLayout();
+            newMode = LayoutMode.WIDE;
+        }
+        
+        if (newMode != currentMode) {
+            currentMode = newMode;
+            applyLayout(newMode);
+            notifyLayoutChange(newMode);
+        }
+    }
+    
+    private void applyLayout(LayoutMode mode) {
+        switch (mode) {
+            case COMPACT:
+                applyCompactLayout();
+                break;
+            case STANDARD:
+                applyStandardLayout();
+                break;
+            case WIDE:
+                applyWideLayout();
+                break;
         }
     }
     
     private void applyCompactLayout() {
-        // 侧边栏面板自动收起
-        sideBar.collapsePanel();
-        // 右侧面板转为浮动窗口
-        rightPanel.detachToFloatWindow();
-        // 状态栏简化显示
-        statusBar.setCompactMode(true);
+        if (sideBar != null) {
+            sideBar.setPrefWidth(40);
+            sideBar.setMinWidth(40);
+        }
+        if (rightPanel != null) {
+            rightPanel.setPrefWidth(0);
+            rightPanel.setMinWidth(0);
+        }
     }
     
     private void applyStandardLayout() {
-        // 侧边栏面板宽度固定200px
-        sideBar.setPanelWidth(200);
-        // 右侧面板宽度固定250px
-        rightPanel.setWidth(250);
-        // 状态栏完整显示
-        statusBar.setCompactMode(false);
+        if (sideBar != null) {
+            sideBar.setPrefWidth(200);
+            sideBar.setMinWidth(180);
+            sideBar.setMaxWidth(350);
+        }
+        if (rightPanel != null) {
+            rightPanel.setPrefWidth(250);
+            rightPanel.setMinWidth(200);
+            rightPanel.setMaxWidth(450);
+        }
     }
     
     private void applyWideLayout() {
-        // 面板宽度可调，设置最大限制
-        sideBar.setPanelWidthRange(200, 300);
-        rightPanel.setWidthRange(250, 400);
+        if (sideBar != null) {
+            sideBar.setPrefWidth(250);
+            sideBar.setMinWidth(200);
+            sideBar.setMaxWidth(350);
+        }
+        if (rightPanel != null) {
+            rightPanel.setPrefWidth(300);
+            rightPanel.setMinWidth(250);
+            rightPanel.setMaxWidth(450);
+        }
+    }
+    
+    public void addLayoutChangeListener(Consumer<LayoutMode> listener) {
+        layoutChangeListeners.add(listener);
+    }
+    
+    private void notifyLayoutChange(LayoutMode mode) {
+        for (Consumer<LayoutMode> listener : layoutChangeListeners) {
+            listener.accept(mode);
+        }
+    }
+    
+    public LayoutMode getCurrentMode() {
+        return currentMode;
+    }
+    
+    @Override
+    protected void doInitialize() {
+        windowWidth.addListener((obs, oldVal, newVal) -> {
+            onWindowResize(newVal.doubleValue());
+        });
+    }
+    
+    @Override
+    protected void doDispose() {
+        layoutChangeListeners.clear();
     }
 }
 ```
@@ -325,6 +419,9 @@ public class AppEventBus {
     private static final AppEventBus INSTANCE = new AppEventBus();
     private final Map<AppEventType, List<Consumer<AppEvent>>> subscribers = new ConcurrentHashMap<>();
     
+    private AppEventBus() {
+    }
+    
     public static AppEventBus getInstance() {
         return INSTANCE;
     }
@@ -343,12 +440,35 @@ public class AppEventBus {
     public void publish(AppEvent event) {
         List<Consumer<AppEvent>> handlers = subscribers.get(event.getType());
         if (handlers != null) {
-            Platform.runLater(() -> {
+            if (Platform.isFxApplicationThread()) {
                 for (Consumer<AppEvent> handler : handlers) {
-                    handler.accept(event);
+                    try {
+                        handler.accept(event);
+                    } catch (Exception e) {
+                        System.err.println("Error handling event: " + event.getType() + ", " + e.getMessage());
+                    }
                 }
-            });
+            } else {
+                Platform.runLater(() -> {
+                    for (Consumer<AppEvent> handler : handlers) {
+                        try {
+                            handler.accept(event);
+                        } catch (Exception e) {
+                            System.err.println("Error handling event: " + event.getType() + ", " + e.getMessage());
+                        }
+                    }
+                });
+            }
         }
+    }
+    
+    public void clearAllSubscribers() {
+        subscribers.clear();
+    }
+    
+    public int getSubscriberCount(AppEventType type) {
+        List<Consumer<AppEvent>> handlers = subscribers.get(type);
+        return handlers != null ? handlers.size() : 0;
     }
 }
 ```
@@ -357,32 +477,47 @@ public class AppEventBus {
 
 ```java
 public enum AppEventType {
-    // 数据事件
     CHART_LOADED,
     CHART_CLOSED,
     FEATURE_SELECTED,
     FEATURE_DESELECTED,
     
-    // 图层事件
     LAYER_ADDED,
     LAYER_REMOVED,
     LAYER_VISIBILITY_CHANGED,
     LAYER_ORDER_CHANGED,
     
-    // 视图事件
     VIEW_CHANGED,
     ZOOM_CHANGED,
     CENTER_CHANGED,
     
-    // UI事件
     SIDEBAR_PANEL_CHANGED,
     RIGHT_TAB_CHANGED,
     STATUS_MESSAGE,
     
-    // 服务事件
     SERVICE_CONNECTED,
     SERVICE_DISCONNECTED,
-    SERVICE_ERROR
+    SERVICE_ERROR,
+    
+    LOADING_STARTED,
+    LOADING_PROGRESS,
+    LOADING_COMPLETED,
+    LOADING_STATE_CHANGED,
+    
+    RENDERING_STARTED,
+    RENDERING_PROGRESS,
+    RENDERING_COMPLETED,
+    
+    MEMORY_WARNING,
+    MEMORY_CRITICAL,
+    
+    THEME_CHANGED,
+    LOCALE_CHANGED,
+    
+    DATA_ADDED,
+    DATA_REMOVED,
+    DATA_PREVIEW,
+    DATA_PROPERTIES
 }
 
 public class AppEvent {
@@ -401,7 +536,26 @@ public class AppEvent {
         return this;
     }
     
-    // getters...
+    public AppEventType getType() {
+        return type;
+    }
+    
+    public Object getSource() {
+        return source;
+    }
+    
+    public Map<String, Object> getData() {
+        return data;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <T> T getData(String key) {
+        return (T) data.get(key);
+    }
+    
+    public boolean hasData(String key) {
+        return data.containsKey(key);
+    }
 }
 ```
 
@@ -429,17 +583,37 @@ AppEventBus.getInstance().subscribe(AppEventType.FEATURE_SELECTED, event -> {
 ### 6.1 脏区域重绘
 
 ```java
-public class DirtyRectRenderer {
+public class DirtyRectRenderer extends AbstractLifecycleComponent {
     
     private Rectangle2D dirtyRect = null;
     private boolean fullRepaintNeeded = true;
+    private final List<Consumer<GraphicsContext>> renderCallbacks = new ArrayList<>();
+    
+    public void addRenderCallback(Consumer<GraphicsContext> callback) {
+        renderCallbacks.add(callback);
+    }
+    
+    public void removeRenderCallback(Consumer<GraphicsContext> callback) {
+        renderCallbacks.remove(callback);
+    }
     
     public void markDirty(double x, double y, double width, double height) {
         if (dirtyRect == null) {
             dirtyRect = new Rectangle2D(x, y, width, height);
         } else {
-            dirtyRect = Rectangle2D.union(dirtyRect, new Rectangle2D(x, y, width, height));
+            double minX = Math.min(dirtyRect.getMinX(), x);
+            double minY = Math.min(dirtyRect.getMinY(), y);
+            double maxX = Math.max(dirtyRect.getMaxX(), x + width);
+            double maxY = Math.max(dirtyRect.getMaxY(), y + height);
+            dirtyRect = new Rectangle2D(minX, minY, maxX - minX, maxY - minY);
         }
+    }
+    
+    public void markDirty(Rectangle2D rect) {
+        if (rect == null) {
+            return;
+        }
+        markDirty(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
     }
     
     public void markFullRepaint() {
@@ -449,14 +623,23 @@ public class DirtyRectRenderer {
     
     public void render(GraphicsContext gc, double canvasWidth, double canvasHeight) {
         if (fullRepaintNeeded) {
-            // 完整重绘
             renderFull(gc, canvasWidth, canvasHeight);
             fullRepaintNeeded = false;
         } else if (dirtyRect != null) {
-            // 脏区域重绘
             renderDirtyRect(gc, dirtyRect);
             dirtyRect = null;
         }
+    }
+    
+    private void renderFull(GraphicsContext gc, double canvasWidth, double canvasHeight) {
+        gc.save();
+        gc.clearRect(0, 0, canvasWidth, canvasHeight);
+        
+        for (Consumer<GraphicsContext> callback : renderCallbacks) {
+            callback.accept(gc);
+        }
+        
+        gc.restore();
     }
     
     private void renderDirtyRect(GraphicsContext gc, Rectangle2D rect) {
@@ -464,9 +647,40 @@ public class DirtyRectRenderer {
         gc.beginPath();
         gc.rect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
         gc.clip();
-        // 渲染脏区域内的内容
-        renderContent(gc, rect);
+        
+        gc.clearRect(rect.getMinX(), rect.getMinY(), rect.getWidth(), rect.getHeight());
+        
+        for (Consumer<GraphicsContext> callback : renderCallbacks) {
+            callback.accept(gc);
+        }
+        
         gc.restore();
+    }
+    
+    public boolean needsRepaint() {
+        return fullRepaintNeeded || dirtyRect != null;
+    }
+    
+    public boolean isFullRepaintNeeded() {
+        return fullRepaintNeeded;
+    }
+    
+    public Rectangle2D getDirtyRect() {
+        return dirtyRect;
+    }
+    
+    public void clearDirtyRect() {
+        dirtyRect = null;
+    }
+    
+    @Override
+    protected void doInitialize() {
+    }
+    
+    @Override
+    protected void doDispose() {
+        renderCallbacks.clear();
+        dirtyRect = null;
     }
 }
 ```
@@ -474,11 +688,29 @@ public class DirtyRectRenderer {
 ### 6.2 瓦片缓存策略
 
 ```java
-public class TileCache {
+public class TileCache extends AbstractLifecycleComponent {
     
-    private static final int MAX_CACHE_SIZE = 100;
-    private final LRUCache<TileKey, Image> cache = new LRUCache<>(MAX_CACHE_SIZE);
-    private final ExecutorService executor = Executors.newFixedThreadPool(2);
+    private static final int DEFAULT_MAX_CACHE_SIZE = 100;
+    private static final int DEFAULT_THREAD_POOL_SIZE = 2;
+    
+    private final int maxCacheSize;
+    private final LRUCache<TileKey, Image> cache;
+    private final ExecutorService executor;
+    private final Map<TileKey, CompletableFuture<Image>> pendingLoads = new ConcurrentHashMap<>();
+    
+    public TileCache() {
+        this(DEFAULT_MAX_CACHE_SIZE, DEFAULT_THREAD_POOL_SIZE);
+    }
+    
+    public TileCache(int maxCacheSize, int threadPoolSize) {
+        this.maxCacheSize = maxCacheSize;
+        this.cache = new LRUCache<>(maxCacheSize);
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+    }
+    
+    public Image getTile(TileKey key) {
+        return cache.get(key);
+    }
     
     public CompletableFuture<Image> getTileAsync(TileKey key) {
         Image cached = cache.get(key);
@@ -486,39 +718,140 @@ public class TileCache {
             return CompletableFuture.completedFuture(cached);
         }
         
-        return CompletableFuture.supplyAsync(() -> {
-            Image tile = loadTileFromDisk(key);
-            if (tile != null) {
-                cache.put(key, tile);
-            }
-            return tile;
-        }, executor);
+        return pendingLoads.computeIfAbsent(key, k -> 
+            CompletableFuture.supplyAsync(() -> {
+                Image tile = loadTileFromSource(k);
+                if (tile != null) {
+                    synchronized (cache) {
+                        cache.put(k, tile);
+                    }
+                }
+                pendingLoads.remove(k);
+                return tile;
+            }, executor)
+        );
     }
     
-    public void preloadTiles(List<TileKey> keys) {
+    public void putTile(TileKey key, Image image) {
+        if (key != null && image != null) {
+            synchronized (cache) {
+                cache.put(key, image);
+            }
+        }
+    }
+    
+    public boolean containsTile(TileKey key) {
+        return cache.containsKey(key);
+    }
+    
+    public void removeTile(TileKey key) {
+        synchronized (cache) {
+            cache.remove(key);
+        }
+    }
+    
+    public void preloadTiles(TileKey[] keys) {
         for (TileKey key : keys) {
-            if (!cache.containsKey(key)) {
+            if (!containsTile(key)) {
                 getTileAsync(key);
             }
         }
     }
     
     public void clearCache() {
-        cache.clear();
+        synchronized (cache) {
+            cache.clear();
+        }
+        pendingLoads.clear();
     }
-}
-
-class LRUCache<K, V> extends LinkedHashMap<K, V> {
-    private final int maxSize;
     
-    LRUCache(int maxSize) {
-        super(maxSize, 0.75f, true);
-        this.maxSize = maxSize;
+    public int getCacheSize() {
+        return cache.size();
+    }
+    
+    public int getMaxCacheSize() {
+        return maxCacheSize;
+    }
+    
+    protected Image loadTileFromSource(TileKey key) {
+        return null;
     }
     
     @Override
-    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-        return size() > maxSize;
+    protected void doInitialize() {
+    }
+    
+    @Override
+    protected void doDispose() {
+        executor.shutdown();
+        pendingLoads.clear();
+        cache.clear();
+    }
+    
+    public static class TileKey {
+        private final int x;
+        private final int y;
+        private final int z;
+        private final String source;
+        
+        public TileKey(int x, int y, int z, String source) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.source = source != null ? source : "";
+        }
+        
+        public int getX() {
+            return x;
+        }
+        
+        public int getY() {
+            return y;
+        }
+        
+        public int getZ() {
+            return z;
+        }
+        
+        public String getSource() {
+            return source;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            TileKey tileKey = (TileKey) obj;
+            return x == tileKey.x && y == tileKey.y && z == tileKey.z && source.equals(tileKey.source);
+        }
+        
+        @Override
+        public int hashCode() {
+            int result = x;
+            result = 31 * result + y;
+            result = 31 * result + z;
+            result = 31 * result + source.hashCode();
+            return result;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("TileKey{x=%d, y=%d, z=%d, source='%s'}", x, y, z, source);
+        }
+    }
+    
+    private static class LRUCache<K, V> extends LinkedHashMap<K, V> {
+        private final int maxSize;
+        
+        LRUCache(int maxSize) {
+            super(maxSize, 0.75f, true);
+            this.maxSize = maxSize;
+        }
+        
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            return size() > maxSize;
+        }
     }
 }
 ```
@@ -526,13 +859,17 @@ class LRUCache<K, V> extends LinkedHashMap<K, V> {
 ### 6.3 LOD细节层次策略
 
 ```java
-public class LODStrategy {
+public class LODStrategy extends AbstractLifecycleComponent {
     
     private static final double[] SCALE_THRESHOLDS = {
-        1.0 / 50000,    // Level 3: 高细节
-        1.0 / 200000,   // Level 2: 中细节
-        1.0 / 500000    // Level 1: 低细节
+        1.0 / 50000,
+        1.0 / 200000,
+        1.0 / 500000
     };
+    
+    public static final int HIGH_DETAIL = 3;
+    public static final int MEDIUM_DETAIL = 2;
+    public static final int LOW_DETAIL = 1;
     
     public int getDetailLevel(double scale) {
         for (int i = 0; i < SCALE_THRESHOLDS.length; i++) {
@@ -540,16 +877,26 @@ public class LODStrategy {
                 return SCALE_THRESHOLDS.length - i;
             }
         }
-        return 1;
+        return LOW_DETAIL;
+    }
+    
+    public int getDetailLevelFromZoom(double zoom) {
+        if (zoom >= 8) {
+            return HIGH_DETAIL;
+        } else if (zoom >= 4) {
+            return MEDIUM_DETAIL;
+        } else {
+            return LOW_DETAIL;
+        }
     }
     
     public List<String> getVisibleLayers(int detailLevel) {
         switch (detailLevel) {
-            case 3:
+            case HIGH_DETAIL:
                 return Arrays.asList("base", "navigation", "depth", "obstacles", "text");
-            case 2:
+            case MEDIUM_DETAIL:
                 return Arrays.asList("base", "navigation", "depth", "obstacles");
-            case 1:
+            case LOW_DETAIL:
             default:
                 return Arrays.asList("base", "navigation");
         }
@@ -557,11 +904,56 @@ public class LODStrategy {
     
     public double getSymbolSizeFactor(int detailLevel) {
         switch (detailLevel) {
-            case 3: return 1.0;
-            case 2: return 0.8;
-            case 1: return 0.6;
-            default: return 0.5;
+            case HIGH_DETAIL:
+                return 1.0;
+            case MEDIUM_DETAIL:
+                return 0.8;
+            case LOW_DETAIL:
+                return 0.6;
+            default:
+                return 0.5;
         }
+    }
+    
+    public double getMinFeatureSize(int detailLevel) {
+        switch (detailLevel) {
+            case HIGH_DETAIL:
+                return 1.0;
+            case MEDIUM_DETAIL:
+                return 5.0;
+            case LOW_DETAIL:
+                return 10.0;
+            default:
+                return 20.0;
+        }
+    }
+    
+    public boolean shouldRenderFeature(int detailLevel, double featureSize) {
+        return featureSize >= getMinFeatureSize(detailLevel);
+    }
+    
+    public int getTileLevel(int detailLevel) {
+        switch (detailLevel) {
+            case HIGH_DETAIL:
+                return 12;
+            case MEDIUM_DETAIL:
+                return 8;
+            case LOW_DETAIL:
+            default:
+                return 4;
+        }
+    }
+    
+    public double[] getScaleThresholds() {
+        return SCALE_THRESHOLDS.clone();
+    }
+    
+    @Override
+    protected void doInitialize() {
+    }
+    
+    @Override
+    protected void doDispose() {
     }
 }
 ```
@@ -569,46 +961,121 @@ public class LODStrategy {
 ### 6.4 渲染性能监控
 
 ```java
-public class RenderPerformanceMonitor {
+public class RenderPerformanceMonitor extends AbstractLifecycleComponent {
     
-    private long lastRenderTime = 0;
+    private static final int MAX_SAMPLES = 60;
+    
+    private final Queue<Long> renderTimes = new LinkedList<>();
+    private final Queue<Long> frameTimes = new LinkedList<>();
+    
+    private long renderStartTime = 0;
+    private long lastFrameTime = 0;
     private int frameCount = 0;
     private double averageFPS = 0;
-    private final Queue<Long> renderTimes = new LinkedList<>();
+    private double averageRenderTime = 0;
     
     public void recordRenderStart() {
-        lastRenderTime = System.nanoTime();
+        renderStartTime = System.nanoTime();
     }
     
     public void recordRenderEnd() {
-        long renderTime = System.nanoTime() - lastRenderTime;
+        long renderTime = System.nanoTime() - renderStartTime;
         renderTimes.offer(renderTime);
-        if (renderTimes.size() > 60) {
+        if (renderTimes.size() > MAX_SAMPLES) {
             renderTimes.poll();
         }
-        frameCount++;
         
-        if (frameCount % 30 == 0) {
-            calculateFPS();
+        long currentTime = System.nanoTime();
+        if (lastFrameTime > 0) {
+            long frameTime = currentTime - lastFrameTime;
+            frameTimes.offer(frameTime);
+            if (frameTimes.size() > MAX_SAMPLES) {
+                frameTimes.poll();
+            }
         }
+        lastFrameTime = currentTime;
+        
+        frameCount++;
+        updateAverages();
     }
     
-    private void calculateFPS() {
-        double avgNanos = renderTimes.stream()
-            .mapToLong(Long::longValue)
-            .average()
-            .orElse(0);
-        averageFPS = 1_000_000_000.0 / avgNanos;
+    private void updateAverages() {
+        if (renderTimes.isEmpty()) {
+            return;
+        }
         
-        // 发布FPS事件
-        AppEventBus.getInstance().publish(
-            new AppEvent(AppEventType.STATUS_MESSAGE, this)
-                .withData("fps", String.format("%.1f FPS", averageFPS))
-        );
+        long totalRenderTime = 0;
+        for (Long time : renderTimes) {
+            totalRenderTime += time;
+        }
+        averageRenderTime = totalRenderTime / (double) renderTimes.size() / 1_000_000.0;
+        
+        if (!frameTimes.isEmpty()) {
+            long totalFrameTime = 0;
+            for (Long time : frameTimes) {
+                totalFrameTime += time;
+            }
+            double avgFrameTimeMs = totalFrameTime / (double) frameTimes.size() / 1_000_000.0;
+            averageFPS = avgFrameTimeMs > 0 ? 1000.0 / avgFrameTimeMs : 0;
+        }
     }
     
     public double getAverageFPS() {
         return averageFPS;
+    }
+    
+    public double getAverageRenderTime() {
+        return averageRenderTime;
+    }
+    
+    public int getFrameCount() {
+        return frameCount;
+    }
+    
+    public long getLastRenderTime() {
+        return lastFrameTime;
+    }
+    
+    public void reset() {
+        renderTimes.clear();
+        frameTimes.clear();
+        frameCount = 0;
+        averageFPS = 0;
+        averageRenderTime = 0;
+        lastFrameTime = 0;
+    }
+    
+    public boolean isPerformanceGood() {
+        return averageFPS >= 30;
+    }
+    
+    public boolean isPerformanceAcceptable() {
+        return averageFPS >= 15;
+    }
+    
+    public String getPerformanceStatus() {
+        if (averageFPS >= 30) {
+            return "优秀";
+        } else if (averageFPS >= 15) {
+            return "良好";
+        } else {
+            return "需要优化";
+        }
+    }
+    
+    public int getSampleCount() {
+        return renderTimes.size();
+    }
+    
+    @Override
+    protected void doInitialize() {
+        reset();
+    }
+    
+    @Override
+    protected void doDispose() {
+        renderTimes.clear();
+        frameTimes.clear();
     }
 }
 ```
@@ -620,7 +1087,7 @@ public class RenderPerformanceMonitor {
 ### 7.1 侧边栏面板接口
 
 ```java
-public interface SideBarPanel {
+public interface SideBarPanel extends LifecycleComponent, StatePersistable {
     
     String getId();
     
@@ -630,28 +1097,80 @@ public interface SideBarPanel {
     
     Node createContent();
     
-    default void onActivate() {}
+    @Override
+    default void initialize() {
+    }
     
-    default void onDeactivate() {}
+    @Override
+    default void activate() {
+        onActivate();
+    }
     
-    default void onDestroy() {}
+    @Override
+    default void deactivate() {
+        onDeactivate();
+    }
+    
+    @Override
+    default void dispose() {
+        onDestroy();
+    }
+    
+    @Override
+    default boolean isInitialized() {
+        return true;
+    }
+    
+    @Override
+    default boolean isActive() {
+        return false;
+    }
+    
+    default void onActivate() {
+    }
+    
+    default void onDeactivate() {
+    }
+    
+    default void onDestroy() {
+    }
+    
+    @Override
+    default Map<String, Object> saveState() {
+        return null;
+    }
+    
+    @Override
+    default void restoreState(Map<String, Object> state) {
+    }
+    
+    @Override
+    default String getStateKey() {
+        return "sidebar.panel." + getId();
+    }
 }
 ```
 
 ### 7.2 面板管理器
 
 ```java
-public class SideBarManager {
+public class SideBarManager extends AbstractLifecycleComponent implements StatePersistable {
     
     private final VBox buttonContainer;
     private final StackPane panelContainer;
     private final Map<String, SideBarPanel> panels = new LinkedHashMap<>();
     private final Map<String, ToggleButton> buttons = new HashMap<>();
     private String activePanelId = null;
+    private double panelWidth = 250;
+    private Runnable onPanelVisibilityChanged;
     
     public SideBarManager(VBox buttonContainer, StackPane panelContainer) {
         this.buttonContainer = buttonContainer;
         this.panelContainer = panelContainer;
+    }
+    
+    public void setOnPanelVisibilityChanged(Runnable callback) {
+        this.onPanelVisibilityChanged = callback;
     }
     
     public void registerPanel(SideBarPanel panel) {
@@ -665,7 +1184,7 @@ public class SideBarManager {
     public void unregisterPanel(String panelId) {
         SideBarPanel panel = panels.remove(panelId);
         if (panel != null) {
-            panel.onDestroy();
+            panel.dispose();
             buttonContainer.getChildren().remove(buttons.remove(panelId));
         }
     }
@@ -677,25 +1196,34 @@ public class SideBarManager {
         }
         
         SideBarPanel panel = panels.get(panelId);
-        if (panel == null) return;
+        if (panel == null) {
+            return;
+        }
         
-        // 隐藏当前面板
         if (activePanelId != null) {
             SideBarPanel activePanel = panels.get(activePanelId);
             if (activePanel != null) {
-                activePanel.onDeactivate();
+                activePanel.deactivate();
             }
-            buttons.get(activePanelId).setSelected(false);
+            ToggleButton activeButton = buttons.get(activePanelId);
+            if (activeButton != null) {
+                activeButton.setSelected(false);
+            }
         }
         
-        // 显示新面板
         panelContainer.getChildren().clear();
         panelContainer.getChildren().add(panel.createContent());
-        panel.onActivate();
-        buttons.get(panelId).setSelected(true);
+        panel.activate();
+        ToggleButton button = buttons.get(panelId);
+        if (button != null) {
+            button.setSelected(true);
+        }
         activePanelId = panelId;
         
-        // 发布事件
+        if (onPanelVisibilityChanged != null) {
+            onPanelVisibilityChanged.run();
+        }
+        
         AppEventBus.getInstance().publish(
             new AppEvent(AppEventType.SIDEBAR_PANEL_CHANGED, this)
                 .withData("panelId", panelId)
@@ -706,11 +1234,26 @@ public class SideBarManager {
         if (activePanelId != null) {
             SideBarPanel panel = panels.get(activePanelId);
             if (panel != null) {
-                panel.onDeactivate();
+                panel.deactivate();
             }
-            buttons.get(activePanelId).setSelected(false);
+            ToggleButton button = buttons.get(activePanelId);
+            if (button != null) {
+                button.setSelected(false);
+            }
             panelContainer.getChildren().clear();
             activePanelId = null;
+            
+            if (onPanelVisibilityChanged != null) {
+                onPanelVisibilityChanged.run();
+            }
+        }
+    }
+    
+    public void togglePanel(String panelId) {
+        if (activePanelId != null && activePanelId.equals(panelId)) {
+            hidePanel();
+        } else {
+            showPanel(panelId);
         }
     }
     
@@ -718,8 +1261,88 @@ public class SideBarManager {
         ToggleButton button = new ToggleButton();
         button.setGraphic(panel.getIcon());
         button.setTooltip(new Tooltip(panel.getTitle()));
-        button.setOnAction(e -> showPanel(panel.getId()));
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefHeight(40);
+        button.setStyle("-fx-padding: 8; -fx-spacing: 5;");
+        button.setOnAction(e -> togglePanel(panel.getId()));
         return button;
+    }
+    
+    public String getActivePanelId() {
+        return activePanelId;
+    }
+    
+    public boolean isPanelVisible(String panelId) {
+        return panelId != null && panelId.equals(activePanelId);
+    }
+    
+    public SideBarPanel getPanel(String panelId) {
+        return panels.get(panelId);
+    }
+    
+    public double getPanelWidth() {
+        return panelWidth;
+    }
+    
+    public void setPanelWidth(double width) {
+        this.panelWidth = width;
+        if (panelContainer != null) {
+            panelContainer.setPrefWidth(width);
+        }
+    }
+    
+    public void collapseAll() {
+        hidePanel();
+    }
+    
+    @Override
+    protected void doInitialize() {
+        for (SideBarPanel panel : panels.values()) {
+            panel.initialize();
+        }
+    }
+    
+    @Override
+    protected void doDispose() {
+        hidePanel();
+        for (SideBarPanel panel : panels.values()) {
+            panel.dispose();
+        }
+        panels.clear();
+        buttons.clear();
+    }
+    
+    @Override
+    public Map<String, Object> saveState() {
+        Map<String, Object> state = new HashMap<>();
+        state.put("activePanelId", activePanelId);
+        state.put("panelWidth", panelWidth);
+        return state;
+    }
+    
+    @Override
+    public void restoreState(Map<String, Object> state) {
+        if (state == null) {
+            return;
+        }
+        
+        Object width = state.get("panelWidth");
+        if (width instanceof Number) {
+            panelWidth = ((Number) width).doubleValue();
+        }
+        
+        Object activeId = state.get("activePanelId");
+        if (activeId instanceof String) {
+            String panelId = (String) activeId;
+            if (panels.containsKey(panelId)) {
+                showPanel(panelId);
+            }
+        }
+    }
+    
+    @Override
+    public String getStateKey() {
+        return "sidebar.manager";
     }
 }
 ```
@@ -3160,6 +3783,7 @@ f:\cycle\trae\chart\cycle\javafx-app\src\main\resources\
 ---
 
 **版本历史**:
+- v1.7 (2026-04-15): 根据javafx-app实际代码更新示例代码（ResponsiveLayoutManager、AppEventBus、AppEventType、AppEvent、DirtyRectRenderer、TileCache、LODStrategy、RenderPerformanceMonitor、SideBarPanel、SideBarManager）
 - v1.6 (2026-04-11): 添加项目目录结构章节
 - v1.5 (2026-04-11): 添加面板状态持久化、大文件加载策略、键盘导航支持、CSS变量定义、无障碍访问设计、用户偏好持久化、FXML布局分离
 - v1.4 (2026-04-11): 添加组件生命周期管理、线程安全设计、性能基准指标、加载状态设计、内存管理策略
