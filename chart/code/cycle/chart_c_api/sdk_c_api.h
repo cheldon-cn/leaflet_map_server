@@ -2615,14 +2615,14 @@ SDK_C_API int ogc_image_get_channels(const ogc_image_t* image);
  * @param image Pointer to the image.
  * @return Pointer to the pixel data.
  */
-unsigned char* ogc_image_get_data(ogc_image_t* image);
+SDK_C_API unsigned char* ogc_image_get_data(ogc_image_t* image);
 
 /**
  * @brief Get the pixel data of an image (const).
  * @param image Pointer to the image.
  * @return Const pointer to the pixel data.
  */
-const unsigned char* ogc_image_get_data_const(const ogc_image_t* image);
+SDK_C_API const unsigned char* ogc_image_get_data_const(const ogc_image_t* image);
 
 /**
  * @brief Load an image from a file.
@@ -7209,7 +7209,7 @@ SDK_C_API void ogc_library_loader_unload(ogc_library_loader_t* loader, ogc_libra
  * @param symbol_name Name of the symbol to get.
  * @return Pointer to the symbol, or NULL if not found.
  */
-void* ogc_library_loader_get_symbol(ogc_library_loader_t* loader, ogc_library_handle_t handle, const char* symbol_name);
+SDK_C_API void* ogc_library_loader_get_symbol(ogc_library_loader_t* loader, ogc_library_handle_t handle, const char* symbol_name);
 
 /**
  * @brief Get the last error message.

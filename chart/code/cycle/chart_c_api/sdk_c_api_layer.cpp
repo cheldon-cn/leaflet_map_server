@@ -12,6 +12,7 @@
 #include <ogc/layer/layer_type.h>
 #include <ogc/layer/layer_group.h>
 #include <ogc/layer/datasource.h>
+#include <ogc/layer/driver_manager.h>
 #include <ogc/feature/feature.h>
 
 #include <cstring>
@@ -101,6 +102,17 @@ int ogc_layer_get_extent(ogc_layer_t* layer, ogc_envelope_t* extent) {
     return -1;
 }
 
+ogc_envelope_t* ogc_raster_layer_get_extent(ogc_layer_t* layer) {
+    if (layer) {
+        Envelope env;
+        CNStatus status = reinterpret_cast<CNLayer*>(layer)->GetExtent(env);
+        if (status == CNStatus::kSuccess) {
+            return reinterpret_cast<ogc_envelope_t*>(new Envelope(env));
+        }
+    }
+    return nullptr;
+}
+
 long long ogc_layer_get_feature_count(ogc_layer_t* layer) {
     if (layer) {
         return reinterpret_cast<CNLayer*>(layer)->GetFeatureCount();
@@ -156,6 +168,15 @@ ogc_layer_t* ogc_vector_layer_create(const char* name) {
 }
 
 ogc_layer_t* ogc_vector_layer_create_from_datasource(const char* datasource_path, const char* layer_name) {
+    if (datasource_path && layer_name) {
+        std::unique_ptr<CNDataSource> ds = CNDriverManager::Instance().Open(SafeString(datasource_path));
+        if (ds) {
+            CNLayer* layer = ds->GetLayerByName(SafeString(layer_name));
+            if (layer) {
+                return reinterpret_cast<ogc_layer_t*>(layer);
+            }
+        }
+    }
     return nullptr;
 }
 
@@ -512,11 +533,72 @@ ogc_layer_t* ogc_datasource_get_layer_by_name(const ogc_datasource_t* ds, const 
 }
 
 ogc_layer_t* ogc_datasource_create_layer(ogc_datasource_t* ds, const char* name, int geom_type) {
+    if (ds && name) {
+        CNDataSource* datasource = reinterpret_cast<CNDataSource*>(ds);
+        GeomType gt = static_cast<GeomType>(geom_type);
+        CNLayer* layer = datasource->CreateLayer(SafeString(name), gt, nullptr);
+        return reinterpret_cast<ogc_layer_t*>(layer);
+    }
     return nullptr;
 }
 
 int ogc_datasource_delete_layer(ogc_datasource_t* ds, const char* name) {
+    if (ds && name) {
+        CNDataSource* datasource = reinterpret_cast<CNDataSource*>(ds);
+        CNStatus status = datasource->DeleteLayer(SafeString(name));
+        return (status == CNStatus::kSuccess) ? 0 : -1;
+    }
+    return -1;
+}
+
+ogc_driver_manager_t* ogc_driver_manager_get_instance(void) {
+    return reinterpret_cast<ogc_driver_manager_t*>(&CNDriverManager::Instance());
+}
+
+int ogc_driver_manager_register_driver(ogc_driver_manager_t* mgr, ogc_driver_t* driver) {
+    if (mgr && driver) {
+        CNDriverManager* driverMgr = reinterpret_cast<CNDriverManager*>(mgr);
+        CNDriver* drv = reinterpret_cast<CNDriver*>(driver);
+        driverMgr->RegisterDriver(std::unique_ptr<CNDriver>(drv));
+        return 0;
+    }
+    return -1;
+}
+
+int ogc_driver_manager_unregister_driver(ogc_driver_manager_t* mgr, const char* name) {
+    if (mgr && name) {
+        CNDriverManager* driverMgr = reinterpret_cast<CNDriverManager*>(mgr);
+        driverMgr->DeregisterDriver(SafeString(name));
+        return 0;
+    }
+    return -1;
+}
+
+ogc_driver_t* ogc_driver_manager_get_driver(const ogc_driver_manager_t* mgr, const char* name) {
+    if (mgr && name) {
+        const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
+        return reinterpret_cast<ogc_driver_t*>(driverMgr->GetDriver(SafeString(name)));
+    }
+    return nullptr;
+}
+
+int ogc_driver_manager_get_driver_count(const ogc_driver_manager_t* mgr) {
+    if (mgr) {
+        const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
+        return static_cast<int>(driverMgr->GetDrivers().size());
+    }
     return 0;
+}
+
+const char* ogc_driver_manager_get_driver_name(const ogc_driver_manager_t* mgr, int index) {
+    if (mgr && index >= 0) {
+        const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
+        auto drivers = driverMgr->GetDrivers();
+        if (static_cast<size_t>(index) < drivers.size()) {
+            return drivers[static_cast<size_t>(index)]->GetName();
+        }
+    }
+    return "";
 }
 #ifdef __cplusplus
 }

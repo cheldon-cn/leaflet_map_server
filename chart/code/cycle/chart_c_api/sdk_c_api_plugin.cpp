@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 using namespace ogc::draw;
 
@@ -66,6 +67,10 @@ public:
 class ErrorRecoveryData {
 public:
     std::vector<std::string> m_states;
+    std::map<int, void*> m_strategies;
+    int m_degradationLevel;
+    
+    ErrorRecoveryData() : m_degradationLevel(0) {}
     
     bool Initialize() { return true; }
     void Shutdown() {}
@@ -79,6 +84,21 @@ public:
     }
     size_t GetStateCount() const { return m_states.size(); }
     std::string GetStateName(size_t index) const { return index < m_states.size() ? m_states[index] : ""; }
+    
+    void RegisterStrategy(int error_code, void* strategy) {
+        m_strategies[error_code] = strategy;
+    }
+    int HandleError(int error_code, const char* context) {
+        (void)context;
+        auto it = m_strategies.find(error_code);
+        if (it != m_strategies.end()) {
+            return 0;
+        }
+        return -1;
+    }
+    void SetDegradationLevel(int level) {
+        m_degradationLevel = level;
+    }
 };
 
 class ChartPluginData {
@@ -244,6 +264,25 @@ const char* ogc_error_recovery_manager_get_state_name(const ogc_error_recovery_m
         return reinterpret_cast<const ErrorRecoveryData*>(recovery)->GetStateName(static_cast<size_t>(index)).c_str();
     }
     return "";
+}
+
+int ogc_error_recovery_manager_handle_error(ogc_error_recovery_manager_t* mgr, int error_code, const char* context) {
+    if (mgr) {
+        return reinterpret_cast<ErrorRecoveryData*>(mgr)->HandleError(error_code, context);
+    }
+    return -1;
+}
+
+void ogc_error_recovery_manager_register_strategy(ogc_error_recovery_manager_t* mgr, int error_code, void* strategy) {
+    if (mgr && strategy) {
+        reinterpret_cast<ErrorRecoveryData*>(mgr)->RegisterStrategy(error_code, strategy);
+    }
+}
+
+void ogc_error_recovery_manager_set_degradation_level(ogc_error_recovery_manager_t* mgr, int level) {
+    if (mgr) {
+        reinterpret_cast<ErrorRecoveryData*>(mgr)->SetDegradationLevel(level);
+    }
 }
 
 ogc_health_check_t* ogc_health_check_create(const char* name) {

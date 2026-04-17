@@ -1,10 +1,11 @@
 /**
  * @file sdk_c_api_navi.cpp
- * @brief OGC Chart SDK C API - Navigation Module Implementation (Stub)
- * @version v1.0
- * @date 2026-04-09
+ * @brief OGC Chart SDK C API - Navigation Module Implementation
+ * @version v2.0
+ * @date 2026-04-17
  */
 
+#define _USE_MATH_DEFINES
 #include "sdk_c_api.h"
 
 #include <ogc/navi/ais/ais_manager.h>
@@ -17,6 +18,9 @@
 #include <ogc/navi/positioning/position_provider.h>
 #include <ogc/navi/positioning/nmea_parser.h>
 #include <ogc/navi/route/route.h>
+#include <ogc/navi/route/route_manager.h>
+#include <ogc/navi/route/route_planner.h>
+#include <ogc/navi/route/waypoint.h>
 #include <ogc/navi/track/track.h>
 #include <ogc/navi/track/track_recorder.h>
 
@@ -26,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 using namespace ogc;
 using namespace ogc::navi;
@@ -34,7 +39,9 @@ using namespace ogc::navi;
 extern "C" {
 #endif
 
-namespace { static std::string SafeString(const char* str) {
+namespace { 
+
+static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
 
@@ -54,7 +61,51 @@ struct LocalRouteData {
     std::string name;
     std::vector<LocalWaypointData*> waypoints;
     ogc_route_status_e status;
+    int currentWaypointIndex;
+    double totalDistance;
+    
+    LocalRouteData() : status(OGC_ROUTE_STATUS_PLANNING), currentWaypointIndex(0), totalDistance(0.0) {}
 };
+
+struct RouteManagerContext {
+    RouteManager* manager;
+    std::string activeRouteId;
+    std::map<std::string, LocalRouteData*> routes;
+    bool initialized;
+    
+    RouteManagerContext() : manager(nullptr), initialized(false) {}
+    ~RouteManagerContext() {
+        for (auto& pair : routes) {
+            delete pair.second;
+        }
+        routes.clear();
+    }
+};
+
+static RouteManagerContext* g_routeManagerCtx = nullptr;
+
+struct RoutePlannerContext {
+    IRoutePlanner* planner;
+    bool initialized;
+    
+    RoutePlannerContext() : planner(nullptr), initialized(false) {}
+    ~RoutePlannerContext() {
+        delete planner;
+    }
+};
+
+static RoutePlannerContext* g_routePlannerCtx = nullptr;
+
+static double CalculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double R = 6371000.0;
+    double dLat = (lat2 - lat1) * M_PI / 180.0;
+    double dLon = (lon2 - lon1) * M_PI / 180.0;
+    double a = sin(dLat/2) * sin(dLat/2) +
+               cos(lat1 * M_PI / 180.0) * cos(lat2 * M_PI / 180.0) *
+               sin(dLon/2) * sin(dLon/2);
+    double c = 2 * atan2(sqrt(a), sqrt(1-a));
+    return R * c;
+}
 
 }  
 
@@ -203,6 +254,19 @@ ogc_route_status_e ogc_route_get_status(const ogc_route_t* route) {
 }
 
 double ogc_route_get_total_distance(const ogc_route_t* route) {
+    if (route) {
+        const LocalRouteData* data = reinterpret_cast<const LocalRouteData*>(route);
+        if (data->waypoints.size() < 2) {
+            return 0.0;
+        }
+        double totalDist = 0.0;
+        for (size_t i = 1; i < data->waypoints.size(); ++i) {
+            const LocalWaypointData* wp1 = data->waypoints[i-1];
+            const LocalWaypointData* wp2 = data->waypoints[i];
+            totalDist += CalculateDistance(wp1->lat, wp1->lon, wp2->lat, wp2->lon);
+        }
+        return totalDist;
+    }
     return 0.0;
 }
 
@@ -241,10 +305,24 @@ void ogc_route_remove_waypoint(ogc_route_t* route, size_t index) {
 }
 
 ogc_waypoint_t* ogc_route_get_current_waypoint(const ogc_route_t* route) {
+    if (route) {
+        const LocalRouteData* data = reinterpret_cast<const LocalRouteData*>(route);
+        if (data->currentWaypointIndex >= 0 && 
+            static_cast<size_t>(data->currentWaypointIndex) < data->waypoints.size()) {
+            return reinterpret_cast<ogc_waypoint_t*>(data->waypoints[data->currentWaypointIndex]);
+        }
+    }
     return nullptr;
 }
 
 int ogc_route_advance_to_next_waypoint(ogc_route_t* route) {
+    if (route) {
+        LocalRouteData* data = reinterpret_cast<LocalRouteData*>(route);
+        if (static_cast<size_t>(data->currentWaypointIndex + 1) < data->waypoints.size()) {
+            data->currentWaypointIndex++;
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -283,42 +361,101 @@ int64_t ogc_route_get_eta(const ogc_route_t* route) {
 }
 
 ogc_route_manager_t* ogc_route_manager_create(void) {
-    return nullptr;
+    if (!g_routeManagerCtx) {
+        g_routeManagerCtx = new RouteManagerContext();
+        g_routeManagerCtx->manager = &RouteManager::Instance();
+        g_routeManagerCtx->initialized = true;
+    }
+    return reinterpret_cast<ogc_route_manager_t*>(g_routeManagerCtx);
 }
 
 void ogc_route_manager_destroy(ogc_route_manager_t* mgr) {
+    if (mgr && g_routeManagerCtx) {
+        delete g_routeManagerCtx;
+        g_routeManagerCtx = nullptr;
+    }
 }
 
 size_t ogc_route_manager_get_route_count(const ogc_route_manager_t* mgr) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(const_cast<ogc_route_manager_t*>(mgr));
+    if (ctx && ctx->manager) {
+        return static_cast<size_t>(ctx->manager->GetRouteCount());
+    }
     return 0;
 }
 
 ogc_route_t* ogc_route_manager_get_route(const ogc_route_manager_t* mgr, size_t index) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(const_cast<ogc_route_manager_t*>(mgr));
+    if (ctx && ctx->manager) {
+        auto routes = ctx->manager->GetAllRoutes();
+        if (index < routes.size()) {
+            return reinterpret_cast<ogc_route_t*>(routes[index]);
+        }
+    }
     return nullptr;
 }
 
 ogc_route_t* ogc_route_manager_get_route_by_id(const ogc_route_manager_t* mgr, const char* id) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(const_cast<ogc_route_manager_t*>(mgr));
+    if (ctx && ctx->manager && id) {
+        Route* route = ctx->manager->GetRoute(SafeString(id));
+        return reinterpret_cast<ogc_route_t*>(route);
+    }
     return nullptr;
 }
 
 void ogc_route_manager_add_route(ogc_route_manager_t* mgr, ogc_route_t* route) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(mgr);
+    if (ctx && ctx->manager && route) {
+        Route* r = reinterpret_cast<Route*>(route);
+        ctx->manager->SaveRoute(r);
+    }
 }
 
 void ogc_route_manager_remove_route(ogc_route_manager_t* mgr, const char* id) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(mgr);
+    if (ctx && ctx->manager && id) {
+        ctx->manager->DeleteRoute(SafeString(id));
+    }
 }
 
 ogc_route_t* ogc_route_manager_get_active_route(const ogc_route_manager_t* mgr) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(const_cast<ogc_route_manager_t*>(mgr));
+    if (ctx && ctx->manager) {
+        Route* route = ctx->manager->GetActiveRoute();
+        return reinterpret_cast<ogc_route_t*>(route);
+    }
     return nullptr;
 }
 
 void ogc_route_manager_set_active_route(ogc_route_manager_t* mgr, const char* id) {
+    RouteManagerContext* ctx = reinterpret_cast<RouteManagerContext*>(mgr);
+    if (ctx && ctx->manager && id) {
+        Route* route = ctx->manager->GetRoute(SafeString(id));
+        if (route) {
+            ctx->manager->SetActiveRoute(route);
+            ctx->activeRouteId = SafeString(id);
+        }
+    }
 }
 
 ogc_route_planner_t* ogc_route_planner_create(void) {
-    return nullptr;
+    if (!g_routePlannerCtx) {
+        g_routePlannerCtx = new RoutePlannerContext();
+        g_routePlannerCtx->planner = IRoutePlanner::Create("astar");
+        if (g_routePlannerCtx->planner) {
+            g_routePlannerCtx->planner->Initialize();
+            g_routePlannerCtx->initialized = true;
+        }
+    }
+    return reinterpret_cast<ogc_route_planner_t*>(g_routePlannerCtx);
 }
 
 void ogc_route_planner_destroy(ogc_route_planner_t* planner) {
+    if (planner && g_routePlannerCtx) {
+        delete g_routePlannerCtx;
+        g_routePlannerCtx = nullptr;
+    }
 }
 
 ogc_route_t* ogc_route_planner_plan_route(ogc_route_planner_t* planner, 
@@ -326,6 +463,35 @@ ogc_route_t* ogc_route_planner_plan_route(ogc_route_planner_t* planner,
                                            const ogc_waypoint_t* end,
                                            const ogc_envelope_t* avoid_areas,
                                            int avoid_count) {
+    RoutePlannerContext* ctx = reinterpret_cast<RoutePlannerContext*>(planner);
+    if (ctx && ctx->planner && start && end) {
+        const LocalWaypointData* startWp = reinterpret_cast<const LocalWaypointData*>(start);
+        const LocalWaypointData* endWp = reinterpret_cast<const LocalWaypointData*>(end);
+        
+        RoutePlanningConstraints constraints;
+        constraints.avoid_shallow_water = true;
+        
+        if (avoid_areas && avoid_count > 0) {
+            const ogc_envelope_t* const* areas = reinterpret_cast<const ogc_envelope_t* const*>(avoid_areas);
+            for (int i = 0; i < avoid_count; ++i) {
+                GeoPoint pt;
+                pt.longitude = (ogc_envelope_get_min_x(areas[i]) + ogc_envelope_get_max_x(areas[i])) / 2.0;
+                pt.latitude = (ogc_envelope_get_min_y(areas[i]) + ogc_envelope_get_max_y(areas[i])) / 2.0;
+                constraints.avoid_areas.push_back(pt);
+            }
+        }
+        
+        GeoPoint startPoint, endPoint;
+        startPoint.latitude = startWp->lat;
+        startPoint.longitude = startWp->lon;
+        endPoint.latitude = endWp->lat;
+        endPoint.longitude = endWp->lon;
+        
+        RoutePlanningResult result = ctx->planner->PlanRoute(startPoint, endPoint, constraints);
+        if (result.success && result.route) {
+            return reinterpret_cast<ogc_route_t*>(result.route);
+        }
+    }
     return nullptr;
 }
 

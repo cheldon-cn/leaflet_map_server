@@ -10,6 +10,7 @@
 
 #include <ogc/cache/tile/tile_cache.h>
 #include <ogc/cache/tile/tile_key.h>
+#include <ogc/cache/tile/multi_level_tile_cache.h>
 #include <ogc/cache/offline/offline_storage_manager.h>
 #include <ogc/cache/offline/data_encryption.h>
 #include <ogc/cache/cache_manager.h>
@@ -246,6 +247,25 @@ ogc_tile_cache_t* ogc_disk_tile_cache_create(const char* cache_dir, size_t max_s
 }
 
 ogc_tile_cache_t* ogc_multi_level_tile_cache_create(ogc_tile_cache_t* memory_cache, ogc_tile_cache_t* disk_cache) {
+    std::vector<TileCachePtr> caches;
+    if (memory_cache) {
+        TileCachePtr* memPtr = reinterpret_cast<TileCachePtr*>(memory_cache);
+        if (*memPtr) {
+            caches.push_back(*memPtr);
+        }
+    }
+    if (disk_cache) {
+        TileCachePtr* diskPtr = reinterpret_cast<TileCachePtr*>(disk_cache);
+        if (*diskPtr) {
+            caches.push_back(*diskPtr);
+        }
+    }
+    if (!caches.empty()) {
+        auto multiCache = MultiLevelTileCache::Create(caches);
+        if (multiCache) {
+            return reinterpret_cast<ogc_tile_cache_t*>(new TileCachePtr(std::move(multiCache)));
+        }
+    }
     return nullptr;
 }
 

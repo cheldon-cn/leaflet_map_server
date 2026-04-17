@@ -61,6 +61,7 @@ set(CHART_C_API_SOURCES
     sdk_c_api_proj.cpp
     sdk_c_api_parser.cpp
     sdk_c_api_plugin.cpp
+    sdk_c_api_recovery.cpp
 )
 
 set(CHART_C_API_HEADERS

@@ -37,6 +37,15 @@ struct ImageDeviceImpl {
     unsigned char* pixels;
 };
 
+struct RenderOptimizerImpl {
+    bool cacheEnabled;
+    size_t cacheSize;
+    size_t cacheHits;
+    size_t cacheMisses;
+    
+    RenderOptimizerImpl() : cacheEnabled(true), cacheSize(0), cacheHits(0), cacheMisses(0) {}
+};
+
 static std::string SafeString(const char* str) {
     return str ? std::string(str) : std::string();
 }
@@ -570,6 +579,31 @@ int ogc_image_get_channels(const ogc_image_t* image) {
     return 0;
 }
 
+unsigned char* ogc_image_get_data(ogc_image_t* image) {
+    if (image) {
+        return reinterpret_cast<ogc::draw::Image*>(image)->GetData();
+    }
+    return nullptr;
+}
+
+const unsigned char* ogc_image_get_data_const(const ogc_image_t* image) {
+    if (image) {
+        return reinterpret_cast<const ogc::draw::Image*>(image)->GetData();
+    }
+    return nullptr;
+}
+
+ogc_image_t* ogc_image_load_from_file(const char* path) {
+    if (path) {
+        auto* image = new ogc::draw::Image();
+        if (image->LoadFromFile(path)) {
+            return reinterpret_cast<ogc_image_t*>(image);
+        }
+        delete image;
+    }
+    return nullptr;
+}
+
 int ogc_image_save_to_file(const ogc_image_t* image, const char* path) {
     if (image && path) {
         return reinterpret_cast<const ogc::draw::Image*>(image)->SaveToFile(path) ? 0 : -1;
@@ -578,24 +612,35 @@ int ogc_image_save_to_file(const ogc_image_t* image, const char* path) {
 }
 
 ogc_render_optimizer_t* ogc_render_optimizer_create(void) {
-    return nullptr;
+    return reinterpret_cast<ogc_render_optimizer_t*>(new RenderOptimizerImpl());
 }
 
 void ogc_render_optimizer_destroy(ogc_render_optimizer_t* optimizer) {
-    (void)optimizer;
+    if (optimizer) {
+        delete reinterpret_cast<RenderOptimizerImpl*>(optimizer);
+    }
 }
 
 void ogc_render_optimizer_set_cache_enabled(ogc_render_optimizer_t* optimizer, int enable) {
-    (void)optimizer; (void)enable;
+    if (optimizer) {
+        reinterpret_cast<RenderOptimizerImpl*>(optimizer)->cacheEnabled = (enable != 0);
+    }
 }
 
 int ogc_render_optimizer_is_cache_enabled(const ogc_render_optimizer_t* optimizer) {
-    (void)optimizer;
+    if (optimizer) {
+        return reinterpret_cast<const RenderOptimizerImpl*>(optimizer)->cacheEnabled ? 1 : 0;
+    }
     return 0;
 }
 
 void ogc_render_optimizer_clear_cache(ogc_render_optimizer_t* optimizer) {
-    (void)optimizer;
+    if (optimizer) {
+        RenderOptimizerImpl* impl = reinterpret_cast<RenderOptimizerImpl*>(optimizer);
+        impl->cacheSize = 0;
+        impl->cacheHits = 0;
+        impl->cacheMisses = 0;
+    }
 }
 
 void ogc_render_stats_reset(ogc_render_stats_t* stats) {
@@ -754,6 +799,14 @@ SDK_C_API ogc::draw::RasterImageDevice* ogc_image_device_get_raster_device(ogc_i
     
     ImageDeviceImpl* data = reinterpret_cast<ImageDeviceImpl*>(device);
     return data->device;
+}
+
+SDK_C_API long long ogc_image_device_get_native_ptr(const ogc_image_device_t* device) {
+    if (device) {
+        const ImageDeviceImpl* data = reinterpret_cast<const ImageDeviceImpl*>(device);
+        return reinterpret_cast<long long>(data->device);
+    }
+    return 0;
 }
 
 }  /* extern "C" */

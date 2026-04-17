@@ -1,14 +1,15 @@
 /**
  * @file sdk_c_api_alert.cpp
- * @brief OGC Chart SDK C API - Alert Module Implementation (Stub)
- * @version v1.0
- * @date 2026-04-09
+ * @brief OGC Chart SDK C API - Alert Module Implementation
+ * @version v2.0
+ * @date 2026-04-17
  */
 
 #include "sdk_c_api.h"
 
 #include <ogc/alert/types.h>
 #include <ogc/alert/alert_engine.h>
+#include <ogc/alert/acknowledge_service.h>
 #include <ogc/alert/cpa_calculator.h>
 #include <ogc/alert/ukc_calculator.h>
 
@@ -16,6 +17,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace ogc;
 using namespace ogc::alert;
@@ -81,6 +83,24 @@ struct AlertWrapper {
     ogc_alert_severity_e severity;
     bool acknowledged;
 };
+
+struct AlertEngineContext {
+    IAlertEngine* engine;
+    IAcknowledgeService* acknowledgeService;
+    std::vector<AlertWrapper*> activeAlerts;
+    
+    AlertEngineContext() : engine(nullptr), acknowledgeService(nullptr) {}
+    ~AlertEngineContext() {
+        for (auto* alert : activeAlerts) {
+            delete alert;
+        }
+        activeAlerts.clear();
+        delete acknowledgeService;
+        delete engine;
+    }
+};
+
+static AlertEngineContext* g_alertEngineCtx = nullptr;
 
 }  
 
@@ -203,38 +223,66 @@ int ogc_alert_is_acknowledged(const ogc_alert_t* alert) {
 }
 
 ogc_alert_engine_t* ogc_alert_engine_create(void) {
-    return reinterpret_cast<ogc_alert_engine_t*>(IAlertEngine::Create().release());
+    if (!g_alertEngineCtx) {
+        g_alertEngineCtx = new AlertEngineContext();
+        g_alertEngineCtx->engine = IAlertEngine::Create().release();
+        g_alertEngineCtx->acknowledgeService = IAcknowledgeService::Create().release();
+    }
+    return reinterpret_cast<ogc_alert_engine_t*>(g_alertEngineCtx);
 }
 
 void ogc_alert_engine_destroy(ogc_alert_engine_t* engine) {
-    delete reinterpret_cast<IAlertEngine*>(engine);
+    if (engine && g_alertEngineCtx) {
+        delete g_alertEngineCtx;
+        g_alertEngineCtx = nullptr;
+    }
 }
 
 int ogc_alert_engine_initialize(ogc_alert_engine_t* engine) {
-    if (engine) {
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    if (ctx && ctx->engine) {
         EngineConfig config;
         config.check_interval_ms = 1000;
         config.max_concurrent_checks = 10;
         config.enable_deduplication = true;
         config.enable_aggregation = false;
         config.dedup_window_seconds = 60;
-        reinterpret_cast<IAlertEngine*>(engine)->Initialize(config);
+        ctx->engine->Initialize(config);
         return 0;
     }
     return -1;
 }
 
 void ogc_alert_engine_shutdown(ogc_alert_engine_t* engine) {
-    if (engine) {
-        reinterpret_cast<IAlertEngine*>(engine)->Stop();
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    if (ctx && ctx->engine) {
+        ctx->engine->Stop();
     }
 }
 
 void ogc_alert_engine_check_all(ogc_alert_engine_t* engine) {
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    if (ctx && ctx->engine) {
+        ctx->engine->Start();
+        AlertStatistics stats = ctx->engine->GetStatistics();
+        (void)stats;
+    }
 }
 
 ogc_alert_t** ogc_alert_engine_get_active_alerts(ogc_alert_engine_t* engine, int* count) {
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
     if (count) *count = 0;
+    if (ctx && count) {
+        *count = static_cast<int>(ctx->activeAlerts.size());
+        if (!ctx->activeAlerts.empty()) {
+            ogc_alert_t** alerts = static_cast<ogc_alert_t**>(
+                std::malloc(sizeof(ogc_alert_t*) * ctx->activeAlerts.size()));
+            for (size_t i = 0; i < ctx->activeAlerts.size(); ++i) {
+                alerts[i] = reinterpret_cast<ogc_alert_t*>(ctx->activeAlerts[i]);
+            }
+            return alerts;
+        }
+    }
     return nullptr;
 }
 
@@ -245,18 +293,37 @@ void ogc_alert_engine_free_alerts(ogc_alert_t** alerts) {
 }
 
 void ogc_alert_engine_acknowledge_alert(ogc_alert_engine_t* engine, const ogc_alert_t* alert) {
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    const AlertWrapper* wrapper = reinterpret_cast<const AlertWrapper*>(alert);
+    if (ctx && ctx->acknowledgeService && wrapper) {
+        std::string alertId = std::to_string(wrapper->id);
+        ctx->acknowledgeService->AcknowledgeAlert(alertId, "system", "acknowledge");
+        const_cast<AlertWrapper*>(wrapper)->acknowledged = true;
+    }
 }
 
 int ogc_alert_engine_add_alert(ogc_alert_engine_t* engine, ogc_alert_t* alert) {
-    (void)engine;
-    (void)alert;
-    return 0;
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    AlertWrapper* wrapper = reinterpret_cast<AlertWrapper*>(alert);
+    if (ctx && ctx->engine && wrapper) {
+        ctx->engine->SubmitEvent(wrapper->event);
+        ctx->activeAlerts.push_back(wrapper);
+        return 0;
+    }
+    return -1;
 }
 
 int ogc_alert_engine_remove_alert(ogc_alert_engine_t* engine, int64_t id) {
-    (void)engine;
-    (void)id;
-    return 0;
+    AlertEngineContext* ctx = reinterpret_cast<AlertEngineContext*>(engine);
+    if (ctx) {
+        for (auto it = ctx->activeAlerts.begin(); it != ctx->activeAlerts.end(); ++it) {
+            if ((*it)->id == id) {
+                ctx->activeAlerts.erase(it);
+                return 0;
+            }
+        }
+    }
+    return -1;
 }
 
 ogc_alert_t* ogc_alert_engine_get_alert(ogc_alert_engine_t* engine, int64_t id) {

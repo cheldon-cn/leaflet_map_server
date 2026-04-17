@@ -1,75 +1,88 @@
 #ifndef ERROR_HANDLER_H
 #define ERROR_HANDLER_H
 
+#include <ogc/base/log.h>
 #include <string>
-#include <memory>
-#include <fstream>
-#include <mutex>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
+
+#ifdef LOG_TRACE
+#undef LOG_TRACE
+#endif
+#ifdef LOG_DEBUG
+#undef LOG_DEBUG
+#endif
+#ifdef LOG_INFO
+#undef LOG_INFO
+#endif
+#ifdef LOG_WARNING
+#undef LOG_WARNING
+#endif
+#ifdef LOG_ERROR
+#undef LOG_ERROR
+#endif
+#ifdef LOG_FATAL
+#undef LOG_FATAL
+#endif
+#ifdef LOG_TRACE_FMT
+#undef LOG_TRACE_FMT
+#endif
+#ifdef LOG_DEBUG_FMT
+#undef LOG_DEBUG_FMT
+#endif
+#ifdef LOG_INFO_FMT
+#undef LOG_INFO_FMT
+#endif
+#ifdef LOG_WARN_FMT
+#undef LOG_WARN_FMT
+#endif
+#ifdef LOG_ERROR_FMT
+#undef LOG_ERROR_FMT
+#endif
+#ifdef LOG_FATAL_FMT
+#undef LOG_FATAL_FMT
+#endif
 
 namespace chart {
 namespace parser {
 
-enum class LogLevel {
-    Trace = 0,
-    Debug = 1,
-    Info = 2,
-    Warn = 3,
-    Error = 4,
-    Fatal = 5,
-    Off = 6
-};
+using LogLevel = ogc::base::LogLevel;
 
-class Logger {
-public:
-    static Logger& Instance();
-    
-    void SetLevel(LogLevel level) { m_level = level; }
-    LogLevel GetLevel() const { return m_level; }
-    
-    void SetLogFile(const std::string& filePath);
-    void SetConsoleOutput(bool enable) { m_consoleOutput = enable; }
-    
-    void Log(LogLevel level, const char* file, int line, const char* func, const std::string& message);
-    
-private:
-    Logger();
-    ~Logger();
-    
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-    
-    std::string LevelToString(LogLevel level) const;
-    std::string GetCurrentTime() const;
-    
-    LogLevel m_level;
-    bool m_consoleOutput;
-    std::ofstream m_logFile;
-    std::mutex m_mutex;
-};
+constexpr LogLevel Trace = LogLevel::kTrace;
+constexpr LogLevel Debug = LogLevel::kDebug;
+constexpr LogLevel Info = LogLevel::kInfo;
+constexpr LogLevel Warn = LogLevel::kWarning;
+constexpr LogLevel Error = LogLevel::kError;
+constexpr LogLevel Fatal = LogLevel::kFatal;
+constexpr LogLevel Off = LogLevel::kNone;
 
-#define LOG_TRACE(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Trace, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
-#define LOG_DEBUG(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Debug, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
-#define LOG_INFO(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Info, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
-#define LOG_WARN(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Warn, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
-#define LOG_ERROR(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Error, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
-#define LOG_FATAL(...) chart::parser::Logger::Instance().Log(chart::parser::LogLevel::Fatal, __FILE__, __LINE__, __func__, chart::parser::FormatString(__VA_ARGS__))
+using Logger = ogc::base::Logger;
 
-template<typename... Args>
-std::string FormatString(const char* format, Args... args) {
-    char buffer[4096];
-    snprintf(buffer, sizeof(buffer), format, args...);
-    return std::string(buffer);
-}
+using ogc::base::FormatString;
 
-#define LOG_TRACE_FMT(fmt, ...) LOG_TRACE(FormatString(fmt, __VA_ARGS__))
-#define LOG_DEBUG_FMT(fmt, ...) LOG_DEBUG(FormatString(fmt, __VA_ARGS__))
-#define LOG_INFO_FMT(fmt, ...) LOG_INFO(FormatString(fmt, __VA_ARGS__))
-#define LOG_WARN_FMT(fmt, ...) LOG_WARN(FormatString(fmt, __VA_ARGS__))
-#define LOG_ERROR_FMT(fmt, ...) LOG_ERROR(FormatString(fmt, __VA_ARGS__))
-#define LOG_FATAL_FMT(fmt, ...) LOG_FATAL(FormatString(fmt, __VA_ARGS__))
+#define LOG_TRACE(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kTrace, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_DEBUG(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kDebug, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_INFO(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kInfo, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_WARN(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kWarning, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_ERROR(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kError, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+#define LOG_FATAL(...) ogc::base::Logger::Instance().LogWithLocation( \
+    ogc::base::LogLevel::kFatal, __FILE__, __LINE__, __func__, \
+    ogc::base::FormatString(__VA_ARGS__))
+
+#define LOG_TRACE_FMT(...) LOG_TRACE(__VA_ARGS__)
+#define LOG_DEBUG_FMT(...) LOG_DEBUG(__VA_ARGS__)
+#define LOG_INFO_FMT(...) LOG_INFO(__VA_ARGS__)
+#define LOG_WARN_FMT(...) LOG_WARN(__VA_ARGS__)
+#define LOG_ERROR_FMT(...) LOG_ERROR(__VA_ARGS__)
+#define LOG_FATAL_FMT(...) LOG_FATAL(__VA_ARGS__)
 
 } // namespace parser
 } // namespace chart

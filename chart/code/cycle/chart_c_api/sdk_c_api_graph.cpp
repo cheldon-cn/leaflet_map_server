@@ -16,6 +16,7 @@
 #include <ogc/graph/label/label_engine.h>
 #include <ogc/graph/util/transform_manager.h>
 #include <ogc/graph/interaction/hit_test.h>
+#include <ogc/graph/lod/lod_manager.h>
 
 #include <ogc/layer/memory_layer.h>
 #include <ogc/geom/envelope.h>
@@ -804,6 +805,17 @@ void ogc_chart_viewer_zoom(ogc_chart_viewer_t* viewer, double factor, double cen
 }
 
 ogc_feature_t* ogc_chart_viewer_query_feature(ogc_chart_viewer_t* viewer, double x, double y) {
+    ChartViewerData* data = GetChartViewerData(viewer);
+    if (data && data->spatial_index && !data->features.empty()) {
+        Coordinate queryPoint(x, y);
+        std::vector<size_t> results = data->spatial_index->Query(Envelope(x, y, x, y));
+        if (!results.empty()) {
+            size_t idx = results[0];
+            if (idx < data->features.size()) {
+                return reinterpret_cast<ogc_feature_t*>(&data->features[idx]);
+            }
+        }
+    }
     return nullptr;
 }
 
@@ -1140,24 +1152,45 @@ void ogc_label_info_set_position(ogc_label_info_t* info, double x, double y) {
 }
 
 ogc_lod_manager_t* ogc_lod_manager_create(void) {
+    LODManagerPtr ptr = LODManager::Create();
+    if (ptr) {
+        return reinterpret_cast<ogc_lod_manager_t*>(new LODManagerPtr(std::move(ptr)));
+    }
     return nullptr;
 }
 
 void ogc_lod_manager_destroy(ogc_lod_manager_t* mgr) {
-    (void)mgr;
+    if (mgr) {
+        delete reinterpret_cast<LODManagerPtr*>(mgr);
+    }
 }
 
 int ogc_lod_manager_get_current_level(const ogc_lod_manager_t* mgr) {
-    (void)mgr;
+    if (mgr) {
+        const LODManagerPtr* ptr = reinterpret_cast<const LODManagerPtr*>(mgr);
+        if (*ptr) {
+            return (*ptr)->GetMinLOD();
+        }
+    }
     return 0;
 }
 
 void ogc_lod_manager_set_current_level(ogc_lod_manager_t* mgr, int level) {
-    (void)mgr; (void)level;
+    if (mgr) {
+        LODManagerPtr* ptr = reinterpret_cast<LODManagerPtr*>(mgr);
+        if (*ptr) {
+            (*ptr)->SetLODRange(level, (*ptr)->GetMaxLOD());
+        }
+    }
 }
 
 int ogc_lod_manager_get_level_count(const ogc_lod_manager_t* mgr) {
-    (void)mgr;
+    if (mgr) {
+        const LODManagerPtr* ptr = reinterpret_cast<const LODManagerPtr*>(mgr);
+        if (*ptr) {
+            return static_cast<int>((*ptr)->GetLODCount());
+        }
+    }
     return 0;
 }
 

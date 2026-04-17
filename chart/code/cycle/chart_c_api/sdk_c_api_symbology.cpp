@@ -10,6 +10,7 @@
 #include <ogc/feature/feature.h>
 #include <ogc/symbology/filter/filter.h>
 #include <ogc/symbology/filter/comparison_filter.h>
+#include <ogc/symbology/filter/logical_filter.h>
 #include <ogc/symbology/symbolizer/symbolizer.h>
 #include <ogc/symbology/filter/symbolizer_rule.h>
 
@@ -20,6 +21,8 @@
 
 using namespace ogc;
 using namespace ogc::symbology;
+
+extern "C" ogc::draw::DrawContext* ogc_image_device_get_context(ogc_image_device_t* device);
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,11 +105,54 @@ ogc_filter_t* ogc_comparison_filter_create(const char* property, ogc_comparison_
     return reinterpret_cast<ogc_filter_t*>(new FilterPtr(Filter::CreateAll()));
 }
 
+const char* ogc_comparison_filter_get_property_name(const ogc_comparison_filter_t* filter) {
+    if (filter) {
+        const FilterPtr* ptr = reinterpret_cast<const FilterPtr*>(filter);
+        if (*ptr) {
+            const ComparisonFilter* compFilter = dynamic_cast<const ComparisonFilter*>(ptr->get());
+            if (compFilter) {
+                return compFilter->GetPropertyName().c_str();
+            }
+        }
+    }
+    return "";
+}
+
+const char* ogc_comparison_filter_get_value(const ogc_comparison_filter_t* filter) {
+    if (filter) {
+        const FilterPtr* ptr = reinterpret_cast<const FilterPtr*>(filter);
+        if (*ptr) {
+            const ComparisonFilter* compFilter = dynamic_cast<const ComparisonFilter*>(ptr->get());
+            if (compFilter) {
+                return compFilter->GetLiteral().c_str();
+            }
+        }
+    }
+    return "";
+}
+
 ogc_filter_t* ogc_logical_filter_create(ogc_logical_operator_e op) {
-    return reinterpret_cast<ogc_filter_t*>(new FilterPtr(Filter::CreateAll()));
+    LogicalOperator logOp = LogicalOperator::kAnd;
+    switch (op) {
+        case OGC_LOGICAL_AND: logOp = LogicalOperator::kAnd; break;
+        case OGC_LOGICAL_OR: logOp = LogicalOperator::kOr; break;
+        case OGC_LOGICAL_NOT: logOp = LogicalOperator::kNot; break;
+    }
+    auto* logFilter = new LogicalFilter(logOp);
+    return reinterpret_cast<ogc_filter_t*>(new FilterPtr(std::shared_ptr<Filter>(logFilter)));
 }
 
 void ogc_logical_filter_add_filter(ogc_filter_t* logical, ogc_filter_t* filter) {
+    if (logical && filter) {
+        FilterPtr* logPtr = reinterpret_cast<FilterPtr*>(logical);
+        FilterPtr* filterPtr = reinterpret_cast<FilterPtr*>(filter);
+        if (*logPtr && *filterPtr) {
+            LogicalFilter* logFilter = dynamic_cast<LogicalFilter*>(logPtr->get());
+            if (logFilter) {
+                logFilter->AddFilter(*filterPtr);
+            }
+        }
+    }
 }
 
 ogc_symbolizer_t* ogc_symbolizer_create(ogc_symbolizer_type_e type) {
@@ -145,6 +191,20 @@ void ogc_symbolizer_set_style(ogc_symbolizer_t* symbolizer, ogc_draw_style_t* st
 }
 
 int ogc_symbolizer_symbolize(ogc_symbolizer_t* symbolizer, const ogc_feature_t* feature, ogc_draw_device_t* device) {
+    if (symbolizer && feature && device) {
+        SymbolizerPtr* symPtr = reinterpret_cast<SymbolizerPtr*>(symbolizer);
+        const CNFeature* cnFeature = reinterpret_cast<const CNFeature*>(feature);
+        ogc::draw::DrawContext* context = ogc_image_device_get_context(
+            reinterpret_cast<ogc_image_device_t*>(device));
+        if (*symPtr && cnFeature && context) {
+            GeometryPtr geom = cnFeature->GetGeometry();
+            if (geom) {
+                ogc::draw::DrawContextPtr contextPtr(context, [](ogc::draw::DrawContext*) {});
+                ogc::draw::DrawResult result = (*symPtr)->Symbolize(contextPtr, geom.get());
+                return (result == ogc::draw::DrawResult::kSuccess) ? 1 : 0;
+            }
+        }
+    }
     return 0;
 }
 
