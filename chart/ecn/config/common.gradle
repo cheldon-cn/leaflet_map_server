@@ -1,0 +1,16 @@
+ext {
+    javaVersion = 1.8
+    encoding = 'UTF-8'
+    junitVersion = '4.12'
+    projectVersion = '1.2.1-alpha'
+    projectGroup = 'cn.cycle.echart'
+    
+    buildDir = new File(rootProject.projectDir, '../../build/ecn')
+    installDir = new File(rootProject.projectDir, '../../install/bin')
+    policyFile = new File(rootProject.projectDir, '../config/java.policy')
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}

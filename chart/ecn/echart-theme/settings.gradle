@@ -1,0 +1,5 @@
+rootProject.name = 'echart-theme'
+
+include ':echart-core'
+
+project(':echart-core').projectDir = new File('../echart-core')

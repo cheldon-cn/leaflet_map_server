@@ -1,0 +1,25 @@
+rootProject.name = 'echart-ui'
+
+include ':echart-core'
+project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
+
+include ':echart-event'
+project(':echart-event').projectDir = new File(settingsDir, '../echart-event')
+
+include ':echart-i18n'
+project(':echart-i18n').projectDir = new File(settingsDir, '../echart-i18n')
+
+include ':echart-data'
+project(':echart-data').projectDir = new File(settingsDir, '../echart-data')
+
+include ':echart-alarm'
+project(':echart-alarm').projectDir = new File(settingsDir, '../echart-alarm')
+
+include ':echart-ais'
+project(':echart-ais').projectDir = new File(settingsDir, '../echart-ais')
+
+include ':echart-route'
+project(':echart-route').projectDir = new File(settingsDir, '../echart-route')
+
+include ':echart-workspace'
+project(':echart-workspace').projectDir = new File(settingsDir, '../echart-workspace')

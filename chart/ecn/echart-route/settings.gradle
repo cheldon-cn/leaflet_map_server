@@ -1,0 +1,10 @@
+rootProject.name = 'echart-route'
+
+include ':echart-core'
+project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
+
+include ':echart-event'
+project(':echart-event').projectDir = new File(settingsDir, '../echart-event')
+
+include ':echart-data'
+project(':echart-data').projectDir = new File(settingsDir, '../echart-data')

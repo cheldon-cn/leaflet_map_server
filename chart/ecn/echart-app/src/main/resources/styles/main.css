@@ -1,0 +1,91 @@
+.root {
+    -fx-font-family: "Microsoft YaHei", "SimHei", sans-serif;
+    -fx-font-size: 12px;
+}
+
+.main-view {
+    -fx-background-color: #f5f5f5;
+}
+
+.ribbon-menu {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 0 0 1 0;
+}
+
+.activity-bar {
+    -fx-background-color: #2c3e50;
+    -fx-min-width: 48px;
+    -fx-pref-width: 48px;
+}
+
+.activity-bar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-min-width: 48px;
+    -fx-pref-width: 48px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+}
+
+.activity-bar-button:hover {
+    -fx-background-color: #34495e;
+}
+
+.activity-bar-button:selected {
+    -fx-background-color: #3498db;
+}
+
+.side-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 0 1 0 0;
+}
+
+.right-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1 0 0 0;
+}
+
+.status-bar {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 24px;
+    -fx-pref-height: 24px;
+}
+
+.canvas-container {
+    -fx-background-color: #ffffff;
+}
+
+.tab-pane {
+    -fx-tab-min-width: 80px;
+    -fx-tab-min-height: 28px;
+}
+
+.tree-view {
+    -fx-background-color: #ffffff;
+}
+
+.list-view {
+    -fx-background-color: #ffffff;
+}
+
+.table-view {
+    -fx-background-color: #ffffff;
+}
+
+.alarm-critical {
+    -fx-text-fill: #e74c3c;
+    -fx-font-weight: bold;
+}
+
+.alarm-warning {
+    -fx-text-fill: #f39c12;
+}
+
+.alarm-info {
+    -fx-text-fill: #3498db;
+}

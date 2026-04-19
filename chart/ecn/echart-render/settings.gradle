@@ -1,0 +1,7 @@
+rootProject.name = 'echart-render'
+
+include ':echart-core'
+project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
+
+include ':echart-event'
+project(':echart-event').projectDir = new File(settingsDir, '../echart-event')

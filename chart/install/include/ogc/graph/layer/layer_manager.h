@@ -13,12 +13,16 @@ namespace ogc {
 
 class CNLayer;
 
-namespace graph {
+namespace draw {
 
 class DrawContext;
-using DrawContextPtr = std::shared_ptr<DrawContext>;
+}
+
+namespace symbology {
 class Symbolizer;
 class SymbolizerRule;
+}
+namespace graph {
 
 enum class LayerVisibility {
     kVisible,
@@ -42,10 +46,10 @@ class ILayerRenderer {
 public:
     virtual ~ILayerRenderer() = default;
     
-    virtual ogc::draw::DrawResult Render(CNLayer* layer, DrawContext& context) = 0;
-    virtual ogc::draw::DrawResult RenderSelection(CNLayer* layer, DrawContext& context, 
+    virtual ogc::draw::DrawResult Render(CNLayer* layer, ogc::draw::DrawContext& context) = 0;
+    virtual ogc::draw::DrawResult RenderSelection(CNLayer* layer, ogc::draw::DrawContext& context, 
                                         const std::vector<int64_t>& featureIds) = 0;
-    virtual ogc::draw::DrawResult RenderLabels(CNLayer* layer, DrawContext& context) = 0;
+    virtual ogc::draw::DrawResult RenderLabels(CNLayer* layer, ogc::draw::DrawContext& context) = 0;
 };
 
 class LayerConfig;
@@ -86,12 +90,12 @@ public:
     int GetZOrder() const;
     void SetZOrder(int zOrder);
     
-    void SetSymbolizer(std::shared_ptr<Symbolizer> symbolizer);
-    std::shared_ptr<Symbolizer> GetSymbolizer() const;
+    void SetSymbolizer(std::shared_ptr<symbology::Symbolizer> symbolizer);
+    std::shared_ptr<symbology::Symbolizer> GetSymbolizer() const;
     
-    void AddRule(std::shared_ptr<SymbolizerRule> rule);
+    void AddRule(std::shared_ptr<symbology::SymbolizerRule> rule);
     void ClearRules();
-    const std::vector<std::shared_ptr<SymbolizerRule>>& GetRules() const;
+    const std::vector<std::shared_ptr<symbology::SymbolizerRule>>& GetRules() const;
     
     LayerConfigPtr Clone() const;
     

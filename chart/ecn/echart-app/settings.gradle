@@ -1,0 +1,31 @@
+rootProject.name = 'echart-app'
+
+include ':echart-core'
+include ':echart-event'
+include ':echart-i18n'
+include ':echart-data'
+include ':echart-render'
+include ':echart-alarm'
+include ':echart-ais'
+include ':echart-route'
+include ':echart-workspace'
+include ':echart-ui'
+include ':echart-ui-render'
+include ':echart-theme'
+include ':echart-plugin'
+include ':echart-facade'
+
+project(':echart-core').projectDir = new File('../echart-core')
+project(':echart-event').projectDir = new File('../echart-event')
+project(':echart-i18n').projectDir = new File('../echart-i18n')
+project(':echart-data').projectDir = new File('../echart-data')
+project(':echart-render').projectDir = new File('../echart-render')
+project(':echart-alarm').projectDir = new File('../echart-alarm')
+project(':echart-ais').projectDir = new File('../echart-ais')
+project(':echart-route').projectDir = new File('../echart-route')
+project(':echart-workspace').projectDir = new File('../echart-workspace')
+project(':echart-ui').projectDir = new File('../echart-ui')
+project(':echart-ui-render').projectDir = new File('../echart-ui-render')
+project(':echart-theme').projectDir = new File('../echart-theme')
+project(':echart-plugin').projectDir = new File('../echart-plugin')
+project(':echart-facade').projectDir = new File('../echart-facade')

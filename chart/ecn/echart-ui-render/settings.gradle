@@ -1,0 +1,11 @@
+rootProject.name = 'echart-ui-render'
+
+include ':echart-core'
+include ':echart-event'
+include ':echart-render'
+include ':echart-data'
+
+project(':echart-core').projectDir = new File('../echart-core')
+project(':echart-event').projectDir = new File('../echart-event')
+project(':echart-render').projectDir = new File('../echart-render')
+project(':echart-data').projectDir = new File('../echart-data')

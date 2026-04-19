@@ -1,0 +1,64 @@
+apply from: '../config/common.gradle'
+
+apply plugin: 'java'
+apply plugin: 'maven'
+
+group projectGroup
+version projectVersion
+
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = encoding
+
+buildDir = new File(projectDir, '../../build/ecn/echart-ui')
+
+dependencies {
+    compile project(':echart-core')
+    compile project(':echart-event')
+    compile project(':echart-i18n')
+    compile project(':echart-data')
+    compile project(':echart-alarm')
+    compile project(':echart-ais')
+    compile project(':echart-route')
+    compile project(':echart-workspace')
+    compile files('../../install/bin/fxribbon-2.1.0.jar')
+    testCompile group: 'junit', name: 'junit', version: junitVersion
+}
+
+jar {
+    baseName = 'echart-ui'
+    
+    manifest {
+        attributes 'Implementation-Title': 'E-Chart UI Library',
+                   'Implementation-Version': version
+    }
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+    
+    forkEvery = 1
+    maxParallelForks = 1
+    enableAssertions = false
+    jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task installJar(type: Copy, dependsOn: jar) {
+    from jar.archivePath
+    into installDir
+}
+
+build.finalizedBy installJar
+
+artifacts {
+    archives sourcesJar
+}

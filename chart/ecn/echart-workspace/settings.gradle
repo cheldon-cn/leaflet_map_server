@@ -1,0 +1,19 @@
+rootProject.name = 'echart-workspace'
+
+include ':echart-core'
+project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
+
+include ':echart-event'
+project(':echart-event').projectDir = new File(settingsDir, '../echart-event')
+
+include ':echart-data'
+project(':echart-data').projectDir = new File(settingsDir, '../echart-data')
+
+include ':echart-alarm'
+project(':echart-alarm').projectDir = new File(settingsDir, '../echart-alarm')
+
+include ':echart-ais'
+project(':echart-ais').projectDir = new File(settingsDir, '../echart-ais')
+
+include ':echart-route'
+project(':echart-route').projectDir = new File(settingsDir, '../echart-route')

@@ -1,0 +1,4 @@
+rootProject.name = 'echart-event'
+
+include ':echart-core'
+project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
