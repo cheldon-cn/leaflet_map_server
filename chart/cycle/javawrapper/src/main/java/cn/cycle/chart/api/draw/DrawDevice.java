@@ -9,8 +9,8 @@ public final class DrawDevice extends NativeObject {
         JniBridge.initialize();
     }
 
-    public DrawDevice() {
-        setNativePtr(nativeCreate());
+    public DrawDevice(int type, int width, int height) {
+        setNativePtr(nativeCreate(type, width, height));
     }
 
     DrawDevice(long nativePtr) {

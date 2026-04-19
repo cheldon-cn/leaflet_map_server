@@ -2,7 +2,7 @@
 
 > **版本**: v3.0  
 > **日期**: 2026-04-17  
-> **检查文档**: echart_display_alarm_app_layout_new2_tasks.md v2.3  
+> **检查文档**: echart_display_alarm_app_layout_new_tasks.md v2.3  
 > **检查依据**: echart_tasks_check_lists.md v1.0  
 > **检查范围**: 里程碑设置、任务分类、优先级、依赖关系图、前后矛盾、文档完整性
 

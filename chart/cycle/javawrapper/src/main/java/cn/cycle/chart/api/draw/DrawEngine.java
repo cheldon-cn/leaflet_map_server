@@ -9,8 +9,8 @@ public final class DrawEngine extends NativeObject {
         JniBridge.initialize();
     }
 
-    public DrawEngine() {
-        setNativePtr(nativeCreate());
+    public DrawEngine(int type) {
+        setNativePtr(nativeCreate(type));
     }
 
     DrawEngine(long nativePtr) {

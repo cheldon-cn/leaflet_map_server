@@ -9,8 +9,8 @@ public final class ImageDevice extends NativeObject {
         JniBridge.initialize();
     }
 
-    public ImageDevice() {
-        setNativePtr(nativeCreate());
+    public ImageDevice(long width, long height) {
+        setNativePtr(nativeCreate(width, height));
     }
 
     ImageDevice(long nativePtr) {

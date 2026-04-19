@@ -9,8 +9,13 @@ public final class Color extends NativeObject {
         JniBridge.initialize();
     }
 
+
     Color(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native int nativeFromRgba(byte r, byte g, byte b, byte a);

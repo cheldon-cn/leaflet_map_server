@@ -9,8 +9,8 @@ public final class Font extends NativeObject {
         JniBridge.initialize();
     }
 
-    public Font() {
-        setNativePtr(nativeCreate());
+    public Font(String family, double size) {
+        setNativePtr(nativeCreate(family, size));
     }
 
     Font(long nativePtr) {

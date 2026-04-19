@@ -10,9 +10,9 @@ public final class RenderException extends RuntimeException {
 
     private long nativePtr;
 
-    public RenderException(int errorCode, String message) {
+    public RenderException(String message, String layerName) {
         super(message);
-        this.nativePtr = nativeCreate(errorCode, message);
+        this.nativePtr = nativeCreate(message, layerName);
     }
 
     RenderException(long nativePtr) {
@@ -20,24 +20,19 @@ public final class RenderException extends RuntimeException {
         this.nativePtr = nativePtr;
     }
 
-    public int getErrorCode() {
-        return nativeGetErrorCode(nativePtr);
-    }
-
     public String getNativeMessage() {
         return nativeGetMessage(nativePtr);
     }
-
     public String getContext() {
         return nativeGetContext(nativePtr);
     }
-
     public void dispose() {
         if (nativePtr != 0) {
             nativeDestroy(nativePtr);
             nativePtr = 0;
         }
     }
+
     private static native long nativeCreate(String message, String layerName);
     private static native void nativeDestroy(long ptr);
 }

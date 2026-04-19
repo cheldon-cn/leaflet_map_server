@@ -9,8 +9,8 @@ public final class RenderContext extends NativeObject {
         JniBridge.initialize();
     }
 
-    public RenderContext() {
-        setNativePtr(nativeCreate());
+    public RenderContext(long devicePtr, long enginePtr) {
+        setNativePtr(nativeCreate(devicePtr, enginePtr));
     }
 
     RenderContext(long nativePtr) {
