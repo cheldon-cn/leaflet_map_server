@@ -16,6 +16,16 @@ public final class Polygon extends Geometry {
         setNativePtr(nativePtr);
     }
 
+    public static Polygon createFromRing(LinearRing exteriorRing) {
+        long ptr = nativeCreateFromRing(exteriorRing.getNativePtr());
+        return ptr != 0 ? new Polygon(ptr) : null;
+    }
+
+    public static Polygon createFromCoords(double[] exteriorCoords) {
+        long ptr = nativeCreateFromCoords(exteriorCoords);
+        return ptr != 0 ? new Polygon(ptr) : null;
+    }
+
     public long getNumInteriorRings() {
         checkNotDisposed();
         return nativeGetNumInteriorRings(getNativePtr());
@@ -58,6 +68,8 @@ public final class Polygon extends Geometry {
     }
 
     private native static long nativeCreate();
+    private native static long nativeCreateFromRing(long ringPtr);
+    private native static long nativeCreateFromCoords(double[] coords);
     private native long nativeGetNumInteriorRings(long ptr);
     private native long nativeGetExteriorRing(long ptr);
     private native long nativeGetInteriorRingN(long ptr, int index);

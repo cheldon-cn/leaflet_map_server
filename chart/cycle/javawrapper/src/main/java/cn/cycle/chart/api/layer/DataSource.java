@@ -13,6 +13,10 @@ public final class DataSource extends NativeObject {
         setNativePtr(nativePtr);
     }
 
+    @Override
+    protected void nativeDispose(long ptr) {
+    }
+
     private static native long nativeOpen(String path);
     private native void nativeClose(long ptr);
     private native boolean nativeIsOpen(long ptr);

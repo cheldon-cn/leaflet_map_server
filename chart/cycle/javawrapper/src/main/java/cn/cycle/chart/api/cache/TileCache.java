@@ -1,177 +1,63 @@
 package cn.cycle.chart.api.cache;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-public class TileCache {
+public final class TileCache extends NativeObject {
 
-    private final LinkedHashMap<String, CacheEntry> cache;
-    private final int maxSize;
-    private final long maxAge;
-    private final ReadWriteLock lock;
-    private long hits;
-    private long misses;
-
-    private static class CacheEntry {
-        final byte[] data;
-        final long timestamp;
-        
-        CacheEntry(byte[] data) {
-            this.data = data;
-            this.timestamp = System.currentTimeMillis();
-        }
-        
-        boolean isExpired(long maxAge) {
-            return maxAge > 0 && (System.currentTimeMillis() - timestamp) > maxAge;
-        }
+    static {
+        JniBridge.initialize();
     }
 
     public TileCache() {
-        this(1000, 30 * 60 * 1000);
+        setNativePtr(nativeCreate());
     }
 
-    public TileCache(int maxSize, long maxAge) {
-        this.maxSize = maxSize;
-        this.maxAge = maxAge;
-        this.lock = new ReentrantReadWriteLock();
-        this.hits = 0;
-        this.misses = 0;
-        this.cache = new LinkedHashMap<String, CacheEntry>(16, 0.75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<String, CacheEntry> eldest) {
-                return size() > TileCache.this.maxSize;
-            }
-        };
+    TileCache(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
-    public byte[] get(TileKey key) {
-        if (key == null) {
-            return null;
-        }
-        return get(key.getKey());
+    public boolean hasTile(int x, int y, int z) {
+        checkNotDisposed();
+        return nativeHasTile(getNativePtr(), x, y, z);
     }
 
-    public byte[] get(String key) {
-        lock.readLock().lock();
-        try {
-            CacheEntry entry = cache.get(key);
-            if (entry != null && !entry.isExpired(maxAge)) {
-                hits++;
-                return entry.data;
-            }
-            misses++;
-            return null;
-        } finally {
-            lock.readLock().unlock();
-        }
+    public long getTilePtr(int x, int y, int z) {
+        checkNotDisposed();
+        return nativeGetTilePtr(getNativePtr(), x, y, z);
     }
 
-    public void put(TileKey key, byte[] data) {
-        if (key == null || data == null) {
-            return;
-        }
-        put(key.getKey(), data);
+    public void putTile(int x, int y, int z, long tilePtr) {
+        checkNotDisposed();
+        nativePutTile(getNativePtr(), x, y, z, tilePtr);
     }
 
-    public void put(String key, byte[] data) {
-        if (key == null || data == null) {
-            return;
-        }
-        lock.writeLock().lock();
-        try {
-            cache.put(key, new CacheEntry(data));
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void remove(TileKey key) {
-        if (key != null) {
-            remove(key.getKey());
-        }
-    }
-
-    public void remove(String key) {
-        if (key == null) {
-            return;
-        }
-        lock.writeLock().lock();
-        try {
-            cache.remove(key);
-        } finally {
-            lock.writeLock().unlock();
-        }
+    public void removeTile(int x, int y, int z) {
+        checkNotDisposed();
+        nativeRemoveTile(getNativePtr(), x, y, z);
     }
 
     public void clear() {
-        lock.writeLock().lock();
-        try {
-            cache.clear();
-            hits = 0;
-            misses = 0;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        checkNotDisposed();
+        nativeClear(getNativePtr());
     }
 
-    public void clearExpired() {
-        lock.writeLock().lock();
-        try {
-            cache.entrySet().removeIf(entry -> entry.getValue().isExpired(maxAge));
-        } finally {
-            lock.writeLock().unlock();
-        }
+    public long getSize() {
+        checkNotDisposed();
+        return nativeGetSize(getNativePtr());
     }
 
-    public int size() {
-        lock.readLock().lock();
-        try {
-            return cache.size();
-        } finally {
-            lock.readLock().unlock();
-        }
+    @Override
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
 
-    public boolean contains(TileKey key) {
-        if (key == null) {
-            return false;
-        }
-        return contains(key.getKey());
-    }
-
-    public boolean contains(String key) {
-        if (key == null) {
-            return false;
-        }
-        lock.readLock().lock();
-        try {
-            CacheEntry entry = cache.get(key);
-            return entry != null && !entry.isExpired(maxAge);
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public double getHitRate() {
-        long total = hits + misses;
-        return total > 0 ? (double) hits / total : 0.0;
-    }
-
-    public long getHits() {
-        return hits;
-    }
-
-    public long getMisses() {
-        return misses;
-    }
-
-    public int getMaxSize() {
-        return maxSize;
-    }
-
-    public long getMaxAge() {
-        return maxAge;
-    }
+    private static native long nativeCreate();
+    private static native void nativeDestroy(long ptr);
+    private native boolean nativeHasTile(long ptr, int x, int y, int z);
+    private native long nativeGetTilePtr(long ptr, int x, int y, int z);
+    private native void nativePutTile(long ptr, int x, int y, int z, long tilePtr);
+    private native void nativeRemoveTile(long ptr, int x, int y, int z);
+    private native void nativeClear(long ptr);
+    private native long nativeGetSize(long ptr);
 }

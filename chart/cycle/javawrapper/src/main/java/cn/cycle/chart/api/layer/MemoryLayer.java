@@ -9,12 +9,12 @@ public final class MemoryLayer extends NativeObject {
         JniBridge.initialize();
     }
 
-    public MemoryLayer() {
-        setNativePtr(nativeCreate());
-    }
-
     MemoryLayer(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(String name);

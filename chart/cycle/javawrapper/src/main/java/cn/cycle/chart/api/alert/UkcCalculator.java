@@ -9,8 +9,13 @@ public final class UkcCalculator extends NativeObject {
         JniBridge.initialize();
     }
 
+
     UkcCalculator(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native Object nativeCalculate(double chartedDepth, double tideHeight, double draft, double speed, double squatCoeff);

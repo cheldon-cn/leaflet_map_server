@@ -9,10 +9,6 @@ public final class LabelInfo extends NativeObject {
         JniBridge.initialize();
     }
 
-    public LabelInfo() {
-        setNativePtr(nativeCreate());
-    }
-
     LabelInfo(long nativePtr) {
         setNativePtr(nativePtr);
     }

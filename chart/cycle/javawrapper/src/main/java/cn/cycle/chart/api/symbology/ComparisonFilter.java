@@ -9,10 +9,6 @@ public final class ComparisonFilter extends NativeObject {
         JniBridge.initialize();
     }
 
-    public ComparisonFilter() {
-        setNativePtr(nativeCreate());
-    }
-
     ComparisonFilter(long nativePtr) {
         setNativePtr(nativePtr);
     }

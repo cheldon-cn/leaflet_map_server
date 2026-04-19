@@ -9,10 +9,6 @@ public final class GracefulDegradation extends NativeObject {
         JniBridge.initialize();
     }
 
-    public GracefulDegradation() {
-        setNativePtr(nativeCreate());
-    }
-
     GracefulDegradation(long nativePtr) {
         setNativePtr(nativePtr);
     }

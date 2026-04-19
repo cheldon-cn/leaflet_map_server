@@ -9,8 +9,8 @@ public final class OfflineRegion extends NativeObject {
         JniBridge.initialize();
     }
 
-    public OfflineRegion() {
-        setNativePtr(nativeCreate());
+    public OfflineRegion(long storagePtr, double minX, double minY, double maxX, double maxY, int minZoom, int maxZoom) {
+        setNativePtr(nativeCreate(storagePtr, minX, minY, maxX, maxY, minZoom, maxZoom));
     }
 
     OfflineRegion(long nativePtr) {

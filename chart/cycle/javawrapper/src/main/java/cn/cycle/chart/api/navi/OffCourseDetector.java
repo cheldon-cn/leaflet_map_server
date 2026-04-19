@@ -9,10 +9,6 @@ public final class OffCourseDetector extends NativeObject {
         JniBridge.initialize();
     }
 
-    public OffCourseDetector() {
-        setNativePtr(nativeCreate());
-    }
-
     OffCourseDetector(long nativePtr) {
         setNativePtr(nativePtr);
     }

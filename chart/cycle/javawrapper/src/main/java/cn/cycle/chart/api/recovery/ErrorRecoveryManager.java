@@ -9,10 +9,6 @@ public final class ErrorRecoveryManager extends NativeObject {
         JniBridge.initialize();
     }
 
-    public ErrorRecoveryManager() {
-        setNativePtr(nativeCreate());
-    }
-
     ErrorRecoveryManager(long nativePtr) {
         setNativePtr(nativePtr);
     }

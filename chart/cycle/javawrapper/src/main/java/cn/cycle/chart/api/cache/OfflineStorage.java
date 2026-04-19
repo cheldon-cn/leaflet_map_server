@@ -9,8 +9,8 @@ public final class OfflineStorage extends NativeObject {
         JniBridge.initialize();
     }
 
-    public OfflineStorage() {
-        setNativePtr(nativeCreate());
+    public OfflineStorage(String storagePath) {
+        setNativePtr(nativeCreate(storagePath));
     }
 
     OfflineStorage(long nativePtr) {

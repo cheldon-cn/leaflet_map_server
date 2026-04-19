@@ -9,10 +9,6 @@ public final class CoordTransformer extends NativeObject {
         JniBridge.initialize();
     }
 
-    public CoordTransformer() {
-        setNativePtr(nativeCreate());
-    }
-
     CoordTransformer(long nativePtr) {
         setNativePtr(nativePtr);
     }

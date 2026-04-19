@@ -9,10 +9,6 @@ public final class SecureLibraryLoader extends NativeObject {
         JniBridge.initialize();
     }
 
-    public SecureLibraryLoader() {
-        setNativePtr(nativeCreate());
-    }
-
     SecureLibraryLoader(long nativePtr) {
         setNativePtr(nativePtr);
     }

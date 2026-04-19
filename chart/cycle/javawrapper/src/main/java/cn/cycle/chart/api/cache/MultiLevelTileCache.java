@@ -9,12 +9,16 @@ public final class MultiLevelTileCache extends NativeObject {
         JniBridge.initialize();
     }
 
-    public MultiLevelTileCache() {
-        setNativePtr(nativeCreate());
+    public MultiLevelTileCache(long memoryCachePtr, long diskCachePtr) {
+        setNativePtr(nativeCreate(memoryCachePtr, diskCachePtr));
     }
 
     MultiLevelTileCache(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(long memoryCachePtr, long diskCachePtr);

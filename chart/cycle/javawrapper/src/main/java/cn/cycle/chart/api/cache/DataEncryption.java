@@ -9,8 +9,8 @@ public final class DataEncryption extends NativeObject {
         JniBridge.initialize();
     }
 
-    public DataEncryption() {
-        setNativePtr(nativeCreate());
+    public DataEncryption(String key) {
+        setNativePtr(nativeCreate(key));
     }
 
     DataEncryption(long nativePtr) {

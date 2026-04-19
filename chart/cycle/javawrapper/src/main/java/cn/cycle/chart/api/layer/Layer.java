@@ -131,6 +131,43 @@ public class Layer extends NativeObject {
         this.style = style;
     }
 
+    public long getFeatureDefn() {
+        checkNotDisposed();
+        return nativeGetFeatureDefn(getNativePtr());
+    }
+
+    public int getGeomType() {
+        checkNotDisposed();
+        return nativeGetGeomType(getNativePtr());
+    }
+
+    public long getFeatureCount() {
+        checkNotDisposed();
+        return nativeGetFeatureCount(getNativePtr());
+    }
+
+    public void resetReading() {
+        checkNotDisposed();
+        nativeResetReading(getNativePtr());
+    }
+
+    public cn.cycle.chart.api.feature.FeatureInfo getNextFeature() {
+        checkNotDisposed();
+        long ptr = nativeGetNextFeature(getNativePtr());
+        return ptr != 0 ? new cn.cycle.chart.api.feature.FeatureInfo(ptr) : null;
+    }
+
+    public cn.cycle.chart.api.feature.FeatureInfo getFeature(long fid) {
+        checkNotDisposed();
+        long ptr = nativeGetFeature(getNativePtr(), fid);
+        return ptr != 0 ? new cn.cycle.chart.api.feature.FeatureInfo(ptr) : null;
+    }
+
+    public void setAttributeFilter(String filter) {
+        checkNotDisposed();
+        nativeSetAttributeFilter(getNativePtr(), filter);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -141,5 +178,13 @@ public class Layer extends NativeObject {
     private native int nativeGetType(long ptr);
     private native void nativeSetVisible(long ptr, boolean visible);
     private native void nativeSetOpacity(long ptr, double opacity);
+    private native long nativeGetFeatureDefn(long ptr);
+    private native int nativeGetGeomType(long ptr);
+    private native long nativeGetFeatureCount(long ptr);
+    private native void nativeResetReading(long ptr);
+    private native long nativeGetNextFeature(long ptr);
+    private native long nativeGetFeature(long ptr, long fid);
+    private native void nativeSetAttributeFilter(long ptr, String filter);
     private native void nativeDestroy(long ptr);
+    static native void nativeArrayDestroy(long ptr);
 }

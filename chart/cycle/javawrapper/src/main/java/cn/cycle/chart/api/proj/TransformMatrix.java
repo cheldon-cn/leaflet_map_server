@@ -9,10 +9,6 @@ public final class TransformMatrix extends NativeObject {
         JniBridge.initialize();
     }
 
-    public TransformMatrix() {
-        setNativePtr(nativeCreate());
-    }
-
     TransformMatrix(long nativePtr) {
         setNativePtr(nativePtr);
     }

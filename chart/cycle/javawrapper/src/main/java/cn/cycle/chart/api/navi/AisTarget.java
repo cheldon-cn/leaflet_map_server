@@ -9,10 +9,6 @@ public final class AisTarget extends NativeObject {
         JniBridge.initialize();
     }
 
-    public AisTarget() {
-        setNativePtr(nativeCreate());
-    }
-
     AisTarget(long nativePtr) {
         setNativePtr(nativePtr);
     }

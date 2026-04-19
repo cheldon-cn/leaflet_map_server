@@ -9,8 +9,13 @@ public final class Feature extends NativeObject {
         JniBridge.initialize();
     }
 
+
     Feature(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreateWithDefn(long defnPtr);

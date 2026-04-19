@@ -9,12 +9,16 @@ public final class DiskTileCache extends NativeObject {
         JniBridge.initialize();
     }
 
-    public DiskTileCache() {
-        setNativePtr(nativeCreate());
+    public DiskTileCache(String cacheDir, long maxSizeBytes) {
+        setNativePtr(nativeCreate(cacheDir, maxSizeBytes));
     }
 
     DiskTileCache(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(String cacheDir, long maxSizeBytes);

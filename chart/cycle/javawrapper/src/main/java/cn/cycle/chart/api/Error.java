@@ -9,8 +9,13 @@ public final class Error extends NativeObject {
         JniBridge.initialize();
     }
 
+
     Error(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native String nativeGetMessage(int code);

@@ -16,6 +16,11 @@ public final class LinearRing extends LineString {
         setNativePtr(nativePtr);
     }
 
+    public static LinearRing createFromCoords(double[] coords) {
+        long ptr = nativeCreateFromCoords(coords);
+        return ptr != 0 ? new LinearRing(ptr) : null;
+    }
+
     public boolean isClosed() {
         checkNotDisposed();
         return nativeIsClosed(getNativePtr());
@@ -27,5 +32,6 @@ public final class LinearRing extends LineString {
     }
 
     private native static long nativeCreate();
+    private native static long nativeCreateFromCoords(double[] coords);
     private native boolean nativeIsClosed(long ptr);
 }

@@ -9,10 +9,6 @@ public final class CollisionAssessor extends NativeObject {
         JniBridge.initialize();
     }
 
-    public CollisionAssessor() {
-        setNativePtr(nativeCreate());
-    }
-
     CollisionAssessor(long nativePtr) {
         setNativePtr(nativePtr);
     }

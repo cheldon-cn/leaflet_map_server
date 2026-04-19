@@ -9,13 +9,11 @@ public abstract class Filter extends NativeObject {
         JniBridge.initialize();
     }
 
-    Filter(long nativePtr) {
-        setNativePtr(nativePtr);
+    Filter() {
     }
 
-    @Override
-    protected void nativeDispose(long ptr) {
-        nativeDestroy(ptr);
+    Filter(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
     private static native long nativeCreate();

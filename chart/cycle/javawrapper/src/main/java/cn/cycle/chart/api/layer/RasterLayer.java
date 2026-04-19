@@ -9,12 +9,12 @@ public final class RasterLayer extends NativeObject {
         JniBridge.initialize();
     }
 
-    public RasterLayer() {
-        setNativePtr(nativeCreate());
-    }
-
     RasterLayer(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(String name, String filepath);

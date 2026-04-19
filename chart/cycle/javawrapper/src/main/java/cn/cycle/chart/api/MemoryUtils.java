@@ -9,8 +9,13 @@ public final class MemoryUtils extends NativeObject {
         JniBridge.initialize();
     }
 
+
     MemoryUtils(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native void nativeFree(long ptr);

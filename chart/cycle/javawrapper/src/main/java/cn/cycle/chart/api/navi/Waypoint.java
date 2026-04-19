@@ -1,131 +1,105 @@
 package cn.cycle.chart.api.navi;
 
-import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-import java.time.LocalDateTime;
+public final class Waypoint extends NativeObject {
 
-public class Waypoint {
-
-    public enum Type {
-        WAYPOINT,
-        DEPARTURE,
-        DESTINATION,
-        TURNING_POINT,
-        ANCHORAGE,
-        PILOT_STATION
+    static {
+        JniBridge.initialize();
     }
 
-    private String name;
-    private Coordinate position;
-    private Type type;
-    private double speed;
-    private double xteLimit;
-    private String notes;
-    private LocalDateTime eta;
-    private int sequence;
-
-    public Waypoint() {
-        this.type = Type.WAYPOINT;
-        this.speed = 0;
-        this.xteLimit = 0.25;
+    public Waypoint(double lat, double lon) {
+        setNativePtr(nativeCreate(lat, lon));
     }
 
-    public Waypoint(String name, Coordinate position) {
-        this();
-        this.name = name;
-        this.position = position;
+    Waypoint(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
-    public Waypoint(String name, double x, double y) {
-        this(name, new Coordinate(x, y));
+    public double getLatitude() {
+        checkNotDisposed();
+        return nativeGetLatitude(getNativePtr());
+    }
+
+    public double getLongitude() {
+        checkNotDisposed();
+        return nativeGetLongitude(getNativePtr());
     }
 
     public String getName() {
-        return name;
+        checkNotDisposed();
+        return nativeGetName(getNativePtr());
     }
 
     public void setName(String name) {
-        this.name = name;
+        checkNotDisposed();
+        nativeSetName(getNativePtr(), name);
     }
 
-    public Coordinate getPosition() {
-        return position;
+    public boolean isArrival() {
+        checkNotDisposed();
+        return nativeIsArrival(getNativePtr());
     }
 
-    public void setPosition(Coordinate position) {
-        this.position = position;
+    public void setArrivalRadius(double radius) {
+        checkNotDisposed();
+        nativeSetArrivalRadius(getNativePtr(), radius);
     }
 
-    public void setPosition(double x, double y) {
-        this.position = new Coordinate(x, y);
+    public double getArrivalRadius() {
+        checkNotDisposed();
+        return nativeGetArrivalRadius(getNativePtr());
     }
 
-    public Type getType() {
-        return type;
+    public void setTurnRadius(double radius) {
+        checkNotDisposed();
+        nativeSetTurnRadius(getNativePtr(), radius);
     }
 
-    public void setType(Type type) {
-        this.type = type;
+    public double getTurnRadius() {
+        checkNotDisposed();
+        return nativeGetTurnRadius(getNativePtr());
     }
 
-    public double getSpeed() {
-        return speed;
+    public void setType(int type) {
+        checkNotDisposed();
+        nativeSetType(getNativePtr(), type);
     }
 
-    public void setSpeed(double speed) {
-        this.speed = speed;
+    public int getType() {
+        checkNotDisposed();
+        return nativeGetType(getNativePtr());
     }
 
-    public double getXteLimit() {
-        return xteLimit;
+    public void setDescription(String description) {
+        checkNotDisposed();
+        nativeSetDescription(getNativePtr(), description);
     }
 
-    public void setXteLimit(double xteLimit) {
-        this.xteLimit = xteLimit;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public LocalDateTime getEta() {
-        return eta;
-    }
-
-    public void setEta(LocalDateTime eta) {
-        this.eta = eta;
-    }
-
-    public int getSequence() {
-        return sequence;
-    }
-
-    public void setSequence(int sequence) {
-        this.sequence = sequence;
-    }
-
-    public double distanceTo(Waypoint other) {
-        if (position == null || other == null || other.position == null) {
-            return Double.NaN;
-        }
-        return position.distance(other.position);
-    }
-
-    public double bearingTo(Waypoint other) {
-        if (position == null || other == null || other.position == null) {
-            return Double.NaN;
-        }
-        double dx = other.position.getX() - position.getX();
-        double dy = other.position.getY() - position.getY();
-        return Math.toDegrees(Math.atan2(dx, dy));
+    public String getDescription() {
+        checkNotDisposed();
+        return nativeGetDescription(getNativePtr());
     }
 
     @Override
-    public String toString() {
-        return String.format("Waypoint[%s: %s]", name, position);
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
+
+    private static native long nativeCreate(double lat, double lon);
+    private static native void nativeDestroy(long ptr);
+    private native double nativeGetLatitude(long ptr);
+    private native double nativeGetLongitude(long ptr);
+    private native String nativeGetName(long ptr);
+    private native void nativeSetName(long ptr, String name);
+    private native boolean nativeIsArrival(long ptr);
+    private native void nativeSetArrivalRadius(long ptr, double radius);
+    private native double nativeGetArrivalRadius(long ptr);
+    private native void nativeSetTurnRadius(long ptr, double radius);
+    private native double nativeGetTurnRadius(long ptr);
+    private native void nativeSetType(long ptr, int type);
+    private native int nativeGetType(long ptr);
+    private native void nativeSetDescription(long ptr, String description);
+    private native String nativeGetDescription(long ptr);
 }

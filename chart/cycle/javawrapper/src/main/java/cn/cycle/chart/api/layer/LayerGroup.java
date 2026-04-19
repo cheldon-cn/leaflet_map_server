@@ -9,10 +9,6 @@ public final class LayerGroup extends NativeObject {
         JniBridge.initialize();
     }
 
-    public LayerGroup() {
-        setNativePtr(nativeCreate());
-    }
-
     LayerGroup(long nativePtr) {
         setNativePtr(nativePtr);
     }

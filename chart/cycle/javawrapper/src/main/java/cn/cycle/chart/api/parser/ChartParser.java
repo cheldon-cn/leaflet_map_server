@@ -9,8 +9,11 @@ public final class ChartParser extends NativeObject {
         JniBridge.initialize();
     }
 
-    ChartParser(long nativePtr) {
-        setNativePtr(nativePtr);
+    private ChartParser() {
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeGetInstance();

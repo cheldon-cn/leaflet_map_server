@@ -85,6 +85,27 @@ public final class FeatureInfo extends NativeObject {
         nativeSetFieldNull(getNativePtr(), index);
     }
 
+    public long getFieldAsInteger64(long index) {
+        checkNotDisposed();
+        return nativeGetFieldAsInteger64(getNativePtr(), index);
+    }
+
+    public void setFieldInteger64(long index, long value) {
+        checkNotDisposed();
+        nativeSetFieldInteger64(getNativePtr(), index, value);
+    }
+
+    public Geometry getGeometry() {
+        checkNotDisposed();
+        long ptr = nativeGetGeometry(getNativePtr());
+        return ptr != 0 ? Geometry.fromNativePtr(ptr) : null;
+    }
+
+    public void setGeometry(Geometry geom) {
+        checkNotDisposed();
+        nativeSetGeometry(getNativePtr(), geom.getNativePtr());
+    }
+
     public long getGeometryPtr() {
         checkNotDisposed();
         return nativeGetGeometry(getNativePtr());
@@ -215,5 +236,8 @@ public final class FeatureInfo extends NativeObject {
     private native String nativeGetFeatureName(long ptr);
     private native String nativeGetFeatureClass(long ptr);
     private native String nativeGetFieldName(long ptr, long index);
+    private native long nativeGetFieldAsInteger64(long ptr, long index);
+    private native void nativeSetFieldInteger64(long ptr, long index, long value);
     private native void nativeDestroy(long ptr);
+    static native void nativeArrayDestroy(long ptr);
 }

@@ -9,10 +9,6 @@ public final class Track extends NativeObject {
         JniBridge.initialize();
     }
 
-    public Track() {
-        setNativePtr(nativeCreate());
-    }
-
     Track(long nativePtr) {
         setNativePtr(nativePtr);
     }

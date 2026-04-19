@@ -9,8 +9,11 @@ public final class PerformanceMonitor extends NativeObject {
         JniBridge.initialize();
     }
 
-    PerformanceMonitor(long nativePtr) {
-        setNativePtr(nativePtr);
+    private PerformanceMonitor() {
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeGetInstance();

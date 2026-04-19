@@ -9,12 +9,21 @@ public final class MemoryTileCache extends NativeObject {
         JniBridge.initialize();
     }
 
-    public MemoryTileCache() {
-        setNativePtr(nativeCreate());
+    public static MemoryTileCache create(long maxSizeBytes) {
+        MemoryTileCache cache = new MemoryTileCache();
+        cache.setNativePtr(nativeCreate(maxSizeBytes));
+        return cache;
     }
 
     MemoryTileCache(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    private MemoryTileCache() {
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(long maxSizeBytes);

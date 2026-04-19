@@ -9,12 +9,12 @@ public final class LogicalFilter extends NativeObject {
         JniBridge.initialize();
     }
 
-    public LogicalFilter() {
-        setNativePtr(nativeCreate());
-    }
-
     LogicalFilter(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeCreate(int op);

@@ -1,191 +1,106 @@
 package cn.cycle.chart.api.navi;
 
-import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+public final class NavigationEngine extends NativeObject {
 
-public class NavigationEngine {
-
-    private Route currentRoute;
-    private int currentWaypointIndex;
-    private Coordinate currentPosition;
-    private double currentSpeed;
-    private double currentHeading;
-    private boolean navigating;
-    private final List<NavigationListener> listeners;
+    static {
+        JniBridge.initialize();
+    }
 
     public NavigationEngine() {
-        this.listeners = new CopyOnWriteArrayList<>();
-        this.currentWaypointIndex = 0;
-        this.navigating = false;
+        setNativePtr(nativeCreate());
     }
 
-    public void setRoute(Route route) {
-        this.currentRoute = route;
-        this.currentWaypointIndex = 0;
-        if (route != null && route.getWaypointCount() > 0) {
-            fireRouteChanged();
-        }
+    NavigationEngine(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
-    public Route getRoute() {
-        return currentRoute;
+    public int initialize() {
+        checkNotDisposed();
+        return nativeInitialize(getNativePtr());
     }
 
-    public void startNavigation() {
-        if (currentRoute != null && currentRoute.getWaypointCount() > 0) {
-            navigating = true;
-            fireNavigationStarted();
-        }
+    public void shutdown() {
+        checkNotDisposed();
+        nativeShutdown(getNativePtr());
     }
 
-    public void stopNavigation() {
-        navigating = false;
-        fireNavigationStopped();
+    public void setRoute(long routePtr) {
+        checkNotDisposed();
+        nativeSetRoute(getNativePtr(), routePtr);
     }
 
-    public boolean isNavigating() {
-        return navigating;
+    public long getRoute() {
+        checkNotDisposed();
+        return nativeGetRoute(getNativePtr());
     }
 
-    public void updatePosition(Coordinate position, double speed, double heading) {
-        this.currentPosition = position;
-        this.currentSpeed = speed;
-        this.currentHeading = heading;
-        
-        if (navigating && currentRoute != null) {
-            checkWaypointArrival();
-            firePositionUpdated();
-        }
+    public void start() {
+        checkNotDisposed();
+        nativeStart(getNativePtr());
     }
 
-    private void checkWaypointArrival() {
-        if (currentRoute == null || currentWaypointIndex >= currentRoute.getWaypointCount()) {
-            return;
-        }
-        
-        Waypoint current = currentRoute.getWaypoint(currentWaypointIndex);
-        if (current != null && currentPosition != null) {
-            double distance = currentPosition.distance(current.getPosition());
-            if (distance < 0.01) {
-                fireWaypointArrived(current, currentWaypointIndex);
-                currentWaypointIndex++;
-                if (currentWaypointIndex >= currentRoute.getWaypointCount()) {
-                    fireRouteCompleted();
-                    navigating = false;
-                }
-            }
-        }
+    public void stop() {
+        checkNotDisposed();
+        nativeStop(getNativePtr());
+    }
+
+    public void pause() {
+        checkNotDisposed();
+        nativePause(getNativePtr());
+    }
+
+    public void resume() {
+        checkNotDisposed();
+        nativeResume(getNativePtr());
+    }
+
+    public int getStatus() {
+        checkNotDisposed();
+        return nativeGetStatus(getNativePtr());
     }
 
     public Waypoint getCurrentWaypoint() {
-        if (currentRoute != null && currentWaypointIndex < currentRoute.getWaypointCount()) {
-            return currentRoute.getWaypoint(currentWaypointIndex);
-        }
-        return null;
-    }
-
-    public int getCurrentWaypointIndex() {
-        return currentWaypointIndex;
+        checkNotDisposed();
+        long ptr = nativeGetCurrentWaypoint(getNativePtr());
+        return ptr != 0 ? new Waypoint(ptr) : null;
     }
 
     public double getDistanceToWaypoint() {
-        Waypoint wp = getCurrentWaypoint();
-        if (wp != null && currentPosition != null) {
-            return currentPosition.distance(wp.getPosition());
-        }
-        return Double.NaN;
+        checkNotDisposed();
+        return nativeGetDistanceToWaypoint(getNativePtr());
     }
 
     public double getBearingToWaypoint() {
-        Waypoint wp = getCurrentWaypoint();
-        if (wp != null && currentPosition != null) {
-            Coordinate wpPos = wp.getPosition();
-            double dx = wpPos.getX() - currentPosition.getX();
-            double dy = wpPos.getY() - currentPosition.getY();
-            return Math.toDegrees(Math.atan2(dx, dy));
-        }
-        return Double.NaN;
+        checkNotDisposed();
+        return nativeGetBearingToWaypoint(getNativePtr());
     }
 
-    public double getXTE() {
-        return 0;
+    public double getCrossTrackError() {
+        checkNotDisposed();
+        return nativeGetCrossTrackError(getNativePtr());
     }
 
-    public double getTimeToWaypoint() {
-        double distance = getDistanceToWaypoint();
-        if (!Double.isNaN(distance) && currentSpeed > 0) {
-            return distance / currentSpeed;
-        }
-        return Double.NaN;
+    @Override
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
 
-    public Coordinate getCurrentPosition() {
-        return currentPosition;
-    }
-
-    public double getCurrentSpeed() {
-        return currentSpeed;
-    }
-
-    public double getCurrentHeading() {
-        return currentHeading;
-    }
-
-    public void addListener(NavigationListener listener) {
-        if (listener != null) {
-            listeners.add(listener);
-        }
-    }
-
-    public void removeListener(NavigationListener listener) {
-        listeners.remove(listener);
-    }
-
-    private void fireRouteChanged() {
-        for (NavigationListener listener : listeners) {
-            listener.onRouteChanged(currentRoute);
-        }
-    }
-
-    private void fireNavigationStarted() {
-        for (NavigationListener listener : listeners) {
-            listener.onNavigationStarted();
-        }
-    }
-
-    private void fireNavigationStopped() {
-        for (NavigationListener listener : listeners) {
-            listener.onNavigationStopped();
-        }
-    }
-
-    private void firePositionUpdated() {
-        for (NavigationListener listener : listeners) {
-            listener.onPositionUpdated(currentPosition, currentSpeed, currentHeading);
-        }
-    }
-
-    private void fireWaypointArrived(Waypoint waypoint, int index) {
-        for (NavigationListener listener : listeners) {
-            listener.onWaypointArrived(waypoint, index);
-        }
-    }
-
-    private void fireRouteCompleted() {
-        for (NavigationListener listener : listeners) {
-            listener.onRouteCompleted();
-        }
-    }
-
-    public interface NavigationListener {
-        void onRouteChanged(Route route);
-        void onNavigationStarted();
-        void onNavigationStopped();
-        void onPositionUpdated(Coordinate position, double speed, double heading);
-        void onWaypointArrived(Waypoint waypoint, int index);
-        void onRouteCompleted();
-    }
+    private static native long nativeCreate();
+    private native void nativeDestroy(long ptr);
+    private native int nativeInitialize(long ptr);
+    private native void nativeShutdown(long ptr);
+    private native void nativeSetRoute(long ptr, long routePtr);
+    private native long nativeGetRoute(long ptr);
+    private native void nativeStart(long ptr);
+    private native void nativeStop(long ptr);
+    private native void nativePause(long ptr);
+    private native void nativeResume(long ptr);
+    private native int nativeGetStatus(long ptr);
+    private native long nativeGetCurrentWaypoint(long ptr);
+    private native double nativeGetDistanceToWaypoint(long ptr);
+    private native double nativeGetBearingToWaypoint(long ptr);
+    private native double nativeGetCrossTrackError(long ptr);
 }

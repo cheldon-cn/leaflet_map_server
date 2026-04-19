@@ -9,8 +9,13 @@ public final class SDKVersion extends NativeObject {
         JniBridge.initialize();
     }
 
+
     SDKVersion(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native String nativeGetVersion();

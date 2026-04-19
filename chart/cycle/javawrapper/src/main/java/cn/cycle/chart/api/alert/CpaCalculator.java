@@ -9,8 +9,13 @@ public final class CpaCalculator extends NativeObject {
         JniBridge.initialize();
     }
 
+
     CpaCalculator(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native Object nativeCalculate(double ownLat, double ownLon, double ownSpeed, double ownCourse, double tgtLat, double tgtLon, double tgtSpeed, double tgtCourse);

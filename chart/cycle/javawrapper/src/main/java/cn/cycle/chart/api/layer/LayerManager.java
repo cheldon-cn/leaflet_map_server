@@ -96,6 +96,21 @@ public final class LayerManager extends NativeObject {
         nativeSetLayerOpacity(getNativePtr(), index, opacity);
     }
 
+    public int getLayerZOrder(long index) {
+        checkNotDisposed();
+        return nativeGetLayerZOrder(getNativePtr(), index);
+    }
+
+    public void setLayerZOrder(long index, int zOrder) {
+        checkNotDisposed();
+        nativeSetLayerZOrder(getNativePtr(), index, zOrder);
+    }
+
+    public void sortByZOrder() {
+        checkNotDisposed();
+        nativeSortByZOrder(getNativePtr());
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -113,4 +128,8 @@ public final class LayerManager extends NativeObject {
     private native void nativeSetLayerVisible(long ptr, long index, boolean visible);
     private native double nativeGetLayerOpacity(long ptr, long index);
     private native void nativeSetLayerOpacity(long ptr, long index, double opacity);
+    private native long nativeGetLayerByName(long ptr, String name);
+    private native int nativeGetLayerZOrder(long ptr, long index);
+    private native void nativeSetLayerZOrder(long ptr, long index, int zOrder);
+    private native void nativeSortByZOrder(long ptr);
 }

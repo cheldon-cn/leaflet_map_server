@@ -9,8 +9,8 @@ public final class FeatureDefn extends NativeObject {
         JniBridge.initialize();
     }
 
-    public FeatureDefn() {
-        setNativePtr(nativeCreate());
+    public FeatureDefn(String name) {
+        setNativePtr(nativeCreate(name));
     }
 
     FeatureDefn(long nativePtr) {

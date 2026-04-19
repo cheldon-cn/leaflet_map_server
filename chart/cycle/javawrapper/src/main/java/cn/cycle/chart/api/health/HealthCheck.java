@@ -9,8 +9,8 @@ public final class HealthCheck extends NativeObject {
         JniBridge.initialize();
     }
 
-    public HealthCheck() {
-        setNativePtr(nativeCreate());
+    public HealthCheck(String name) {
+        setNativePtr(nativeCreate(name));
     }
 
     HealthCheck(long nativePtr) {

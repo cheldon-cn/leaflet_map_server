@@ -1,113 +1,51 @@
 package cn.cycle.chart.api.symbology;
 
-import cn.cycle.chart.api.style.Color;
-import cn.cycle.chart.api.style.DrawStyle;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-public class Symbolizer {
+public final class Symbolizer extends NativeObject {
 
-    public enum Type {
-        POINT,
-        LINE,
-        POLYGON,
-        TEXT,
-        RASTER
+    static {
+        JniBridge.initialize();
     }
 
-    private final Type type;
-    private String name;
-    private DrawStyle style;
-    private double minScale;
-    private double maxScale;
-    private String filter;
-    private boolean enabled;
-
-    public Symbolizer(Type type) {
-        this.type = type;
-        this.enabled = true;
-        this.minScale = 0;
-        this.maxScale = Double.MAX_VALUE;
+    public Symbolizer(int type) {
+        setNativePtr(nativeCreate(type));
     }
 
-    public Type getType() {
-        return type;
+    Symbolizer(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
-    public String getName() {
-        return name;
+    public boolean symbolize(long featurePtr, long devicePtr) {
+        checkNotDisposed();
+        return nativeSymbolize(getNativePtr(), featurePtr, devicePtr);
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public int getType() {
+        checkNotDisposed();
+        return nativeGetType(getNativePtr());
     }
 
-    public DrawStyle getStyle() {
-        return style;
+    public long getStylePtr() {
+        checkNotDisposed();
+        return nativeGetStyle(getNativePtr());
     }
 
-    public void setStyle(DrawStyle style) {
-        this.style = style;
+    public void setStylePtr(long stylePtr) {
+        checkNotDisposed();
+        nativeSetStyle(getNativePtr(), stylePtr);
     }
 
-    public double getMinScale() {
-        return minScale;
+    @Override
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
 
-    public void setMinScale(double minScale) {
-        this.minScale = minScale;
-    }
-
-    public double getMaxScale() {
-        return maxScale;
-    }
-
-    public void setMaxScale(double maxScale) {
-        this.maxScale = maxScale;
-    }
-
-    public String getFilter() {
-        return filter;
-    }
-
-    public void setFilter(String filter) {
-        this.filter = filter;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public boolean isScaleInRange(double scale) {
-        return scale >= minScale && scale <= maxScale;
-    }
-
-    public static Symbolizer createPointSymbolizer() {
-        Symbolizer s = new Symbolizer(Type.POINT);
-        s.setName("Point");
-        s.setStyle(DrawStyle.defaultPoint());
-        return s;
-    }
-
-    public static Symbolizer createLineSymbolizer() {
-        Symbolizer s = new Symbolizer(Type.LINE);
-        s.setName("Line");
-        s.setStyle(DrawStyle.defaultLine());
-        return s;
-    }
-
-    public static Symbolizer createPolygonSymbolizer() {
-        Symbolizer s = new Symbolizer(Type.POLYGON);
-        s.setName("Polygon");
-        s.setStyle(DrawStyle.defaultPolygon());
-        return s;
-    }
-
-    public static Symbolizer createTextSymbolizer() {
-        Symbolizer s = new Symbolizer(Type.TEXT);
-        s.setName("Text");
-        return s;
-    }
+    private native boolean nativeSymbolize(long ptr, long featurePtr, long devicePtr);
+    private static native long nativeCreate(int type);
+    private native void nativeDestroy(long ptr);
+    private native int nativeGetType(long ptr);
+    private native long nativeGetStyle(long ptr);
+    private native void nativeSetStyle(long ptr, long stylePtr);
 }

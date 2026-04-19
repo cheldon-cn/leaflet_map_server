@@ -1,33 +1,29 @@
 package cn.cycle.chart.api.geometry;
 
-import cn.cycle.chart.jni.JniBridge;
-import cn.cycle.chart.jni.NativeObject;
+class GeometryFactory {
 
-public final class GeometryFactory extends NativeObject {
-
-    static {
-        JniBridge.initialize();
+    static Geometry fromNativePtr(long ptr) {
+        if (ptr == 0) {
+            return null;
+        }
+        int type = Geometry.nativeGetType(ptr);
+        switch (Geometry.Type.fromValue(type)) {
+            case POINT:
+                return new Point(ptr);
+            case LINESTRING:
+                return new LineString(ptr);
+            case POLYGON:
+                return new Polygon(ptr);
+            case MULTIPOINT:
+                return new MultiPoint(ptr);
+            case MULTILINESTRING:
+                return new MultiLineString(ptr);
+            case MULTIPOLYGON:
+                return new MultiPolygon(ptr);
+            case GEOMETRYCOLLECTION:
+                return new GeometryCollection(ptr);
+            default:
+                return null;
+        }
     }
-
-    public GeometryFactory() {
-        setNativePtr(nativeCreate());
-    }
-
-    GeometryFactory(long nativePtr) {
-        setNativePtr(nativePtr);
-    }
-
-    @Override
-    protected void nativeDispose(long ptr) {
-        nativeDestroy(ptr);
-    }
-
-    private static native long nativeCreate();
-    private native void nativeDestroy(long ptr);
-    private native long nativeCreatePoint(long ptr, double x, double y);
-    private native long nativeCreateLineString(long ptr);
-    private native long nativeCreatePolygon(long ptr);
-    private native long nativeCreateFromWkt(long ptr, String wkt);
-    private native long nativeCreateFromWkb(long ptr, byte[] wkb);
-    private native long nativeCreateFromGeoJson(long ptr, String geojson);
 }

@@ -9,10 +9,6 @@ public final class CircuitBreaker extends NativeObject {
         JniBridge.initialize();
     }
 
-    public CircuitBreaker() {
-        setNativePtr(nativeCreate());
-    }
-
     CircuitBreaker(long nativePtr) {
         setNativePtr(nativePtr);
     }

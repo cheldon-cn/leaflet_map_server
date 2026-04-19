@@ -9,8 +9,11 @@ public final class RenderStats extends NativeObject {
         JniBridge.initialize();
     }
 
-    RenderStats(long nativePtr) {
-        setNativePtr(nativePtr);
+    private RenderStats() {
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private native void nativeReset(long ptr);

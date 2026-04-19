@@ -1,29 +1,51 @@
 package cn.cycle.chart.api.plugin;
 
-import cn.cycle.chart.api.core.ChartViewer;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-public interface ChartPlugin {
+public final class ChartPlugin extends NativeObject {
 
-    String getName();
-
-    String getVersion();
-
-    String getDescription();
-
-    void initialize(ChartViewer viewer);
-
-    void shutdown();
-
-    boolean isEnabled();
-
-    void setEnabled(boolean enabled);
-
-    default void onChartLoaded(String chartPath) {
+    static {
+        JniBridge.initialize();
     }
 
-    default void onChartClosed() {
+    public ChartPlugin(String name, String version) {
+        setNativePtr(nativeCreate(name, version));
     }
 
-    default void onViewportChanged() {
+    ChartPlugin(long nativePtr) {
+        setNativePtr(nativePtr);
     }
+
+    public String getName() {
+        checkNotDisposed();
+        return nativeGetName(getNativePtr());
+    }
+
+    public String getVersion() {
+        checkNotDisposed();
+        return nativeGetVersion(getNativePtr());
+    }
+
+    public int initialize() {
+        checkNotDisposed();
+        return nativeInitialize(getNativePtr());
+    }
+
+    public void shutdown() {
+        checkNotDisposed();
+        nativeShutdown(getNativePtr());
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
+    }
+
+    private static native long nativeCreate(String name, String version);
+    private native void nativeDestroy(long ptr);
+    private native String nativeGetName(long ptr);
+    private native String nativeGetVersion(long ptr);
+    private native int nativeInitialize(long ptr);
+    private native void nativeShutdown(long ptr);
 }

@@ -9,10 +9,6 @@ public final class SymbolizerRule extends NativeObject {
         JniBridge.initialize();
     }
 
-    public SymbolizerRule() {
-        setNativePtr(nativeCreate());
-    }
-
     SymbolizerRule(long nativePtr) {
         setNativePtr(nativePtr);
     }

@@ -1,118 +1,61 @@
 package cn.cycle.chart.api.plugin;
 
-import cn.cycle.chart.api.core.ChartViewer;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-import java.util.*;
+public final class PluginManager extends NativeObject {
 
-public class PluginManager {
-
-    private final ChartViewer chartViewer;
-    private final Map<String, ChartPlugin> plugins;
-    private final List<PluginListener> listeners;
-
-    public PluginManager(ChartViewer chartViewer) {
-        this.chartViewer = chartViewer;
-        this.plugins = new LinkedHashMap<>();
-        this.listeners = new ArrayList<>();
+    static {
+        JniBridge.initialize();
     }
 
-    public void registerPlugin(ChartPlugin plugin) {
-        if (plugin == null) {
-            return;
-        }
-        String name = plugin.getName();
-        if (plugins.containsKey(name)) {
-            throw new IllegalStateException("Plugin already registered: " + name);
-        }
-        plugins.put(name, plugin);
-        plugin.initialize(chartViewer);
-        firePluginRegistered(plugin);
+    private PluginManager() {
+        setNativePtr(nativeGetInstance());
     }
 
-    public void unregisterPlugin(String name) {
-        ChartPlugin plugin = plugins.remove(name);
-        if (plugin != null) {
-            plugin.shutdown();
-            firePluginUnregistered(plugin);
-        }
+    PluginManager(long nativePtr) {
+        setNativePtr(nativePtr);
+    }
+
+    public static PluginManager getInstance() {
+        long ptr = nativeGetInstance();
+        return ptr != 0 ? new PluginManager(ptr) : null;
+    }
+
+    public int loadPlugin(String path) {
+        checkNotDisposed();
+        return nativeLoadPlugin(getNativePtr(), path);
+    }
+
+    public int unloadPlugin(String name) {
+        checkNotDisposed();
+        return nativeUnloadPlugin(getNativePtr(), name);
+    }
+
+    public int getPluginCount() {
+        checkNotDisposed();
+        return nativeGetPluginCount(getNativePtr());
+    }
+
+    public String getPluginName(int index) {
+        checkNotDisposed();
+        return nativeGetPluginName(getNativePtr(), index);
     }
 
     public ChartPlugin getPlugin(String name) {
-        return plugins.get(name);
+        checkNotDisposed();
+        long ptr = nativeGetPlugin(getNativePtr(), name);
+        return ptr != 0 ? new ChartPlugin(ptr) : null;
     }
 
-    public Collection<ChartPlugin> getPlugins() {
-        return Collections.unmodifiableCollection(plugins.values());
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
-    public List<ChartPlugin> getEnabledPlugins() {
-        List<ChartPlugin> enabled = new ArrayList<>();
-        for (ChartPlugin plugin : plugins.values()) {
-            if (plugin.isEnabled()) {
-                enabled.add(plugin);
-            }
-        }
-        return enabled;
-    }
-
-    public void enablePlugin(String name) {
-        ChartPlugin plugin = plugins.get(name);
-        if (plugin != null) {
-            plugin.setEnabled(true);
-            firePluginStateChanged(plugin);
-        }
-    }
-
-    public void disablePlugin(String name) {
-        ChartPlugin plugin = plugins.get(name);
-        if (plugin != null) {
-            plugin.setEnabled(false);
-            firePluginStateChanged(plugin);
-        }
-    }
-
-    public void shutdownAll() {
-        for (ChartPlugin plugin : plugins.values()) {
-            try {
-                plugin.shutdown();
-            } catch (Exception e) {
-                System.err.println("Error shutting down plugin: " + plugin.getName());
-            }
-        }
-        plugins.clear();
-    }
-
-    public void addListener(PluginListener listener) {
-        if (listener != null && !listeners.contains(listener)) {
-            listeners.add(listener);
-        }
-    }
-
-    public void removeListener(PluginListener listener) {
-        listeners.remove(listener);
-    }
-
-    private void firePluginRegistered(ChartPlugin plugin) {
-        for (PluginListener listener : listeners) {
-            listener.onPluginRegistered(plugin);
-        }
-    }
-
-    private void firePluginUnregistered(ChartPlugin plugin) {
-        for (PluginListener listener : listeners) {
-            listener.onPluginUnregistered(plugin);
-        }
-    }
-
-    private void firePluginStateChanged(ChartPlugin plugin) {
-        for (PluginListener listener : listeners) {
-            listener.onPluginStateChanged(plugin);
-        }
-    }
-
-    public interface PluginListener {
-        void onPluginRegistered(ChartPlugin plugin);
-        void onPluginUnregistered(ChartPlugin plugin);
-        void onPluginStateChanged(ChartPlugin plugin);
-    }
+    private static native long nativeGetInstance();
+    private native int nativeLoadPlugin(long ptr, String path);
+    private native int nativeUnloadPlugin(long ptr, String name);
+    private native int nativeGetPluginCount(long ptr);
+    private native String nativeGetPluginName(long ptr, int index);
+    private native long nativeGetPlugin(long ptr, String name);
 }

@@ -9,8 +9,11 @@ public final class DriverManager extends NativeObject {
         JniBridge.initialize();
     }
 
-    DriverManager(long nativePtr) {
-        setNativePtr(nativePtr);
+    private DriverManager() {
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeGetInstance();

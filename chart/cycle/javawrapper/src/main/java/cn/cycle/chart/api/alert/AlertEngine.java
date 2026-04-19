@@ -1,134 +1,90 @@
 package cn.cycle.chart.api.alert;
 
-import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+public final class AlertEngine extends NativeObject {
 
-public class AlertEngine {
-
-    private final List<Alert> alerts;
-    private final List<AlertListener> listeners;
-    private boolean enabled;
+    static {
+        JniBridge.initialize();
+    }
 
     public AlertEngine() {
-        this.alerts = new CopyOnWriteArrayList<>();
-        this.listeners = new ArrayList<>();
-        this.enabled = true;
+        setNativePtr(nativeCreate());
     }
 
-    public void addAlert(Alert alert) {
-        if (alert != null) {
-            alerts.add(alert);
-            fireAlertAdded(alert);
-        }
+    AlertEngine(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
-    public void removeAlert(Alert alert) {
-        if (alert != null && alerts.remove(alert)) {
-            fireAlertRemoved(alert);
-        }
+    public int initialize() {
+        checkNotDisposed();
+        return nativeInitialize(getNativePtr());
     }
 
-    public void clearAlerts() {
-        for (Alert alert : alerts) {
-            fireAlertRemoved(alert);
-        }
-        alerts.clear();
+    public void shutdown() {
+        checkNotDisposed();
+        nativeShutdown(getNativePtr());
     }
 
-    public List<Alert> getAlerts() {
-        return new ArrayList<>(alerts);
+    public void checkAll() {
+        checkNotDisposed();
+        nativeCheckAll(getNativePtr());
     }
 
-    public List<Alert> getAlertsByType(Alert.Type type) {
-        List<Alert> result = new ArrayList<>();
-        for (Alert alert : alerts) {
-            if (alert.getType() == type) {
-                result.add(alert);
-            }
-        }
-        return result;
+    public long[] getActiveAlertIds() {
+        checkNotDisposed();
+        return nativeGetActiveAlertIds(getNativePtr());
     }
 
-    public List<Alert> getActiveAlerts() {
-        List<Alert> result = new ArrayList<>();
-        for (Alert alert : alerts) {
-            if (!alert.isAcknowledged()) {
-                result.add(alert);
-            }
-        }
-        return result;
+    public void acknowledgeAlert(long alertId) {
+        checkNotDisposed();
+        nativeAcknowledgeAlert(getNativePtr(), alertId);
     }
 
-    public void acknowledgeAlert(Alert alert) {
-        if (alert != null) {
-            alert.setAcknowledged(true);
-            fireAlertUpdated(alert);
-        }
+    public int addAlert(long alertPtr) {
+        checkNotDisposed();
+        return nativeAddAlert(getNativePtr(), alertPtr);
     }
 
-    public void acknowledgeAll() {
-        for (Alert alert : alerts) {
-            alert.setAcknowledged(true);
-            fireAlertUpdated(alert);
-        }
+    public int removeAlert(long alertId) {
+        checkNotDisposed();
+        return nativeRemoveAlert(getNativePtr(), alertId);
+    }
+
+    public Alert getAlert(long alertId) {
+        checkNotDisposed();
+        long ptr = nativeGetAlert(getNativePtr(), alertId);
+        return ptr != 0 ? new Alert(ptr) : null;
     }
 
     public int getAlertCount() {
-        return alerts.size();
+        checkNotDisposed();
+        return nativeGetAlertCount(getNativePtr());
     }
 
-    public int getActiveAlertCount() {
-        int count = 0;
-        for (Alert alert : alerts) {
-            if (!alert.isAcknowledged()) {
-                count++;
-            }
-        }
-        return count;
+    public void clearAlerts() {
+        checkNotDisposed();
+        nativeClearAlerts(getNativePtr());
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    @Override
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public void addListener(AlertListener listener) {
-        if (listener != null && !listeners.contains(listener)) {
-            listeners.add(listener);
-        }
-    }
-
-    public void removeListener(AlertListener listener) {
-        listeners.remove(listener);
-    }
-
-    private void fireAlertAdded(Alert alert) {
-        for (AlertListener listener : listeners) {
-            listener.onAlertAdded(alert);
-        }
-    }
-
-    private void fireAlertRemoved(Alert alert) {
-        for (AlertListener listener : listeners) {
-            listener.onAlertRemoved(alert);
-        }
-    }
-
-    private void fireAlertUpdated(Alert alert) {
-        for (AlertListener listener : listeners) {
-            listener.onAlertUpdated(alert);
-        }
-    }
-
-    public interface AlertListener {
-        void onAlertAdded(Alert alert);
-        void onAlertRemoved(Alert alert);
-        void onAlertUpdated(Alert alert);
-    }
+    private static native long nativeCreate();
+    private static native void nativeDestroy(long ptr);
+    private native int nativeInitialize(long ptr);
+    private native void nativeShutdown(long ptr);
+    private native void nativeCheckAll(long ptr);
+    private native long[] nativeGetActiveAlertIds(long ptr);
+    private native void nativeAcknowledgeAlert(long ptr, long alertId);
+    private native int nativeAddAlert(long ptr, long alertPtr);
+    private native int nativeRemoveAlert(long ptr, long alertId);
+    private native long nativeGetAlert(long ptr, long alertId);
+    private native int nativeGetAlertCount(long ptr);
+    private native void nativeClearAlerts(long ptr);
+    native void nativeSetCallback(long ptr, long callbackPtr);
+    static native void nativeFreeAlerts(long ptr);
 }

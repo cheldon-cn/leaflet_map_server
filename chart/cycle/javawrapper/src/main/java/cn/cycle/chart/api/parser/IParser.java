@@ -9,13 +9,11 @@ public abstract class IParser extends NativeObject {
         JniBridge.initialize();
     }
 
-    IParser(long nativePtr) {
-        setNativePtr(nativePtr);
+    IParser() {
     }
 
-    @Override
-    protected void nativeDispose(long ptr) {
-        nativeDestroy(ptr);
+    IParser(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
     private static native long nativeCreate(int format);

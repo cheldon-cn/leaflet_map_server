@@ -1,147 +1,119 @@
 package cn.cycle.chart.api.navi;
 
-import cn.cycle.chart.api.geometry.Coordinate;
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+public final class Route extends NativeObject {
 
-public class Route {
-
-    private String name;
-    private final List<Waypoint> waypoints;
-    private double totalDistance;
-    private double estimatedTime;
-
-    public Route() {
-        this.waypoints = new ArrayList<>();
-        this.totalDistance = 0;
-        this.estimatedTime = 0;
+    static {
+        JniBridge.initialize();
     }
 
-    public Route(String name) {
-        this();
-        this.name = name;
+    public Route() {
+        setNativePtr(nativeCreate());
+    }
+
+    Route(long nativePtr) {
+        setNativePtr(nativePtr);
+    }
+
+    public String getId() {
+        checkNotDisposed();
+        return nativeGetId(getNativePtr());
     }
 
     public String getName() {
-        return name;
+        checkNotDisposed();
+        return nativeGetName(getNativePtr());
     }
 
     public void setName(String name) {
-        this.name = name;
+        checkNotDisposed();
+        nativeSetName(getNativePtr(), name);
     }
 
-    public void addWaypoint(Waypoint waypoint) {
-        if (waypoint != null) {
-            waypoints.add(waypoint);
-            recalculate();
-        }
-    }
-
-    public void addWaypoint(int index, Waypoint waypoint) {
-        if (waypoint != null && index >= 0 && index <= waypoints.size()) {
-            waypoints.add(index, waypoint);
-            recalculate();
-        }
-    }
-
-    public void removeWaypoint(int index) {
-        if (index >= 0 && index < waypoints.size()) {
-            waypoints.remove(index);
-            recalculate();
-        }
-    }
-
-    public Waypoint getWaypoint(int index) {
-        if (index >= 0 && index < waypoints.size()) {
-            return waypoints.get(index);
-        }
-        return null;
-    }
-
-    public List<Waypoint> getWaypoints() {
-        return Collections.unmodifiableList(waypoints);
-    }
-
-    public int getWaypointCount() {
-        return waypoints.size();
-    }
-
-    public void clearWaypoints() {
-        waypoints.clear();
-        totalDistance = 0;
-        estimatedTime = 0;
-    }
-
-    private void recalculate() {
-        totalDistance = 0;
-        for (int i = 1; i < waypoints.size(); i++) {
-            Coordinate prev = waypoints.get(i - 1).getPosition();
-            Coordinate curr = waypoints.get(i).getPosition();
-            if (prev != null && curr != null) {
-                totalDistance += prev.distance(curr);
-            }
-        }
+    public int getStatus() {
+        checkNotDisposed();
+        return nativeGetStatus(getNativePtr());
     }
 
     public double getTotalDistance() {
-        return totalDistance;
+        checkNotDisposed();
+        return nativeGetTotalDistance(getNativePtr());
     }
 
-    public double getEstimatedTime() {
-        return estimatedTime;
+    public int getWaypointCount() {
+        checkNotDisposed();
+        return nativeGetWaypointCount(getNativePtr());
     }
 
-    public void setEstimatedTime(double hours) {
-        this.estimatedTime = hours;
+    public Waypoint getWaypoint(int index) {
+        checkNotDisposed();
+        long ptr = nativeGetWaypoint(getNativePtr(), index);
+        return ptr != 0 ? new Waypoint(ptr) : null;
     }
 
-    public double getEstimatedTime(double speed) {
-        if (speed <= 0) {
-            return 0;
-        }
-        return totalDistance / speed;
+    public void addWaypoint(long wpPtr) {
+        checkNotDisposed();
+        nativeAddWaypoint(getNativePtr(), wpPtr);
     }
 
-    public Coordinate getStartPosition() {
-        return waypoints.isEmpty() ? null : waypoints.get(0).getPosition();
+    public void removeWaypoint(int index) {
+        checkNotDisposed();
+        nativeRemoveWaypoint(getNativePtr(), index);
     }
 
-    public Coordinate getEndPosition() {
-        return waypoints.isEmpty() ? null : waypoints.get(waypoints.size() - 1).getPosition();
+    public Waypoint getCurrentWaypoint() {
+        checkNotDisposed();
+        long ptr = nativeGetCurrentWaypoint(getNativePtr());
+        return ptr != 0 ? new Waypoint(ptr) : null;
     }
 
-    public Waypoint findNearestWaypoint(Coordinate position, double maxDistance) {
-        if (position == null || waypoints.isEmpty()) {
-            return null;
-        }
-        Waypoint nearest = null;
-        double minDist = maxDistance;
-        for (Waypoint wp : waypoints) {
-            Coordinate wpPos = wp.getPosition();
-            if (wpPos != null) {
-                double dist = position.distance(wpPos);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = wp;
-                }
-            }
-        }
-        return nearest;
+    public int advanceToNextWaypoint() {
+        checkNotDisposed();
+        return nativeAdvanceToNextWaypoint(getNativePtr());
     }
 
-    public Route reverse() {
-        Route reversed = new Route(name + "_reversed");
-        for (int i = waypoints.size() - 1; i >= 0; i--) {
-            reversed.addWaypoint(waypoints.get(i));
-        }
-        return reversed;
+    public void insertWaypoint(int index, long wpPtr) {
+        checkNotDisposed();
+        nativeInsertWaypoint(getNativePtr(), index, wpPtr);
+    }
+
+    public void clear() {
+        checkNotDisposed();
+        nativeClear(getNativePtr());
+    }
+
+    public void reverse() {
+        checkNotDisposed();
+        nativeReverse(getNativePtr());
+    }
+
+    public long getEta() {
+        checkNotDisposed();
+        return nativeGetEta(getNativePtr());
     }
 
     @Override
-    public String toString() {
-        return String.format("Route[%s: %d waypoints, %.2f nm]", 
-            name, waypoints.size(), totalDistance);
+    protected void nativeDispose(long ptr) {
+        nativeDestroy(ptr);
     }
+
+    private static native long nativeCreate();
+    private static native void nativeDestroy(long ptr);
+    private native String nativeGetId(long ptr);
+    private native String nativeGetName(long ptr);
+    private native void nativeSetName(long ptr, String name);
+    private native int nativeGetStatus(long ptr);
+    private native double nativeGetTotalDistance(long ptr);
+    private native int nativeGetWaypointCount(long ptr);
+    private native long nativeGetWaypoint(long ptr, int index);
+    private native void nativeAddWaypoint(long ptr, long wpPtr);
+    private native void nativeRemoveWaypoint(long ptr, int index);
+    private native long nativeGetCurrentWaypoint(long ptr);
+    private native int nativeAdvanceToNextWaypoint(long ptr);
+    private native void nativeInsertWaypoint(long ptr, int index, long wpPtr);
+    private native void nativeClear(long ptr);
+    private native void nativeReverse(long ptr);
+    private native long nativeGetEta(long ptr);
 }

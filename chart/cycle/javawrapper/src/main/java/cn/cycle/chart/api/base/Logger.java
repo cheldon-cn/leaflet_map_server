@@ -9,8 +9,13 @@ public final class Logger extends NativeObject {
         JniBridge.initialize();
     }
 
+
     Logger(long nativePtr) {
         setNativePtr(nativePtr);
+    }
+
+    @Override
+    protected void nativeDispose(long ptr) {
     }
 
     private static native long nativeGetInstance();

@@ -17,6 +17,11 @@ public final class MultiLineString extends Geometry {
         setNativePtr(nativePtr);
     }
 
+    @Override
+    public Type getType() {
+        return Type.MULTILINESTRING;
+    }
+
     private static native long nativeCreate();
     private native long nativeGetNumGeometries(long ptr);
     private native long nativeGetGeometryN(long ptr, long index);

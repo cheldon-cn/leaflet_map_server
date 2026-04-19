@@ -1,77 +1,86 @@
 package cn.cycle.chart.api.feature;
 
-public final class FieldValue {
+import cn.cycle.chart.jni.JniBridge;
+import cn.cycle.chart.jni.NativeObject;
 
-    private final int type;
-    private final Integer integerValue;
-    private final Double realValue;
-    private final String stringValue;
-    private final boolean isNull;
+public final class FieldValue extends NativeObject {
 
-    public static final int TYPE_INTEGER = 0;
-    public static final int TYPE_REAL = 1;
-    public static final int TYPE_STRING = 2;
-    public static final int TYPE_UNKNOWN = -1;
-
-    private FieldValue(int type, Integer integerValue, Double realValue,
-                       String stringValue, boolean isNull) {
-        this.type = type;
-        this.integerValue = integerValue;
-        this.realValue = realValue;
-        this.stringValue = stringValue;
-        this.isNull = isNull;
+    static {
+        JniBridge.initialize();
     }
 
-    public static FieldValue ofInteger(int value) {
-        return new FieldValue(TYPE_INTEGER, value, null, null, false);
-    }
-
-    public static FieldValue ofReal(double value) {
-        return new FieldValue(TYPE_REAL, null, value, null, false);
-    }
-
-    public static FieldValue ofString(String value) {
-        return new FieldValue(TYPE_STRING, null, null, value, false);
-    }
-
-    public static FieldValue ofNull() {
-        return new FieldValue(TYPE_UNKNOWN, null, null, null, true);
+    FieldValue(long nativePtr) {
+        setNativePtr(nativePtr);
     }
 
     public int getType() {
-        return type;
+        checkNotDisposed();
+        return nativeGetType(getNativePtr());
     }
 
     public boolean isNull() {
-        return isNull;
+        checkNotDisposed();
+        return nativeIsNull(getNativePtr());
     }
 
-    public Integer asInteger() {
-        return integerValue;
+    public int getAsInteger() {
+        checkNotDisposed();
+        return nativeGetAsInteger(getNativePtr());
     }
 
-    public Double asReal() {
-        return realValue;
+    public long getAsInteger64() {
+        checkNotDisposed();
+        return nativeGetAsInteger64(getNativePtr());
     }
 
-    public String asString() {
-        return stringValue;
+    public double getAsDouble() {
+        checkNotDisposed();
+        return nativeGetAsDouble(getNativePtr());
+    }
+
+    public String getAsString() {
+        checkNotDisposed();
+        return nativeGetAsString(getNativePtr());
+    }
+
+    public void setAsInteger(int value) {
+        checkNotDisposed();
+        nativeSetAsInteger(getNativePtr(), value);
+    }
+
+    public void setAsInteger64(long value) {
+        checkNotDisposed();
+        nativeSetAsInteger64(getNativePtr(), value);
+    }
+
+    public void setAsDouble(double value) {
+        checkNotDisposed();
+        nativeSetAsDouble(getNativePtr(), value);
+    }
+
+    public void setAsString(String value) {
+        checkNotDisposed();
+        nativeSetAsString(getNativePtr(), value);
+    }
+
+    public void setNull() {
+        checkNotDisposed();
+        nativeSetNull(getNativePtr());
     }
 
     @Override
-    public String toString() {
-        if (isNull) {
-            return "FieldValue(NULL)";
-        }
-        switch (type) {
-            case TYPE_INTEGER:
-                return "FieldValue(INTEGER=" + integerValue + ")";
-            case TYPE_REAL:
-                return "FieldValue(REAL=" + realValue + ")";
-            case TYPE_STRING:
-                return "FieldValue(STRING=" + stringValue + ")";
-            default:
-                return "FieldValue(UNKNOWN)";
-        }
+    protected void nativeDispose(long ptr) {
     }
+
+    private native int nativeGetType(long ptr);
+    private native boolean nativeIsNull(long ptr);
+    private native int nativeGetAsInteger(long ptr);
+    private native long nativeGetAsInteger64(long ptr);
+    private native double nativeGetAsDouble(long ptr);
+    private native String nativeGetAsString(long ptr);
+    private native void nativeSetAsInteger(long ptr, int value);
+    private native void nativeSetAsInteger64(long ptr, long value);
+    private native void nativeSetAsDouble(long ptr, double value);
+    private native void nativeSetAsString(long ptr, String value);
+    private native void nativeSetNull(long ptr);
 }

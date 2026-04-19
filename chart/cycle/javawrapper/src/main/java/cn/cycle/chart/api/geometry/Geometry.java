@@ -46,7 +46,16 @@ public abstract class Geometry extends NativeObject {
         setNativePtr(nativePtr);
     }
 
+    public static Geometry fromNativePtr(long ptr) {
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
     public abstract Type getType();
+
+    public String getTypeName() {
+        checkNotDisposed();
+        return nativeGetTypeName(getNativePtr());
+    }
 
     public int getDimension() {
         checkNotDisposed();
@@ -112,6 +121,76 @@ public abstract class Geometry extends NativeObject {
         return nativeIsMeasured(getNativePtr());
     }
 
+    public boolean equals(Geometry other) {
+        checkNotDisposed();
+        return nativeEquals(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean intersects(Geometry other) {
+        checkNotDisposed();
+        return nativeIntersects(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean contains(Geometry other) {
+        checkNotDisposed();
+        return nativeContains(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean within(Geometry other) {
+        checkNotDisposed();
+        return nativeWithin(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean crosses(Geometry other) {
+        checkNotDisposed();
+        return nativeCrosses(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean touches(Geometry other) {
+        checkNotDisposed();
+        return nativeTouches(getNativePtr(), other.getNativePtr());
+    }
+
+    public boolean overlaps(Geometry other) {
+        checkNotDisposed();
+        return nativeOverlaps(getNativePtr(), other.getNativePtr());
+    }
+
+    public double distance(Geometry other) {
+        checkNotDisposed();
+        return nativeDistance(getNativePtr(), other.getNativePtr());
+    }
+
+    public Geometry intersection(Geometry other) {
+        checkNotDisposed();
+        long ptr = nativeIntersection(getNativePtr(), other.getNativePtr());
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
+    public Geometry union(Geometry other) {
+        checkNotDisposed();
+        long ptr = nativeUnion(getNativePtr(), other.getNativePtr());
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
+    public Geometry difference(Geometry other) {
+        checkNotDisposed();
+        long ptr = nativeDifference(getNativePtr(), other.getNativePtr());
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
+    public Geometry buffer(double distance) {
+        checkNotDisposed();
+        long ptr = nativeBuffer(getNativePtr(), distance);
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
+    public Geometry clone() {
+        checkNotDisposed();
+        long ptr = nativeClone(getNativePtr());
+        return GeometryFactory.fromNativePtr(ptr);
+    }
+
     @Override
     protected void nativeDispose(long ptr) {
         nativeDestroy(ptr);
@@ -131,4 +210,18 @@ public abstract class Geometry extends NativeObject {
     static native boolean nativeIsSimple(long ptr);
     static native boolean nativeIs3D(long ptr);
     static native boolean nativeIsMeasured(long ptr);
+    static native String nativeGetTypeName(long ptr);
+    static native boolean nativeEquals(long ptr, long otherPtr);
+    static native boolean nativeIntersects(long ptr, long otherPtr);
+    static native boolean nativeContains(long ptr, long otherPtr);
+    static native boolean nativeWithin(long ptr, long otherPtr);
+    static native boolean nativeCrosses(long ptr, long otherPtr);
+    static native boolean nativeTouches(long ptr, long otherPtr);
+    static native boolean nativeOverlaps(long ptr, long otherPtr);
+    static native double nativeDistance(long ptr, long otherPtr);
+    static native long nativeIntersection(long ptr, long otherPtr);
+    static native long nativeUnion(long ptr, long otherPtr);
+    static native long nativeDifference(long ptr, long otherPtr);
+    static native long nativeBuffer(long ptr, double distance);
+    static native long nativeClone(long ptr);
 }
