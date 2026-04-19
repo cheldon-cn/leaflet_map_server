@@ -551,11 +551,11 @@ int ogc_datasource_delete_layer(ogc_datasource_t* ds, const char* name) {
     return -1;
 }
 
-ogc_driver_manager_t* ogc_driver_manager_get_instance(void) {
+SDK_C_API ogc_driver_manager_t* ogc_driver_manager_get_instance(void) {
     return reinterpret_cast<ogc_driver_manager_t*>(&CNDriverManager::Instance());
 }
 
-int ogc_driver_manager_register_driver(ogc_driver_manager_t* mgr, ogc_driver_t* driver) {
+SDK_C_API int ogc_driver_manager_register_driver(ogc_driver_manager_t* mgr, ogc_driver_t* driver) {
     if (mgr && driver) {
         CNDriverManager* driverMgr = reinterpret_cast<CNDriverManager*>(mgr);
         CNDriver* drv = reinterpret_cast<CNDriver*>(driver);
@@ -565,7 +565,7 @@ int ogc_driver_manager_register_driver(ogc_driver_manager_t* mgr, ogc_driver_t* 
     return -1;
 }
 
-int ogc_driver_manager_unregister_driver(ogc_driver_manager_t* mgr, const char* name) {
+SDK_C_API int ogc_driver_manager_unregister_driver(ogc_driver_manager_t* mgr, const char* name) {
     if (mgr && name) {
         CNDriverManager* driverMgr = reinterpret_cast<CNDriverManager*>(mgr);
         driverMgr->DeregisterDriver(SafeString(name));
@@ -574,7 +574,7 @@ int ogc_driver_manager_unregister_driver(ogc_driver_manager_t* mgr, const char* 
     return -1;
 }
 
-ogc_driver_t* ogc_driver_manager_get_driver(const ogc_driver_manager_t* mgr, const char* name) {
+SDK_C_API ogc_driver_t* ogc_driver_manager_get_driver(const ogc_driver_manager_t* mgr, const char* name) {
     if (mgr && name) {
         const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
         return reinterpret_cast<ogc_driver_t*>(driverMgr->GetDriver(SafeString(name)));
@@ -582,7 +582,7 @@ ogc_driver_t* ogc_driver_manager_get_driver(const ogc_driver_manager_t* mgr, con
     return nullptr;
 }
 
-int ogc_driver_manager_get_driver_count(const ogc_driver_manager_t* mgr) {
+SDK_C_API int ogc_driver_manager_get_driver_count(const ogc_driver_manager_t* mgr) {
     if (mgr) {
         const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
         return static_cast<int>(driverMgr->GetDrivers().size());
@@ -590,7 +590,7 @@ int ogc_driver_manager_get_driver_count(const ogc_driver_manager_t* mgr) {
     return 0;
 }
 
-const char* ogc_driver_manager_get_driver_name(const ogc_driver_manager_t* mgr, int index) {
+SDK_C_API const char* ogc_driver_manager_get_driver_name(const ogc_driver_manager_t* mgr, int index) {
     if (mgr && index >= 0) {
         const CNDriverManager* driverMgr = reinterpret_cast<const CNDriverManager*>(mgr);
         auto drivers = driverMgr->GetDrivers();

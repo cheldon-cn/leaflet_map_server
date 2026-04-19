@@ -176,4 +176,80 @@ Java_cn_cycle_chart_api_core_Viewport_nativeSetSize
     }
 }
 
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeGetBounds
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!viewport) {
+        return 0;
+    }
+    ogc_envelope_t* bounds = ogc_viewport_get_bounds(viewport);
+    return JniConverter::ToJLongPtr(bounds);
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeScreenToWorld
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble sx, jdouble sy) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!viewport) {
+        return nullptr;
+    }
+    double wx = 0.0, wy = 0.0;
+    int ret = ogc_viewport_screen_to_world(viewport, sx, sy, &wx, &wy);
+    if (ret != 0) {
+        return nullptr;
+    }
+    jdoubleArray result = env->NewDoubleArray(2);
+    if (!result) { return nullptr; }
+    jdouble coords[2] = {wx, wy};
+    env->SetDoubleArrayRegion(result, 0, 2, coords);
+    return result;
+}
+
+JNIEXPORT jdoubleArray JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeWorldToScreen
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble wx, jdouble wy) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!viewport) {
+        return nullptr;
+    }
+    double sx = 0.0, sy = 0.0;
+    int ret = ogc_viewport_world_to_screen(viewport, wx, wy, &sx, &sy);
+    if (ret != 0) {
+        return nullptr;
+    }
+    jdoubleArray result = env->NewDoubleArray(2);
+    if (!result) { return nullptr; }
+    jdouble coords[2] = {sx, sy};
+    env->SetDoubleArrayRegion(result, 0, 2, coords);
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeZoomToExtent
+  (JNIEnv* env, jobject obj, jlong ptr, jlong extentPtr) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    ogc_envelope_t* extent =
+        static_cast<ogc_envelope_t*>(JniConverter::FromJLongPtr(extentPtr));
+    if (!viewport || !extent) {
+        return -1;
+    }
+    return ogc_viewport_zoom_to_extent(viewport, extent);
+}
+
+JNIEXPORT jint JNICALL
+Java_cn_cycle_chart_api_core_Viewport_nativeZoomToScale
+  (JNIEnv* env, jobject obj, jlong ptr, jdouble scale) {
+    ogc_viewport_t* viewport =
+        static_cast<ogc_viewport_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!viewport) {
+        return -1;
+    }
+    return ogc_viewport_zoom_to_scale(viewport, scale);
+}
+
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file sdk_c_api.h
  * @brief OGC Chart SDK C API Header File
  * @version v1.0
@@ -3637,7 +3637,7 @@ SDK_C_API ogc_feature_t* ogc_hit_test_query_point(ogc_hit_test_t* hit_test, ogc_
  * @param count Pointer to store the number of features found.
  * @return Array of feature pointers (caller must free with ogc_hit_test_free_features).
  */
-ogc_feature_t** ogc_hit_test_query_rect(ogc_hit_test_t* hit_test, ogc_layer_t* layer, double min_x, double min_y, double max_x, double max_y, int* count);
+SDK_C_API ogc_feature_t** ogc_hit_test_query_rect(ogc_hit_test_t* hit_test, ogc_layer_t* layer, double min_x, double min_y, double max_x, double max_y, int* count);
 
 /**
  * @brief Free an array of features returned by ogc_hit_test_query_rect.

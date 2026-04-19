@@ -271,4 +271,32 @@ Java_cn_cycle_chart_api_feature_FieldDefn_nativeSetPrecision
     }
 }
 
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_feature_FeatureInfo_nativeGetFieldAsInteger64
+  (JNIEnv* env, jobject obj, jlong ptr, jint index) {
+    ogc_feature_t* feature =
+        static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!feature) { return 0; }
+    return static_cast<jlong>(ogc_feature_get_field_as_integer64(feature, static_cast<size_t>(index)));
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_feature_FeatureInfo_nativeSetFieldInteger64
+  (JNIEnv* env, jobject obj, jlong ptr, jint index, jlong value) {
+    ogc_feature_t* feature =
+        static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptr));
+    if (feature) {
+        ogc_feature_set_field_integer64(feature, static_cast<size_t>(index), static_cast<long long>(value));
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_feature_FeatureInfo_nativeArrayDestroy
+  (JNIEnv* env, jclass clazz, jlong arrayPtr, jint count) {
+    ogc_feature_t** array = static_cast<ogc_feature_t**>(JniConverter::FromJLongPtr(arrayPtr));
+    if (array) {
+        ogc_feature_array_destroy(array, static_cast<size_t>(count));
+    }
+}
+
 }

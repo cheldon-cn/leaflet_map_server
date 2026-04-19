@@ -48,6 +48,41 @@ set(JNI_SOURCES
     src/native/layer_jni.cpp
     src/native/chart_config_jni.cpp
     src/native/adapter_jni.cpp
+    src/native/logger_jni.cpp
+    src/native/coord_transformer_jni.cpp
+    src/native/ais_jni.cpp
+    src/native/route_jni.cpp
+    src/native/chart_parser_jni.cpp
+    src/native/tile_cache_jni.cpp
+    src/native/alert_jni.cpp
+    src/native/navigation_engine_jni.cpp
+    src/native/route_planner_jni.cpp
+    src/native/track_jni.cpp
+    src/native/nmea_position_jni.cpp
+    src/native/geometry_ext_jni.cpp
+    src/native/draw_style_jni.cpp
+    src/native/symbology_jni.cpp
+    src/native/offline_cache_jni.cpp
+    src/native/datasource_jni.cpp
+    src/native/recovery_jni.cpp
+    src/native/health_jni.cpp
+    src/native/loader_jni.cpp
+    src/native/plugin_jni.cpp
+    src/native/collision_deviation_jni.cpp
+    src/native/encryption_jni.cpp
+    src/native/render_perf_jni.cpp
+    src/native/transform_matrix_jni.cpp
+    src/native/geometry_spatial_jni.cpp
+    src/native/draw_context_jni.cpp
+    src/native/feature_layer_ext_jni.cpp
+    src/native/navi_ext_jni.cpp
+    src/native/symbology_ext_jni.cpp
+    src/native/parser_ext_jni.cpp
+    src/native/graph_ext_jni.cpp
+    src/native/offline_cache_ext_jni.cpp
+    src/native/util_ext_jni.cpp
+    src/native/exception_jni.cpp
+    src/native/secure_loader_jni.cpp
 )
 
 add_library(ogc_chart_jni SHARED ${JNI_SOURCES})

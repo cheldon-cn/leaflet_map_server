@@ -49,7 +49,7 @@ struct GracefulDegradationData {
 
 }
 
-ogc_circuit_breaker_t* ogc_circuit_breaker_create(int failure_threshold, int recovery_timeout_ms) {
+SDK_C_API ogc_circuit_breaker_t* ogc_circuit_breaker_create(int failure_threshold, int recovery_timeout_ms) {
     if (failure_threshold <= 0 || recovery_timeout_ms <= 0) {
         return nullptr;
     }
@@ -57,13 +57,13 @@ ogc_circuit_breaker_t* ogc_circuit_breaker_create(int failure_threshold, int rec
     return reinterpret_cast<ogc_circuit_breaker_t*>(data);
 }
 
-void ogc_circuit_breaker_destroy(ogc_circuit_breaker_t* breaker) {
+SDK_C_API void ogc_circuit_breaker_destroy(ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         delete reinterpret_cast<CircuitBreakerData*>(breaker);
     }
 }
 
-ogc_circuit_state_e ogc_circuit_breaker_get_state(const ogc_circuit_breaker_t* breaker) {
+SDK_C_API ogc_circuit_state_e ogc_circuit_breaker_get_state(const ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         CircuitBreakerData* data = reinterpret_cast<CircuitBreakerData*>(const_cast<ogc_circuit_breaker_t*>(breaker));
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -80,7 +80,7 @@ ogc_circuit_state_e ogc_circuit_breaker_get_state(const ogc_circuit_breaker_t* b
     return OGC_CIRCUIT_CLOSED;
 }
 
-int ogc_circuit_breaker_allow_request(ogc_circuit_breaker_t* breaker) {
+SDK_C_API int ogc_circuit_breaker_allow_request(ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         CircuitBreakerData* data = reinterpret_cast<CircuitBreakerData*>(breaker);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -106,7 +106,7 @@ int ogc_circuit_breaker_allow_request(ogc_circuit_breaker_t* breaker) {
     return 0;
 }
 
-void ogc_circuit_breaker_record_success(ogc_circuit_breaker_t* breaker) {
+SDK_C_API void ogc_circuit_breaker_record_success(ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         CircuitBreakerData* data = reinterpret_cast<CircuitBreakerData*>(breaker);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -120,7 +120,7 @@ void ogc_circuit_breaker_record_success(ogc_circuit_breaker_t* breaker) {
     }
 }
 
-void ogc_circuit_breaker_record_failure(ogc_circuit_breaker_t* breaker) {
+SDK_C_API void ogc_circuit_breaker_record_failure(ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         CircuitBreakerData* data = reinterpret_cast<CircuitBreakerData*>(breaker);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -136,7 +136,7 @@ void ogc_circuit_breaker_record_failure(ogc_circuit_breaker_t* breaker) {
     }
 }
 
-void ogc_circuit_breaker_reset(ogc_circuit_breaker_t* breaker) {
+SDK_C_API void ogc_circuit_breaker_reset(ogc_circuit_breaker_t* breaker) {
     if (breaker) {
         CircuitBreakerData* data = reinterpret_cast<CircuitBreakerData*>(breaker);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -147,18 +147,18 @@ void ogc_circuit_breaker_reset(ogc_circuit_breaker_t* breaker) {
     }
 }
 
-ogc_graceful_degradation_t* ogc_graceful_degradation_create(void) {
+SDK_C_API ogc_graceful_degradation_t* ogc_graceful_degradation_create(void) {
     GracefulDegradationData* data = new GracefulDegradationData();
     return reinterpret_cast<ogc_graceful_degradation_t*>(data);
 }
 
-void ogc_graceful_degradation_destroy(ogc_graceful_degradation_t* degradation) {
+SDK_C_API void ogc_graceful_degradation_destroy(ogc_graceful_degradation_t* degradation) {
     if (degradation) {
         delete reinterpret_cast<GracefulDegradationData*>(degradation);
     }
 }
 
-ogc_degradation_level_e ogc_graceful_degradation_get_level(const ogc_graceful_degradation_t* degradation) {
+SDK_C_API ogc_degradation_level_e ogc_graceful_degradation_get_level(const ogc_graceful_degradation_t* degradation) {
     if (degradation) {
         GracefulDegradationData* data = reinterpret_cast<GracefulDegradationData*>(const_cast<ogc_graceful_degradation_t*>(degradation));
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -167,7 +167,7 @@ ogc_degradation_level_e ogc_graceful_degradation_get_level(const ogc_graceful_de
     return OGC_DEGRADATION_NONE;
 }
 
-void ogc_graceful_degradation_set_level(ogc_graceful_degradation_t* degradation, ogc_degradation_level_e level) {
+SDK_C_API void ogc_graceful_degradation_set_level(ogc_graceful_degradation_t* degradation, ogc_degradation_level_e level) {
     if (degradation) {
         GracefulDegradationData* data = reinterpret_cast<GracefulDegradationData*>(degradation);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -175,7 +175,7 @@ void ogc_graceful_degradation_set_level(ogc_graceful_degradation_t* degradation,
     }
 }
 
-int ogc_graceful_degradation_is_feature_enabled(const ogc_graceful_degradation_t* degradation, const char* feature) {
+SDK_C_API int ogc_graceful_degradation_is_feature_enabled(const ogc_graceful_degradation_t* degradation, const char* feature) {
     if (degradation && feature) {
         GracefulDegradationData* data = reinterpret_cast<GracefulDegradationData*>(const_cast<ogc_graceful_degradation_t*>(degradation));
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -184,7 +184,7 @@ int ogc_graceful_degradation_is_feature_enabled(const ogc_graceful_degradation_t
     return 0;
 }
 
-void ogc_graceful_degradation_disable_feature(ogc_graceful_degradation_t* degradation, const char* feature) {
+SDK_C_API void ogc_graceful_degradation_disable_feature(ogc_graceful_degradation_t* degradation, const char* feature) {
     if (degradation && feature) {
         GracefulDegradationData* data = reinterpret_cast<GracefulDegradationData*>(degradation);
         std::lock_guard<std::mutex> lock(data->mutex);
@@ -192,7 +192,7 @@ void ogc_graceful_degradation_disable_feature(ogc_graceful_degradation_t* degrad
     }
 }
 
-void ogc_graceful_degradation_enable_feature(ogc_graceful_degradation_t* degradation, const char* feature) {
+SDK_C_API void ogc_graceful_degradation_enable_feature(ogc_graceful_degradation_t* degradation, const char* feature) {
     if (degradation && feature) {
         GracefulDegradationData* data = reinterpret_cast<GracefulDegradationData*>(degradation);
         std::lock_guard<std::mutex> lock(data->mutex);

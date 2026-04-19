@@ -1119,6 +1119,12 @@ void ogc_hit_test_free_features(ogc_feature_t** features) {
     (void)features;
 }
 
+ogc_feature_t** ogc_hit_test_query_rect(ogc_hit_test_t* hit_test, ogc_layer_t* layer, double min_x, double min_y, double max_x, double max_y, int* count) {
+    (void)hit_test; (void)layer; (void)min_x; (void)min_y; (void)max_x; (void)max_y;
+    if (count) { *count = 0; }
+    return nullptr;
+}
+
 ogc_label_info_t* ogc_label_info_create(const char* text, double x, double y) {
     (void)text; (void)x; (void)y;
     return nullptr;

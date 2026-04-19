@@ -3,6 +3,7 @@
 #include "jni_exception.h"
 #include "jni_memory.h"
 #include "ogc/capi/sdk_c_api.h"
+#include <vector>
 
 using namespace ogc::jni;
 
@@ -285,6 +286,111 @@ Java_cn_cycle_chart_api_layer_LayerManager_nativeSetLayerOpacity
     if (mgr) {
         ogc_layer_manager_set_layer_opacity(mgr, static_cast<size_t>(index), opacity);
     }
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_layer_LayerManager_nativeGetLayerByName
+  (JNIEnv* env, jobject obj, jlong ptr, jstring name) {
+    ogc_layer_manager_t* mgr =
+        static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!mgr || !name) { return 0; }
+    const char* cname = env->GetStringUTFChars(name, nullptr);
+    if (!cname) { return 0; }
+    ogc_layer_t* layer = ogc_layer_manager_get_layer_by_name(mgr, cname);
+    env->ReleaseStringUTFChars(name, cname);
+    return JniConverter::ToJLongPtr(layer);
+}
+
+JNIEXPORT jint JNICALL
+Java_cn_cycle_chart_api_layer_LayerManager_nativeGetLayerZOrder
+  (JNIEnv* env, jobject obj, jlong ptr, jint index) {
+    ogc_layer_manager_t* mgr =
+        static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!mgr) { return 0; }
+    return ogc_layer_manager_get_layer_z_order(mgr, static_cast<size_t>(index));
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_layer_LayerManager_nativeSetLayerZOrder
+  (JNIEnv* env, jobject obj, jlong ptr, jint index, jint zOrder) {
+    ogc_layer_manager_t* mgr =
+        static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
+    if (mgr) {
+        ogc_layer_manager_set_layer_z_order(mgr, static_cast<size_t>(index), zOrder);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_layer_LayerManager_nativeSortByZOrder
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_layer_manager_t* mgr =
+        static_cast<ogc_layer_manager_t*>(JniConverter::FromJLongPtr(ptr));
+    if (mgr) {
+        ogc_layer_manager_sort_by_z_order(mgr);
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_cn_cycle_chart_api_layer_Layer_nativeArrayDestroy
+  (JNIEnv* env, jclass clazz, jlong arrayPtr, jint count) {
+    ogc_layer_t** array = static_cast<ogc_layer_t**>(JniConverter::FromJLongPtr(arrayPtr));
+    if (array) {
+        ogc_layer_array_destroy(array, static_cast<size_t>(count));
+    }
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_layer_MemoryLayer_nativeCreateFromFeatures
+  (JNIEnv* env, jclass clazz, jstring name, jlongArray featurePtrs) {
+    if (!name || !featurePtrs) { return 0; }
+    const char* cname = env->GetStringUTFChars(name, nullptr);
+    if (!cname) { return 0; }
+    jsize len = env->GetArrayLength(featurePtrs);
+    jlong* ptrs = env->GetLongArrayElements(featurePtrs, nullptr);
+    if (!ptrs) {
+        env->ReleaseStringUTFChars(name, cname);
+        return 0;
+    }
+    std::vector<ogc_feature_t*> features(len);
+    for (jsize i = 0; i < len; ++i) {
+        features[i] = static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptrs[i]));
+    }
+    ogc_layer_t* layer = ogc_memory_layer_create_from_features(cname, features.data(), features.size());
+    env->ReleaseLongArrayElements(featurePtrs, ptrs, JNI_ABORT);
+    env->ReleaseStringUTFChars(name, cname);
+    return JniConverter::ToJLongPtr(layer);
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_layer_VectorLayer_nativeCreateFromFeatures
+  (JNIEnv* env, jclass clazz, jstring name, jlongArray featurePtrs) {
+    if (!name || !featurePtrs) { return 0; }
+    const char* cname = env->GetStringUTFChars(name, nullptr);
+    if (!cname) { return 0; }
+    jsize len = env->GetArrayLength(featurePtrs);
+    jlong* ptrs = env->GetLongArrayElements(featurePtrs, nullptr);
+    if (!ptrs) {
+        env->ReleaseStringUTFChars(name, cname);
+        return 0;
+    }
+    std::vector<ogc_feature_t*> features(len);
+    for (jsize i = 0; i < len; ++i) {
+        features[i] = static_cast<ogc_feature_t*>(JniConverter::FromJLongPtr(ptrs[i]));
+    }
+    ogc_layer_t* layer = ogc_vector_layer_create_from_features(cname, features.data(), features.size());
+    env->ReleaseLongArrayElements(featurePtrs, ptrs, JNI_ABORT);
+    env->ReleaseStringUTFChars(name, cname);
+    return JniConverter::ToJLongPtr(layer);
+}
+
+JNIEXPORT jlong JNICALL
+Java_cn_cycle_chart_api_layer_VectorLayer_nativeGetExtentPtr
+  (JNIEnv* env, jobject obj, jlong ptr) {
+    ogc_layer_t* layer =
+        static_cast<ogc_layer_t*>(JniConverter::FromJLongPtr(ptr));
+    if (!layer) { return 0; }
+    ogc_envelope_t* extent = ogc_vector_layer_get_extent(layer);
+    return JniConverter::ToJLongPtr(extent);
 }
 
 }
