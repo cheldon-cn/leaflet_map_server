@@ -6,6 +6,119 @@
 
 ---
 
+## ⚠️ 编译前置约束
+
+> **重要**: 在编译各模块之前，必须先了解以下环境配置和依赖关系。
+
+### 环境要求
+
+| 环境 | 要求 | 说明 |
+|------|------|------|
+| JDK | 1.8+ | 推荐使用 `F:\enc\java` |
+| JAVA_HOME | 必须设置 | 指向 JDK 1.8 安装目录 |
+| Gradle | 4.5.1 | 位于 `gradle/gradle-4.5.1/` |
+
+### Gradle 配置
+
+**配置文件**: `ecn/config/common.gradle`
+
+| 配置项 | 值 | 说明 |
+|--------|-----|------|
+| javaVersion | 1.8 | Java 版本 |
+| encoding | UTF-8 | 编码格式 |
+| junitVersion | 4.12 | JUnit 版本 |
+| projectVersion | 1.2.1-alpha | 项目版本 |
+| projectGroup | cn.cycle.echart | 项目组 |
+
+### 编译与安装目录
+
+> **基准目录**: 所有路径均相对于**项目根目录**（即 `e:\program\trae\chart/`）
+
+| 目录类型 | 路径 | 说明 |
+|----------|------|------|
+| 编译根目录 | `build/ecn/` | Gradle 构建输出目录 |
+| 各模块编译目录 | `build/ecn/[模块名]/` | 各模块独立编译目录 |
+| 安装根目录 | `install/bin/` | JAR 安装目录 |
+| 配置文件 | `ecn/config/` | Gradle 公共配置 |
+| 安全策略文件 | `ecn/config/java.policy` | Java 安全策略 |
+
+### 各模块编译产物
+
+| 模块 | 编译产物 | 输出目录 |
+|------|----------|----------|
+| echart-core | echart-core-1.2.1-alpha.jar | build/ecn/echart-core/libs/ |
+| echart-event | echart-event-1.2.1-alpha.jar | build/ecn/echart-event/libs/ |
+| echart-i18n | echart-i18n-1.2.1-alpha.jar | build/ecn/echart-i18n/libs/ |
+| echart-render | echart-render-1.2.1-alpha.jar | build/ecn/echart-render/libs/ |
+| echart-data | echart-data-1.2.1-alpha.jar | build/ecn/echart-data/libs/ |
+| echart-alarm | echart-alarm-1.2.1-alpha.jar | build/ecn/echart-alarm/libs/ |
+| echart-ais | echart-ais-1.2.1-alpha.jar | build/ecn/echart-ais/libs/ |
+| echart-route | echart-route-1.2.1-alpha.jar | build/ecn/echart-route/libs/ |
+| echart-workspace | echart-workspace-1.2.1-alpha.jar | build/ecn/echart-workspace/libs/ |
+| echart-ui | echart-ui-1.2.1-alpha.jar | build/ecn/echart-ui/libs/ |
+| echart-ui-render | echart-ui-render-1.2.1-alpha.jar | build/ecn/echart-ui-render/libs/ |
+| echart-theme | echart-theme-1.2.1-alpha.jar | build/ecn/echart-theme/libs/ |
+| echart-plugin | echart-plugin-1.2.1-alpha.jar | build/ecn/echart-plugin/libs/ |
+| echart-facade | echart-facade-1.2.1-alpha.jar | build/ecn/echart-facade/libs/ |
+| echart-app | echart-app-1.2.1-alpha.jar | build/ecn/echart-app/libs/ |
+
+### 编译命令
+
+```powershell
+# 设置 JAVA_HOME
+$env:JAVA_HOME='F:\enc\java'
+
+# 编译单个模块（跳过测试）
+gradle/gradle-4.5.1/bin/gradle.bat -p ecn/[模块名] build -x test
+
+# 示例：编译 echart-core
+gradle/gradle-4.5.1/bin/gradle.bat -p ecn/echart-core build -x test
+```
+
+### 模块依赖层级
+
+```
+Layer 0: echart-core (无依赖)
+    ↓
+Layer 1: echart-event (依赖 echart-core)
+         echart-i18n (无依赖)
+    ↓
+Layer 2: echart-render (依赖 echart-core)
+         echart-data (无依赖)
+    ↓
+Layer 3: echart-alarm (依赖 echart-core)
+         echart-ais (依赖 echart-core)
+         echart-route (无依赖)
+         echart-workspace (依赖 echart-route, echart-ais)
+    ↓
+Layer 4: echart-ui (依赖 echart-core, echart-data, echart-alarm)
+    ↓
+Layer 5: echart-ui-render (依赖 echart-render)
+         echart-theme (无依赖)
+         echart-plugin (依赖 echart-core)
+    ↓
+Layer 6: echart-facade (依赖 echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace)
+    ↓
+Layer 7: echart-app (依赖所有模块)
+```
+
+### 编译顺序
+
+按依赖层级从低到高编译：
+
+| 顺序 | 模块 | Layer |
+|------|------|-------|
+| 1 | echart-core | 0 |
+| 2 | echart-event, echart-i18n | 1 |
+| 3 | echart-render, echart-data | 2 |
+| 4 | echart-alarm, echart-ais, echart-route, echart-workspace | 3 |
+| 5 | echart-ui | 4 |
+| 6 | echart-ui-render, echart-theme, echart-plugin | 5 |
+| 7 | echart-facade | 6 |
+| 8 | echart-app | 7 |
+
+---
+
 ## 模块总览
 
 | 序号 | 模块名 | Layer | 包路径 | 依赖 | 说明 |

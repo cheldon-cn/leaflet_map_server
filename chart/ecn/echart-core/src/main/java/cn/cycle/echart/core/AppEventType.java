@@ -54,6 +54,12 @@ public enum AppEventType {
     WORKSPACE_LOADED("workspace.loaded", "工作区加载"),
     WORKSPACE_RESET("workspace.reset", "工作区重置"),
 
+    // 面板事件
+    PANEL_REGISTERED("panel.registered", "面板注册"),
+    PANEL_UNREGISTERED("panel.unregistered", "面板注销"),
+    PANEL_SHOWN("panel.shown", "面板显示"),
+    PANEL_HIDDEN("panel.hidden", "面板隐藏"),
+
     // 用户交互事件
     USER_SELECTION_CHANGED("user.selection.changed", "用户选择变化"),
     USER_ACTION("user.action", "用户操作"),
@@ -61,7 +67,51 @@ public enum AppEventType {
     // 插件事件
     PLUGIN_LOADED("plugin.loaded", "插件加载"),
     PLUGIN_UNLOADED("plugin.unloaded", "插件卸载"),
-    PLUGIN_ERROR("plugin.error", "插件错误");
+    PLUGIN_ERROR("plugin.error", "插件错误"),
+
+    // UI相关事件（设计文档7.2要求）
+    SIDEBAR_PANEL_CHANGED("sidebar.panel.changed", "侧边栏面板切换"),
+    RIGHT_TAB_CHANGED("right.tab.changed", "右侧标签页切换"),
+    STATUS_MESSAGE("status.message", "状态栏消息"),
+    ZOOM_CHANGED("zoom.changed", "缩放级别变化"),
+    CENTER_CHANGED("center.changed", "中心点变化"),
+    FEATURE_SELECTED("feature.selected", "要素选中"),
+    FEATURE_DESELECTED("feature.deselected", "要素取消选中"),
+
+    // 服务事件
+    SERVICE_CONNECTED("service.connected", "服务连接"),
+    SERVICE_DISCONNECTED("service.disconnected", "服务断开"),
+    SERVICE_ERROR("service.error", "服务错误"),
+
+    // 渲染事件（从echart-event合并）
+    RENDER_FRAME_START("render.frame.start", "渲染帧开始"),
+    RENDER_FRAME_END("render.frame.end", "渲染帧结束"),
+    RENDER_LAYER_START("render.layer.start", "图层渲染开始"),
+    RENDER_LAYER_END("render.layer.end", "图层渲染结束"),
+
+    // 数据源事件（从echart-event合并）
+    DATA_SOURCE_CONNECTED("data.source.connected", "数据源已连接"),
+    DATA_SOURCE_DISCONNECTED("data.source.disconnected", "数据源已断开"),
+    DATA_QUERY_START("data.query.start", "数据查询开始"),
+    DATA_QUERY_END("data.query.end", "数据查询结束"),
+
+    // 预警扩展事件（从echart-event合并）
+    ALARM_CONFIG_CHANGED("alarm.config.changed", "预警配置变化"),
+    ALARM_ZONE_UPDATED("alarm.zone.updated", "预警区域更新"),
+
+    // AIS扩展事件（从echart-event合并）
+    AIS_DATA_RECEIVED("ais.data.received", "AIS数据接收"),
+    AIS_STATUS_CHANGED("ais.status.changed", "AIS状态变化"),
+
+    // 航线扩展事件（从echart-event合并）
+    ROUTE_WAYPOINT_ADDED("route.waypoint.added", "航路点添加"),
+    ROUTE_WAYPOINT_REMOVED("route.waypoint.removed", "航路点移除"),
+    ROUTE_CALCULATED("route.calculated", "航线计算完成"),
+
+    // 航点事件
+    WAYPOINT_ADDED("waypoint.added", "航点添加"),
+    WAYPOINT_REMOVED("waypoint.removed", "航点移除"),
+    WAYPOINT_MODIFIED("waypoint.modified", "航点修改");
 
     private final String code;
     private final String description;

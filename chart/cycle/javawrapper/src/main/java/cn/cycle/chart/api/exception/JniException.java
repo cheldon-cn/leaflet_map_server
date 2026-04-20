@@ -35,4 +35,6 @@ public final class JniException extends RuntimeException {
 
     private static native long nativeCreate(String message, String javaClass);
     private static native void nativeDestroy(long ptr);
+    private static native String nativeGetMessage(long ptr);
+    private static native String nativeGetContext(long ptr);
 }

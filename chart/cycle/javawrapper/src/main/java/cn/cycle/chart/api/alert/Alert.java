@@ -30,6 +30,7 @@ public class Alert {
     private LocalDateTime timestamp;
     private boolean acknowledged;
     private Object source;
+    private long nativePtr;
 
     private static int idCounter = 0;
 
@@ -41,6 +42,18 @@ public class Alert {
         this.message = message;
         this.timestamp = LocalDateTime.now();
         this.acknowledged = false;
+        this.nativePtr = 0;
+    }
+
+    Alert(long nativePtr) {
+        this.id = "ALT-NATIVE-" + (++idCounter);
+        this.type = Type.SAFETY;
+        this.severity = Severity.WARNING;
+        this.title = "Native Alert";
+        this.message = "Alert from native code";
+        this.timestamp = LocalDateTime.now();
+        this.acknowledged = false;
+        this.nativePtr = nativePtr;
     }
 
     public String getId() {

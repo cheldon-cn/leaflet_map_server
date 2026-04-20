@@ -1,5 +1,6 @@
 package cn.cycle.echart.plugin;
 
+import java.net.URLClassLoader;
 import java.util.Map;
 
 /**
@@ -95,4 +96,18 @@ public interface Plugin {
      * @return 插件状态
      */
     PluginState getState();
+
+    /**
+     * 获取插件的类加载器。
+     * 
+     * @return 类加载器
+     */
+    URLClassLoader getClassLoader();
+
+    /**
+     * 设置插件的类加载器。
+     * 
+     * @param classLoader 类加载器
+     */
+    void setClassLoader(URLClassLoader classLoader);
 }

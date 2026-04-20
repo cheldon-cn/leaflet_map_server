@@ -27,6 +27,8 @@ public class WorkspaceConfig {
     
     private String displayMode;
     private String colorScheme;
+    private String theme;
+    private String language;
     
     private final Map<String, String> layerSettings;
     private final Map<String, Object> customSettings;
@@ -44,6 +46,8 @@ public class WorkspaceConfig {
         
         this.displayMode = "normal";
         this.colorScheme = "day";
+        this.theme = "default";
+        this.language = "zh_CN";
         
         this.layerSettings = new HashMap<>();
         this.customSettings = new HashMap<>();
@@ -127,6 +131,22 @@ public class WorkspaceConfig {
 
     public void setColorScheme(String colorScheme) {
         this.colorScheme = colorScheme != null ? colorScheme : "day";
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme != null ? theme : "default";
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language != null ? language : "zh_CN";
     }
 
     public Map<String, String> getLayerSettings() {

@@ -35,4 +35,6 @@ public final class RenderException extends RuntimeException {
 
     private static native long nativeCreate(String message, String layerName);
     private static native void nativeDestroy(long ptr);
+    private static native String nativeGetMessage(long ptr);
+    private static native String nativeGetContext(long ptr);
 }

@@ -1,14 +1,21 @@
 package cn.cycle.echart.event;
 
+import cn.cycle.echart.core.AppEventType;
+
 /**
  * 事件类型枚举。
  * 
- * <p>扩展的事件类型定义，用于特定模块的事件。</p>
+ * <p><strong>已废弃</strong>：请使用 {@link cn.cycle.echart.core.AppEventType} 代替。</p>
+ * 
+ * <p>此类中的所有事件类型已合并到 AppEventType 中，建议直接使用 AppEventType。</p>
  * 
  * @author Cycle Team
  * @version 1.0.0
  * @since 1.0.0
+ * @deprecated 使用 {@link cn.cycle.echart.core.AppEventType} 代替
+ * @see cn.cycle.echart.core.AppEventType
  */
+@Deprecated
 public enum EventType {
 
     RENDER_FRAME_START("render.frame.start", "渲染帧开始"),
@@ -43,7 +50,9 @@ public enum EventType {
      * 获取事件代码。
      * 
      * @return 事件代码
+     * @deprecated 使用 {@link AppEventType#getCode()} 代替
      */
+    @Deprecated
     public String getCode() {
         return code;
     }
@@ -52,7 +61,9 @@ public enum EventType {
      * 获取事件描述。
      * 
      * @return 事件描述
+     * @deprecated 使用 {@link AppEventType#getDescription()} 代替
      */
+    @Deprecated
     public String getDescription() {
         return description;
     }
@@ -62,7 +73,9 @@ public enum EventType {
      * 
      * @param code 事件代码
      * @return 事件类型，如果未找到返回null
+     * @deprecated 使用 {@link AppEventType#fromCode(String)} 代替
      */
+    @Deprecated
     public static EventType fromCode(String code) {
         for (EventType type : values()) {
             if (type.code.equals(code)) {
@@ -70,5 +83,29 @@ public enum EventType {
             }
         }
         return null;
+    }
+
+    /**
+     * 转换为 AppEventType。
+     * 
+     * <p>提供从废弃类型到新类型的转换。</p>
+     * 
+     * @return 对应的 AppEventType，如果未找到返回 null
+     */
+    public AppEventType toAppEventType() {
+        return AppEventType.fromCode(this.code);
+    }
+
+    /**
+     * 从 AppEventType 转换。
+     * 
+     * @param appEventType AppEventType 实例
+     * @return 对应的 EventType，如果未找到返回 null
+     */
+    public static EventType fromAppEventType(AppEventType appEventType) {
+        if (appEventType == null) {
+            return null;
+        }
+        return fromCode(appEventType.getCode());
     }
 }

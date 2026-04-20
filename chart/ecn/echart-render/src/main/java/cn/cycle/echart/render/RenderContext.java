@@ -1,6 +1,7 @@
 package cn.cycle.echart.render;
 
 import java.awt.geom.Rectangle2D;
+import java.util.Map;
 
 /**
  * 渲染上下文接口。
@@ -78,6 +79,22 @@ public interface RenderContext {
      * @return 设备像素比
      */
     double getDevicePixelRatio();
+
+    /**
+     * 设置符号样式。
+     * 
+     * @param symbolCode 符号代码
+     * @param style 样式属性
+     */
+    void setSymbolStyle(String symbolCode, Map<String, Object> style);
+
+    /**
+     * 获取符号样式。
+     * 
+     * @param symbolCode 符号代码
+     * @return 样式属性
+     */
+    Map<String, Object> getSymbolStyle(String symbolCode);
 
     /**
      * 销毁上下文。

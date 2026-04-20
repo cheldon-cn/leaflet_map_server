@@ -1,5 +1,6 @@
 package cn.cycle.echart.plugin;
 
+import java.net.URLClassLoader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +27,7 @@ public abstract class AbstractPlugin implements Plugin {
     protected PluginContext context;
     protected PluginState state;
     protected Map<String, Object> configuration;
+    protected URLClassLoader classLoader;
 
     protected AbstractPlugin(String id, String name, String version, 
                             String description, String author, String[] dependencies) {
@@ -166,6 +168,14 @@ public abstract class AbstractPlugin implements Plugin {
 
     protected Object getConfiguration(String key) {
         return configuration.get(key);
+    }
+
+    public URLClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    public void setClassLoader(URLClassLoader classLoader) {
+        this.classLoader = classLoader;
     }
 
     @Override

@@ -23,7 +23,8 @@ import java.util.UUID;
  */
 public class Workspace {
 
-    private final String id;
+    private String id;
+    private String version;
     private String name;
     private String description;
     private LocalDateTime createdTime;
@@ -41,6 +42,7 @@ public class Workspace {
 
     public Workspace() {
         this.id = UUID.randomUUID().toString();
+        this.version = "1.0.0";
         this.name = "未命名工作区";
         this.description = "";
         this.createdTime = LocalDateTime.now();
@@ -62,6 +64,18 @@ public class Workspace {
 
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id != null ? id : UUID.randomUUID().toString();
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version != null ? version : "1.0.0";
     }
 
     public String getName() {
@@ -243,6 +257,13 @@ public class Workspace {
 
     public void markClean() {
         this.dirty = false;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
+        if (dirty) {
+            this.modifiedTime = LocalDateTime.now();
+        }
     }
 
     public void reset() {

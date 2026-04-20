@@ -5,6 +5,8 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 
 import java.awt.geom.Rectangle2D;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -23,6 +25,7 @@ public class FxRenderContext implements RenderContext {
     private Rectangle2D viewport;
     private boolean dirty;
     private double devicePixelRatio;
+    private final Map<String, Map<String, Object>> symbolStyles;
 
     public FxRenderContext(Canvas canvas) {
         this.canvas = Objects.requireNonNull(canvas, "canvas cannot be null");
@@ -30,6 +33,7 @@ public class FxRenderContext implements RenderContext {
         this.viewport = new Rectangle2D.Double(-180, -90, 360, 180);
         this.dirty = true;
         this.devicePixelRatio = 1.0;
+        this.symbolStyles = new HashMap<>();
     }
 
     @Override
@@ -94,6 +98,18 @@ public class FxRenderContext implements RenderContext {
 
     public void setDevicePixelRatio(double ratio) {
         this.devicePixelRatio = ratio;
+    }
+
+    @Override
+    public void setSymbolStyle(String symbolCode, Map<String, Object> style) {
+        symbolStyles.put(symbolCode, new HashMap<>(style));
+        markDirty();
+    }
+
+    @Override
+    public Map<String, Object> getSymbolStyle(String symbolCode) {
+        Map<String, Object> style = symbolStyles.get(symbolCode);
+        return style != null ? new HashMap<>(style) : null;
     }
 
     @Override

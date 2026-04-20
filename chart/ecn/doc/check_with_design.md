@@ -17,20 +17,20 @@
 
 | 模块 | 设计文档要求类数 | 实际已实现类数 | 符合度 |
 |------|-----------------|---------------|--------|
-| echart-core | 14 | 16 | 85% |
+| echart-core | 14 | 16 | 95% |
 | echart-ui | 22 | 18 | 65% |
-| echart-event | 5 | 4 | 70% |
-| echart-i18n | 4 | 4 | 90% |
-| echart-render | 12 | 7 | 50% |
+| echart-event | 5 | 4 | 90% |
+| echart-i18n | 4 | 4 | 95% |
+| echart-render | 12 | 10 | 85% |
 | echart-ui-render | 9 | 8 | 75% |
-| echart-data | 5 | 8 | 70% |
-| echart-alarm | 17 | 3 | 20% |
-| echart-ais | 4 | 4 | 75% |
-| echart-route | 8 | 5 | 55% |
-| echart-workspace | 12 | 4 | 35% |
+| echart-data | 5 | 9 | 90% |
+| echart-alarm | 17 | 21 | 95% |
+| echart-ais | 4 | 4 | 95% |
+| echart-route | 8 | 8 | 100% |
+| echart-workspace | 12 | 16 | 95% |
 | echart-theme | 8 | 5 | 55% |
-| echart-plugin | 8 | 6 | 65% |
-| echart-facade | 8 | 3 | 40% |
+| echart-plugin | 8 | 12 | 95% |
+| echart-facade | 8 | 9 | 95% |
 | echart-app | 19 | 2 | 15% |
 
 ---
@@ -57,15 +57,21 @@
 | ErrorHandler接口 | ✅ 已实现 | 符合设计 |
 
 **需要补充**:
-1. AppEventType需增加UI相关事件类型：`SIDEBAR_PANEL_CHANGED`、`RIGHT_TAB_CHANGED`、`STATUS_MESSAGE`、`ZOOM_CHANGED`、`CENTER_CHANGED`、`FEATURE_SELECTED`、`FEATURE_DESELECTED`、`SERVICE_CONNECTED`、`SERVICE_DISCONNECTED`、`SERVICE_ERROR`
-2. AppEvent需增加`withData(key, value)`链式调用方法和`getData(key)`泛型方法（设计文档7.2要求）
-3. AppEventBus需实现设计文档7.1中的`Platform.runLater`调度逻辑
+1. ~~AppEventType需增加UI相关事件类型~~ ✅ **已完成** (2026-04-20): 已增加 `SIDEBAR_PANEL_CHANGED`、`RIGHT_TAB_CHANGED`、`STATUS_MESSAGE`、`ZOOM_CHANGED`、`CENTER_CHANGED`、`FEATURE_SELECTED`、`FEATURE_DESELECTED`、`SERVICE_CONNECTED`、`SERVICE_DISCONNECTED`、`SERVICE_ERROR` 及渲染/数据源/预警/AIS/航线扩展事件
+2. ~~AppEvent需增加`withData(key, value)`链式调用方法和`getData(key)`泛型方法~~ ✅ **已完成** (2026-04-20): 已实现 `withData(key, value)` 链式调用、`getData(key)` 和 `getData(key, Class<T>)` 泛型方法
+3. ~~AppEventBus需实现设计文档7.1中的`Platform.runLater`调度逻辑~~ ✅ **已完成** (2026-04-20): 新建 `AppEventBus.java` 单例模式，实现 BlockingQueue + 后台线程 + PlatformAdapter.runOnUiThread() 调度逻辑
 
 ---
 
 ### 2.2 echart-ui
 
 **设计要求**: JavaFX UI控件和布局实现，包含所有业务面板。
+
+**外部依赖库**:
+| 库名 | 版本 | 用途 | 主要组件 |
+|------|------|------|----------|
+| fxribbon | 项目自有 | Ribbon菜单栏 | `Ribbon`, `RibbonTab`, `RibbonGroup`, `QuickAccessBar` |
+| ControlsFX | 8.40.18 | 扩展UI控件 | `StatusBar`, `Notifications`, `PopOver`, `NotificationPane`, `PropertySheet`, `CheckComboBox`, `MasterDetailPane`, `HiddenSidesPane` |
 
 | 设计要求 | 实际状态 | 差异说明 |
 |----------|----------|----------|
@@ -75,7 +81,7 @@
 | SideBarManager | ⚠️ 部分符合 | 设计要求VBox按钮容器+StackPane面板容器+ToggleButton切换，实际使用Accordion+TitledPane实现，交互模式不同 |
 | RightTabManager | ✅ 基本符合 | 使用TabPane实现，基本符合设计 |
 | ChartDisplayArea | ⚠️ 部分符合 | 基本Canvas框架已实现，但缺少分层渲染架构（背景层/海图层/叠加层/交互层/信息层） |
-| StatusBar | ⚠️ 部分符合 | 设计要求包含6个状态项（服务状态、鼠标位置、缩放比例、图层数量、预警数量、提示信息），实际只有5项，缺少预警数量和图层数量 |
+| StatusBar | ⚠️ 部分符合 | 设计要求包含6个状态项（服务状态、鼠标位置、缩放比例、图层数量、预警数量、提示信息），实际只有5项，缺少预警数量和图层数量；建议使用ControlsFX的StatusBar控件 |
 | StyleManager | ⚠️ 部分符合 | 基本功能已实现，但设计要求与ThemeManager协调工作，实际StyleManager是独立单例 |
 | FxAppContext | ✅ 已实现 | 符合设计 |
 | FxPlatformAdapter | ✅ 已实现 | 符合设计，额外实现了声音播放和通知功能 |
@@ -89,16 +95,68 @@
 | SoundPlayer | ✅ 已实现 | 存在于audio包中 |
 | ErrorDialog | ✅ 已实现 | 存在于dialog包中 |
 | LogPanel/PropertyPanel/TerminalPanel | ⚠️ 待验证 | 存在但未检查内容 |
+| NotificationManager | ❌ 缺失 | 设计要求使用ControlsFX的Notifications实现预警通知，未实现 |
+
+**fxribbon库使用示例**:
+```java
+// 创建Ribbon菜单栏
+Ribbon ribbon = new Ribbon();
+
+// 创建标签页
+RibbonTab fileTab = new RibbonTab("文件");
+RibbonTab viewTab = new RibbonTab("视图");
+RibbonTab alarmTab = new RibbonTab("预警");
+
+// 创建功能组
+RibbonGroup fileGroup = new RibbonGroup();
+fileGroup.setTitle("文件操作");
+fileGroup.getNodes().addAll(newButton, openButton, saveButton);
+
+RibbonGroup alarmGroup = new RibbonGroup();
+alarmGroup.setTitle("预警配置");
+alarmGroup.getNodes().addAll(newRuleButton, editRuleButton);
+
+// 添加功能组到标签页
+fileTab.getRibbonGroups().add(fileGroup);
+alarmTab.getRibbonGroups().add(alarmGroup);
+
+// 添加标签页到Ribbon
+ribbon.getTabs().addAll(fileTab, viewTab, alarmTab);
+```
+
+**ControlsFX库使用示例**:
+```java
+// 使用StatusBar
+StatusBar statusBar = new StatusBar();
+statusBar.setText("就绪");
+statusBar.setProgress(0.5);
+statusBar.getLeftItems().add(serviceStatusIcon);
+statusBar.getRightItems().addAll(alarmCountLabel, timeLabel);
+
+// 使用Notifications显示预警通知
+Notifications.create()
+    .title("碰撞预警")
+    .text("检测到碰撞风险，请立即处理")
+    .showWarning();
+
+// 使用PopOver显示详情
+PopOver popOver = new PopOver(detailContent);
+popOver.show(alertButton);
+```
 
 **需要补充**:
 1. **Ribbon菜单栏**: 必须使用fxribbon库替换当前MenuBar，实现标签页+功能组+按钮的Ribbon布局
+   - 使用 `com.cycle.control.Ribbon` 作为主控件
+   - 使用 `com.cycle.control.ribbon.RibbonTab` 创建标签页
+   - 使用 `com.cycle.control.ribbon.RibbonGroup` 创建功能组
 2. **ActivityBar**: 必须改为VBox+ToggleButton垂直布局，48px宽，图标按钮对应侧边栏面板
 3. **MainView**: 需实现LifecycleComponent接口，整合ResponsiveLayoutManager
 4. **ResponsiveLayoutManager**: 需实现断点设计（紧凑<1024px/标准1024-1440px/宽屏>1440px）
-5. **StatusBar**: 需增加预警数量和图层数量状态项
+5. **StatusBar**: 需增加预警数量和图层数量状态项；建议使用ControlsFX的 `org.controlsfx.control.StatusBar` 控件
 6. **SideBarManager**: 需改为设计文档中的ToggleButton+StackPane模式，支持面板折叠/展开动画
 7. **ChartDisplayArea**: 需实现分层渲染架构（5层）
 8. **面板折叠动画**: 需使用Timeline+TranslateTransition实现（设计文档6.3.1）
+9. **NotificationManager**: 需使用ControlsFX的 `org.controlsfx.control.Notifications` 实现预警通知管理
 
 ---
 
@@ -115,8 +173,8 @@
 | EventDispatcher | ✅ 已实现 | 额外实现，设计文档未明确要求 |
 
 **需要补充**:
-1. echart-event与echart-core中存在事件类型和事件类的重复定义（AppEventType vs EventType, AppEvent vs Event），需要统一
-2. 设计文档7.1要求AppEventBus使用PlatformAdapter进行UI线程调度，当前DefaultEventBus未集成此机制
+1. ~~echart-event与echart-core中存在事件类型和事件类的重复定义~~ ✅ **已完成** (2026-04-20): EventType 和 Event 类已标记为 @Deprecated，添加了 `toAppEventType()` 和 `toAppEvent()` 转换方法，统一使用 echart-core 中的定义
+2. ~~设计文档7.1要求AppEventBus使用PlatformAdapter进行UI线程调度~~ ✅ **已完成** (2026-04-20): echart-core 中新建的 AppEventBus 已集成 PlatformAdapter 进行 UI 线程调度
 
 ---
 
@@ -133,7 +191,7 @@
 | 多语言资源文件 | ✅ 已实现 | messages.properties + messages_zh_CN.properties |
 
 **需要补充**:
-1. 设计文档18.4要求更完整的资源文件结构（按模块分目录），当前只有基础文件
+1. ~~设计文档18.4要求更完整的资源文件结构（按模块分目录）~~ ✅ **已完成** (2026-04-20): 已创建 `i18n/core/`、`i18n/render/`、`i18n/data/`、`i18n/ui/` 四个模块目录的资源文件（中英文），I18nManager 新增 `getModuleMessage()` 方法支持模块资源加载
 
 ---
 
@@ -150,13 +208,13 @@
 | LODStrategy | ✅ 已实现 | 符合设计 |
 | PerformanceMonitor | ✅ 已实现 | 符合设计 |
 | RenderContext接口 | ✅ 已实现 | 符合设计 |
-| JNIBridge | ❌ 缺失 | 设计要求JNI渲染桥接，未实现 |
-| S52SymbolLibrary | ❌ 缺失 | 设计要求S-52符号库集成，未实现 |
-| SymbolStyleCustomizer | ❌ 缺失 | 设计要求符号样式自定义，未实现 |
+| JNIBridge | ✅ 已实现 | 新增实现，Java与C++渲染引擎桥接 |
+| S52SymbolLibrary | ✅ 已实现 | 新增实现，S-52标准海图符号管理和查询 |
+| SymbolStyleCustomizer | ✅ 已实现 | 新增实现，符号颜色、线宽、透明度等属性自定义配置 |
 
 **需要补充**:
-1. JNI渲染桥接（T16任务）是关键路径任务，必须实现
-2. S-52符号库集成和符号样式自定义
+1. ~~JNI渲染桥接（T16任务）是关键路径任务，必须实现~~ ✅ **已完成** (2026-04-20): 已实现 `JNIBridge.java`
+2. ~~S-52符号库集成和符号样式自定义~~ ✅ **已完成** (2026-04-20): 已实现 `S52SymbolLibrary.java` 和 `SymbolStyleCustomizer.java`
 3. 渲染数据流实现（T12）和层间通信机制（T13）需验证完整性
 4. 多图层叠加渲染（T18）需验证
 
@@ -199,10 +257,10 @@
 | LayerData | ✅ 已实现 | 额外实现 |
 | DataImportException | ✅ 已实现 | 额外实现 |
 | DataExportException | ✅ 已实现 | 额外实现 |
-| LayerManager（数据层） | ❌ 缺失 | JAR清单要求有图层管理逻辑类，实际在render模块 |
+| LayerManager（数据层） | ✅ 已实现 | 新增 `DataLayerManager.java`，数据层专属图层管理逻辑 |
 
 **需要补充**:
-1. 数据层的LayerManager逻辑类（当前LayerManager在render模块，数据模块需要自己的图层管理逻辑）
+1. ~~数据层的LayerManager逻辑类（当前LayerManager在render模块，数据模块需要自己的图层管理逻辑）~~ ✅ **已完成** (2026-04-20): 已实现 `DataLayerManager.java`，提供图层增删改查、可见性控制、顺序调整、事件通知等功能
 
 ---
 
@@ -213,32 +271,43 @@
 | 设计要求 | 实际状态 | 差异说明 |
 |----------|----------|----------|
 | AlarmManager | ✅ 已实现 | 基本框架符合，支持触发/确认/清除 |
-| AlarmType枚举 | ❌ 缺失 | 设计要求独立的预警类型枚举，实际使用外部API的Alert.Type |
-| Alarm数据模型 | ❌ 缺失 | 设计要求独立的Alarm数据模型，实际使用外部API的Alert |
-| AlarmNotifier | ❌ 缺失 | 设计要求预警通知器（改造后使用PlatformAdapter） |
-| AudioPlayer接口 | ❌ 缺失 | 设计要求平台无关的音频播放接口 |
-| AlarmResponseHandler | ❌ 缺失 | 设计要求预警响应处理器 |
-| CollisionAlarm | ❌ 缺失 | 设计要求碰撞预警实现 |
-| DeviationAlarm | ❌ 缺失 | 设计要求偏航预警实现 |
-| ShallowWaterAlarm | ❌ 缺失 | 设计要求浅水预警实现 |
-| RestrictedAreaAlarm | ❌ 缺失 | 设计要求禁航区预警实现 |
-| WeatherAlarm | ❌ 缺失 | 设计要求气象预警实现 |
-| WatchAlarm | ❌ 缺失 | 设计要求值班报警实现 |
-| AlarmHistory | ❌ 缺失 | 设计要求预警历史记录 |
-| AlarmStatistics | ❌ 缺失 | 设计要求预警统计功能 |
-| AlarmSuppressionManager | ❌ 缺失 | 设计要求预警抑制管理器 |
-| AlarmPersistence | ❌ 缺失 | 设计要求预警持久化 |
-| AlarmRuleEngine | ❌ 缺失 | 设计要求预警规则引擎 |
+| AlarmType枚举 | ✅ 已实现 | 独立的预警类型枚举，包含12种预警类型 |
+| AlarmLevel枚举 | ✅ 已实现 | 预警级别枚举（INFO/WARNING/CRITICAL） |
+| AlarmStatus枚举 | ✅ 已实现 | 预警状态枚举（ACTIVE/ACKNOWLEDGED/CLEARED/ESCALATED） |
+| Alarm数据模型 | ✅ 已实现 | 独立的Alarm数据模型，支持Builder模式 |
+| AlarmNotifier | ✅ 已实现 | 预警通知器（使用PlatformAdapter实现平台无关通知） |
+| AudioPlayer接口 | ✅ 已实现 | 平台无关的音频播放接口 |
+| AlarmSoundManager | ✅ 已实现 | 预警声音管理器，使用AudioPlayer接口 |
+| AlarmResponseHandler | ✅ 已实现 | 预警响应处理器 |
+| CollisionAlarm | ✅ 已实现 | 碰撞预警实现 |
+| DeviationAlarm | ✅ 已实现 | 偏航预警实现 |
+| ShallowWaterAlarm | ✅ 已实现 | 浅水预警实现 |
+| RestrictedAreaAlarm | ✅ 已实现 | 禁航区预警实现 |
+| WeatherAlarm | ✅ 已实现 | 气象预警实现 |
+| WatchAlarm | ✅ 已实现 | 值班报警实现 |
+| AlarmHistory | ✅ 已实现 | 预警历史记录管理 |
+| AlarmStatistics | ✅ 已实现 | 预警统计功能 |
+| AlarmSuppressionManager | ✅ 已实现 | 预警抑制管理器 |
+| AlarmPersistence | ✅ 已实现 | 预警持久化 |
+| AlarmRuleEngine | ✅ 已实现 | 预警规则引擎 |
 | CpaResult | ✅ 已实现 | 额外实现 |
 | UkcResult | ✅ 已实现 | 额外实现 |
 
-**需要补充**:
-1. 预警类型枚举需独立定义（不依赖外部API的Alert.Type）
-2. 各类具体预警实现（碰撞/偏航/浅水/禁航区/气象/值班）
-3. 预警通知器（使用PlatformAdapter实现平台无关通知）
-4. AudioPlayer接口（平台无关音频播放）
-5. 预警历史记录、统计、抑制管理、持久化、规则引擎
-6. 当前AlarmManager依赖外部`cn.cycle.chart.api.alert.Alert`，需要改为使用内部数据模型
+**已完成补充** (2026-04-20):
+1. ✅ AlarmType枚举 - 独立定义的预警类型枚举
+2. ✅ AlarmLevel枚举 - 预警级别枚举
+3. ✅ AlarmStatus枚举 - 预警状态枚举
+4. ✅ Alarm数据模型 - 独立的预警数据模型，支持Builder模式
+5. ✅ AlarmNotifier - 预警通知器
+6. ✅ AudioPlayer接口 - 平台无关音频播放接口
+7. ✅ AlarmSoundManager - 预警声音管理器
+8. ✅ AlarmResponseHandler - 预警响应处理器
+9. ✅ 各类具体预警实现（CollisionAlarm/DeviationAlarm/ShallowWaterAlarm/RestrictedAreaAlarm/WeatherAlarm/WatchAlarm）
+10. ✅ AlarmHistory - 预警历史记录
+11. ✅ AlarmStatistics - 预警统计
+12. ✅ AlarmSuppressionManager - 预警抑制管理
+13. ✅ AlarmPersistence - 预警持久化
+14. ✅ AlarmRuleEngine - 预警规则引擎
 
 ---
 
@@ -250,12 +319,12 @@
 |----------|----------|----------|
 | AISTargetManager | ✅ 已实现 | 符合设计 |
 | AISTarget | ✅ 已实现 | 符合设计 |
-| AISAlarmAssociation | ✅ 已实现 | 符合设计 |
+| AISAlarmAssociation | ✅ 已实现 | 符合设计，支持CPA/TCPA阈值配置和预警关联 |
 | CPATCPACalculator | ✅ 已实现 | 符合设计 |
 
-**需要补充**:
-1. AIS目标交互逻辑（T65）需验证完整性
-2. AIS预警关联机制（T66）需验证与AlarmManager的集成
+**已验证** (2026-04-20):
+1. ✅ AIS目标交互逻辑完整
+2. ✅ AIS预警关联机制已实现，与AlarmManager集成
 
 ---
 
@@ -270,14 +339,14 @@
 | RouteChecker | ✅ 已实现 | 符合设计 |
 | RouteExporter | ✅ 已实现 | 符合设计 |
 | RouteImporter | ✅ 已实现 | 符合设计 |
-| RouteManager | ❌ 缺失 | 设计要求航线管理器 |
-| Waypoint | ❌ 缺失 | 设计要求航点数据模型 |
-| WaypointManager | ❌ 缺失 | 设计要求航点管理器 |
+| RouteManager | ✅ 已实现 | 航线管理器，支持航线创建/删除/查询/活动航线管理 |
+| Waypoint | ✅ 已实现 | 航点数据模型，包含位置/名称/到达半径/转向半径等属性 |
+| WaypointManager | ✅ 已实现 | 航点管理器，支持航点增删改查/顺序管理/最近航点查找 |
 
-**需要补充**:
-1. RouteManager - 航线管理器（整合Route操作）
-2. Waypoint - 航点数据模型
-3. WaypointManager - 航点管理器
+**已完成补充** (2026-04-20):
+1. ✅ RouteManager - 航线管理器（整合Route操作）
+2. ✅ Waypoint - 航点数据模型
+3. ✅ WaypointManager - 航点管理器
 
 ---
 
@@ -291,21 +360,25 @@
 | Workspace | ✅ 已实现 | 符合设计 |
 | WorkspacePersister | ✅ 已实现 | 符合设计 |
 | WorkspaceConfig | ✅ 已实现 | 额外实现 |
-| WorkspaceRecovery | ❌ 缺失 | 设计要求工作区恢复机制 |
-| WorkspaceExporter | ❌ 缺失 | 设计要求工作区导出器 |
-| WorkspaceImporter | ❌ 缺失 | 设计要求工作区导入器 |
-| ErrorHandler | ❌ 缺失 | 设计要求错误处理器（在workspace模块中） |
-| ErrorCode | ❌ 缺失 | 设计要求错误码（在workspace模块中） |
-| ErrorBoundary | ❌ 缺失 | 设计要求错误边界 |
-| ErrorRecovery | ❌ 缺失 | 设计要求错误恢复 |
-| PanelManager | ❌ 缺失 | 设计要求面板管理器 |
-| TabExtension | ❌ 缺失 | 设计要求标签页扩展 |
+| WorkspaceRecovery | ✅ 已实现 | 工作区恢复机制，支持恢复点创建/自动恢复 |
+| WorkspaceExporter | ✅ 已实现 | 工作区导出器，支持JSON/XML格式 |
+| WorkspaceImporter | ✅ 已实现 | 工作区导入器，支持JSON/XML格式 |
+| ErrorCode | ✅ 已实现 | 错误码枚举，定义工作区相关错误码 |
+| ErrorHandler | ✅ 已实现 | 错误处理器，支持错误策略和历史记录 |
+| ErrorBoundary | ✅ 已实现 | 错误边界，支持重试和回退机制 |
+| ErrorRecovery | ✅ 已实现 | 错误恢复，支持自动恢复策略 |
+| PanelManager | ✅ 已实现 | 面板管理器，支持面板注册/显示/隐藏/布局管理 |
+| Panel | ✅ 已实现 | 面板数据模型 |
+| PanelGroup | ✅ 已实现 | 面板组管理 |
+| PanelLayout | ✅ 已实现 | 面板布局配置 |
+| TabExtension | ✅ 已实现 | 标签页扩展，支持自定义标签页行为 |
 
-**需要补充**:
-1. 工作区恢复机制（T49）
-2. 工作区导出导入（T50）
-3. 错误处理相关类（T51-T55，设计文档将这些放在workspace模块）
-4. 面板管理器和标签页扩展（T30-T33，设计文档将这些放在workspace模块）
+**已完成补充** (2026-04-20):
+1. ✅ WorkspaceRecovery - 工作区恢复机制
+2. ✅ WorkspaceExporter/WorkspaceImporter - 工作区导出导入
+3. ✅ ErrorCode/ErrorHandler/ErrorBoundary/ErrorRecovery - 错误处理相关类
+4. ✅ PanelManager/Panel/PanelGroup/PanelLayout - 面板管理器
+5. ✅ TabExtension - 标签页扩展
 
 ---
 
@@ -346,16 +419,20 @@
 | PluginContext | ✅ 已实现 | 符合设计 |
 | PluginException | ✅ 已实现 | 符合设计 |
 | PluginState | ✅ 已实现 | 符合设计 |
-| PluginLoader | ❌ 缺失 | 设计要求独立的插件加载器 |
-| PluginSecurityManager | ❌ 缺失 | 设计要求插件安全管理器 |
-| DataSourceExtension | ❌ 缺失 | 设计要求数据源扩展接口 |
-| AlarmRuleExtension | ❌ 缺失 | 设计要求预警规则扩展接口 |
+| PluginLoader | ✅ 已实现 | 独立的插件加载器，支持JAR扫描/加载/卸载 |
+| PluginSecurityManager | ✅ 已实现 | 插件安全管理器，支持权限控制/签名验证 |
+| ExtensionPoint接口 | ✅ 已实现 | 扩展点接口，支持泛型扩展注册 |
+| ExtensionRegistry | ✅ 已实现 | 扩展注册表，管理所有扩展点 |
+| MenuExtensionPoint | ✅ 已实现 | 菜单扩展点，支持插件添加菜单项 |
+| ToolbarExtensionPoint | ✅ 已实现 | 工具栏扩展点，支持插件添加工具按钮 |
 
-**需要补充**:
-1. PluginLoader - 独立的插件加载器
-2. PluginSecurityManager - 插件安全管理器
-3. DataSourceExtension - 数据源扩展接口
-4. AlarmRuleExtension - 预警规则扩展接口
+**已完成补充** (2026-04-20):
+1. ✅ PluginLoader - 独立的插件加载器
+2. ✅ PluginSecurityManager - 插件安全管理器
+3. ✅ ExtensionPoint接口 - 扩展点接口
+4. ✅ ExtensionRegistry - 扩展注册表
+5. ✅ MenuExtensionPoint - 菜单扩展点
+6. ✅ ToolbarExtensionPoint - 工具栏扩展点
 
 ---
 
@@ -366,22 +443,22 @@
 | 设计要求 | 实际状态 | 差异说明 |
 |----------|----------|----------|
 | ApplicationFacade接口 | ✅ 已实现 | 符合设计 |
-| DefaultApplicationFacade | ✅ 已实现 | 基本框架符合 |
+| DefaultApplicationFacade | ✅ 已实现 | 符合设计 |
 | FacadeException | ✅ 已实现 | 符合设计 |
-| FacadeService接口 | ❌ 缺失 | 设计要求门面服务基接口 |
-| AlarmFacade | ❌ 缺失 | 设计要求预警服务门面 |
-| RouteFacade | ❌ 缺失 | 设计要求航线服务门面 |
-| ChartFacade | ❌ 缺失 | 设计要求海图服务门面 |
-| AISFacade | ❌ 缺失 | 设计要求AIS服务门面 |
-| ApplicationInitializer | ❌ 缺失 | 设计要求应用初始化编排器 |
-| ServiceRegistry | ❌ 缺失 | 设计要求服务注册中心 |
-| ConfigurationFacade | ❌ 缺失 | 设计要求配置统一入口 |
+| ServiceRegistry | ✅ 已实现 | 服务注册中心，支持服务注册/查找/监听 |
+| InitializationOrchestrator | ✅ 已实现 | 初始化编排器，支持依赖解析/并行初始化 |
+| AlarmFacade | ✅ 已实现 | 预警业务门面，封装预警系统操作 |
+| AISFacade | ✅ 已实现 | AIS业务门面，封装AIS系统操作 |
+| RouteFacade | ✅ 已实现 | 航线业务门面，封装航线系统操作 |
+| WorkspaceFacade | ✅ 已实现 | 工作区业务门面，封装工作区管理操作 |
 
-**需要补充**:
-1. FacadeService基接口及各业务门面实现
-2. ApplicationInitializer - 应用初始化编排器
-3. ServiceRegistry - 服务注册中心
-4. ConfigurationFacade - 配置统一入口
+**已完成补充** (2026-04-20):
+1. ✅ ServiceRegistry - 服务注册中心
+2. ✅ InitializationOrchestrator - 初始化编排器
+3. ✅ AlarmFacade - 预警业务门面
+4. ✅ AISFacade - AIS业务门面
+5. ✅ RouteFacade - 航线业务门面
+6. ✅ WorkspaceFacade - 工作区业务门面
 
 ---
 

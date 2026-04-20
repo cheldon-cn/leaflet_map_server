@@ -6,7 +6,9 @@ import cn.cycle.echart.core.EventBus;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -23,6 +25,7 @@ public class WorkspaceManager {
     private final EventBus eventBus;
     private final WorkspacePersister persister;
     private Workspace currentWorkspace;
+    private final Map<String, Workspace> workspaces;
     private final List<WorkspaceManagerListener> listeners;
     
     private String lastWorkspacePath;
@@ -33,6 +36,7 @@ public class WorkspaceManager {
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus cannot be null");
         this.persister = new WorkspacePersister();
         this.currentWorkspace = null;
+        this.workspaces = new HashMap<>();
         this.listeners = new ArrayList<>();
         this.lastWorkspacePath = null;
         this.autoSave = false;
@@ -189,11 +193,44 @@ public class WorkspaceManager {
         return autoSaveInterval;
     }
 
-    /**
-     * 添加监听器。
-     * 
-     * @param listener 监听器
-     */
+    public void addWorkspace(Workspace workspace) {
+        Objects.requireNonNull(workspace, "workspace cannot be null");
+        workspaces.put(workspace.getId(), workspace);
+        if (currentWorkspace == null) {
+            currentWorkspace = workspace;
+        }
+        notifyWorkspaceCreated(workspace);
+    }
+
+    public Workspace getWorkspace(String workspaceId) {
+        return workspaces.get(workspaceId);
+    }
+
+    public void updateWorkspace(Workspace workspace) {
+        Objects.requireNonNull(workspace, "workspace cannot be null");
+        workspaces.put(workspace.getId(), workspace);
+    }
+
+    public int getWorkspaceCount() {
+        return workspaces.size();
+    }
+
+    public List<Workspace> getAllWorkspaces() {
+        return new ArrayList<>(workspaces.values());
+    }
+
+    public boolean removeWorkspace(String workspaceId) {
+        Workspace removed = workspaces.remove(workspaceId);
+        if (removed != null) {
+            if (currentWorkspace == removed) {
+                currentWorkspace = workspaces.isEmpty() ? null : workspaces.values().iterator().next();
+            }
+            notifyWorkspaceClosed(removed);
+            return true;
+        }
+        return false;
+    }
+
     public void addListener(WorkspaceManagerListener listener) {
         listeners.add(listener);
     }
