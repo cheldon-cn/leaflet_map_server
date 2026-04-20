@@ -33,11 +33,15 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     private final Tab activeTab;
     private final Tab historyTab;
     
-    private final AlarmManager alarmManager;
+    private AlarmManager alarmManager;
     private final Tab tab;
 
+    public AlarmPanel() {
+        this(null);
+    }
+
     public AlarmPanel(AlarmManager alarmManager) {
-        this.alarmManager = Objects.requireNonNull(alarmManager, "alarmManager cannot be null");
+        this.alarmManager = alarmManager;
         this.activeListView = new ListView<>();
         this.historyListView = new ListView<>();
         this.tabPane = new TabPane();
@@ -48,7 +52,16 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
         this.tab.setClosable(false);
         
         initializeLayout();
-        loadData();
+        if (alarmManager != null) {
+            loadData();
+        }
+    }
+    
+    public void setAlarmManager(AlarmManager alarmManager) {
+        this.alarmManager = alarmManager;
+        if (alarmManager != null) {
+            loadData();
+        }
     }
 
     private void initializeLayout() {
@@ -116,6 +129,12 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     private void loadData() {
         activeListView.getItems().clear();
         
+        if (alarmManager == null) {
+            activeListView.getItems().add(new Alert(Type.SYSTEM, Severity.INFO, "预警管理器未初始化", "等待AlarmManager注入"));
+            loadHistory();
+            return;
+        }
+        
         List<Alert> alerts = alarmManager.getActiveAlerts();
         activeListView.getItems().addAll(alerts);
         
@@ -128,6 +147,10 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     }
 
     private void acknowledgeAlarm() {
+        if (alarmManager == null) {
+            showWarning("预警管理器未初始化");
+            return;
+        }
         Alert selected = activeListView.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarning("请先选择一个预警");
@@ -139,6 +162,10 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     }
 
     private void clearAlarm() {
+        if (alarmManager == null) {
+            showWarning("预警管理器未初始化");
+            return;
+        }
         Alert selected = activeListView.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarning("请先选择一个预警");

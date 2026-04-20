@@ -237,42 +237,147 @@ public class RibbonMenuBar extends Ribbon {
         
         return button;
     }
+    
+    private RibbonActionListener actionListener;
+    
+    public void setActionListener(RibbonActionListener listener) {
+        this.actionListener = listener;
+    }
 
-    protected void onNewWorkspace() {}
-    protected void onOpenWorkspace() {}
-    protected void onSaveWorkspace() {}
-    protected void onExport() {}
-    protected void onPrint() {}
+    protected void onNewWorkspace() {
+        if (actionListener != null) actionListener.onNewWorkspace();
+    }
+    protected void onOpenWorkspace() {
+        if (actionListener != null) actionListener.onOpenWorkspace();
+    }
+    protected void onSaveWorkspace() {
+        if (actionListener != null) actionListener.onSaveWorkspace();
+    }
+    protected void onExport() {
+        if (actionListener != null) actionListener.onExport();
+    }
+    protected void onPrint() {
+        if (actionListener != null) actionListener.onPrint();
+    }
     
-    protected void onZoomIn() {}
-    protected void onZoomOut() {}
-    protected void onFitToWindow() {}
-    protected void onToggleSideBar() {}
-    protected void onToggleRightTab() {}
-    protected void onToggleStatusBar() {}
+    protected void onZoomIn() {
+        if (actionListener != null) actionListener.onZoomIn();
+    }
+    protected void onZoomOut() {
+        if (actionListener != null) actionListener.onZoomOut();
+    }
+    protected void onFitToWindow() {
+        if (actionListener != null) actionListener.onFitToWindow();
+    }
+    protected void onToggleSideBar() {
+        if (actionListener != null) actionListener.onToggleSideBar();
+    }
+    protected void onToggleRightTab() {
+        if (actionListener != null) actionListener.onToggleRightTab();
+    }
+    protected void onToggleStatusBar() {
+        if (actionListener != null) actionListener.onToggleStatusBar();
+    }
     
-    protected void onLoadChart() {}
-    protected void onUnloadChart() {}
-    protected void onLayerManager() {}
-    protected void onPropertyQuery() {}
-    protected void onFeatureSearch() {}
+    protected void onLoadChart() {
+        if (actionListener != null) actionListener.onLoadChart();
+    }
+    protected void onUnloadChart() {
+        if (actionListener != null) actionListener.onUnloadChart();
+    }
+    protected void onLayerManager() {
+        if (actionListener != null) actionListener.onLayerManager();
+    }
+    protected void onPropertyQuery() {
+        if (actionListener != null) actionListener.onPropertyQuery();
+    }
+    protected void onFeatureSearch() {
+        if (actionListener != null) actionListener.onFeatureSearch();
+    }
     
-    protected void onCreateRoute() {}
-    protected void onEditRoute() {}
-    protected void onDeleteRoute() {}
-    protected void onImportRoute() {}
-    protected void onExportRoute() {}
-    protected void onCheckRoute() {}
+    protected void onCreateRoute() {
+        if (actionListener != null) actionListener.onCreateRoute();
+    }
+    protected void onEditRoute() {
+        if (actionListener != null) actionListener.onEditRoute();
+    }
+    protected void onDeleteRoute() {
+        if (actionListener != null) actionListener.onDeleteRoute();
+    }
+    protected void onImportRoute() {
+        if (actionListener != null) actionListener.onImportRoute();
+    }
+    protected void onExportRoute() {
+        if (actionListener != null) actionListener.onExportRoute();
+    }
+    protected void onCheckRoute() {
+        if (actionListener != null) actionListener.onCheckRoute();
+    }
     
-    protected void onAlarmSettings() {}
-    protected void onAlarmRules() {}
-    protected void onAlarmHistory() {}
-    protected void onAlarmStatistics() {}
-    protected void onAlarmTest() {}
+    protected void onAlarmSettings() {
+        if (actionListener != null) actionListener.onAlarmSettings();
+    }
+    protected void onAlarmRules() {
+        if (actionListener != null) actionListener.onAlarmRules();
+    }
+    protected void onAlarmHistory() {
+        if (actionListener != null) actionListener.onAlarmHistory();
+    }
+    protected void onAlarmStatistics() {
+        if (actionListener != null) actionListener.onAlarmStatistics();
+    }
+    protected void onAlarmTest() {
+        if (actionListener != null) actionListener.onAlarmTest();
+    }
     
-    protected void onMeasureDistance() {}
-    protected void onMeasureArea() {}
-    protected void onMeasureBearing() {}
-    protected void onOptions() {}
-    protected void onThemeSettings() {}
+    protected void onMeasureDistance() {
+        if (actionListener != null) actionListener.onMeasureDistance();
+    }
+    protected void onMeasureArea() {
+        if (actionListener != null) actionListener.onMeasureArea();
+    }
+    protected void onMeasureBearing() {
+        if (actionListener != null) actionListener.onMeasureBearing();
+    }
+    protected void onOptions() {
+        if (actionListener != null) actionListener.onOptions();
+    }
+    protected void onThemeSettings() {
+        if (actionListener != null) actionListener.onThemeSettings();
+    }
+    
+    public interface RibbonActionListener {
+        void onNewWorkspace();
+        void onOpenWorkspace();
+        void onSaveWorkspace();
+        void onExport();
+        void onPrint();
+        void onZoomIn();
+        void onZoomOut();
+        void onFitToWindow();
+        void onToggleSideBar();
+        void onToggleRightTab();
+        void onToggleStatusBar();
+        void onLoadChart();
+        void onUnloadChart();
+        void onLayerManager();
+        void onPropertyQuery();
+        void onFeatureSearch();
+        void onCreateRoute();
+        void onEditRoute();
+        void onDeleteRoute();
+        void onImportRoute();
+        void onExportRoute();
+        void onCheckRoute();
+        void onAlarmSettings();
+        void onAlarmRules();
+        void onAlarmHistory();
+        void onAlarmStatistics();
+        void onAlarmTest();
+        void onMeasureDistance();
+        void onMeasureArea();
+        void onMeasureBearing();
+        void onOptions();
+        void onThemeSettings();
+    }
 }

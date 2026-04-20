@@ -40,7 +40,7 @@ public class SideBarManager extends HBox {
     private final Map<String, ToggleButton> buttons;
     
     private SideBarPanel activePanel;
-    private boolean isExpanded = true;
+    private boolean isExpanded = false;
     private double expandedWidth = SIDEBAR_WIDTH;
 
     public SideBarManager() {
@@ -61,14 +61,16 @@ public class SideBarManager extends HBox {
         buttonBar.setMinWidth(40);
         buttonBar.setMaxWidth(40);
         
-        contentPane.setPrefWidth(expandedWidth);
+        contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
         contentPane.getStyleClass().add("sidebar-content-pane");
+        contentPane.setVisible(false);
+        contentPane.setManaged(false);
         HBox.setHgrow(contentPane, Priority.NEVER);
         
         getChildren().addAll(buttonBar, contentPane);
         getStyleClass().add("side-bar-manager");
-        setPrefWidth(SIDEBAR_WIDTH + 40);
+        setPrefWidth(40);
         setMinWidth(40);
     }
 

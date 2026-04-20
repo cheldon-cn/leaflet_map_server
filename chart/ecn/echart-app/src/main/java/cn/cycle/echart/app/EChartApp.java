@@ -10,7 +10,9 @@ import cn.cycle.echart.core.PlatformAdapter;
 import cn.cycle.echart.core.ServiceLocator;
 import cn.cycle.echart.ui.FxPlatformAdapter;
 import javafx.application.Application;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.util.Locale;
@@ -78,6 +80,7 @@ public class EChartApp extends Application {
             facade.start();
             
             mainView = new MainView();
+            mainView.setStage(primaryStage);
             
             Scene scene = createScene();
             
@@ -97,7 +100,11 @@ public class EChartApp extends Application {
     }
 
     protected Scene createScene() {
-        Scene scene = new Scene(mainView, 1280, 800);
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        double initWidth = screenBounds.getWidth() * 0.85;
+        double initHeight = screenBounds.getHeight() * 0.85;
+        
+        Scene scene = new Scene(mainView, initWidth, initHeight);
         scene.getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
         return scene;
     }
@@ -114,7 +121,17 @@ public class EChartApp extends Application {
         stage.setScene(scene);
         stage.setMinWidth(1024);
         stage.setMinHeight(768);
-        stage.setMaximized(true);
+        stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
+        
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        double initWidth = screenBounds.getWidth() * 0.85;
+        double initHeight = screenBounds.getHeight() * 0.85;
+        double initX = screenBounds.getMinX() + (screenBounds.getWidth() - initWidth) / 2;
+        double initY = screenBounds.getMinY() + (screenBounds.getHeight() - initHeight) / 2;
+        stage.setX(initX);
+        stage.setY(initY);
+        stage.setWidth(initWidth);
+        stage.setHeight(initHeight);
         
         stage.setOnCloseRequest(event -> {
             event.consume();

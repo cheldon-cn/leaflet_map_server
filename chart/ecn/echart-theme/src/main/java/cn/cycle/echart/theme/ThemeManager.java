@@ -41,12 +41,28 @@ public class ThemeManager {
     protected void registerBuiltInThemes() {
         LightTheme lightTheme = new LightTheme();
         DarkTheme darkTheme = new DarkTheme();
+        HighContrastTheme highContrastTheme = new HighContrastTheme();
         
         registerTheme(lightTheme);
         registerTheme(darkTheme);
+        registerTheme(highContrastTheme);
         
         setDefaultTheme(lightTheme);
-        setCurrentTheme(lightTheme);
+        
+        if (HighContrastDetector.getInstance().isHighContrastEnabled()) {
+            setCurrentTheme(highContrastTheme);
+        } else {
+            setCurrentTheme(lightTheme);
+        }
+        
+        HighContrastDetector.getInstance().addListener((oldValue, newValue) -> {
+            if (newValue) {
+                Theme hcTheme = getTheme("high-contrast");
+                if (hcTheme != null && getCurrentTheme() != hcTheme) {
+                    setCurrentTheme(hcTheme);
+                }
+            }
+        });
     }
 
     public void registerTheme(Theme theme) {

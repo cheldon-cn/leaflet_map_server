@@ -31,13 +31,17 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
     private final Tab routesTab;
     private final Tab waypointsTab;
     
-    private final RouteManager routeManager;
+    private RouteManager routeManager;
     private final Tab tab;
     
     private Route selectedRoute;
 
+    public RoutePanel() {
+        this(null);
+    }
+
     public RoutePanel(RouteManager routeManager) {
-        this.routeManager = Objects.requireNonNull(routeManager, "routeManager cannot be null");
+        this.routeManager = routeManager;
         this.routeListView = new ListView<>();
         this.waypointListView = new ListView<>();
         this.tabPane = new TabPane();
@@ -48,7 +52,16 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
         this.tab.setClosable(false);
         
         initializeLayout();
-        loadData();
+        if (routeManager != null) {
+            loadData();
+        }
+    }
+    
+    public void setRouteManager(RouteManager routeManager) {
+        this.routeManager = routeManager;
+        if (routeManager != null) {
+            loadData();
+        }
     }
 
     private void initializeLayout() {

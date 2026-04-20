@@ -1,7 +1,9 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.ui.panel.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.util.Objects;
 
@@ -23,6 +25,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private final RightTabManager rightTabManager;
     private final StatusBar statusBar;
     private final ResponsiveLayoutManager responsiveLayoutManager;
+    
+    private TitleBar titleBar;
+    private Stage stage;
 
     private boolean initialized = false;
     private boolean active = false;
@@ -38,7 +43,31 @@ public class MainView extends BorderPane implements LifecycleComponent {
         this.responsiveLayoutManager = new ResponsiveLayoutManager();
         
         initializeLayout();
+        initializePanels();
         setupResponsiveLayout();
+    }
+    
+    public void setStage(Stage stage) {
+        this.stage = stage;
+        if (stage != null) {
+            titleBar = new TitleBar(stage);
+            VBox topContainer = new VBox();
+            topContainer.getChildren().addAll(titleBar, ribbonMenuBar);
+            setTop(topContainer);
+            
+            titleBar.getWindowControls().setOnSettingsAction(() -> {
+                showSettingsDialog();
+            });
+        }
+    }
+    
+    private void showSettingsDialog() {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle("设置");
+        alert.setHeaderText("系统设置");
+        alert.setContentText("设置功能开发中...");
+        alert.showAndWait();
     }
 
     private void initializeLayout() {
@@ -52,6 +81,230 @@ public class MainView extends BorderPane implements LifecycleComponent {
         setBottom(statusBar);
         
         getStyleClass().add("main-view");
+    }
+    
+    private void initializePanels() {
+        SideBarManager.SideBarPanel layersPanel = new SideBarManager.SideBarPanel(
+                "layers", "图层管理", "/icons/layers.png", "图层管理面板",
+                new LayerManagerPanel());
+        SideBarManager.SideBarPanel searchPanel = new SideBarManager.SideBarPanel(
+                "search", "搜索", "/icons/search.png", "搜索面板",
+                createPlaceholderPanel("搜索"));
+        SideBarManager.SideBarPanel routePanel = new SideBarManager.SideBarPanel(
+                "route", "航线", "/icons/route.png", "航线规划面板",
+                new RoutePanel());
+        SideBarManager.SideBarPanel alarmPanel = new SideBarManager.SideBarPanel(
+                "alarm", "预警", "/icons/alarm.png", "预警管理面板",
+                new AlarmPanel());
+        SideBarManager.SideBarPanel aisPanel = new SideBarManager.SideBarPanel(
+                "ais", "AIS", "/icons/ais.png", "AIS目标面板",
+                createPlaceholderPanel("AIS目标"));
+        SideBarManager.SideBarPanel measurePanel = new SideBarManager.SideBarPanel(
+                "measure", "测量", "/icons/measure.png", "测量工具面板",
+                createPlaceholderPanel("测量工具"));
+        SideBarManager.SideBarPanel settingsPanel = new SideBarManager.SideBarPanel(
+                "settings", "设置", "/icons/settings.png", "设置面板",
+                createPlaceholderPanel("设置"));
+        
+        sideBarManager.registerPanel(layersPanel, 0);
+        sideBarManager.registerPanel(searchPanel, 1);
+        sideBarManager.registerPanel(routePanel, 2);
+        sideBarManager.registerPanel(alarmPanel, 3);
+        sideBarManager.registerPanel(aisPanel, 4);
+        sideBarManager.registerPanel(measurePanel, 5);
+        sideBarManager.registerPanel(settingsPanel, 6);
+        
+        rightTabManager.registerPanel(new AlarmPanel());
+        rightTabManager.registerPanel(new LogPanel());
+        rightTabManager.registerPanel(new PropertyPanel());
+        rightTabManager.registerPanel(new TerminalPanel());
+        
+        setupRibbonActions();
+    }
+    
+    private void setupRibbonActions() {
+        ribbonMenuBar.setActionListener(new RibbonMenuBar.RibbonActionListener() {
+            @Override
+            public void onNewWorkspace() {
+                showInfo("新建工作区", "新建工作区功能开发中...");
+            }
+            
+            @Override
+            public void onOpenWorkspace() {
+                showInfo("打开工作区", "打开工作区功能开发中...");
+            }
+            
+            @Override
+            public void onSaveWorkspace() {
+                showInfo("保存工作区", "保存工作区功能开发中...");
+            }
+            
+            @Override
+            public void onExport() {
+                showInfo("导出", "导出功能开发中...");
+            }
+            
+            @Override
+            public void onPrint() {
+                showInfo("打印", "打印功能开发中...");
+            }
+            
+            @Override
+            public void onZoomIn() {
+                chartDisplayArea.zoomIn();
+            }
+            
+            @Override
+            public void onZoomOut() {
+                chartDisplayArea.zoomOut();
+            }
+            
+            @Override
+            public void onFitToWindow() {
+                chartDisplayArea.fitToWindow();
+            }
+            
+            @Override
+            public void onToggleSideBar() {
+                toggleSideBar();
+            }
+            
+            @Override
+            public void onToggleRightTab() {
+                toggleRightTab();
+            }
+            
+            @Override
+            public void onToggleStatusBar() {
+                if (getBottom() == null) {
+                    setBottom(statusBar);
+                } else {
+                    setBottom(null);
+                }
+            }
+            
+            @Override
+            public void onLoadChart() {
+                showInfo("加载海图", "加载海图功能开发中...");
+            }
+            
+            @Override
+            public void onUnloadChart() {
+                showInfo("卸载海图", "卸载海图功能开发中...");
+            }
+            
+            @Override
+            public void onLayerManager() {
+                sideBarManager.showPanel("layers");
+                activityBar.selectItem("layers");
+            }
+            
+            @Override
+            public void onPropertyQuery() {
+                showInfo("属性查询", "属性查询功能开发中...");
+            }
+            
+            @Override
+            public void onFeatureSearch() {
+                sideBarManager.showPanel("search");
+                activityBar.selectItem("search");
+            }
+            
+            @Override
+            public void onCreateRoute() {
+                showInfo("创建航线", "创建航线功能开发中...");
+            }
+            
+            @Override
+            public void onEditRoute() {
+                showInfo("编辑航线", "编辑航线功能开发中...");
+            }
+            
+            @Override
+            public void onDeleteRoute() {
+                showInfo("删除航线", "删除航线功能开发中...");
+            }
+            
+            @Override
+            public void onImportRoute() {
+                showInfo("导入航线", "导入航线功能开发中...");
+            }
+            
+            @Override
+            public void onExportRoute() {
+                showInfo("导出航线", "导出航线功能开发中...");
+            }
+            
+            @Override
+            public void onCheckRoute() {
+                showInfo("航线检查", "航线检查功能开发中...");
+            }
+            
+            @Override
+            public void onAlarmSettings() {
+                showInfo("预警设置", "预警设置功能开发中...");
+            }
+            
+            @Override
+            public void onAlarmRules() {
+                showInfo("预警规则", "预警规则功能开发中...");
+            }
+            
+            @Override
+            public void onAlarmHistory() {
+                showInfo("预警历史", "预警历史功能开发中...");
+            }
+            
+            @Override
+            public void onAlarmStatistics() {
+                showInfo("预警统计", "预警统计功能开发中...");
+            }
+            
+            @Override
+            public void onAlarmTest() {
+                showInfo("预警测试", "预警测试功能开发中...");
+            }
+            
+            @Override
+            public void onMeasureDistance() {
+                showInfo("距离测量", "距离测量功能开发中...");
+            }
+            
+            @Override
+            public void onMeasureArea() {
+                showInfo("面积测量", "面积测量功能开发中...");
+            }
+            
+            @Override
+            public void onMeasureBearing() {
+                showInfo("方位测量", "方位测量功能开发中...");
+            }
+            
+            @Override
+            public void onOptions() {
+                showSettingsDialog();
+            }
+            
+            @Override
+            public void onThemeSettings() {
+                showInfo("主题设置", "主题设置功能开发中...");
+            }
+        });
+    }
+    
+    private void showInfo(String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    private javafx.scene.Node createPlaceholderPanel(String title) {
+        javafx.scene.control.Label label = new javafx.scene.control.Label(title + " 面板");
+        label.setStyle("-fx-font-size: 16px; -fx-padding: 20px;");
+        return new javafx.scene.layout.StackPane(label);
     }
 
     private BorderPane createCenterContent() {
