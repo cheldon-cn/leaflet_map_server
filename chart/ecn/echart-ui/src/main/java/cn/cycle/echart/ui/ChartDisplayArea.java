@@ -1,6 +1,15 @@
 package cn.cycle.echart.ui;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 
 import java.util.ArrayList;
@@ -26,6 +35,10 @@ import java.util.List;
 public class ChartDisplayArea extends StackPane implements LifecycleComponent {
 
     private static final int LAYER_COUNT = 5;
+    private static final double MIN_ZOOM = 0.1;
+    private static final double MAX_ZOOM = 10.0;
+    private static final double ZOOM_FACTOR = 1.1;
+    private static final double ZOOM_BUTTON_SIZE = 32.0;
 
     private final List<Canvas> layers;
     private double zoomLevel;
@@ -33,10 +46,28 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     private double centerY;
     private double rotation;
     private int columnCount;
+    
+    private double worldMinX;
+    private double worldMaxX;
+    private double worldMinY;
+    private double worldMaxY;
+    private boolean preserveWorldBounds = true;
+    private double previousWidth;
 
     private boolean initialized = false;
     private boolean active = false;
     private boolean disposed = false;
+
+    private double lastMouseX;
+    private double lastMouseY;
+    private boolean isPanning;
+
+    private ContextMenu contextMenu;
+    private ChartContextMenuListener menuListener;
+    
+    private VBox zoomControls;
+    private Button zoomInButton;
+    private Button zoomOutButton;
 
     public ChartDisplayArea() {
         this.layers = new ArrayList<>();
@@ -45,6 +76,11 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         this.centerY = 0;
         this.rotation = 0;
         this.columnCount = 1;
+        this.worldMinX = -100;
+        this.worldMaxX = 100;
+        this.worldMinY = -100;
+        this.worldMaxY = 100;
+        this.previousWidth = 0;
         
         initializeLayers();
         initializeLayout();
@@ -66,33 +102,237 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
             layer.heightProperty().bind(heightProperty());
         }
         
-        widthProperty().addListener(obs -> redraw());
+        widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (preserveWorldBounds && previousWidth > 0 && oldVal.doubleValue() > 0) {
+                preserveWorldBoundsOnResize(oldVal.doubleValue(), newVal.doubleValue());
+            }
+            previousWidth = newVal.doubleValue();
+            redraw();
+        });
         heightProperty().addListener(obs -> redraw());
         
         getStyleClass().add("chart-display-area");
         
         setupMouseHandlers();
+        setupContextMenu();
+        setupZoomControls();
+    }
+
+    private void setupZoomControls() {
+        zoomInButton = new Button("+");
+        zoomInButton.setPrefSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomInButton.setMinSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomInButton.setMaxSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomInButton.getStyleClass().add("zoom-button");
+        zoomInButton.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: black;");
+        zoomInButton.setOnAction(e -> zoomIn());
+        
+        zoomOutButton = new Button("-");
+        zoomOutButton.setPrefSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomOutButton.setMinSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomOutButton.setMaxSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
+        zoomOutButton.getStyleClass().add("zoom-button");
+        zoomOutButton.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: black;");
+        zoomOutButton.setOnAction(e -> zoomOut());
+        
+        zoomControls = new VBox(4);
+        zoomControls.getChildren().addAll(zoomInButton, zoomOutButton);
+        zoomControls.setAlignment(Pos.CENTER);
+        zoomControls.setPadding(new Insets(4));
+        zoomControls.getStyleClass().add("zoom-controls");
+        zoomControls.setMouseTransparent(false);
+        zoomControls.setStyle("-fx-background-color: rgba(240, 240, 240, 0.9); -fx-background-radius: 4;");
+        zoomControls.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
+        
+        StackPane.setAlignment(zoomControls, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(zoomControls, new Insets(0, 10, 10, 0));
+        getChildren().add(zoomControls);
+    }
+    
+    private void preserveWorldBoundsOnResize(double oldWidth, double newWidth) {
+        updateWorldBounds();
+        
+        double worldWidth = worldMaxX - worldMinX;
+        double worldHeight = worldMaxY - worldMinY;
+        
+        zoomLevel = newWidth / worldWidth;
+        
+        centerX = (worldMinX + worldMaxX) / 2.0;
+        centerY = (worldMinY + worldMaxY) / 2.0;
+    }
+    
+    private void updateWorldBounds() {
+        double halfWidth = getWidth() / 2.0 / zoomLevel;
+        double halfHeight = getHeight() / 2.0 / zoomLevel;
+        
+        worldMinX = centerX - halfWidth;
+        worldMaxX = centerX + halfWidth;
+        worldMinY = centerY - halfHeight;
+        worldMaxY = centerY + halfHeight;
     }
 
     private void setupMouseHandlers() {
         Canvas interactionLayer = getLayer(LayerType.INTERACTION);
         
-        interactionLayer.setOnMousePressed(event -> {
+        setOnMousePressed(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+                isPanning = true;
+            }
         });
         
-        interactionLayer.setOnMouseDragged(event -> {
+        setOnMouseDragged(event -> {
+            if (isPanning && event.getButton() == MouseButton.PRIMARY) {
+                double deltaX = event.getX() - lastMouseX;
+                double deltaY = event.getY() - lastMouseY;
+                
+                pan(deltaX, deltaY);
+                
+                lastMouseX = event.getX();
+                lastMouseY = event.getY();
+            }
         });
         
-        interactionLayer.setOnMouseReleased(event -> {
+        setOnMouseReleased(event -> {
+            isPanning = false;
         });
         
-        interactionLayer.setOnScroll(event -> {
-            double delta = event.getDeltaY() > 0 ? 1.1 : 0.9;
-            setZoomLevel(zoomLevel * delta);
+        setOnScroll(this::handleScroll);
+        
+        setOnMouseMoved(event -> {
+        });
+    }
+
+    private void handleScroll(ScrollEvent event) {
+        if (event.getDeltaY() == 0) {
+            return;
+        }
+        
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+        
+        double worldXBefore = screenToWorldX(mouseX);
+        double worldYBefore = screenToWorldY(mouseY);
+        
+        double delta = event.getDeltaY() > 0 ? ZOOM_FACTOR : 1.0 / ZOOM_FACTOR;
+        double newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel * delta));
+        
+        if (newZoom != zoomLevel) {
+            zoomLevel = newZoom;
+            
+            double worldXAfter = screenToWorldX(mouseX);
+            double worldYAfter = screenToWorldY(mouseY);
+            
+            centerX += worldXBefore - worldXAfter;
+            centerY += worldYBefore - worldYAfter;
+            
+            redraw();
+        }
+        
+        event.consume();
+    }
+
+    private void setupContextMenu() {
+        contextMenu = new ContextMenu();
+        
+        MenuItem zoomInItem = new MenuItem("放大");
+        zoomInItem.setOnAction(e -> {
+            zoomIn();
+            if (menuListener != null) {
+                menuListener.onZoomIn();
+            }
         });
         
-        interactionLayer.setOnMouseMoved(event -> {
+        MenuItem zoomOutItem = new MenuItem("缩小");
+        zoomOutItem.setOnAction(e -> {
+            zoomOut();
+            if (menuListener != null) {
+                menuListener.onZoomOut();
+            }
         });
+        
+        MenuItem fitWindowItem = new MenuItem("适应窗口");
+        fitWindowItem.setOnAction(e -> {
+            fitToWindow();
+            if (menuListener != null) {
+                menuListener.onFitToWindow();
+            }
+        });
+        
+        MenuItem resetViewItem = new MenuItem("重置视图");
+        resetViewItem.setOnAction(e -> {
+            resetView();
+            if (menuListener != null) {
+                menuListener.onResetView();
+            }
+        });
+        
+        MenuItem measureDistanceItem = new MenuItem("测量距离");
+        measureDistanceItem.setOnAction(e -> {
+            if (menuListener != null) {
+                menuListener.onMeasureDistance();
+            }
+        });
+        
+        MenuItem measureAreaItem = new MenuItem("测量面积");
+        measureAreaItem.setOnAction(e -> {
+            if (menuListener != null) {
+                menuListener.onMeasureArea();
+            }
+        });
+        
+        MenuItem measureBearingItem = new MenuItem("测量方位");
+        measureBearingItem.setOnAction(e -> {
+            if (menuListener != null) {
+                menuListener.onMeasureBearing();
+            }
+        });
+        
+        MenuItem propertiesItem = new MenuItem("属性");
+        propertiesItem.setOnAction(e -> {
+            if (menuListener != null) {
+                menuListener.onShowProperties();
+            }
+        });
+        
+        contextMenu.getItems().addAll(
+            zoomInItem,
+            zoomOutItem,
+            fitWindowItem,
+            resetViewItem,
+            new SeparatorMenuItem(),
+            measureDistanceItem,
+            measureAreaItem,
+            measureBearingItem,
+            new SeparatorMenuItem(),
+            propertiesItem
+        );
+        
+        setOnContextMenuRequested(event -> {
+            contextMenu.show(this, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
+    }
+
+    public void setContextMenuListener(ChartContextMenuListener listener) {
+        this.menuListener = listener;
+    }
+
+    public double screenToWorldX(double screenX) {
+        return (screenX - getWidth() / 2.0) / zoomLevel + centerX;
+    }
+
+    public double screenToWorldY(double screenY) {
+        return (screenY - getHeight() / 2.0) / zoomLevel + centerY;
+    }
+
+    public double worldToScreenX(double worldX) {
+        return (worldX - centerX) * zoomLevel + getWidth() / 2.0;
+    }
+
+    public double worldToScreenY(double worldY) {
+        return (worldY - centerY) * zoomLevel + getHeight() / 2.0;
     }
 
     @Override
@@ -250,6 +490,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
 
     public void setZoomLevel(double zoomLevel) {
         this.zoomLevel = Math.max(0.1, Math.min(10.0, zoomLevel));
+        updateWorldBounds();
         redraw();
     }
 
@@ -265,6 +506,16 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         zoomLevel = 1.0;
         centerX = 0;
         centerY = 0;
+        updateWorldBounds();
+        redraw();
+    }
+
+    public void resetView() {
+        zoomLevel = 1.0;
+        centerX = 0;
+        centerY = 0;
+        rotation = 0;
+        updateWorldBounds();
         redraw();
     }
 
@@ -274,6 +525,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
 
     public void setCenterX(double centerX) {
         this.centerX = centerX;
+        updateWorldBounds();
         redraw();
     }
 
@@ -283,12 +535,14 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
 
     public void setCenterY(double centerY) {
         this.centerY = centerY;
+        updateWorldBounds();
         redraw();
     }
 
     public void pan(double dx, double dy) {
-        centerX += dx / zoomLevel;
-        centerY += dy / zoomLevel;
+        centerX -= dx / zoomLevel;
+        centerY -= dy / zoomLevel;
+        updateWorldBounds();
         redraw();
     }
 
@@ -313,6 +567,46 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     public void setColumnCount(int columnCount) {
         this.columnCount = Math.max(1, columnCount);
     }
+    
+    public boolean isPreserveWorldBounds() {
+        return preserveWorldBounds;
+    }
+    
+    public void setPreserveWorldBounds(boolean preserve) {
+        this.preserveWorldBounds = preserve;
+    }
+    
+    public double getWorldMinX() {
+        return worldMinX;
+    }
+    
+    public double getWorldMaxX() {
+        return worldMaxX;
+    }
+    
+    public double getWorldMinY() {
+        return worldMinY;
+    }
+    
+    public double getWorldMaxY() {
+        return worldMaxY;
+    }
+    
+    public void setWorldBounds(double minX, double maxX, double minY, double maxY) {
+        this.worldMinX = minX;
+        this.worldMaxX = maxX;
+        this.worldMinY = minY;
+        this.worldMaxY = maxY;
+        
+        double worldWidth = maxX - minX;
+        double worldHeight = maxY - minY;
+        
+        zoomLevel = Math.min(getWidth() / worldWidth, getHeight() / worldHeight);
+        centerX = (minX + maxX) / 2.0;
+        centerY = (minY + maxY) / 2.0;
+        
+        redraw();
+    }
 
     public enum LayerType {
         BACKGROUND(0),
@@ -330,5 +624,16 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         public int getIndex() {
             return index;
         }
+    }
+
+    public interface ChartContextMenuListener {
+        void onZoomIn();
+        void onZoomOut();
+        void onFitToWindow();
+        void onResetView();
+        void onMeasureDistance();
+        void onMeasureArea();
+        void onMeasureBearing();
+        void onShowProperties();
     }
 }

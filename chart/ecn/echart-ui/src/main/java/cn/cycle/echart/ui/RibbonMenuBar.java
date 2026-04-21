@@ -207,12 +207,9 @@ public class RibbonMenuBar extends Ribbon {
         Button button = new Button(text);
         button.setTooltip(new Tooltip(tooltip));
         
-        try {
-            ImageView icon = new ImageView(new Image(getClass().getResourceAsStream(iconPath)));
-            icon.setFitWidth(16);
-            icon.setFitHeight(16);
+        ImageView icon = createIcon(iconPath, text);
+        if (icon != null) {
             button.setGraphic(icon);
-        } catch (Exception e) {
         }
         
         button.setOnAction(e -> {
@@ -236,6 +233,181 @@ public class RibbonMenuBar extends Ribbon {
         });
         
         return button;
+    }
+    
+    private ImageView createIcon(String iconPath, String fallbackText) {
+        try {
+            ImageView icon = new ImageView(new Image(getClass().getResourceAsStream(iconPath)));
+            icon.setFitWidth(16);
+            icon.setFitHeight(16);
+            return icon;
+        } catch (Exception e) {
+            return createTextIcon(iconPath);
+        }
+    }
+    
+    private ImageView createTextIcon(String iconPath) {
+        if (iconPath == null) return null;
+        
+        javafx.scene.canvas.Canvas canvas = new javafx.scene.canvas.Canvas(16, 16);
+        javafx.scene.canvas.GraphicsContext gc = canvas.getGraphicsContext2D();
+        
+        gc.setStroke(javafx.scene.paint.Color.web("#555555"));
+        gc.setFill(javafx.scene.paint.Color.web("#555555"));
+        gc.setLineWidth(1.5);
+        
+        drawIcon(gc, iconPath);
+        
+        javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
+        params.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        javafx.scene.image.WritableImage wi = canvas.snapshot(params, null);
+        ImageView icon = new ImageView(wi);
+        icon.setFitWidth(16);
+        icon.setFitHeight(16);
+        return icon;
+    }
+    
+    private void drawIcon(javafx.scene.canvas.GraphicsContext gc, String iconPath) {
+        if (iconPath.contains("new")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeLine(8, 5, 8, 11);
+            gc.strokeLine(5, 8, 11, 8);
+        } else if (iconPath.contains("open")) {
+            gc.strokeRect(2, 4, 12, 10);
+            gc.strokeLine(2, 4, 6, 4);
+            gc.strokeLine(6, 4, 8, 2);
+            gc.strokeLine(8, 2, 14, 2);
+            gc.strokeLine(14, 2, 14, 4);
+        } else if (iconPath.contains("save")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeRect(4, 2, 8, 4);
+            gc.strokeRect(4, 8, 8, 6);
+        } else if (iconPath.contains("export")) {
+            gc.strokeRect(2, 6, 8, 8);
+            gc.strokeLine(10, 10, 14, 10);
+            gc.strokeLine(12, 8, 14, 10);
+            gc.strokeLine(12, 8, 14, 10);
+            gc.strokeLine(12, 12, 14, 10);
+        } else if (iconPath.contains("print")) {
+            gc.strokeRect(4, 8, 8, 6);
+            gc.strokeRect(2, 4, 12, 4);
+            gc.strokeLine(12, 4, 12, 2);
+            gc.strokeLine(12, 2, 4, 2);
+            gc.strokeLine(4, 2, 4, 4);
+        } else if (iconPath.contains("import")) {
+            gc.strokeRect(6, 6, 8, 8);
+            gc.strokeLine(2, 10, 10, 10);
+            gc.strokeLine(4, 8, 2, 10);
+            gc.strokeLine(4, 12, 2, 10);
+        } else if (iconPath.contains("zoom-in")) {
+            gc.strokeOval(2, 2, 10, 10);
+            gc.strokeLine(11, 11, 14, 14);
+            gc.strokeLine(7, 4, 7, 10);
+            gc.strokeLine(4, 7, 10, 7);
+        } else if (iconPath.contains("zoom-out")) {
+            gc.strokeOval(2, 2, 10, 10);
+            gc.strokeLine(11, 11, 14, 14);
+            gc.strokeLine(4, 7, 10, 7);
+        } else if (iconPath.contains("fit")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeLine(2, 2, 6, 6);
+            gc.strokeLine(14, 2, 10, 6);
+            gc.strokeLine(2, 14, 6, 10);
+            gc.strokeLine(14, 14, 10, 10);
+        } else if (iconPath.contains("load")) {
+            gc.strokeLine(8, 2, 8, 10);
+            gc.strokeLine(5, 7, 8, 10);
+            gc.strokeLine(11, 7, 8, 10);
+            gc.strokeRect(2, 10, 12, 4);
+        } else if (iconPath.contains("unload")) {
+            gc.strokeLine(8, 14, 8, 6);
+            gc.strokeLine(5, 9, 8, 6);
+            gc.strokeLine(11, 9, 8, 6);
+            gc.strokeRect(2, 2, 12, 4);
+        } else if (iconPath.contains("layers")) {
+            gc.strokePolygon(new double[]{8, 2, 8, 14}, new double[]{2, 5, 8, 5}, 4);
+            gc.strokePolygon(new double[]{8, 14, 8, 2}, new double[]{8, 11, 14, 11}, 4);
+        } else if (iconPath.contains("property")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeLine(4, 5, 12, 5);
+            gc.strokeLine(4, 8, 12, 8);
+            gc.strokeLine(4, 11, 8, 11);
+        } else if (iconPath.contains("search")) {
+            gc.strokeOval(2, 2, 10, 10);
+            gc.strokeLine(11, 11, 14, 14);
+        } else if (iconPath.contains("route")) {
+            gc.strokeLine(2, 8, 6, 4);
+            gc.strokeLine(6, 4, 10, 10);
+            gc.strokeLine(10, 10, 14, 6);
+            gc.fillOval(1, 7, 2, 2);
+            gc.fillOval(13, 5, 2, 2);
+        } else if (iconPath.contains("edit")) {
+            gc.strokeLine(12, 2, 14, 4);
+            gc.strokeLine(4, 12, 2, 14);
+            gc.strokeLine(4, 12, 12, 4);
+        } else if (iconPath.contains("delete")) {
+            gc.strokeLine(4, 4, 12, 12);
+            gc.strokeLine(12, 4, 4, 12);
+            gc.strokeOval(2, 2, 12, 12);
+        } else if (iconPath.contains("check")) {
+            gc.strokeLine(2, 8, 6, 12);
+            gc.strokeLine(6, 12, 14, 4);
+        } else if (iconPath.contains("alarm")) {
+            gc.strokeLine(8, 2, 2, 12);
+            gc.strokeLine(8, 2, 14, 12);
+            gc.strokeLine(2, 12, 14, 12);
+            gc.fillOval(7, 5, 2, 2);
+        } else if (iconPath.contains("settings")) {
+            gc.strokeOval(4, 4, 8, 8);
+            gc.strokeLine(8, 2, 8, 4);
+            gc.strokeLine(8, 12, 8, 14);
+            gc.strokeLine(2, 8, 4, 8);
+            gc.strokeLine(12, 8, 14, 8);
+        } else if (iconPath.contains("rules")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeLine(4, 5, 12, 5);
+            gc.strokeLine(4, 8, 12, 8);
+            gc.strokeLine(4, 11, 12, 11);
+        } else if (iconPath.contains("history")) {
+            gc.strokeOval(2, 2, 12, 12);
+            gc.strokeLine(8, 4, 8, 8);
+            gc.strokeLine(8, 8, 11, 10);
+            gc.strokeLine(2, 8, 4, 6);
+            gc.strokeLine(2, 8, 4, 10);
+        } else if (iconPath.contains("statistics")) {
+            gc.strokeLine(2, 12, 14, 12);
+            gc.fillRect(3, 8, 3, 4);
+            gc.fillRect(7, 4, 3, 8);
+            gc.fillRect(11, 6, 3, 6);
+        } else if (iconPath.contains("test")) {
+            gc.strokeOval(2, 2, 12, 12);
+            gc.strokeLine(5, 8, 7, 10);
+            gc.strokeLine(7, 10, 11, 6);
+        } else if (iconPath.contains("distance")) {
+            gc.strokeLine(2, 8, 14, 8);
+            gc.strokeLine(2, 6, 2, 10);
+            gc.strokeLine(14, 6, 14, 10);
+            gc.strokeLine(6, 5, 8, 5);
+            gc.strokeLine(6, 11, 8, 11);
+        } else if (iconPath.contains("area")) {
+            gc.strokeRect(2, 2, 12, 12);
+            gc.strokeLine(2, 2, 14, 14);
+        } else if (iconPath.contains("bearing")) {
+            gc.strokeOval(2, 2, 12, 12);
+            gc.strokeLine(8, 8, 8, 3);
+            gc.strokeLine(8, 8, 13, 8);
+            gc.fillPolygon(new double[]{8, 6, 10}, new double[]{3, 6, 6}, 3);
+        } else if (iconPath.contains("options")) {
+            gc.strokeLine(2, 4, 10, 4);
+            gc.strokeLine(2, 8, 10, 8);
+            gc.strokeLine(2, 12, 10, 12);
+            gc.fillOval(10, 3, 4, 2);
+            gc.fillOval(6, 7, 4, 2);
+            gc.fillOval(10, 11, 4, 2);
+        } else if (iconPath.contains("theme")) {
+            gc.strokeOval(4, 2, 8, 8);
+            gc.fillArc(4, 2, 8, 8, 90, 180, javafx.scene.shape.ArcType.CHORD);
+        }
     }
     
     private RibbonActionListener actionListener;

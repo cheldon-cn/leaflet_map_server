@@ -1,7 +1,9 @@
 package cn.cycle.echart.ui;
 
-import javafx.animation.TranslateTransition;
-import javafx.animation.Timeline;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
@@ -10,9 +12,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.util.Duration;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,18 +33,24 @@ public class SideBarManager extends HBox {
 
     private static final double SIDEBAR_WIDTH = 280.0;
     private static final double COLLAPSED_WIDTH = 0.0;
-    private static final Duration ANIMATION_DURATION = Duration.millis(200);
     private static final double ICON_SIZE = 20.0;
+    public static final double MIN_EXPANDED_WIDTH = 100.0;
+    public static final double MAX_EXPANDED_WIDTH_RATIO = 0.4;
 
     private final VBox buttonBar;
     private final StackPane contentPane;
     private final ToggleGroup toggleGroup;
     private final Map<String, SideBarPanel> panels;
     private final Map<String, ToggleButton> buttons;
+    private final List<String> panelOrder;
     
     private SideBarPanel activePanel;
     private boolean isExpanded = false;
     private double expandedWidth = SIDEBAR_WIDTH;
+    private double lastExpandedWidth = SIDEBAR_WIDTH;
+    
+    private final ReadOnlyBooleanWrapper expandedProperty = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyDoubleWrapper currentWidthProperty = new ReadOnlyDoubleWrapper(40);
 
     public SideBarManager() {
         this.buttonBar = new VBox();
@@ -49,6 +58,7 @@ public class SideBarManager extends HBox {
         this.toggleGroup = new ToggleGroup();
         this.panels = new HashMap<>();
         this.buttons = new HashMap<>();
+        this.panelOrder = new ArrayList<>();
         
         initializeLayout();
     }
@@ -60,18 +70,21 @@ public class SideBarManager extends HBox {
         buttonBar.setPrefWidth(40);
         buttonBar.setMinWidth(40);
         buttonBar.setMaxWidth(40);
+        buttonBar.setStyle("-fx-background-color: derive(-fx-base, -10%);");
         
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
         contentPane.getStyleClass().add("sidebar-content-pane");
+        contentPane.setStyle("-fx-background-color: derive(-fx-base, -5%);");
         contentPane.setVisible(false);
         contentPane.setManaged(false);
         HBox.setHgrow(contentPane, Priority.NEVER);
         
         getChildren().addAll(buttonBar, contentPane);
         getStyleClass().add("side-bar-manager");
-        setPrefWidth(40);
+        setStyle("-fx-background-color: derive(-fx-base, -10%);");
         setMinWidth(40);
+        setPrefWidth(40);
     }
 
     public void registerPanel(SideBarPanel panel) {
@@ -79,14 +92,17 @@ public class SideBarManager extends HBox {
         
         String panelId = panel.getId();
         panels.put(panelId, panel);
+        panelOrder.add(panelId);
         
         ToggleButton button = createToggleButton(panel);
         buttons.put(panelId, button);
         buttonBar.getChildren().add(button);
         
-        contentPane.getChildren().add(panel.getContent());
-        panel.getContent().setVisible(false);
-        panel.getContent().setManaged(false);
+        javafx.scene.Node content = panel.getContent();
+        content.setVisible(false);
+        content.setManaged(false);
+        StackPane.setAlignment(content, javafx.geometry.Pos.TOP_LEFT);
+        contentPane.getChildren().add(content);
     }
 
     public void registerPanel(SideBarPanel panel, int index) {
@@ -94,14 +110,17 @@ public class SideBarManager extends HBox {
         
         String panelId = panel.getId();
         panels.put(panelId, panel);
+        panelOrder.add(index, panelId);
         
         ToggleButton button = createToggleButton(panel);
         buttons.put(panelId, button);
         buttonBar.getChildren().add(index, button);
         
-        contentPane.getChildren().add(panel.getContent());
-        panel.getContent().setVisible(false);
-        panel.getContent().setManaged(false);
+        javafx.scene.Node content = panel.getContent();
+        content.setVisible(false);
+        content.setManaged(false);
+        StackPane.setAlignment(content, javafx.geometry.Pos.TOP_LEFT);
+        contentPane.getChildren().add(content);
     }
 
     private ToggleButton createToggleButton(SideBarPanel panel) {
@@ -135,11 +154,18 @@ public class SideBarManager extends HBox {
             button.setText(panel.getTitle().substring(0, 1));
         }
         
-        button.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal) {
-                showPanel(panel.getId());
-            } else if (activePanel == panel) {
-                collapsePanel();
+        button.setOnAction(e -> {
+            if (button.isSelected()) {
+                if (activePanel != null && activePanel.getId().equals(panel.getId())) {
+                    collapsePanel();
+                    button.setSelected(false);
+                } else {
+                    showPanel(panel.getId());
+                }
+            } else {
+                if (activePanel != null && activePanel.getId().equals(panel.getId())) {
+                    collapsePanel();
+                }
             }
         });
         
@@ -164,6 +190,14 @@ public class SideBarManager extends HBox {
     }
 
     public void showPanel(String panelId) {
+        showPanel(panelId, -1, false);
+    }
+    
+    public void showPanel(String panelId, double width) {
+        showPanel(panelId, width, false);
+    }
+    
+    public void showPanel(String panelId, double width, boolean fromDrag) {
         SideBarPanel panel = panels.get(panelId);
         if (panel == null) {
             return;
@@ -178,10 +212,17 @@ public class SideBarManager extends HBox {
         activePanel = panel;
         panel.getContent().setVisible(true);
         panel.getContent().setManaged(true);
+        panel.getContent().toFront();
         panel.onActivate();
         
         if (!isExpanded) {
-            expandPanel();
+            if (width > 0) {
+                expandPanel(width, fromDrag);
+            } else {
+                expandPanel();
+            }
+        } else if (width > 0 && !fromDrag) {
+            setExpandedWidth(width);
         }
         
         ToggleButton button = buttons.get(panelId);
@@ -220,12 +261,28 @@ public class SideBarManager extends HBox {
     }
 
     public void expandPanel() {
+        expandPanel(lastExpandedWidth > 0 ? lastExpandedWidth : SIDEBAR_WIDTH, false);
+    }
+    
+    public void expandPanel(double width) {
+        expandPanel(width, false);
+    }
+    
+    public void expandPanel(double width, boolean fromDrag) {
         if (isExpanded) {
             return;
         }
         
         isExpanded = true;
-        animateWidth(COLLAPSED_WIDTH, expandedWidth);
+        expandedProperty.set(true);
+        contentPane.setVisible(true);
+        contentPane.setManaged(true);
+        
+        expandedWidth = width;
+        
+        contentPane.setPrefWidth(width);
+        setPrefWidth(40 + width);
+        currentWidthProperty.set(40 + width);
     }
 
     public void collapsePanel() {
@@ -233,8 +290,15 @@ public class SideBarManager extends HBox {
             return;
         }
         
+        lastExpandedWidth = expandedWidth;
+        
         isExpanded = false;
-        animateWidth(expandedWidth, COLLAPSED_WIDTH);
+        expandedProperty.set(false);
+        contentPane.setVisible(false);
+        contentPane.setManaged(false);
+        contentPane.setPrefWidth(COLLAPSED_WIDTH);
+        setPrefWidth(40);
+        currentWidthProperty.set(40);
         
         if (activePanel != null) {
             activePanel.getContent().setVisible(false);
@@ -245,19 +309,24 @@ public class SideBarManager extends HBox {
         
         toggleGroup.selectToggle(null);
     }
-
-    private void animateWidth(double fromWidth, double toWidth) {
-        TranslateTransition transition = new TranslateTransition(ANIMATION_DURATION, contentPane);
-        transition.setFromX(fromWidth > toWidth ? 0 : -expandedWidth);
-        transition.setToX(fromWidth > toWidth ? -expandedWidth : 0);
-        transition.play();
+    
+    public String getFirstPanelId() {
+        String layersPanelId = "layers";
+        if (panels.containsKey(layersPanelId)) {
+            SideBarPanel panel = panels.get(layersPanelId);
+            if (panel != null && panel.getContent() != null) {
+                return layersPanelId;
+            }
+        }
         
-        Timeline timeline = new Timeline();
-        javafx.animation.KeyValue keyValue = new javafx.animation.KeyValue(
-                contentPane.prefWidthProperty(), toWidth);
-        javafx.animation.KeyFrame keyFrame = new javafx.animation.KeyFrame(ANIMATION_DURATION, keyValue);
-        timeline.getKeyFrames().add(keyFrame);
-        timeline.play();
+        for (String panelId : panelOrder) {
+            SideBarPanel panel = panels.get(panelId);
+            if (panel != null && panel.getContent() != null) {
+                return panelId;
+            }
+        }
+        
+        return null;
     }
 
     public SideBarPanel getPanel(String panelId) {
@@ -273,14 +342,25 @@ public class SideBarManager extends HBox {
     }
 
     public void setExpandedWidth(double width) {
+        setExpandedWidth(width, false);
+    }
+    
+    public void setExpandedWidth(double width, boolean fromDrag) {
         this.expandedWidth = width;
+        this.lastExpandedWidth = width;
         if (isExpanded) {
             contentPane.setPrefWidth(width);
+            setPrefWidth(40 + width);
+            currentWidthProperty.set(40 + width);
         }
     }
 
     public double getExpandedWidth() {
         return expandedWidth;
+    }
+    
+    public double getLastExpandedWidth() {
+        return lastExpandedWidth;
     }
 
     public Map<String, SideBarPanel> getPanels() {
@@ -297,6 +377,18 @@ public class SideBarManager extends HBox {
 
     public ToggleGroup getToggleGroup() {
         return toggleGroup;
+    }
+    
+    public ReadOnlyBooleanProperty expandedProperty() {
+        return expandedProperty.getReadOnlyProperty();
+    }
+    
+    public ReadOnlyDoubleProperty currentWidthProperty() {
+        return currentWidthProperty.getReadOnlyProperty();
+    }
+    
+    public double getCurrentWidth() {
+        return currentWidthProperty.get();
     }
 
     public static class SideBarPanel {

@@ -1,7 +1,14 @@
 package cn.cycle.echart.ui;
 
 import cn.cycle.echart.ui.panel.*;
+import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
+import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -18,6 +25,9 @@ import java.util.Objects;
  */
 public class MainView extends BorderPane implements LifecycleComponent {
 
+    private final StackPane rootContainer;
+    private final BorderPane contentPane;
+    private final SplitPane centerSplitPane;
     private final RibbonMenuBar ribbonMenuBar;
     private final ActivityBar activityBar;
     private final SideBarManager sideBarManager;
@@ -28,12 +38,17 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     private TitleBar titleBar;
     private Stage stage;
+    
+    private boolean isDraggingDivider = false;
 
     private boolean initialized = false;
     private boolean active = false;
     private boolean disposed = false;
 
     public MainView() {
+        this.rootContainer = new StackPane();
+        this.contentPane = new BorderPane();
+        this.centerSplitPane = new SplitPane();
         this.ribbonMenuBar = new RibbonMenuBar();
         this.activityBar = new ActivityBar();
         this.sideBarManager = new SideBarManager();
@@ -51,13 +66,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
         this.stage = stage;
         if (stage != null) {
             titleBar = new TitleBar(stage);
-            VBox topContainer = new VBox();
-            topContainer.getChildren().addAll(titleBar, ribbonMenuBar);
-            setTop(topContainer);
+            StackPane.setAlignment(titleBar, Pos.TOP_CENTER);
+            rootContainer.getChildren().add(titleBar);
             
             titleBar.getWindowControls().setOnSettingsAction(() -> {
                 showSettingsDialog();
             });
+            
+            stage.setMinWidth(800);
         }
     }
     
@@ -71,16 +87,132 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
 
     private void initializeLayout() {
-        VBox topContainer = new VBox();
-        topContainer.getChildren().addAll(ribbonMenuBar);
-        setTop(topContainer);
+        centerSplitPane.setOrientation(Orientation.HORIZONTAL);
+        centerSplitPane.getItems().addAll(sideBarManager, chartDisplayArea, rightTabManager);
+        centerSplitPane.setStyle("-fx-background-color: derive(-fx-base, -5%);");
         
-        setLeft(activityBar);
-        setCenter(createCenterContent());
-        setRight(rightTabManager);
-        setBottom(statusBar);
+        SplitPane.setResizableWithParent(sideBarManager, false);
+        SplitPane.setResizableWithParent(rightTabManager, false);
+        
+        contentPane.setTop(ribbonMenuBar);
+        contentPane.setCenter(centerSplitPane);
+        contentPane.setBottom(statusBar);
+        contentPane.setPadding(new Insets(32, 0, 0, 0));
+        
+        rootContainer.getChildren().add(contentPane);
+        setCenter(rootContainer);
+        
+        javafx.application.Platform.runLater(() -> {
+            double splitWidth = centerSplitPane.getWidth();
+            if (splitWidth > 0) {
+                double leftRatio = 40.0 / splitWidth;
+                double rightRatio = 1 - rightTabManager.getPrefWidth() / splitWidth;
+                centerSplitPane.setDividerPositions(leftRatio, Math.max(rightRatio, 0.5));
+            }
+        });
+        
+        setupDividerListeners();
         
         getStyleClass().add("main-view");
+    }
+    
+    private void setupDividerListeners() {
+        final double COLLAPSE_THRESHOLD = 80.0;
+        
+        centerSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
+            isDraggingDivider = true;
+            
+            try {
+                double splitWidth = centerSplitPane.getWidth();
+                if (splitWidth <= 0) return;
+                
+                double newWidth = newVal.doubleValue() * splitWidth - 40;
+                double maxPanelWidth = splitWidth * SideBarManager.MAX_EXPANDED_WIDTH_RATIO;
+                
+                if (!sideBarManager.isExpanded()) {
+                    if (newWidth > 10) {
+                        String firstPanelId = sideBarManager.getFirstPanelId();
+                        if (firstPanelId != null) {
+                            double actualWidth = Math.min(newWidth, maxPanelWidth);
+                            sideBarManager.showPanel(firstPanelId, actualWidth, true);
+                        }
+                    }
+                } else {
+                    if (newWidth < COLLAPSE_THRESHOLD) {
+                        sideBarManager.collapsePanel();
+                    } else {
+                        double actualWidth = Math.min(newWidth, maxPanelWidth);
+                        if (Math.abs(actualWidth - sideBarManager.getExpandedWidth()) > 5) {
+                            sideBarManager.setExpandedWidth(actualWidth, true);
+                        }
+                    }
+                }
+            } finally {
+                isDraggingDivider = false;
+            }
+        });
+        
+        centerSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
+            double rightWidth = (1 - newVal.doubleValue()) * centerSplitPane.getWidth();
+            if (rightWidth > 0 && Math.abs(rightWidth - rightTabManager.getPrefWidth()) > 5) {
+                rightTabManager.setPrefWidth(rightWidth);
+            }
+        });
+        
+        sideBarManager.currentWidthProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isDraggingDivider) {
+                javafx.application.Platform.runLater(() -> {
+                    updateDividerPositions();
+                });
+            }
+        });
+        
+        rightTabManager.prefWidthProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isDraggingDivider) {
+                javafx.application.Platform.runLater(() -> {
+                    updateDividerPositions();
+                });
+            }
+        });
+        
+        centerSplitPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isDraggingDivider) {
+                javafx.application.Platform.runLater(() -> {
+                    updateDividerPositions();
+                });
+            }
+        });
+    }
+    
+    private void updateDividerPositions() {
+        if (isDraggingDivider) {
+            return;
+        }
+        
+        double splitWidth = centerSplitPane.getWidth();
+        if (splitWidth <= 0) return;
+        
+        double leftWidth = sideBarManager.getCurrentWidth();
+        double rightWidth = rightTabManager.getPrefWidth();
+        
+        double leftRatio = leftWidth / splitWidth;
+        double rightRatio = 1.0 - rightWidth / splitWidth;
+        
+        if (leftRatio >= rightRatio) {
+            double totalSideWidth = leftWidth + rightWidth;
+            if (totalSideWidth < splitWidth) {
+                leftRatio = leftWidth / splitWidth;
+                rightRatio = 1.0 - rightWidth / splitWidth;
+            } else {
+                leftRatio = leftWidth / (leftWidth + rightWidth + 100);
+                rightRatio = 1.0 - rightWidth / (leftWidth + rightWidth + 100);
+            }
+        }
+        
+        leftRatio = Math.max(40.0 / splitWidth, Math.min(leftRatio, 0.4));
+        rightRatio = Math.max(0.5, Math.min(rightRatio, 1.0 - 200.0 / splitWidth));
+        
+        centerSplitPane.setDividerPositions(leftRatio, rightRatio);
     }
     
     private void initializePanels() {
@@ -196,7 +328,6 @@ public class MainView extends BorderPane implements LifecycleComponent {
             @Override
             public void onLayerManager() {
                 sideBarManager.showPanel("layers");
-                activityBar.selectItem("layers");
             }
             
             @Override
@@ -207,7 +338,6 @@ public class MainView extends BorderPane implements LifecycleComponent {
             @Override
             public void onFeatureSearch() {
                 sideBarManager.showPanel("search");
-                activityBar.selectItem("search");
             }
             
             @Override
@@ -307,31 +437,12 @@ public class MainView extends BorderPane implements LifecycleComponent {
         return new javafx.scene.layout.StackPane(label);
     }
 
-    private BorderPane createCenterContent() {
-        BorderPane centerPane = new BorderPane();
-        centerPane.setLeft(sideBarManager);
-        centerPane.setCenter(chartDisplayArea);
-        return centerPane;
-    }
-
     private void setupResponsiveLayout() {
         responsiveLayoutManager.addListener((oldMode, newMode) -> {
             applyLayoutConfig(ResponsiveLayoutManager.LayoutConfig.forMode(newMode));
         });
         
         responsiveLayoutManager.monitor(this);
-        
-        setupActivityBarHandler();
-    }
-
-    private void setupActivityBarHandler() {
-        activityBar.setSelectionHandler((itemId, selected) -> {
-            if (selected) {
-                sideBarManager.showPanel(itemId);
-            } else {
-                sideBarManager.hidePanel(itemId);
-            }
-        });
     }
 
     private void applyLayoutConfig(ResponsiveLayoutManager.LayoutConfig config) {
@@ -478,18 +589,23 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
 
     public void showRightTab() {
-        setRight(rightTabManager);
+        if (!centerSplitPane.getItems().contains(rightTabManager)) {
+            centerSplitPane.getItems().add(rightTabManager);
+            javafx.application.Platform.runLater(() -> {
+                updateDividerPositions();
+            });
+        }
     }
 
     public void hideRightTab() {
-        setRight(null);
+        centerSplitPane.getItems().remove(rightTabManager);
     }
 
     public void toggleRightTab() {
-        if (getRight() == null) {
-            showRightTab();
-        } else {
+        if (centerSplitPane.getItems().contains(rightTabManager)) {
             hideRightTab();
+        } else {
+            showRightTab();
         }
     }
 

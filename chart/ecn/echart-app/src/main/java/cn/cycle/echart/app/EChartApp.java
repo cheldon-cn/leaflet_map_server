@@ -33,6 +33,7 @@ public class EChartApp extends Application {
     private I18nManager i18nManager;
     private MainView mainView;
     private Stage primaryStage;
+    private double deviceRatio = 0.6;
 
     public static void main(String[] args) {
         launch(args);
@@ -101,8 +102,8 @@ public class EChartApp extends Application {
 
     protected Scene createScene() {
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-        double initWidth = screenBounds.getWidth() * 0.85;
-        double initHeight = screenBounds.getHeight() * 0.85;
+        double initWidth = screenBounds.getWidth() * deviceRatio;
+        double initHeight = screenBounds.getHeight() * deviceRatio;
         
         Scene scene = new Scene(mainView, initWidth, initHeight);
         scene.getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
@@ -124,8 +125,8 @@ public class EChartApp extends Application {
         stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
         
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-        double initWidth = screenBounds.getWidth() * 0.85;
-        double initHeight = screenBounds.getHeight() * 0.85;
+        double initWidth = screenBounds.getWidth() * deviceRatio;
+        double initHeight = screenBounds.getHeight() * deviceRatio;
         double initX = screenBounds.getMinX() + (screenBounds.getWidth() - initWidth) / 2;
         double initY = screenBounds.getMinY() + (screenBounds.getHeight() - initHeight) / 2;
         stage.setX(initX);

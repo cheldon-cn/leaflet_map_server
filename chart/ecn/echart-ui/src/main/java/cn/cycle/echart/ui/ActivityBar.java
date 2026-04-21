@@ -38,7 +38,7 @@ public class ActivityBar extends VBox {
         this.items = new HashMap<>();
         
         initializeLayout();
-        initializeDefaultItems();
+       // initializeDefaultItems();
     }
 
     private void initializeLayout() {
