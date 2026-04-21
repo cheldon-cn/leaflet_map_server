@@ -17,12 +17,15 @@ import javafx.stage.Stage;
  */
 public class TitleBar extends HBox {
 
+    private static final boolean DEBUG = false;
+    
     private final Stage stage;
     private final Label titleLabel;
     private final WindowControls windowControls;
     
     private double xOffset = 0;
     private double yOffset = 0;
+    private boolean dragging = false;
 
     public TitleBar(Stage stage) {
         this.stage = stage;
@@ -52,15 +55,41 @@ public class TitleBar extends HBox {
 
     private void setupDragHandler() {
         setOnMousePressed(event -> {
+            if (event.isConsumed()) {
+                if (DEBUG) System.out.println("[TitleBar] MousePressed: event already consumed, skipping");
+                return;
+            }
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
+            dragging = true;
+            if (DEBUG) {
+                System.out.println("[TitleBar] MousePressed: offset=(" + xOffset + ", " + yOffset + ")");
+            }
         });
         
         setOnMouseDragged(event -> {
-            if (stage != null && !stage.isMaximized()) {
-                stage.setX(event.getScreenX() - xOffset);
-                stage.setY(event.getScreenY() - yOffset);
+            if (event.isConsumed() || !dragging) {
+                if (DEBUG && event.isConsumed()) {
+                    System.out.println("[TitleBar] MouseDragged: event consumed, skipping");
+                }
+                return;
             }
+            if (stage != null && !stage.isMaximized()) {
+                double newX = event.getScreenX() - xOffset;
+                double newY = event.getScreenY() - yOffset;
+                if (DEBUG) {
+                    System.out.println("[TitleBar] MouseDragged: moving window to (" + newX + ", " + newY + ")");
+                }
+                stage.setX(newX);
+                stage.setY(newY);
+            }
+        });
+        
+        setOnMouseReleased(event -> {
+            if (DEBUG) {
+                System.out.println("[TitleBar] MouseReleased: dragging=" + dragging);
+            }
+            dragging = false;
         });
     }
 

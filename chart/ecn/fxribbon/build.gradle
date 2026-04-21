@@ -1,0 +1,57 @@
+apply from: '../config/common.gradle'
+
+apply plugin: 'java'
+apply plugin: 'maven'
+
+group projectGroup
+version '2.1.0'
+
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = encoding
+
+buildDir = new File(projectDir, '../../build/ecn/fxribbon')
+
+dependencies {
+    implementation 'org.openjfx:javafx-controls:11:win'
+    implementation 'org.openjfx:javafx-graphics:11:win'
+    testCompile group: 'junit', name: 'junit', version: junitVersion
+}
+
+jar {
+    baseName = 'fxribbon'
+    
+    manifest {
+        attributes 'Implementation-Title': 'Cycle FXRibbon Library',
+                   'Implementation-Version': version
+    }
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+    
+    forkEvery = 1
+    maxParallelForks = 1
+    enableAssertions = false
+    jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task installJar(type: Copy, dependsOn: jar) {
+    from jar.archivePath
+    into installDir
+}
+
+build.finalizedBy installJar
+
+artifacts {
+    archives sourcesJar
+}

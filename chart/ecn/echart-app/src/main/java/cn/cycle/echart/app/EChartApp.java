@@ -87,6 +87,7 @@ public class EChartApp extends Application {
             
             applyTheme(scene);
             
+            mainView.enableWindowResize(scene);
             configureStage(primaryStage, scene);
             
             primaryStage.show();
@@ -120,8 +121,8 @@ public class EChartApp extends Application {
     protected void configureStage(Stage stage, Scene scene) {
         stage.setTitle(i18nManager.getMessage("app.title", "E-Chart Display and Alarm Application"));
         stage.setScene(scene);
-        stage.setMinWidth(1024);
-        stage.setMinHeight(768);
+        stage.setMinWidth(800);
+        stage.setMinHeight(600);
         stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
         
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();

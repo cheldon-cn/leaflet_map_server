@@ -4,6 +4,7 @@ import cn.cycle.echart.ui.panel.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -74,6 +75,12 @@ public class MainView extends BorderPane implements LifecycleComponent {
             });
             
             stage.setMinWidth(800);
+        }
+    }
+    
+    public void enableWindowResize(Scene scene) {
+        if (stage != null && scene != null) {
+            new WindowResizer(stage, scene);
         }
     }
     

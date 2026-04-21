@@ -46,6 +46,7 @@
 
 | 模块 | 编译产物 | 输出目录 |
 |------|----------|----------|
+| fxribbon | fxribbon-2.1.0.jar | build/ecn/fxribbon/libs/ |
 | echart-core | echart-core-1.2.1-alpha.jar | build/ecn/echart-core/libs/ |
 | echart-event | echart-event-1.2.1-alpha.jar | build/ecn/echart-event/libs/ |
 | echart-i18n | echart-i18n-1.2.1-alpha.jar | build/ecn/echart-i18n/libs/ |
@@ -78,6 +79,8 @@ gradle/gradle-4.5.1/bin/gradle.bat -p ecn/echart-core build -x test
 ### 模块依赖层级
 
 ```
+Ribbon Layer: fxribbon (JavaFX Ribbon控件库，无依赖)
+    ↓
 Layer 0: echart-core (无依赖)
     ↓
 Layer 1: echart-event (依赖 echart-core)
@@ -108,14 +111,15 @@ Layer 7: echart-app (依赖所有模块)
 
 | 顺序 | 模块 | Layer |
 |------|------|-------|
-| 1 | echart-core | 0 |
-| 2 | echart-event, echart-i18n | 1 |
-| 3 | echart-render, echart-data | 2 |
-| 4 | echart-alarm, echart-ais, echart-route, echart-workspace | 3 |
-| 5 | echart-ui | 4 |
-| 6 | echart-ui-render, echart-theme, echart-plugin | 5 |
-| 7 | echart-facade | 6 |
-| 8 | echart-app | 7 |
+| 1 | fxribbon | Ribbon |
+| 2 | echart-core | 0 |
+| 3 | echart-event, echart-i18n | 1 |
+| 4 | echart-render, echart-data | 2 |
+| 5 | echart-alarm, echart-ais, echart-route, echart-workspace | 3 |
+| 6 | echart-ui | 4 |
+| 7 | echart-ui-render, echart-theme, echart-plugin | 5 |
+| 8 | echart-facade | 6 |
+| 9 | echart-app | 7 |
 
 ---
 
@@ -123,25 +127,51 @@ Layer 7: echart-app (依赖所有模块)
 
 | 序号 | 模块名 | Layer | 包路径 | 依赖 | 说明 |
 |------|--------|-------|--------|------|------|
-| 1 | echart-core | 0 | cn.cycle.echart.core | 无 | 核心框架，平台无关 |
-| 2 | echart-event | 1 | cn.cycle.echart.event | echart-core | 事件总线与通信 |
-| 3 | echart-i18n | 1 | cn.cycle.echart.i18n | 无 | 国际化支持 |
-| 4 | echart-render | 2 | cn.cycle.echart.render | echart-core | 渲染引擎核心 |
-| 5 | echart-data | 2 | cn.cycle.echart.data | 无 | 数据管理核心 |
-| 6 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core | 预警系统核心 |
-| 7 | echart-ais | 3 | cn.cycle.echart.ais | echart-core | AIS集成核心 |
-| 8 | echart-route | 3 | cn.cycle.echart.route | 无 | 航线规划核心 |
-| 9 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-route, echart-ais | 工作区管理 |
-| 10 | echart-ui | 4 | cn.cycle.echart.ui | echart-core, echart-data, echart-alarm | JavaFX UI控件 |
-| 11 | echart-ui-render | 5 | cn.cycle.echart.ui.render | echart-render | JavaFX Canvas渲染 |
-| 12 | echart-theme | 5 | cn.cycle.echart.theme | 无 | 主题管理 |
-| 13 | echart-plugin | 5 | cn.cycle.echart.plugin | echart-core | 插件系统 |
-| 14 | echart-facade | 6 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace | 服务门面层 |
-| 15 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | 应用入口 |
+| 1 | fxribbon | Ribbon | com.cycle.control | JavaFX | JavaFX Ribbon控件库 |
+| 2 | echart-core | 0 | cn.cycle.echart.core | 无 | 核心框架，平台无关 |
+| 3 | echart-event | 1 | cn.cycle.echart.event | echart-core | 事件总线与通信 |
+| 4 | echart-i18n | 1 | cn.cycle.echart.i18n | 无 | 国际化支持 |
+| 5 | echart-render | 2 | cn.cycle.echart.render | echart-core | 渲染引擎核心 |
+| 6 | echart-data | 2 | cn.cycle.echart.data | 无 | 数据管理核心 |
+| 7 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core | 预警系统核心 |
+| 8 | echart-ais | 3 | cn.cycle.echart.ais | echart-core | AIS集成核心 |
+| 9 | echart-route | 3 | cn.cycle.echart.route | 无 | 航线规划核心 |
+| 10 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-route, echart-ais | 工作区管理 |
+| 11 | echart-ui | 4 | cn.cycle.echart.ui | echart-core, echart-data, echart-alarm, fxribbon | JavaFX UI控件 |
+| 12 | echart-ui-render | 5 | cn.cycle.echart.ui.render | echart-render | JavaFX Canvas渲染 |
+| 13 | echart-theme | 5 | cn.cycle.echart.theme | 无 | 主题管理 |
+| 14 | echart-plugin | 5 | cn.cycle.echart.plugin | echart-core | 插件系统 |
+| 15 | echart-facade | 6 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace | 服务门面层 |
+| 16 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | 应用入口 |
 
 ---
 
-## 1. echart-core (Layer 0)
+## 1. fxribbon (Ribbon Layer)
+**路径**: `ecn/fxribbon/src/main/java/com/cycle/`
+### 类列表
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| Ribbon | 类 | Ribbon控件主容器 |
+| RibbonTab | 类 | Ribbon标签页 |
+| RibbonGroup | 类 | Ribbon功能组 |
+| RibbonMenuBar | 类 | Ribbon菜单栏 |
+### 核心方法
+#### Ribbon
+- `ObservableList<RibbonTab> getTabs()` - 获取标签页列表
+- `RibbonTab getSelectedRibbonTab()` - 获取选中标签页
+- `void setSelectedRibbonTab(RibbonTab)` - 设置选中标签页
+- `Node getQuickAccessBar()` - 获取快速访问栏
+- `Node getWindowControls()` - 获取窗口控件
+#### RibbonTab
+- `ObservableList<RibbonGroup> getRibbonGroups()` - 获取功能组列表
+- `void setContextualColor(String)` - 设置上下文颜色
+- `String getContextualColor()` - 获取上下文颜色
+#### RibbonGroup
+- `String getTitle()` - 获取标题
+- `void setTitle(String)` - 设置标题
+- `ObservableList<Node> getChildren()` - 获取子节点
+---
+## 2. echart-core (Layer 0)
 
 **路径**: `ecn/echart-core/src/main/java/cn/cycle/echart/core/`
 
@@ -236,7 +266,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 2. echart-event (Layer 1)
+## 3. echart-event (Layer 1)
 
 **路径**: `ecn/echart-event/src/main/java/cn/cycle/echart/event/`
 
@@ -281,7 +311,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 3. echart-i18n (Layer 1)
+## 4. echart-i18n (Layer 1)
 
 **路径**: `ecn/echart-i18n/src/main/java/cn/cycle/echart/i18n/`
 
@@ -321,7 +351,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 4. echart-render (Layer 2)
+## 5. echart-render (Layer 2)
 
 **路径**: `ecn/echart-render/src/main/java/cn/cycle/echart/render/`
 
@@ -405,7 +435,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 5. echart-data (Layer 2)
+## 6. echart-data (Layer 2)
 
 **路径**: `ecn/echart-data/src/main/java/cn/cycle/echart/data/`
 
@@ -521,7 +551,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 7. echart-ais (Layer 3)
+## 8. echart-ais (Layer 3)
 
 **路径**: `ecn/echart-ais/src/main/java/cn/cycle/echart/ais/`
 
@@ -741,7 +771,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 10. echart-ui (Layer 4)
+## 11. echart-ui (Layer 4)
 
 **路径**: `ecn/echart-ui/src/main/java/cn/cycle/echart/ui/`
 
@@ -879,7 +909,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 11. echart-ui-render (Layer 5)
+## 12. echart-ui-render (Layer 5)
 
 **路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`
 
@@ -1004,7 +1034,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 12. echart-theme (Layer 5)
+## 13. echart-theme (Layer 5)
 
 **路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`
 
@@ -1122,7 +1152,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 14. echart-facade (Layer 6)
+## 15. echart-facade (Layer 6)
 
 **路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`
 
@@ -1166,7 +1196,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 15. echart-app (Layer 7)
+## 16. echart-app (Layer 7)
 
 **路径**: `ecn/echart-app/src/main/java/cn/cycle/echart/app/`
 
