@@ -82,6 +82,7 @@ public class EChartApp extends Application {
             
             mainView = new MainView();
             mainView.setStage(primaryStage);
+            mainView.setThemeManager(themeManager);
             
             Scene scene = createScene();
             

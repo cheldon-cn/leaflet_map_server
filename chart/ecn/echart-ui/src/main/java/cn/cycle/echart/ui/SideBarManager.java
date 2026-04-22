@@ -70,19 +70,16 @@ public class SideBarManager extends HBox {
         buttonBar.setPrefWidth(40);
         buttonBar.setMinWidth(40);
         buttonBar.setMaxWidth(40);
-        buttonBar.setStyle("-fx-background-color: derive(-fx-base, -10%);");
         
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
         contentPane.getStyleClass().add("sidebar-content-pane");
-        contentPane.setStyle("-fx-background-color: derive(-fx-base, -5%);");
         contentPane.setVisible(false);
         contentPane.setManaged(false);
         HBox.setHgrow(contentPane, Priority.NEVER);
         
         getChildren().addAll(buttonBar, contentPane);
         getStyleClass().add("side-bar-manager");
-        setStyle("-fx-background-color: derive(-fx-base, -10%);");
         setMinWidth(40);
         setPrefWidth(40);
     }

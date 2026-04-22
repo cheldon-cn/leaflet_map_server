@@ -23,3 +23,6 @@ project(':echart-route').projectDir = new File(settingsDir, '../echart-route')
 
 include ':echart-workspace'
 project(':echart-workspace').projectDir = new File(settingsDir, '../echart-workspace')
+
+include ':echart-theme'
+project(':echart-theme').projectDir = new File(settingsDir, '../echart-theme')

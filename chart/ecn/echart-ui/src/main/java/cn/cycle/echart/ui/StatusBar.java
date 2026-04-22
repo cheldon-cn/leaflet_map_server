@@ -128,6 +128,10 @@ public class StatusBar extends org.controlsfx.control.StatusBar {
         setText(status);
     }
 
+    public void showMessage(String message) {
+        setText(message);
+    }
+
     public void setCoordinates(double longitude, double latitude) {
         coordinatesLabel.setText(String.format("经度: %.6f 纬度: %.6f", longitude, latitude));
     }

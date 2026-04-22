@@ -1,5 +1,9 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.theme.Theme;
+import cn.cycle.echart.theme.ThemeManager;
+import cn.cycle.echart.ui.dialog.SettingsDialog;
+import cn.cycle.echart.ui.dialog.ThemeDialog;
 import cn.cycle.echart.ui.panel.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -39,6 +43,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     private TitleBar titleBar;
     private Stage stage;
+    
+    private ThemeManager themeManager;
+    private UIConfig uiConfig;
     
     private boolean isDraggingDivider = false;
 
@@ -97,6 +104,48 @@ public class MainView extends BorderPane implements LifecycleComponent {
         }
     }
     
+    public void setThemeManager(ThemeManager themeManager) {
+        this.themeManager = themeManager;
+        if (themeManager != null) {
+            themeManager.addThemeChangeListener((oldTheme, newTheme) -> {
+                applyTheme(newTheme);
+            });
+        }
+    }
+    
+    public void setAppConfig(UIConfig uiConfig) {
+        this.uiConfig = uiConfig;
+    }
+    
+    private void applyTheme(Theme theme) {
+        if (theme == null || stage == null) {
+            return;
+        }
+        
+        stage.getScene().getRoot().getStyleClass().removeAll("light-theme", "dark-theme", "high-contrast-theme");
+        
+        String themeClass = theme.isDark() ? "dark-theme" : "light-theme";
+        if (theme.getName().contains("high-contrast")) {
+            themeClass = "high-contrast-theme";
+        }
+        stage.getScene().getRoot().getStyleClass().add(themeClass);
+        
+        stage.getScene().getStylesheets().clear();
+        
+        String mainCss = getClass().getResource("/styles/main.css") != null ?
+                getClass().getResource("/styles/main.css").toExternalForm() : null;
+        if (mainCss != null) {
+            stage.getScene().getStylesheets().add(mainCss);
+        }
+        
+        String themeCss = theme.getStyleSheet() != null ?
+                getClass().getResource(theme.getStyleSheet()) != null ?
+                getClass().getResource(theme.getStyleSheet()).toExternalForm() : null : null;
+        if (themeCss != null) {
+            stage.getScene().getStylesheets().add(themeCss);
+        }
+    }
+    
     public void enableWindowResize(Scene scene) {
         if (stage != null && scene != null) {
             new WindowResizer(stage, scene);
@@ -104,12 +153,65 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void showSettingsDialog() {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("设置");
-        alert.setHeaderText("系统设置");
-        alert.setContentText("设置功能开发中...");
-        alert.showAndWait();
+        if (uiConfig == null) {
+            uiConfig = new UIConfig();
+        }
+        
+        SettingsDialog dialog = new SettingsDialog(
+                uiConfig.isAutoSaveEnabled(),
+                uiConfig.getAutoSaveInterval(),
+                uiConfig.getChartCacheSize(),
+                uiConfig.isAlarmSoundEnabled(),
+                uiConfig.getAisUpdateInterval(),
+                uiConfig.getLocale()
+        );
+        
+        if (stage != null) {
+            dialog.setOwner(stage);
+        }
+        
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == javafx.scene.control.ButtonType.OK) {
+                uiConfig.setBoolean("workspace.autoSave", dialog.isAutoSaveEnabled());
+                uiConfig.setInt("workspace.autoSaveInterval", dialog.getAutoSaveInterval());
+                uiConfig.setInt("chart.cacheSize", dialog.getCacheSize());
+                uiConfig.setBoolean("alarm.soundEnabled", dialog.isAlarmSoundEnabled());
+                uiConfig.setInt("ais.updateInterval", dialog.getAisUpdateInterval());
+                uiConfig.setLocale(dialog.getLocale());
+                uiConfig.save();
+                
+                statusBar.showMessage("设置已保存");
+            }
+        });
+    }
+    
+    private void showThemeDialog() {
+        if (themeManager == null) {
+            showInfo("主题设置", "主题管理器未初始化");
+            return;
+        }
+        
+        ThemeDialog dialog = new ThemeDialog(themeManager);
+        
+        if (stage != null) {
+            dialog.setOwner(stage);
+        }
+        
+        dialog.showAndWait().ifPresent(result -> {
+            if (result == javafx.scene.control.ButtonType.OK) {
+                Theme selectedTheme = dialog.getSelectedTheme();
+                if (selectedTheme != null && selectedTheme != themeManager.getCurrentTheme()) {
+                    themeManager.setCurrentTheme(selectedTheme);
+                    
+                    if (uiConfig != null) {
+                        uiConfig.setTheme(selectedTheme.getName());
+                        uiConfig.save();
+                    }
+                    
+                    statusBar.showMessage("主题已切换为: " + selectedTheme.getDisplayName());
+                }
+            }
+        });
     }
 
     private void initializeLayout() {
@@ -443,7 +545,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             @Override
             public void onThemeSettings() {
-                showInfo("主题设置", "主题设置功能开发中...");
+                showThemeDialog();
             }
         });
     }
