@@ -23,8 +23,8 @@ dependencies {
     compile project(':echart-route')
     compile project(':echart-workspace')
     compile project(':echart-theme')
+    compile project(':echart-render')
     compile files('../../install/bin/fxribbon-2.1.0.jar')
-    compile files('../../install/bin/javawrapper-2.1.0.jar')
     compile 'org.controlsfx:controlsfx:8.40.18'
     testCompile group: 'junit', name: 'junit', version: junitVersion
 }

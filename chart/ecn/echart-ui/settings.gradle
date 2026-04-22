@@ -26,3 +26,6 @@ project(':echart-workspace').projectDir = new File(settingsDir, '../echart-works
 
 include ':echart-theme'
 project(':echart-theme').projectDir = new File(settingsDir, '../echart-theme')
+
+include ':echart-render'
+project(':echart-render').projectDir = new File(settingsDir, '../echart-render')

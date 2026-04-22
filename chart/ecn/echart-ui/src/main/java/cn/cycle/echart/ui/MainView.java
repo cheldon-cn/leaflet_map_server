@@ -1,9 +1,6 @@
 package cn.cycle.echart.ui;
 
-import cn.cycle.chart.api.core.ChartViewer;
-import cn.cycle.chart.api.core.Viewport;
-import cn.cycle.chart.api.adapter.ImageDevice;
-import cn.cycle.chart.api.geometry.Envelope;
+import cn.cycle.echart.render.ChartRenderService;
 import cn.cycle.echart.theme.Theme;
 import cn.cycle.echart.theme.ThemeManager;
 import cn.cycle.echart.ui.dialog.SettingsDialog;
@@ -603,25 +600,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
         }
     }
     
-    private ChartViewer chartViewer;
-    private ImageDevice chartImageDevice;
+    private ChartRenderService chartRenderService;
+    private boolean isChartLoaded = false;
     
     private void openChartFile(File chartFile) {
         try {
-            if (chartViewer == null) {
-                chartViewer = new ChartViewer();
-            }
-            
-            int loadResult = chartViewer.loadChart(chartFile.getAbsolutePath());
-            if (loadResult != 0) {
-                showInfo("加载失败", "无法加载海图文件: " + chartFile.getName() + "\n错误码: " + loadResult);
-                return;
-            }
-            
-            Envelope extent = chartViewer.getFullExtent();
-            if (extent == null) {
-                showInfo("加载失败", "无法获取海图范围");
-                return;
+            if (chartRenderService == null) {
+                chartRenderService = new ChartRenderService();
+                setupViewportChangeListener();
             }
             
             int renderWidth = (int) chartDisplayArea.getWidth();
@@ -632,38 +618,25 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 renderHeight = 600;
             }
             
-            if (chartImageDevice == null || 
-                chartImageDevice.getWidth() != renderWidth || 
-                chartImageDevice.getHeight() != renderHeight) {
-                
-                if (chartImageDevice != null) {
-                    chartImageDevice.dispose();
-                }
-                chartImageDevice = new ImageDevice(renderWidth, renderHeight);
-            }
+            ChartRenderService.RenderResult result = chartRenderService.loadAndRender(
+                    chartFile.getAbsolutePath(), renderWidth, renderHeight);
             
-            Viewport viewport = chartViewer.getViewportObject();
-            if (viewport != null) {
-                viewport.setSize(renderWidth, renderHeight);
-                viewport.setExtent(extent);
-            }
-            
-            chartImageDevice.clear();
-            
-            int renderResult = chartViewer.render(chartImageDevice.getNativePtr(), renderWidth, renderHeight);
-            if (renderResult != 0) {
-                showInfo("渲染失败", "海图渲染失败\n错误码: " + renderResult);
+            if (result == null) {
+                showInfo("渲染失败", "无法渲染海图");
                 return;
             }
             
-            byte[] pixels = chartImageDevice.getPixels();
-            if (pixels == null || pixels.length == 0) {
-                showInfo("渲染失败", "无法获取渲染像素数据");
+            if (!result.isSuccess()) {
+                showInfo("加载失败", "无法加载海图文件: " + chartFile.getName() + 
+                        "\n错误: " + result.getErrorMessage());
                 return;
             }
             
-            boolean success = chartDisplayArea.loadImageFromPixels(pixels, renderWidth, renderHeight);
+            boolean success = chartDisplayArea.loadChartImage(
+                    result.getPixels(), result.getWidth(), result.getHeight());
+            
             if (success) {
+                isChartLoaded = true;
                 statusBar.showMessage("已打开海图: " + chartFile.getName());
             } else {
                 showInfo("显示失败", "无法显示海图图像");
@@ -673,6 +646,70 @@ public class MainView extends BorderPane implements LifecycleComponent {
             showInfo("本地库错误", "无法加载本地渲染库: " + e.getMessage());
         } catch (Exception e) {
             showInfo("错误", "打开海图时发生错误: " + e.getMessage());
+        }
+    }
+    
+    private void setupViewportChangeListener() {
+        chartDisplayArea.setViewportChangeListener(new ChartDisplayArea.ViewportChangeListener() {
+            @Override
+            public void onViewportChanged(double centerX, double centerY, double scale) {
+            }
+            
+            @Override
+            public void onPan(double dx, double dy) {
+                if (!isChartLoaded || chartRenderService == null) {
+                    return;
+                }
+                panAndRender(dx, dy);
+            }
+            
+            @Override
+            public void onZoom(double factor, double pivotX, double pivotY) {
+                if (!isChartLoaded || chartRenderService == null) {
+                    return;
+                }
+                zoomAndRender(factor, pivotX, pivotY);
+            }
+        });
+    }
+    
+    private void panAndRender(double dx, double dy) {
+        if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
+            return;
+        }
+        
+        int renderWidth = (int) chartDisplayArea.getWidth();
+        int renderHeight = (int) chartDisplayArea.getHeight();
+        
+        if (renderWidth <= 0 || renderHeight <= 0) {
+            return;
+        }
+        
+        ChartRenderService.RenderResult result = chartRenderService.panAndRender(
+                renderWidth, renderHeight, dx, dy);
+        
+        if (result != null && result.isSuccess()) {
+            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
+        }
+    }
+    
+    private void zoomAndRender(double factor, double pivotX, double pivotY) {
+        if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
+            return;
+        }
+        
+        int renderWidth = (int) chartDisplayArea.getWidth();
+        int renderHeight = (int) chartDisplayArea.getHeight();
+        
+        if (renderWidth <= 0 || renderHeight <= 0) {
+            return;
+        }
+        
+        ChartRenderService.RenderResult result = chartRenderService.zoomAndRender(
+                renderWidth, renderHeight, factor, pivotX, pivotY);
+        
+        if (result != null && result.isSuccess()) {
+            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
         }
     }
     

@@ -16,6 +16,7 @@ buildDir = new File(projectDir, '../../build/ecn/echart-render')
 dependencies {
     compile project(':echart-core')
     compile project(':echart-event')
+    compile files('../../install/bin/javawrapper-2.1.0.jar')
     testCompile group: 'junit', name: 'junit', version: junitVersion
 }
 

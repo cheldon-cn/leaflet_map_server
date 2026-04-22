@@ -76,6 +76,8 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     private String imageFilePath;
     private double imageWidth;
     private double imageHeight;
+    
+    private boolean chartMode = false;
 
     public ChartDisplayArea() {
         this.layers = new ArrayList<>();
@@ -214,6 +216,15 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
             return;
         }
         
+        if (chartMode) {
+            double delta = event.getDeltaY() > 0 ? ZOOM_FACTOR : 1.0 / ZOOM_FACTOR;
+            if (viewportChangeListener != null) {
+                viewportChangeListener.onZoom(delta, event.getX(), event.getY());
+            }
+            event.consume();
+            return;
+        }
+        
         double mouseX = event.getX();
         double mouseY = event.getY();
         
@@ -224,6 +235,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         double newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel * delta));
         
         if (newZoom != zoomLevel) {
+            double oldZoom = zoomLevel;
             zoomLevel = newZoom;
             
             double worldXAfter = screenToWorldX(mouseX);
@@ -231,6 +243,13 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
             
             centerX += worldXBefore - worldXAfter;
             centerY += worldYBefore - worldYAfter;
+            
+            updateWorldBounds();
+            
+            if (viewportChangeListener != null) {
+                viewportChangeListener.onZoom(delta, mouseX, mouseY);
+                viewportChangeListener.onViewportChanged(centerX, centerY, zoomLevel);
+            }
             
             redraw();
         }
@@ -434,6 +453,13 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         Canvas layer = getLayer(LayerType.CHART);
         javafx.scene.canvas.GraphicsContext gc = layer.getGraphicsContext2D();
         
+        if (chartMode && displayImage != null) {
+            double x = (layer.getWidth() - imageWidth) / 2.0;
+            double y = (layer.getHeight() - imageHeight) / 2.0;
+            gc.drawImage(displayImage, x, y, imageWidth, imageHeight);
+            return;
+        }
+        
         gc.save();
         applyTransform(gc);
         
@@ -551,9 +577,22 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     }
 
     public void pan(double dx, double dy) {
+        if (chartMode) {
+            if (viewportChangeListener != null) {
+                viewportChangeListener.onPan(dx, dy);
+            }
+            return;
+        }
+        
         centerX -= dx / zoomLevel;
         centerY -= dy / zoomLevel;
         updateWorldBounds();
+        
+        if (viewportChangeListener != null) {
+            viewportChangeListener.onPan(dx, dy);
+            viewportChangeListener.onViewportChanged(centerX, centerY, zoomLevel);
+        }
+        
         redraw();
     }
 
@@ -727,6 +766,36 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         }
     }
     
+    public boolean loadImageFromPixelsWithoutFit(byte[] pixels, int width, int height) {
+        if (pixels == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        
+        try {
+            int expectedSize = width * height * 4;
+            if (pixels.length < expectedSize) {
+                System.err.println("Pixel data size mismatch. Expected: " + expectedSize + ", Actual: " + pixels.length);
+                return false;
+            }
+            
+            javafx.scene.image.WritablePixelFormat<java.nio.ByteBuffer> format = 
+                javafx.scene.image.PixelFormat.getByteBgraPreInstance();
+            
+            javafx.scene.image.WritableImage writableImage = new javafx.scene.image.WritableImage(width, height);
+            writableImage.getPixelWriter().setPixels(0, 0, width, height, format, 
+                java.nio.ByteBuffer.wrap(pixels), width * 4);
+            
+            this.displayImage = writableImage;
+            this.imageWidth = width;
+            this.imageHeight = height;
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("Failed to load image from pixels: " + e.getMessage());
+            return false;
+        }
+    }
+    
     public boolean loadImageFromBgrPixels(byte[] pixels, int width, int height) {
         if (pixels == null || width <= 0 || height <= 0) {
             return false;
@@ -811,5 +880,68 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         void onMeasureArea();
         void onMeasureBearing();
         void onShowProperties();
+    }
+    
+    public interface ViewportChangeListener {
+        void onViewportChanged(double centerX, double centerY, double scale);
+        void onPan(double dx, double dy);
+        void onZoom(double factor, double pivotX, double pivotY);
+    }
+    
+    private ViewportChangeListener viewportChangeListener;
+    
+    public void setViewportChangeListener(ViewportChangeListener listener) {
+        this.viewportChangeListener = listener;
+    }
+    
+    public ViewportChangeListener getViewportChangeListener() {
+        return viewportChangeListener;
+    }
+    
+    public void setChartMode(boolean chartMode) {
+        this.chartMode = chartMode;
+        if (chartMode) {
+            this.zoomLevel = 1.0;
+            this.centerX = 0;
+            this.centerY = 0;
+        }
+        redraw();
+    }
+    
+    public boolean isChartMode() {
+        return chartMode;
+    }
+    
+    public boolean loadChartImage(byte[] pixels, int width, int height) {
+        if (pixels == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        
+        try {
+            int expectedSize = width * height * 4;
+            if (pixels.length < expectedSize) {
+                System.err.println("Pixel data size mismatch. Expected: " + expectedSize + ", Actual: " + pixels.length);
+                return false;
+            }
+            
+            javafx.scene.image.WritablePixelFormat<java.nio.ByteBuffer> format = 
+                javafx.scene.image.PixelFormat.getByteBgraPreInstance();
+            
+            javafx.scene.image.WritableImage writableImage = new javafx.scene.image.WritableImage(width, height);
+            writableImage.getPixelWriter().setPixels(0, 0, width, height, format, 
+                java.nio.ByteBuffer.wrap(pixels), width * 4);
+            
+            this.displayImage = writableImage;
+            this.imageWidth = width;
+            this.imageHeight = height;
+            this.chartMode = true;
+            
+            redraw();
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("Failed to load chart image: " + e.getMessage());
+            return false;
+        }
     }
 }
