@@ -24,6 +24,7 @@ dependencies {
     compile project(':echart-workspace')
     compile project(':echart-theme')
     compile files('../../install/bin/fxribbon-2.1.0.jar')
+    compile files('../../install/bin/javawrapper-2.1.0.jar')
     compile 'org.controlsfx:controlsfx:8.40.18'
     testCompile group: 'junit', name: 'junit', version: junitVersion
 }

@@ -1,5 +1,9 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.chart.api.core.ChartViewer;
+import cn.cycle.chart.api.core.Viewport;
+import cn.cycle.chart.api.adapter.ImageDevice;
+import cn.cycle.chart.api.geometry.Envelope;
 import cn.cycle.echart.theme.Theme;
 import cn.cycle.echart.theme.ThemeManager;
 import cn.cycle.echart.ui.dialog.SettingsDialog;
@@ -15,8 +19,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.Objects;
 
 /**
@@ -391,7 +397,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             @Override
             public void onOpenWorkspace() {
-                showInfo("打开工作区", "打开工作区功能开发中...");
+                openFile();
             }
             
             @Override
@@ -548,6 +554,126 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 showThemeDialog();
             }
         });
+    }
+    
+    private void openFile() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("打开文件");
+        
+        FileChooser.ExtensionFilter imageFilter = new FileChooser.ExtensionFilter(
+                "图片文件 (*.png, *.jpg, *.bmp, *.webp)", 
+                "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.webp");
+        FileChooser.ExtensionFilter chartFilter = new FileChooser.ExtensionFilter(
+                "海图数据 (*.000)", "*.000");
+        FileChooser.ExtensionFilter allFilter = new FileChooser.ExtensionFilter(
+                "所有文件 (*.*)", "*.*");
+        
+        fileChooser.getExtensionFilters().addAll(imageFilter, chartFilter, allFilter);
+        
+        File selectedFile = fileChooser.showOpenDialog(stage);
+        if (selectedFile == null) {
+            return;
+        }
+        
+        String fileName = selectedFile.getName().toLowerCase();
+        
+        if (isImageFile(fileName)) {
+            openImageFile(selectedFile);
+        } else if (fileName.endsWith(".000")) {
+            openChartFile(selectedFile);
+        } else {
+            showInfo("不支持的文件类型", "不支持的文件格式: " + fileName);
+        }
+    }
+    
+    private boolean isImageFile(String fileName) {
+        return fileName.endsWith(".png") || 
+               fileName.endsWith(".jpg") || 
+               fileName.endsWith(".jpeg") || 
+               fileName.endsWith(".bmp") || 
+               fileName.endsWith(".webp");
+    }
+    
+    private void openImageFile(File imageFile) {
+        boolean success = chartDisplayArea.loadImage(imageFile);
+        if (success) {
+            statusBar.showMessage("已打开图片: " + imageFile.getName());
+        } else {
+            showInfo("打开失败", "无法加载图片文件: " + imageFile.getName());
+        }
+    }
+    
+    private ChartViewer chartViewer;
+    private ImageDevice chartImageDevice;
+    
+    private void openChartFile(File chartFile) {
+        try {
+            if (chartViewer == null) {
+                chartViewer = new ChartViewer();
+            }
+            
+            int loadResult = chartViewer.loadChart(chartFile.getAbsolutePath());
+            if (loadResult != 0) {
+                showInfo("加载失败", "无法加载海图文件: " + chartFile.getName() + "\n错误码: " + loadResult);
+                return;
+            }
+            
+            Envelope extent = chartViewer.getFullExtent();
+            if (extent == null) {
+                showInfo("加载失败", "无法获取海图范围");
+                return;
+            }
+            
+            int renderWidth = (int) chartDisplayArea.getWidth();
+            int renderHeight = (int) chartDisplayArea.getHeight();
+            
+            if (renderWidth <= 0 || renderHeight <= 0) {
+                renderWidth = 800;
+                renderHeight = 600;
+            }
+            
+            if (chartImageDevice == null || 
+                chartImageDevice.getWidth() != renderWidth || 
+                chartImageDevice.getHeight() != renderHeight) {
+                
+                if (chartImageDevice != null) {
+                    chartImageDevice.dispose();
+                }
+                chartImageDevice = new ImageDevice(renderWidth, renderHeight);
+            }
+            
+            Viewport viewport = chartViewer.getViewportObject();
+            if (viewport != null) {
+                viewport.setSize(renderWidth, renderHeight);
+                viewport.setExtent(extent);
+            }
+            
+            chartImageDevice.clear();
+            
+            int renderResult = chartViewer.render(chartImageDevice.getNativePtr(), renderWidth, renderHeight);
+            if (renderResult != 0) {
+                showInfo("渲染失败", "海图渲染失败\n错误码: " + renderResult);
+                return;
+            }
+            
+            byte[] pixels = chartImageDevice.getPixels();
+            if (pixels == null || pixels.length == 0) {
+                showInfo("渲染失败", "无法获取渲染像素数据");
+                return;
+            }
+            
+            boolean success = chartDisplayArea.loadImageFromPixels(pixels, renderWidth, renderHeight);
+            if (success) {
+                statusBar.showMessage("已打开海图: " + chartFile.getName());
+            } else {
+                showInfo("显示失败", "无法显示海图图像");
+            }
+            
+        } catch (UnsatisfiedLinkError e) {
+            showInfo("本地库错误", "无法加载本地渲染库: " + e.getMessage());
+        } catch (Exception e) {
+            showInfo("错误", "打开海图时发生错误: " + e.getMessage());
+        }
     }
     
     private void showInfo(String title, String message) {

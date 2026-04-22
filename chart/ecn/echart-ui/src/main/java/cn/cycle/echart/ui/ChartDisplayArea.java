@@ -7,11 +7,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,6 +71,11 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     private VBox zoomControls;
     private Button zoomInButton;
     private Button zoomOutButton;
+    
+    private Image displayImage;
+    private String imageFilePath;
+    private double imageWidth;
+    private double imageHeight;
 
     public ChartDisplayArea() {
         this.layers = new ArrayList<>();
@@ -429,9 +437,15 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         gc.save();
         applyTransform(gc);
         
-        gc.setStroke(javafx.scene.paint.Color.BLUE);
-        gc.setLineWidth(1);
-        gc.strokeRect(-100, -100, 200, 200);
+        if (displayImage != null) {
+            double halfWidth = imageWidth / 2.0;
+            double halfHeight = imageHeight / 2.0;
+            gc.drawImage(displayImage, -halfWidth, -halfHeight, imageWidth, imageHeight);
+        } else {
+            gc.setStroke(javafx.scene.paint.Color.BLUE);
+            gc.setLineWidth(1);
+            gc.strokeRect(-100, -100, 200, 200);
+        }
         
         gc.restore();
     }
@@ -603,6 +617,171 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         centerY = (minY + maxY) / 2.0;
         
         redraw();
+    }
+    
+    public boolean loadImage(File imageFile) {
+        if (imageFile == null || !imageFile.exists()) {
+            return false;
+        }
+        
+        try {
+            FileInputStream fis = new FileInputStream(imageFile);
+            displayImage = new Image(fis);
+            fis.close();
+            
+            imageFilePath = imageFile.getAbsolutePath();
+            imageWidth = displayImage.getWidth();
+            imageHeight = displayImage.getHeight();
+            
+            fitImageToWindow();
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("Failed to load image: " + imageFile.getPath() + " - " + e.getMessage());
+            displayImage = null;
+            imageFilePath = null;
+            return false;
+        }
+    }
+    
+    public boolean loadImage(String filePath) {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+        return loadImage(new File(filePath));
+    }
+    
+    public void clearImage() {
+        displayImage = null;
+        imageFilePath = null;
+        imageWidth = 0;
+        imageHeight = 0;
+        redraw();
+    }
+    
+    public boolean hasImage() {
+        return displayImage != null;
+    }
+    
+    public String getImageFilePath() {
+        return imageFilePath;
+    }
+    
+    public double getImageWidth() {
+        return imageWidth;
+    }
+    
+    public double getImageHeight() {
+        return imageHeight;
+    }
+    
+    public void fitImageToWindow() {
+        if (displayImage == null || getWidth() <= 0 || getHeight() <= 0) {
+            return;
+        }
+        
+        double scaleX = getWidth() / imageWidth;
+        double scaleY = getHeight() / imageHeight;
+        zoomLevel = Math.min(scaleX, scaleY) * 0.9;
+        
+        centerX = 0;
+        centerY = 0;
+        
+        worldMinX = -imageWidth / 2.0;
+        worldMaxX = imageWidth / 2.0;
+        worldMinY = -imageHeight / 2.0;
+        worldMaxY = imageHeight / 2.0;
+        
+        redraw();
+    }
+    
+    public boolean loadImageFromPixels(byte[] pixels, int width, int height) {
+        if (pixels == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        
+        try {
+            int expectedSize = width * height * 4;
+            if (pixels.length < expectedSize) {
+                System.err.println("Pixel data size mismatch. Expected: " + expectedSize + ", Actual: " + pixels.length);
+                return false;
+            }
+            
+            javafx.scene.image.WritablePixelFormat<java.nio.ByteBuffer> format = 
+                javafx.scene.image.PixelFormat.getByteBgraPreInstance();
+            
+            javafx.scene.image.WritableImage writableImage = new javafx.scene.image.WritableImage(width, height);
+            writableImage.getPixelWriter().setPixels(0, 0, width, height, format, 
+                java.nio.ByteBuffer.wrap(pixels), width * 4);
+            
+            this.displayImage = writableImage;
+            this.imageWidth = width;
+            this.imageHeight = height;
+            
+            fitImageToWindow();
+            
+            return true;
+        } catch (Exception e) {
+            System.err.println("Failed to load image from pixels: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean loadImageFromBgrPixels(byte[] pixels, int width, int height) {
+        if (pixels == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        
+        try {
+            int expectedSize = width * height * 3;
+            if (pixels.length < expectedSize) {
+                System.err.println("Pixel data size mismatch. Expected: " + expectedSize + ", Actual: " + pixels.length);
+                return false;
+            }
+            
+            byte[] bgraPixels = new byte[width * height * 4];
+            for (int i = 0; i < width * height; i++) {
+                int srcIdx = i * 3;
+                int dstIdx = i * 4;
+                bgraPixels[dstIdx] = pixels[srcIdx + 2];     // B -> R
+                bgraPixels[dstIdx + 1] = pixels[srcIdx + 1]; // G -> G
+                bgraPixels[dstIdx + 2] = pixels[srcIdx];     // R -> B
+                bgraPixels[dstIdx + 3] = (byte) 255;         // A
+            }
+            
+            return loadImageFromPixels(bgraPixels, width, height);
+        } catch (Exception e) {
+            System.err.println("Failed to load image from BGR pixels: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean loadImageFromRgbaPixels(byte[] pixels, int width, int height) {
+        if (pixels == null || width <= 0 || height <= 0) {
+            return false;
+        }
+        
+        try {
+            int expectedSize = width * height * 4;
+            if (pixels.length < expectedSize) {
+                System.err.println("Pixel data size mismatch. Expected: " + expectedSize + ", Actual: " + pixels.length);
+                return false;
+            }
+            
+            byte[] bgraPixels = new byte[width * height * 4];
+            for (int i = 0; i < width * height; i++) {
+                int idx = i * 4;
+                bgraPixels[idx] = pixels[idx + 2];     // R -> B
+                bgraPixels[idx + 1] = pixels[idx + 1]; // G -> G
+                bgraPixels[idx + 2] = pixels[idx];     // B -> R
+                bgraPixels[idx + 3] = pixels[idx + 3]; // A -> A
+            }
+            
+            return loadImageFromPixels(bgraPixels, width, height);
+        } catch (Exception e) {
+            System.err.println("Failed to load image from RGBA pixels: " + e.getMessage());
+            return false;
+        }
     }
 
     public enum LayerType {
