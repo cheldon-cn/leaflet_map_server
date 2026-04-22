@@ -1,10 +1,13 @@
 .root {
     -fx-font-family: "Microsoft YaHei", "SimHei", sans-serif;
     -fx-font-size: 12px;
+    -fx-background-color: derive(-fx-base, -15%);
 }
 
 .main-view {
     -fx-background-color: #f5f5f5;
+    -fx-border-color: derive(-fx-base, -30%);
+    -fx-border-width: 1px;
 }
 
 .ribbon-menu {
@@ -50,8 +53,8 @@
 
 .status-bar {
     -fx-background-color: #ffffff;
-    -fx-border-color: #e0e0e0;
-    -fx-border-width: 1 0 0 0;
+    -fx-border-color: derive(-fx-base, -30%);
+    -fx-border-width: 1px 1px 1px 1px;
     -fx-min-height: 24px;
     -fx-pref-height: 24px;
 }
@@ -88,4 +91,358 @@
 
 .alarm-info {
     -fx-text-fill: #3498db;
+}
+
+.title-bar {
+    -fx-background-color: derive(-fx-base, -10%);
+    -fx-border-color: derive(-fx-base, -30%);
+    -fx-border-width: 1px 1px 0 1px;
+}
+
+.title-bar-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.title-bar-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: derive(-fx-text-background-color, 20%);
+    -fx-font-size: 14px;
+    -fx-min-width: 28px;
+    -fx-pref-width: 28px;
+    -fx-min-height: 24px;
+    -fx-pref-height: 24px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.title-bar-button:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+    -fx-text-fill: -fx-text-background-color;
+}
+
+.title-bar-button:pressed {
+    -fx-background-color: derive(-fx-base, 40%);
+}
+
+.title-bar-search {
+    -fx-background-color: derive(-fx-base, 5%);
+    -fx-background-radius: 4px;
+    -fx-border-color: derive(-fx-base, -20%);
+    -fx-border-width: 1;
+    -fx-border-radius: 4px;
+    -fx-prompt-text-fill: derive(-fx-text-background-color, -30%);
+    -fx-min-height: 22px;
+    -fx-pref-height: 22px;
+    -fx-padding: 2 6 2 6;
+}
+
+.title-bar-search:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 1;
+}
+
+.window-controls .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: derive(-fx-text-background-color, 20%);
+    -fx-font-size: 12px;
+    -fx-min-width: 36px;
+    -fx-pref-width: 46px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.window-controls .button:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+    -fx-text-fill: -fx-text-background-color;
+}
+
+.window-controls .button:pressed {
+    -fx-background-color: derive(-fx-base, 40%);
+}
+
+.window-control-close:hover {
+    -fx-background-color: #e81123 !important;
+    -fx-text-fill: white !important;
+}
+
+.window-control-close:pressed {
+    -fx-background-color: #c50f1f !important;
+}
+
+.side-bar-manager {
+    -fx-background-color: derive(-fx-base, -10%);
+}
+
+.sidebar-button-bar {
+    -fx-background-color: derive(-fx-base, -10%);
+    -fx-padding: 4 2 4 2;
+}
+
+.sidebar-toggle-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: derive(-fx-text-background-color, 20%);
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.sidebar-toggle-button:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+}
+
+.sidebar-toggle-button:pressed {
+    -fx-background-color: derive(-fx-base, 40%);
+}
+
+.sidebar-toggle-button:selected {
+    -fx-background-color: derive(-fx-base, 30%);
+    -fx-border-color: derive(-fx-base, -20%);
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 0;
+}
+
+.activity-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-min-width: 40px;
+    -fx-pref-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-height: 40px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.activity-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.activity-button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+}
+
+.activity-button:selected {
+    -fx-background-color: rgba(52, 152, 219, 0.6);
+    -fx-border-color: #3498db;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 0;
+}
+
+.tool-bar {
+    -fx-background-color: derive(-fx-base, -5%);
+    -fx-border-color: derive(-fx-base, -15%);
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 4 6 4 6;
+    -fx-spacing: 4;
+}
+
+.tool-bar .button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: -fx-text-background-color;
+    -fx-min-height: 26px;
+    -fx-pref-height: 26px;
+    -fx-padding: 4 10 4 10;
+    -fx-cursor: hand;
+}
+
+.tool-bar .button:hover {
+    -fx-background-color: derive(-fx-base, 20%);
+}
+
+.tool-bar .button:pressed {
+    -fx-background-color: derive(-fx-base, 40%);
+}
+
+.tool-bar .separator {
+    -fx-padding: 0 4 0 4;
+}
+
+.tool-bar .separator .line {
+    -fx-border-color: derive(-fx-base, -20%);
+    -fx-border-width: 0 1 0 0;
+}
+
+.panel-header {
+    -fx-background-color: derive(-fx-base, -5%);
+    -fx-border-color: derive(-fx-base, -15%);
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 10 8 10;
+}
+
+.panel-header .label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: derive(-fx-text-background-color, -10%);
+}
+
+.panel-content {
+    -fx-background-color: derive(-fx-base, 0%);
+    -fx-padding: 8;
+}
+
+.panel-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: -fx-text-background-color;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
+    -fx-padding: 4 12 4 12;
+    -fx-cursor: hand;
+}
+
+.panel-button:hover {
+    -fx-background-color: derive(-fx-base, 15%);
+}
+
+.panel-button:pressed {
+    -fx-background-color: derive(-fx-base, 30%);
+}
+
+.panel-button:default {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+}
+
+.panel-button:default:hover {
+    -fx-background-color: #2980b9;
+}
+
+.right-tab-manager {
+    -fx-background-color: derive(-fx-base, -5%);
+}
+
+.right-tab-manager .tab-header-area {
+    -fx-padding: 0;
+}
+
+.right-tab-manager .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 8 16 8 16;
+}
+
+.right-tab-manager .tab:hover {
+    -fx-background-color: derive(-fx-base, 10%);
+}
+
+.right-tab-manager .tab:selected {
+    -fx-background-color: derive(-fx-base, 0%);
+    -fx-border-color: #3498db;
+    -fx-border-width: 0 0 2 0;
+}
+
+.layer-manager-panel {
+    -fx-background-color: derive(-fx-base, 0%);
+}
+
+.layer-manager-panel .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6 8 6 8;
+}
+
+.layer-manager-panel .list-cell:hover {
+    -fx-background-color: derive(-fx-base, 10%);
+}
+
+.layer-manager-panel .list-cell:selected {
+    -fx-background-color: derive(-fx-base, 20%);
+    -fx-border-color: #3498db;
+    -fx-border-width: 0 0 0 3;
+}
+
+.chart-display-area {
+    -fx-background-color: derive(-fx-base, 5%);
+}
+
+.zoom-controls {
+    -fx-background-color: rgba(255, 255, 255, 0.85);
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.15), 8, 0, 0, 2);
+    -fx-padding: 6;
+    -fx-spacing: 4;
+}
+
+.zoom-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: derive(-fx-text-background-color, -20%);
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-min-width: 32px;
+    -fx-pref-width: 32px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.zoom-button:hover {
+    -fx-background-color: derive(-fx-base, 15%);
+    -fx-text-fill: -fx-text-background-color;
+}
+
+.zoom-button:pressed {
+    -fx-background-color: derive(-fx-base, 30%);
+}
+
+.context-menu {
+    -fx-background-color: derive(-fx-base, 0%);
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.2), 10, 0, 0, 3);
+    -fx-padding: 4 0 4 0;
+}
+
+.context-menu .menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 8 16 8 16;
+}
+
+.context-menu .menu-item:hover {
+    -fx-background-color: derive(-fx-base, 15%);
+}
+
+.context-menu .menu-item:pressed {
+    -fx-background-color: derive(-fx-base, 30%);
+}
+
+.context-menu .separator-menu-item {
+    -fx-padding: 4 8 4 8;
+}
+
+.context-menu .separator-menu-item .line {
+    -fx-border-color: derive(-fx-base, -15%);
+    -fx-border-width: 1 0 0 0;
+}
+
+.tooltip {
+    -fx-background-color: rgba(50, 50, 50, 0.9);
+    -fx-background-radius: 4px;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-padding: 4 8 4 8;
 }

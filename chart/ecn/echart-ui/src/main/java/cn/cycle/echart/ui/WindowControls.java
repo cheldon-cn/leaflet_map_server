@@ -30,9 +30,15 @@ public class WindowControls extends HBox {
     private double prevWidth;
     private double prevHeight;
     private boolean isMaximized = false;
+    private final boolean showSettingsButton;
 
     public WindowControls(Stage stage) {
+        this(stage, true);
+    }
+    
+    public WindowControls(Stage stage, boolean showSettingsButton) {
         this.stage = stage;
+        this.showSettingsButton = showSettingsButton;
         this.settingsButton = createButton("⚙", "设置", this::onSettings);
         this.minimizeButton = createButton("─", "最小化", this::onMinimize);
         this.maximizeButton = createButton("□", "最大化", this::onMaximize);
@@ -50,7 +56,11 @@ public class WindowControls extends HBox {
         maximizeButton.getStyleClass().add("window-control-maximize");
         closeButton.getStyleClass().add("window-control-close");
         
-        getChildren().addAll(settingsButton, minimizeButton, maximizeButton, closeButton);
+        if (showSettingsButton) {
+            getChildren().addAll(settingsButton, minimizeButton, maximizeButton, closeButton);
+        } else {
+            getChildren().addAll(minimizeButton, maximizeButton, closeButton);
+        }
         
         updateMaximizeButton();
     }

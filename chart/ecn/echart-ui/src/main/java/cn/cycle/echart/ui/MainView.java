@@ -70,8 +70,27 @@ public class MainView extends BorderPane implements LifecycleComponent {
             StackPane.setAlignment(titleBar, Pos.TOP_CENTER);
             rootContainer.getChildren().add(titleBar);
             
-            titleBar.getWindowControls().setOnSettingsAction(() -> {
+            titleBar.setOnSettingsAction(() -> {
                 showSettingsDialog();
+            });
+            
+            titleBar.setOnToggleLeftBar(() -> {
+                toggleSideBar();
+            });
+            
+            titleBar.setOnToggleRightBar(() -> {
+                toggleRightTab();
+            });
+            
+            titleBar.setOnLoginAction(() -> {
+                showInfo("用户登录", "用户登录功能开发中...");
+            });
+            
+            titleBar.setOnSearch(() -> {
+                String searchText = titleBar.getSearchText();
+                if (searchText != null && !searchText.trim().isEmpty()) {
+                    sideBarManager.showPanel("search");
+                }
             });
             
             stage.setMinWidth(800);

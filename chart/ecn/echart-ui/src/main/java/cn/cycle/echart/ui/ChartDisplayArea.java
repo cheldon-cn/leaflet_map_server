@@ -124,7 +124,6 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         zoomInButton.setMinSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
         zoomInButton.setMaxSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
         zoomInButton.getStyleClass().add("zoom-button");
-        zoomInButton.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: black;");
         zoomInButton.setOnAction(e -> zoomIn());
         
         zoomOutButton = new Button("-");
@@ -132,16 +131,14 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         zoomOutButton.setMinSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
         zoomOutButton.setMaxSize(ZOOM_BUTTON_SIZE, ZOOM_BUTTON_SIZE);
         zoomOutButton.getStyleClass().add("zoom-button");
-        zoomOutButton.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: black;");
         zoomOutButton.setOnAction(e -> zoomOut());
         
         zoomControls = new VBox(4);
         zoomControls.getChildren().addAll(zoomInButton, zoomOutButton);
         zoomControls.setAlignment(Pos.CENTER);
-        zoomControls.setPadding(new Insets(4));
+        zoomControls.setPadding(new Insets(6));
         zoomControls.getStyleClass().add("zoom-controls");
         zoomControls.setMouseTransparent(false);
-        zoomControls.setStyle("-fx-background-color: rgba(240, 240, 240, 0.9); -fx-background-radius: 4;");
         zoomControls.setMaxSize(javafx.scene.layout.Region.USE_PREF_SIZE, javafx.scene.layout.Region.USE_PREF_SIZE);
         
         StackPane.setAlignment(zoomControls, Pos.BOTTOM_RIGHT);
