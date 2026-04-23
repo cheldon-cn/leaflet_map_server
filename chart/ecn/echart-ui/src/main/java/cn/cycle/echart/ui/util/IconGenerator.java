@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui.util;
 
+import cn.cycle.echart.core.LogUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -18,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class IconGenerator extends Application {
+
+    private static final String TAG = "IconGenerator";
 
     private static final int ICON_SIZE = 32;
     private static final Color STROKE_COLOR = Color.web("#555555");
@@ -87,10 +90,10 @@ public class IconGenerator extends Application {
             drawer.draw(gc, ICON_SIZE);
 
             saveIcon(canvas, iconName + ".png");
-            System.out.println("Generated: " + iconName + ".png");
+            LogUtil.info(TAG, "Generated: %s.png", iconName);
         }
 
-        System.out.println("All icons generated successfully!");
+        LogUtil.info(TAG, "All icons generated successfully!");
     }
 
     private void saveIcon(Canvas canvas, String fileName) {

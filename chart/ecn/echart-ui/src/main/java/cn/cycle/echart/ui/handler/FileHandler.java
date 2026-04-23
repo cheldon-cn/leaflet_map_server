@@ -58,7 +58,7 @@ public class FileHandler {
         FileChooser.ExtensionFilter allFilter = new FileChooser.ExtensionFilter(
                 "所有文件 (*.*)", "*.*");
         
-        fileChooser.getExtensionFilters().addAll(imageFilter, chartFilter, allFilter);
+        fileChooser.getExtensionFilters().addAll(chartFilter,imageFilter,  allFilter);
         
         File selectedFile = fileChooser.showOpenDialog(stage);
         if (selectedFile == null) {

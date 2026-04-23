@@ -1,5 +1,6 @@
 package cn.cycle.echart.app;
 
+import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.facade.ApplicationFacade;
 import cn.cycle.echart.facade.DefaultApplicationFacade;
 import cn.cycle.echart.facade.FacadeException;
@@ -23,10 +24,12 @@ import java.util.Locale;
  * <p>JavaFX应用程序入口点。</p>
  * 
  * @author Cycle Team
- * @version 1.0.0
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class EChartApp extends Application {
+
+    private static final String TAG = "EChartApp";
 
     private ApplicationFacade facade;
     private ThemeManager themeManager;
@@ -43,7 +46,7 @@ public class EChartApp extends Application {
     public void init() throws Exception {
         super.init();
         
-        System.out.println("Initializing E-Chart Application...");
+        LogUtil.info(TAG, "Initializing E-Chart Application...");
         
         initializePlatformAdapter();
         initializeFacade();
@@ -93,7 +96,7 @@ public class EChartApp extends Application {
             
             primaryStage.show();
             
-            System.out.println("E-Chart Application started successfully.");
+            LogUtil.info(TAG, "E-Chart Application started successfully.");
             
         } catch (Exception e) {
             System.err.println("Failed to start application: " + e.getMessage());
@@ -149,7 +152,7 @@ public class EChartApp extends Application {
     }
 
     protected void shutdown() {
-        System.out.println("Shutting down E-Chart Application...");
+        LogUtil.info(TAG, "Shutting down E-Chart Application...");
         
         try {
             if (facade != null) {
@@ -159,7 +162,7 @@ public class EChartApp extends Application {
             
             ServiceLocator.clear();
             
-            System.out.println("E-Chart Application shutdown complete.");
+            LogUtil.info(TAG, "E-Chart Application shutdown complete.");
             
         } catch (Exception e) {
             System.err.println("Error during shutdown: " + e.getMessage());

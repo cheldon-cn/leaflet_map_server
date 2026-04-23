@@ -1,5 +1,6 @@
 package cn.cycle.echart.plugin;
 
+import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.core.ServiceLocator;
 
 import java.io.File;
@@ -12,10 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>负责插件的加载、卸载、启动和停止。</p>
  * 
  * @author Cycle Team
- * @version 1.0.0
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class PluginManager implements PluginContext {
+
+    private static final String TAG = "PluginManager";
 
     private final ServiceLocator serviceLocator;
     private final Map<String, Plugin> plugins;
@@ -259,13 +262,42 @@ public class PluginManager implements PluginContext {
 
     @Override
     public void log(LogLevel level, String message) {
-        System.out.println("[" + level + "] " + message);
+        switch (level) {
+            case DEBUG:
+                LogUtil.debug(TAG, message);
+                break;
+            case INFO:
+                LogUtil.info(TAG, message);
+                break;
+            case WARN:
+                LogUtil.warn(TAG, message);
+                break;
+            case ERROR:
+                LogUtil.error(TAG, message);
+                break;
+            default:
+                LogUtil.info(TAG, message);
+        }
     }
 
     @Override
     public void log(LogLevel level, String message, Throwable throwable) {
-        System.out.println("[" + level + "] " + message);
-        throwable.printStackTrace(System.out);
+        switch (level) {
+            case DEBUG:
+                LogUtil.debug(TAG, message);
+                break;
+            case INFO:
+                LogUtil.info(TAG, message);
+                break;
+            case WARN:
+                LogUtil.warn(TAG, message);
+                break;
+            case ERROR:
+                LogUtil.error(TAG, message, throwable);
+                break;
+            default:
+                LogUtil.info(TAG, message);
+        }
     }
 
     public enum PluginLifecycleEvent {

@@ -111,7 +111,13 @@ public enum AppEventType {
     // 航点事件
     WAYPOINT_ADDED("waypoint.added", "航点添加"),
     WAYPOINT_REMOVED("waypoint.removed", "航点移除"),
-    WAYPOINT_MODIFIED("waypoint.modified", "航点修改");
+    WAYPOINT_MODIFIED("waypoint.modified", "航点修改"),
+
+    // 日志事件
+    LOG_DEBUG("log.debug", "调试日志"),
+    LOG_INFO("log.info", "信息日志"),
+    LOG_WARN("log.warn", "警告日志"),
+    LOG_ERROR("log.error", "错误日志");
 
     private final String code;
     private final String description;

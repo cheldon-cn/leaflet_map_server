@@ -1,7 +1,12 @@
 package cn.cycle.echart.ui.panel;
 
+import cn.cycle.echart.core.AppEvent;
+import cn.cycle.echart.core.AppEventBus;
+import cn.cycle.echart.core.AppEventType;
+import cn.cycle.echart.core.EventHandler;
 import cn.cycle.echart.ui.FxRightTabPanel;
 import cn.cycle.echart.ui.dialog.ErrorDialog;
+import javafx.animation.AnimationTimer;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
@@ -9,6 +14,7 @@ import javafx.stage.FileChooser;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 日志面板。
@@ -16,19 +22,22 @@ import java.time.format.DateTimeFormatter;
  * <p>显示应用程序日志信息。</p>
  * 
  * @author Cycle Team
- * @version 1.0.0
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class LogPanel extends BorderPane implements FxRightTabPanel {
 
     private static final String TAB_ID = "log-panel";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int MAX_LOG_LENGTH = 100000;
     
     private final TextArea logArea;
     private final TextField filterField;
     private final Button exportButton;
     private final Button clearButton;
     private final Tab tab;
+    private final ConcurrentLinkedQueue<String> logQueue;
+    private final AnimationTimer logFlushTimer;
 
     public LogPanel() {
         this.logArea = new TextArea();
@@ -38,8 +47,11 @@ public class LogPanel extends BorderPane implements FxRightTabPanel {
         this.tab = new Tab("日志");
         this.tab.setContent(this);
         this.tab.setClosable(false);
+        this.logQueue = new ConcurrentLinkedQueue<>();
+        this.logFlushTimer = createFlushTimer();
         
         initializeLayout();
+        subscribeLogEvents();
     }
 
     private void initializeLayout() {
@@ -59,6 +71,47 @@ public class LogPanel extends BorderPane implements FxRightTabPanel {
         getStyleClass().add("log-panel");
         
         log("日志面板已初始化");
+        logFlushTimer.start();
+    }
+
+    private AnimationTimer createFlushTimer() {
+        return new AnimationTimer() {
+            private static final long FLUSH_INTERVAL = 100_000_000L;
+            private long lastFlush = 0;
+            
+            @Override
+            public void handle(long now) {
+                if (now - lastFlush < FLUSH_INTERVAL) {
+                    return;
+                }
+                lastFlush = now;
+                flushLogs();
+            }
+        };
+    }
+
+    private void flushLogs() {
+        if (logQueue.isEmpty()) {
+            return;
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        String log;
+        while ((log = logQueue.poll()) != null) {
+            sb.append(log).append('\n');
+        }
+        
+        if (sb.length() > 0) {
+            try {
+                String currentText = logArea.getText();
+                if (currentText.length() > MAX_LOG_LENGTH) {
+                    logArea.deleteText(0, currentText.length() - MAX_LOG_LENGTH / 2);
+                }
+                logArea.appendText(sb.toString());
+            } catch (Exception e) {
+                System.err.println("[LogPanel] Failed to append log: " + e.getMessage());
+            }
+        }
     }
 
     private ToolBar createToolBar() {
@@ -67,19 +120,51 @@ public class LogPanel extends BorderPane implements FxRightTabPanel {
         return toolBar;
     }
 
+    private void subscribeLogEvents() {
+        AppEventBus bus = AppEventBus.getInstance();
+        
+        bus.subscribe(AppEventType.LOG_DEBUG, new EventHandler<String>() {
+            @Override
+            public void onEvent(AppEvent event, String data) {
+                logDebug(data);
+            }
+        });
+        
+        bus.subscribe(AppEventType.LOG_INFO, new EventHandler<String>() {
+            @Override
+            public void onEvent(AppEvent event, String data) {
+                logInfo(data);
+            }
+        });
+        
+        bus.subscribe(AppEventType.LOG_WARN, new EventHandler<String>() {
+            @Override
+            public void onEvent(AppEvent event, String data) {
+                logWarning(data);
+            }
+        });
+        
+        bus.subscribe(AppEventType.LOG_ERROR, new EventHandler<String>() {
+            @Override
+            public void onEvent(AppEvent event, String data) {
+                logError(data);
+            }
+        });
+    }
+
     public void log(String message) {
         String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
-        logArea.appendText(String.format("[%s] %s%n", timestamp, message));
+        logQueue.offer(String.format("[%s] %s", timestamp, message));
     }
 
     public void logError(String message) {
         String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
-        logArea.appendText(String.format("[%s] ERROR: %s%n", timestamp, message));
+        logQueue.offer(String.format("[%s] ERROR: %s", timestamp, message));
     }
 
     public void logWarning(String message) {
         String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
-        logArea.appendText(String.format("[%s] WARN: %s%n", timestamp, message));
+        logQueue.offer(String.format("[%s] WARN: %s", timestamp, message));
     }
 
     public void logInfo(String message) {
@@ -88,7 +173,7 @@ public class LogPanel extends BorderPane implements FxRightTabPanel {
 
     public void logDebug(String message) {
         String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
-        logArea.appendText(String.format("[%s] DEBUG: %s%n", timestamp, message));
+        logQueue.offer(String.format("[%s] DEBUG: %s", timestamp, message));
     }
 
     private void filterLogs(String keyword) {

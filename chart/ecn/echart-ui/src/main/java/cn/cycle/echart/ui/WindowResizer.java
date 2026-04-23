@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.core.LogUtil;
 import javafx.event.EventHandler;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
@@ -13,13 +14,13 @@ import javafx.stage.Stage;
  * <p>使用Scene级别的事件过滤器，确保捕获所有鼠标事件。</p>
  * 
  * @author Cycle Team
- * @version 1.0.0
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class WindowResizer {
 
+    private static final String TAG = "WindowResizer";
     private static final int RESIZE_MARGIN = 8;
-    private static final boolean DEBUG = false;
     
     private final Stage stage;
     private final Scene scene;
@@ -58,17 +59,13 @@ public class WindowResizer {
                     startHeight = stage.getHeight();
                     startWindowX = stage.getX();
                     startWindowY = stage.getY();
-                    if (DEBUG) {
-                        System.out.println("=== RESIZE START ===");
-                        System.out.println("Direction: " + direction);
-                        System.out.println("Mouse: (" + startX + ", " + startY + ")");
-                        System.out.println("Window: pos=(" + startWindowX + ", " + startWindowY + ") size=(" + startWidth + ", " + startHeight + ")");
-                        System.out.println("Stage actual: width=" + stage.getWidth() + " height=" + stage.getHeight());
-                    }
+                    LogUtil.debug(TAG, "=== RESIZE START ===");
+                    LogUtil.debug(TAG, "Direction: %s", direction);
+                    LogUtil.debug(TAG, "Mouse: (%s, %s)", startX, startY);
+                    LogUtil.debug(TAG, "Window: pos=(%s, %s) size=(%s, %s)", startWindowX, startWindowY, startWidth, startHeight);
+                    LogUtil.debug(TAG, "Stage actual: width=%s height=%s", stage.getWidth(), stage.getHeight());
                     event.consume();
-                    if (DEBUG) {
-                        System.out.println("After consume: event.isConsumed()=" + event.isConsumed());
-                    }
+                    LogUtil.debug(TAG, "After consume: event.isConsumed()=%s", event.isConsumed());
                 }
             }
         };
@@ -92,11 +89,9 @@ public class WindowResizer {
                 double newX = startWindowX;
                 double newY = startWindowY;
                 
-                if (DEBUG) {
-                    System.out.println("=== RESIZE DRAG (before calc) ===");
-                    System.out.println("startHeight=" + startHeight + ", deltaY=" + deltaY);
-                    System.out.println("calc: startHeight - deltaY = " + (startHeight - deltaY));
-                }
+                LogUtil.debug(TAG, "=== RESIZE DRAG (before calc) ===");
+                LogUtil.debug(TAG, "startHeight=%s, deltaY=%s", startHeight, deltaY);
+                LogUtil.debug(TAG, "calc: startHeight - deltaY = %s", (startHeight - deltaY));
                 
                 switch (direction) {
                     case E:
@@ -137,20 +132,16 @@ public class WindowResizer {
                         break;
                 }
                 
-                if (DEBUG) {
-                    System.out.println("=== RESIZE DRAG (after calc) ===");
-                    System.out.println("newHeight=" + newHeight + ", newY=" + newY);
-                    System.out.println("New: pos=(" + newX + ", " + newY + ") size=(" + newWidth + ", " + newHeight + ")");
-                }
+                LogUtil.debug(TAG, "=== RESIZE DRAG (after calc) ===");
+                LogUtil.debug(TAG, "newHeight=%s, newY=%s", newHeight, newY);
+                LogUtil.debug(TAG, "New: pos=(%s, %s) size=(%s, %s)", newX, newY, newWidth, newHeight);
                 
                 stage.setX(newX);
                 stage.setY(newY);
                 stage.setWidth(newWidth);
                 stage.setHeight(newHeight);
                 
-                if (DEBUG) {
-                    System.out.println("After set: stage.getY()=" + stage.getY() + ", stage.getHeight()=" + stage.getHeight());
-                }
+                LogUtil.debug(TAG, "After set: stage.getY()=%s, stage.getHeight()=%s", stage.getY(), stage.getHeight());
                 
                 event.consume();
             }
@@ -170,9 +161,7 @@ public class WindowResizer {
             @Override
             public void handle(MouseEvent event) {
                 if (resizing) {
-                    if (DEBUG) {
-                        System.out.println("=== RESIZE END ===");
-                    }
+                    LogUtil.debug(TAG, "=== RESIZE END ===");
                     resizing = false;
                     direction = ResizeDirection.NONE;
                     updateCursor(event);

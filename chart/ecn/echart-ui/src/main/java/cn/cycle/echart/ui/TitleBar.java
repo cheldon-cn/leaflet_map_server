@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.core.LogUtil;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -18,12 +19,12 @@ import javafx.stage.Stage;
  * <p>包含应用logo、用户登录、设置按钮、标题、搜索框、侧边栏切换按钮和窗口控制按钮。</p>
  * 
  * @author Cycle Team
- * @version 1.0.0
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class TitleBar extends HBox {
 
-    private static final boolean DEBUG = false;
+    private static final String TAG = "TitleBar";
     
     private final Stage stage;
     private final Label titleLabel;
@@ -73,7 +74,7 @@ public class TitleBar extends HBox {
                 view.setImage(logo);
             }
         } catch (Exception e) {
-            if (DEBUG) System.out.println("[TitleBar] Logo not found, using placeholder");
+            LogUtil.debug(TAG, "Logo not found, using placeholder");
         }
         return view;
     }
@@ -163,39 +164,33 @@ public class TitleBar extends HBox {
     private void setupDragHandler() {
         setOnMousePressed(event -> {
             if (event.isConsumed()) {
-                if (DEBUG) System.out.println("[TitleBar] MousePressed: event already consumed, skipping");
+                LogUtil.debug(TAG, "MousePressed: event already consumed, skipping");
                 return;
             }
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
             dragging = true;
-            if (DEBUG) {
-                System.out.println("[TitleBar] MousePressed: offset=(" + xOffset + ", " + yOffset + ")");
-            }
+            LogUtil.debug(TAG, "MousePressed: offset=(%s, %s)", xOffset, yOffset);
         });
         
         setOnMouseDragged(event -> {
             if (event.isConsumed() || !dragging) {
-                if (DEBUG && event.isConsumed()) {
-                    System.out.println("[TitleBar] MouseDragged: event consumed, skipping");
+                if (event.isConsumed()) {
+                    LogUtil.debug(TAG, "MouseDragged: event consumed, skipping");
                 }
                 return;
             }
             if (stage != null && !stage.isMaximized() && !windowControls.isMaximized()) {
                 double newX = event.getScreenX() - xOffset;
                 double newY = event.getScreenY() - yOffset;
-                if (DEBUG) {
-                    System.out.println("[TitleBar] MouseDragged: moving window to (" + newX + ", " + newY + ")");
-                }
+                LogUtil.debug(TAG, "MouseDragged: moving window to (%s, %s)", newX, newY);
                 stage.setX(newX);
                 stage.setY(newY);
             }
         });
         
         setOnMouseReleased(event -> {
-            if (DEBUG) {
-                System.out.println("[TitleBar] MouseReleased: dragging=" + dragging);
-            }
+            LogUtil.debug(TAG, "MouseReleased: dragging=%s", dragging);
             dragging = false;
         });
     }

@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DefaultErrorHandler implements ErrorHandler {
 
+    private static final String TAG = "ErrorHandler";
+
     private final AtomicReference<ErrorCode> lastErrorCode;
     private final AtomicReference<String> lastErrorMessage;
 
@@ -33,16 +35,12 @@ public class DefaultErrorHandler implements ErrorHandler {
         lastErrorMessage.set(message);
         
         StringBuilder sb = new StringBuilder();
-        sb.append("[ERROR] ").append(code.getCode()).append(": ").append(code.getMessage());
+        sb.append(code.getCode()).append(": ").append(code.getMessage());
         if (message != null && !message.isEmpty()) {
             sb.append(" - ").append(message);
         }
         
-        System.err.println(sb.toString());
-        
-        if (cause != null) {
-            cause.printStackTrace(System.err);
-        }
+        LogUtil.error(TAG, sb.toString(), cause);
     }
 
     @Override
@@ -55,12 +53,12 @@ public class DefaultErrorHandler implements ErrorHandler {
         Objects.requireNonNull(code, "code cannot be null");
         
         StringBuilder sb = new StringBuilder();
-        sb.append("[WARN] ").append(code.getCode()).append(": ").append(code.getMessage());
+        sb.append(code.getCode()).append(": ").append(code.getMessage());
         if (message != null && !message.isEmpty()) {
             sb.append(" - ").append(message);
         }
         
-        System.err.println(sb.toString());
+        LogUtil.warn(TAG, sb.toString());
     }
 
     @Override
@@ -68,12 +66,12 @@ public class DefaultErrorHandler implements ErrorHandler {
         Objects.requireNonNull(code, "code cannot be null");
         
         StringBuilder sb = new StringBuilder();
-        sb.append("[INFO] ").append(code.getCode()).append(": ").append(code.getMessage());
+        sb.append(code.getCode()).append(": ").append(code.getMessage());
         if (message != null && !message.isEmpty()) {
             sb.append(" - ").append(message);
         }
         
-        System.out.println(sb.toString());
+        LogUtil.info(TAG, sb.toString());
     }
 
     @Override
