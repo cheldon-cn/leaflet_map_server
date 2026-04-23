@@ -345,3 +345,368 @@ ALARM_TRIGGERED("alarm.triggered", "预警触发");
 ---
 
 **版本**: v1.0
+
+---
+
+## 九、EventBus 实现对比分析
+
+### 9.1 模块结构对比
+
+| 模块 | 类 | 状态 | 说明 |
+|------|-----|------|------|
+| **echart-core** | EventBus | ✅ 活跃 | 接口定义 |
+| | EventHandler | ✅ 活跃 | 事件处理器接口 |
+| | AppEvent | ✅ 活跃 | 事件类 |
+| | AppEventType | ✅ 活跃 | 事件类型枚举 |
+| | AppEventBus | ✅ 活跃 | 单例实现（推荐使用） |
+| | DefaultEventBus | ✅ 活跃 | 普通实现 |
+| **echart-event** | Event | ⚠️ 废弃 | 已被 AppEvent 替代 |
+| | EventType | ⚠️ 废弃 | 已被 AppEventType 替代 |
+| | EventDispatcher | ⚠️ 过渡 | 提供异步分发能力 |
+| | DefaultEventBus | ⚠️ 过渡 | 实现 EventBus 接口 |
+
+### 9.2 类设计对比
+
+#### 9.2.1 事件类对比
+
+| 特性 | AppEvent (echart-core) | Event (echart-event) |
+|------|------------------------|----------------------|
+| **状态** | ✅ 活跃 | ⚠️ @Deprecated |
+| **数据存储** | 单一 data + Map<String, Object> | 单一泛型 data |
+| **链式调用** | ✅ withData() 支持 | ❌ 不支持 |
+| **键值对数据** | ✅ getData(key, type) | ❌ 不支持 |
+| **类型安全** | ✅ 泛型方法获取数据 | ⚠️ 需手动转型 |
+| **时间戳** | ✅ 自动生成 | ✅ 自动生成 |
+| **消费标记** | ❌ 无 | ✅ consume() |
+
+#### 9.2.2 事件类型枚举对比
+
+| 特性 | AppEventType (echart-core) | EventType (echart-event) |
+|------|---------------------------|--------------------------|
+| **状态** | ✅ 活跃 | ⚠️ @Deprecated |
+| **事件数量** | 50+ | 16 |
+| **覆盖范围** | 系统、视图、海图、预警、AIS、航线、日志等 | 渲染、数据源、预警、AIS、航线 |
+| **代码查找** | ✅ fromCode() | ✅ fromCode() |
+| **双向转换** | ✅ toAppEventType() | ✅ toAppEventType() |
+
+#### 9.2.3 EventBus 实现对比
+
+| 特性 | AppEventBus (echart-core) | DefaultEventBus (echart-event) |
+|------|---------------------------|-------------------------------|
+| **设计模式** | 单例模式 | 普通类 |
+| **线程模型** | BlockingQueue + 后台消费者线程 | 直接调用或线程池 |
+| **UI线程调度** | ✅ PlatformAdapter.runOnUiThread() | ❌ 无 |
+| **发布方式** | publish() / publishSync() / publishAsync() | publish() |
+| **队列机制** | ✅ LinkedBlockingQueue | ❌ 无 |
+| **状态管理** | ✅ shutdown() / isRunning() | ✅ shutdown() |
+| **统计信息** | ✅ getPendingEventCount() / getSubscribedEventTypes() | ❌ 无 |
+
+### 9.3 架构差异
+
+#### echart-core 架构（推荐）
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AppEventBus (单例)                        │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  BlockingQueue<AppEvent>  │  后台消费者线程             ││
+│  └─────────────────────────────────────────────────────────┘│
+│                            │                                │
+│                            ▼                                │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  PlatformAdapter.runOnUiThread()  │  UI线程调度         ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+         ▲                                    │
+         │ publish                            │ dispatch
+         │                                    ▼
+┌────────┴────────┐              ┌────────────────────────────┐
+│  任意线程发布    │              │  EventHandler.onEvent()   │
+│  (非阻塞)        │              │  (UI线程执行)              │
+└─────────────────┘              └────────────────────────────┘
+```
+
+#### echart-event 架构（废弃）
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  DefaultEventBus (普通类)                    │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  Map<EventType, List<Handler>>  │  直接调用             ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+         ▲                                    │
+         │ publish                            │ dispatch
+         │                                    ▼
+┌────────┴────────┐              ┌────────────────────────────┐
+│  同一线程发布    │              │  EventHandler.onEvent()   │
+│  (阻塞)          │              │  (发布线程执行)            │
+└─────────────────┘              └────────────────────────────┘
+```
+
+### 9.4 定位差异
+
+| 维度 | echart-core | echart-event |
+|------|-------------|--------------|
+| **定位** | 核心事件总线，应用级通信 | 旧版事件系统，已废弃 |
+| **使用者** | UI层、业务层、服务层 | 仅遗留代码 |
+| **线程安全** | ✅ 线程安全，支持跨线程发布 | ⚠️ 需调用方保证 |
+| **UI友好** | ✅ 自动调度到UI线程 | ❌ 需手动处理 |
+| **扩展性** | ✅ 易于添加新事件类型 | ⚠️ 已停止维护 |
+
+### 9.5 迁移建议
+
+#### 9.5.1 当前状态
+
+```
+echart-event 模块中的类已标记 @Deprecated，并提供：
+- Event.toAppEvent()      → 转换为 AppEvent
+- EventType.toAppEventType() → 转换为 AppEventType
+- AppEventType.fromCode() → 兼容旧事件代码
+```
+
+#### 9.5.2 迁移步骤
+
+| 步骤 | 内容 | 状态 |
+|------|------|------|
+| 1 | echart-event 类标记 @Deprecated | ✅ 已完成 |
+| 2 | AppEventType 合并 EventType 所有事件 | ✅ 已完成 |
+| 3 | 提供双向转换方法 | ✅ 已完成 |
+| 4 | 移除 echart-event 依赖 | ⏳ 待执行 |
+| 5 | 删除 echart-event 模块 | ⏳ 待执行 |
+
+#### 9.5.3 迁移代码示例
+
+```java
+// 旧代码（echart-event）
+Event<Alarm> event = new Event<>(this, EventType.ALARM_TRIGGERED, alarm);
+eventBus.publish(event);
+
+// 新代码（echart-core）
+AppEvent event = new AppEvent(this, AppEventType.ALARM_TRIGGERED, alarm);
+AppEventBus.getInstance().publish(event);
+
+// 链式调用（新特性）
+AppEvent event = new AppEvent(this, AppEventType.VIEWPORT_CHANGED)
+    .withData("centerX", 120.5)
+    .withData("centerY", 31.2)
+    .withData("zoomLevel", 12);
+```
+
+### 9.6 结论
+
+| 结论 | 说明 |
+|------|------|
+| **推荐使用** | echart-core 中的 AppEventBus |
+| **废弃模块** | echart-event 已标记废弃，仅保留过渡兼容 |
+| **迁移优先级** | 中等（不影响功能，但可简化依赖） |
+| **迁移风险** | 低（已提供转换方法） |
+
+**建议**：在新功能开发中统一使用 `AppEventBus`，逐步移除对 `echart-event` 模块的依赖。
+
+---
+
+**版本**: v1.1
+
+---
+
+## 十、模块合并可行性分析
+
+### 10.1 当前依赖现状
+
+#### 10.1.1 echart-event 被依赖情况
+
+| 模块 | build.gradle 声明 | 实际代码引用 | 引用位置 |
+|------|-------------------|--------------|----------|
+| echart-alarm | ✅ compile project(':echart-event') | ❌ 无 | - |
+| echart-ais | ✅ compile project(':echart-event') | ❌ 无 | - |
+| echart-route | ✅ compile project(':echart-event') | ❌ 无 | - |
+| echart-workspace | ✅ compile project(':echart-event') | ❌ 无 | - |
+| echart-facade | ✅ compile project(':echart-event') | ✅ 有 | DefaultApplicationFacade.java |
+
+#### 10.1.2 唯一实际引用
+
+```java
+// echart-facade/src/main/java/cn/cycle/echart/facade/DefaultApplicationFacade.java:46
+eventBus = new cn.cycle.echart.event.DefaultEventBus();
+```
+
+**分析**：仅 1 处代码实际使用了 echart-event，其余模块仅为声明性依赖，可安全移除。
+
+### 10.2 合并可行性评估
+
+| 评估维度 | 评估结果 | 说明 |
+|----------|----------|------|
+| **代码引用** | ✅ 可行 | 仅 1 处引用，迁移成本低 |
+| **功能重复** | ✅ 可行 | echart-core 已完全覆盖 echart-event 功能 |
+| **接口兼容** | ✅ 可行 | echart-event.DefaultEventBus 实现 echart-core.EventBus 接口 |
+| **事件类型** | ✅ 可行 | AppEventType 已合并 EventType 所有事件 |
+| **依赖链** | ✅ 可行 | 移除后不影响编译和运行 |
+
+**结论**：合并完全可行，风险极低。
+
+### 10.3 合并必要性评估
+
+#### 10.3.1 当前架构问题
+
+```
+Layer 0 - 核心层
+  └── echart-core（包含完整 EventBus 实现）
+
+Layer 1 - 基础服务层
+  └── echart-event（已废弃，功能重复）  ← 冗余模块
+```
+
+#### 10.3.2 必要性分析
+
+| 必要性维度 | 评估 | 说明 |
+|------------|------|------|
+| **简化依赖** | ⭐⭐⭐⭐⭐ | 移除 1 个模块，减少 5 个模块的依赖声明 |
+| **降低维护成本** | ⭐⭐⭐⭐⭐ | 无需维护废弃代码 |
+| **避免混淆** | ⭐⭐⭐⭐ | 开发者不会误用废弃 API |
+| **构建效率** | ⭐⭐⭐ | 减少编译时间和 JAR 数量 |
+| **功能影响** | ⭐⭐⭐⭐⭐ | 无功能影响 |
+
+**结论**：合并必要性高，收益明显。
+
+### 10.4 合并优缺点对比
+
+#### 10.4.1 优点
+
+| 优点 | 说明 | 影响程度 |
+|------|------|----------|
+| **简化依赖关系** | 移除 Layer 1 中的冗余模块 | ⭐⭐⭐⭐⭐ |
+| **减少 JAR 数量** | 从 15 个 JAR 减少到 14 个 | ⭐⭐⭐ |
+| **降低维护成本** | 无需维护 @Deprecated 代码 | ⭐⭐⭐⭐ |
+| **避免 API 误用** | 开发者不会误用 Event/EventType | ⭐⭐⭐⭐ |
+| **统一事件模型** | 全局使用 AppEvent/AppEventType | ⭐⭐⭐⭐⭐ |
+| **减少编译时间** | 少编译 1 个模块 | ⭐⭐ |
+| **清晰架构层次** | 消除功能重复的层级 | ⭐⭐⭐⭐ |
+
+#### 10.4.2 缺点
+
+| 缺点 | 说明 | 影响程度 | 缓解措施 |
+|------|------|----------|----------|
+| **迁移工作量** | 需修改 6 个 build.gradle | ⭐⭐ | 脚本批量处理 |
+| **代码修改** | 需修改 1 处代码引用 | ⭐ | 直接替换 |
+| **版本兼容** | 外部系统可能依赖 echart-event | ⭐ | 无外部依赖 |
+| **回滚困难** | 删除后难以恢复 | ⭐⭐ | Git 历史保留 |
+
+#### 10.4.3 优缺点权衡
+
+```
+优点总分: 30 分 (7项 × 平均4.3分)
+缺点总分: 6 分  (4项 × 平均1.5分)
+
+收益/成本比: 5:1
+```
+
+**结论**：优点远大于缺点，合并收益显著。
+
+### 10.5 合并实施方案
+
+#### 10.5.1 迁移步骤
+
+| 步骤 | 内容 | 工作量 | 风险 |
+|------|------|--------|------|
+| 1 | 修改 DefaultApplicationFacade.java 使用 echart-core.DefaultEventBus | 5分钟 | 低 |
+| 2 | 移除 echart-alarm/build.gradle 对 echart-event 的依赖 | 1分钟 | 无 |
+| 3 | 移除 echart-ais/build.gradle 对 echart-event 的依赖 | 1分钟 | 无 |
+| 4 | 移除 echart-route/build.gradle 对 echart-event 的依赖 | 1分钟 | 无 |
+| 5 | 移除 echart-workspace/build.gradle 对 echart-event 的依赖 | 1分钟 | 无 |
+| 6 | 移除 echart-facade/build.gradle 对 echart-event 的依赖 | 1分钟 | 无 |
+| 7 | 全量编译验证 | 2分钟 | 低 |
+| 8 | 删除 echart-event 模块目录 | 1分钟 | 无 |
+
+**总工作量**：约 15 分钟
+
+#### 10.5.2 代码修改详情
+
+```java
+// 修改前（echart-facade/DefaultApplicationFacade.java:46）
+eventBus = new cn.cycle.echart.event.DefaultEventBus();
+
+// 修改后
+eventBus = new cn.cycle.echart.core.DefaultEventBus();
+// 或使用单例
+eventBus = cn.cycle.echart.core.AppEventBus.getInstance();
+```
+
+#### 10.5.3 build.gradle 修改模板
+
+```groovy
+// 修改前
+dependencies {
+    compile project(':echart-core')
+    compile project(':echart-event')  // 删除此行
+    ...
+}
+
+// 修改后
+dependencies {
+    compile project(':echart-core')
+    ...
+}
+```
+
+### 10.6 合并后架构
+
+```
+Layer 0 - 核心层
+  └── echart-core（包含 EventBus、AppEvent、AppEventType、EventHandler）
+
+Layer 1 - 基础服务层
+  └── echart-i18n（原 Layer 1 的 echart-event 已移除）
+
+Layer 2 - 核心功能层
+  ├── echart-render
+  └── echart-data
+
+Layer 3 - 业务功能层
+  ├── echart-alarm（依赖 core, i18n）
+  ├── echart-ais（依赖 core, alarm）
+  ├── echart-route（依赖 core, i18n, data）
+  └── echart-workspace（依赖 core）
+
+Layer 4 - UI基础层
+  └── echart-ui
+
+Layer 5 - 扩展功能层
+  ├── echart-plugin
+  ├── echart-theme
+  └── echart-ui-render
+
+Layer 6 - 服务门面层
+  └── echart-facade（依赖 core, alarm, ais, route, workspace, plugin）
+
+Layer 7 - 应用层
+  └── echart-app
+```
+
+### 10.7 风险评估与缓解
+
+| 风险 | 可能性 | 影响 | 缓解措施 |
+|------|--------|------|----------|
+| 编译失败 | 低 | 低 | 全量编译验证 |
+| 运行时错误 | 低 | 中 | 单元测试覆盖 |
+| 外部依赖 | 无 | 无 | 无外部系统依赖 echart-event |
+| 回滚需求 | 低 | 低 | Git 历史可恢复 |
+
+### 10.8 结论与建议
+
+| 项目 | 结论 |
+|------|------|
+| **可行性** | ✅ 完全可行，仅 1 处代码需修改 |
+| **必要性** | ✅ 必要性高，收益明显 |
+| **风险** | ✅ 风险极低，可控 |
+| **工作量** | ✅ 约 15 分钟，成本极低 |
+| **建议** | **立即执行合并** |
+
+**执行建议**：
+1. 优先级：高
+2. 执行时机：当前迭代
+3. 验证方式：全量编译 + 功能测试
+
+---
+
+**版本**: v1.2

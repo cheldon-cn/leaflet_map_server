@@ -15,7 +15,6 @@ buildDir = new File(projectDir, '../../build/ecn/echart-workspace')
 
 dependencies {
     compile project(':echart-core')
-    compile project(':echart-event')
     compile project(':echart-data')
     compile project(':echart-alarm')
     compile project(':echart-ais')

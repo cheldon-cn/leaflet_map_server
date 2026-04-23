@@ -43,7 +43,7 @@ public class DefaultApplicationFacade implements ApplicationFacade {
         }
         
         try {
-            eventBus = new cn.cycle.echart.event.DefaultEventBus();
+            eventBus = new cn.cycle.echart.core.DefaultEventBus();
             initializeManagers();
             registerServices();
             

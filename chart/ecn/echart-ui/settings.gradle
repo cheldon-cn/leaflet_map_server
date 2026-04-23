@@ -3,9 +3,6 @@ rootProject.name = 'echart-ui'
 include ':echart-core'
 project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
 
-include ':echart-event'
-project(':echart-event').projectDir = new File(settingsDir, '../echart-event')
-
 include ':echart-i18n'
 project(':echart-i18n').projectDir = new File(settingsDir, '../echart-i18n')
 

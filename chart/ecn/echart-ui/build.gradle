@@ -15,7 +15,6 @@ buildDir = new File(projectDir, '../../build/ecn/echart-ui')
 
 dependencies {
     compile project(':echart-core')
-    compile project(':echart-event')
     compile project(':echart-i18n')
     compile project(':echart-data')
     compile project(':echart-alarm')

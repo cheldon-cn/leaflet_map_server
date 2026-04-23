@@ -62,14 +62,6 @@ if !ERRORLEVEL! EQU 0 (
     set /a FAIL_COUNT+=1
 )
 
-echo.
-echo [Layer 1] Building echart-event ...
-call :BuildModule echart-event
-if !ERRORLEVEL! EQU 0 (
-    set /a SUCCESS_COUNT+=1
-) else (
-    set /a FAIL_COUNT+=1
-)
 
 echo.
 echo [Layer 1] Building echart-i18n ...
@@ -245,7 +237,7 @@ exit /b %ERRORLEVEL%
 :CopyJars
 set COPIED_COUNT=0
 
-for %%M in (echart-core echart-event echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-ui echart-ui-render echart-theme echart-plugin echart-facade echart-app) do (
+for %%M in (echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-ui echart-ui-render echart-theme echart-plugin echart-facade echart-app) do (
     set JAR_SRC=%BUILD_ROOT%%%M\libs\%%M-%JAR_VERSION%.jar
     if exist "!JAR_SRC!" (
         copy /Y "!JAR_SRC!" "%INSTALL_DIR%" >nul

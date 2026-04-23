@@ -38,8 +38,7 @@ call "%GRADLE_CMD%" -p ecn\echart-core build -x test
 if errorlevel 1 goto :build_error
 
 echo.
-echo [Layer 1] Building echart-event, echart-i18n...
-call "%GRADLE_CMD%" -p ecn\echart-event build -x test
+echo [Layer 1] Building  echart-i18n...
 call "%GRADLE_CMD%" -p ecn\echart-i18n build -x test
 
 echo.
@@ -84,7 +83,7 @@ if not exist "%INSTALL_DIR%" (
 )
 
 echo Installing JAR files...
-for %%m in (echart-core echart-event echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-ui echart-ui-render echart-theme echart-plugin echart-facade echart-app) do (
+for %%m in (echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-ui echart-ui-render echart-theme echart-plugin echart-facade echart-app) do (
     if exist "%BUILD_ROOT%\%%m\libs\%%m-*.jar" (
         for %%f in ("%BUILD_ROOT%\%%m\libs\%%m-*.jar") do (
             echo %%~nf | findstr /C:"-sources" >nul

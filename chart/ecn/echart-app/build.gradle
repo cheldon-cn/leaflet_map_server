@@ -18,7 +18,6 @@ mainClassName = 'cn.cycle.echart.app.EChartApp'
 
 dependencies {
     compile project(':echart-core')
-    compile project(':echart-event')
     compile project(':echart-i18n')
     compile project(':echart-data')
     compile project(':echart-render')

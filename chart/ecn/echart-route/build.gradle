@@ -15,7 +15,6 @@ buildDir = new File(projectDir, '../../build/ecn/echart-route')
 
 dependencies {
     compile project(':echart-core')
-    compile project(':echart-event')
     compile project(':echart-data')
     testCompile group: 'junit', name: 'junit', version: junitVersion
 }

@@ -48,7 +48,6 @@
 |------|----------|----------|
 | fxribbon | fxribbon-2.1.0.jar | build/ecn/fxribbon/libs/ |
 | echart-core | echart-core-1.2.1-alpha.jar | build/ecn/echart-core/libs/ |
-| echart-event | echart-event-1.2.1-alpha.jar | build/ecn/echart-event/libs/ |
 | echart-i18n | echart-i18n-1.2.1-alpha.jar | build/ecn/echart-i18n/libs/ |
 | echart-render | echart-render-1.2.1-alpha.jar | build/ecn/echart-render/libs/ |
 | echart-data | echart-data-1.2.1-alpha.jar | build/ecn/echart-data/libs/ |
@@ -83,8 +82,7 @@ Ribbon Layer: fxribbon (JavaFX Ribbon控件库，无依赖)
     ↓
 Layer 0: echart-core (无依赖)
     ↓
-Layer 1: echart-event (依赖 echart-core)
-         echart-i18n (无依赖)
+Layer 1: echart-i18n (无依赖)
     ↓
 Layer 2: echart-render (依赖 echart-core)
          echart-data (无依赖)
@@ -113,7 +111,7 @@ Layer 7: echart-app (依赖所有模块)
 |------|------|-------|
 | 1 | fxribbon | Ribbon |
 | 2 | echart-core | 0 |
-| 3 | echart-event, echart-i18n | 1 |
+| 3 | echart-i18n | 1 |
 | 4 | echart-render, echart-data | 2 |
 | 5 | echart-alarm, echart-ais, echart-route, echart-workspace | 3 |
 | 6 | echart-ui | 4 |
@@ -129,20 +127,19 @@ Layer 7: echart-app (依赖所有模块)
 |------|--------|-------|--------|------|------|
 | 1 | fxribbon | Ribbon | com.cycle.control | JavaFX | JavaFX Ribbon控件库 |
 | 2 | echart-core | 0 | cn.cycle.echart.core | 无 | 核心框架，平台无关 |
-| 3 | echart-event | 1 | cn.cycle.echart.event | echart-core | 事件总线与通信 |
-| 4 | echart-i18n | 1 | cn.cycle.echart.i18n | 无 | 国际化支持 |
-| 5 | echart-render | 2 | cn.cycle.echart.render | echart-core | 渲染引擎核心 |
-| 6 | echart-data | 2 | cn.cycle.echart.data | 无 | 数据管理核心 |
-| 7 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core | 预警系统核心 |
-| 8 | echart-ais | 3 | cn.cycle.echart.ais | echart-core | AIS集成核心 |
-| 9 | echart-route | 3 | cn.cycle.echart.route | 无 | 航线规划核心 |
-| 10 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-route, echart-ais | 工作区管理 |
-| 11 | echart-ui | 4 | cn.cycle.echart.ui | echart-core, echart-data, echart-alarm, fxribbon | JavaFX UI控件 |
-| 12 | echart-ui-render | 5 | cn.cycle.echart.ui.render | echart-render | JavaFX Canvas渲染 |
-| 13 | echart-theme | 5 | cn.cycle.echart.theme | 无 | 主题管理 |
-| 14 | echart-plugin | 5 | cn.cycle.echart.plugin | echart-core | 插件系统 |
-| 15 | echart-facade | 6 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace | 服务门面层 |
-| 16 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | 应用入口 |
+| 3 | echart-i18n | 1 | cn.cycle.echart.i18n | 无 | 国际化支持 |
+| 4 | echart-render | 2 | cn.cycle.echart.render | echart-core | 渲染引擎核心 |
+| 5 | echart-data | 2 | cn.cycle.echart.data | 无 | 数据管理核心 |
+| 6 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core | 预警系统核心 |
+| 7 | echart-ais | 3 | cn.cycle.echart.ais | echart-core | AIS集成核心 |
+| 8 | echart-route | 3 | cn.cycle.echart.route | 无 | 航线规划核心 |
+| 9 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-route, echart-ais | 工作区管理 |
+| 10 | echart-ui | 4 | cn.cycle.echart.ui | echart-core, echart-data, echart-alarm, fxribbon | JavaFX UI控件 |
+| 11 | echart-ui-render | 5 | cn.cycle.echart.ui.render | echart-render | JavaFX Canvas渲染 |
+| 12 | echart-theme | 5 | cn.cycle.echart.theme | 无 | 主题管理 |
+| 13 | echart-plugin | 5 | cn.cycle.echart.plugin | echart-core | 插件系统 |
+| 14 | echart-facade | 6 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace | 服务门面层 |
+| 15 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | 应用入口 |
 
 ---
 
@@ -266,52 +263,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 3. echart-event (Layer 1)
-
-**路径**: `ecn/echart-event/src/main/java/cn/cycle/echart/event/`
-
-### 类列表
-
-| 类名 | 类型 | 说明 |
-|------|------|------|
-| Event<T> | 类 | 泛型事件 |
-| EventType | 枚举 | 事件类型 |
-| EventDispatcher | 类 | 事件调度器 |
-| DefaultEventBus | 类 | 默认事件总线实现 |
-
-### 核心方法
-
-#### Event<T>
-- `EventType getType()` - 获取事件类型
-- `T getData()` - 获取事件数据
-- `long getTimestamp()` - 获取时间戳
-- `boolean isConsumed()` - 是否已消费
-- `void consume()` - 消费事件
-
-#### EventType
-- `String getCode()` - 获取事件代码
-- `String getDescription()` - 获取事件描述
-- `static EventType fromCode(String)` - 根据代码获取类型
-
-#### EventDispatcher
-- `void dispatch(AppEvent)` - 同步调度事件
-- `void dispatchAsync(AppEvent)` - 异步调度事件
-- `boolean dispatchAndWait(AppEvent, long)` - 调度并等待
-- `void shutdown()` - 关闭调度器
-- `boolean isShutdown()` - 是否已关闭
-
-#### DefaultEventBus
-- `void publish(AppEvent)` - 发布事件
-- `void unsubscribe(AppEventType, EventHandler<?>)` - 取消订阅
-- `void subscribeAll(EventHandler<Object>)` - 订阅所有
-- `void unsubscribeAll(EventHandler<Object>)` - 取消所有订阅
-- `void clear()` - 清除订阅
-- `int getSubscriberCount(AppEventType)` - 订阅者数量
-- `int getTotalSubscriberCount()` - 总订阅者数量
-
----
-
-## 4. echart-i18n (Layer 1)
+## 3. echart-i18n (Layer 1)
 
 **路径**: `ecn/echart-i18n/src/main/java/cn/cycle/echart/i18n/`
 
@@ -351,7 +303,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 5. echart-render (Layer 2)
+## 4. echart-render (Layer 2)
 
 **路径**: `ecn/echart-render/src/main/java/cn/cycle/echart/render/`
 
@@ -435,7 +387,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 6. echart-data (Layer 2)
+## 5. echart-data (Layer 2)
 
 **路径**: `ecn/echart-data/src/main/java/cn/cycle/echart/data/`
 
@@ -551,7 +503,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 8. echart-ais (Layer 3)
+## 7. echart-ais (Layer 3)
 
 **路径**: `ecn/echart-ais/src/main/java/cn/cycle/echart/ais/`
 
@@ -771,7 +723,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 11. echart-ui (Layer 4)
+## 10. echart-ui (Layer 4)
 
 **路径**: `ecn/echart-ui/src/main/java/cn/cycle/echart/ui/`
 
@@ -909,7 +861,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 12. echart-ui-render (Layer 5)
+## 11. echart-ui-render (Layer 5)
 
 **路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`
 
@@ -1034,7 +986,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 13. echart-theme (Layer 5)
+## 12. echart-theme (Layer 5)
 
 **路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`
 
@@ -1152,7 +1104,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 15. echart-facade (Layer 6)
+## 14. echart-facade (Layer 6)
 
 **路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`
 
@@ -1196,7 +1148,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 16. echart-app (Layer 7)
+## 15. echart-app (Layer 7)
 
 **路径**: `ecn/echart-app/src/main/java/cn/cycle/echart/app/`
 
@@ -1252,8 +1204,7 @@ Layer 7: echart-app (依赖所有模块)
 ```
 Layer 0:  echart-core
             │
-Layer 1:  ├── echart-event ── echart-core
-            ├── echart-i18n
+Layer 1:  ├── echart-i18n
             │
 Layer 2:  ├── echart-render ── echart-core
             ├── echart-data
@@ -1283,7 +1234,7 @@ Layer 7:  └── echart-app ── 所有模块
 | 功能领域 | 模块 | 关键类 |
 |----------|------|--------|
 | 生命周期管理 | echart-core | LifecycleComponent, AbstractLifecycleComponent |
-| 事件通信 | echart-core, echart-event | EventBus, DefaultEventBus, Event, EventDispatcher |
+| 事件通信 | echart-core | EventBus, DefaultEventBus, AppEvent, AppEventType, EventHandler |
 | 服务定位 | echart-core | ServiceLocator |
 | 错误处理 | echart-core | ErrorHandler, DefaultErrorHandler, ErrorCode |
 | 缓存 | echart-core | LRUCache |
