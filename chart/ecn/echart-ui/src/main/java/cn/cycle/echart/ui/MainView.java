@@ -1,10 +1,8 @@
 package cn.cycle.echart.ui;
 
-import cn.cycle.echart.render.ChartRenderService;
 import cn.cycle.echart.theme.Theme;
 import cn.cycle.echart.theme.ThemeManager;
-import cn.cycle.echart.ui.dialog.SettingsDialog;
-import cn.cycle.echart.ui.dialog.ThemeDialog;
+import cn.cycle.echart.ui.handler.*;
 import cn.cycle.echart.ui.panel.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -16,10 +14,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
 import java.util.Objects;
 
 /**
@@ -55,6 +51,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private boolean initialized = false;
     private boolean active = false;
     private boolean disposed = false;
+    
+    private FileHandler fileHandler;
+    private ViewHandler viewHandler;
+    private ChartHandler chartHandler;
+    private RouteHandler routeHandler;
+    private AlarmHandler alarmHandler;
+    private MeasureHandler measureHandler;
+    private ToolsHandler toolsHandler;
 
     public MainView() {
         this.rootContainer = new StackPane();
@@ -81,15 +85,15 @@ public class MainView extends BorderPane implements LifecycleComponent {
             rootContainer.getChildren().add(titleBar);
             
             titleBar.setOnSettingsAction(() -> {
-                showSettingsDialog();
+                toolsHandler.onOptions();
             });
             
             titleBar.setOnToggleLeftBar(() -> {
-                toggleSideBar();
+                viewHandler.toggleSideBar();
             });
             
             titleBar.setOnToggleRightBar(() -> {
-                toggleRightTab();
+                viewHandler.toggleRightTab();
             });
             
             titleBar.setOnLoginAction(() -> {
@@ -109,6 +113,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     public void setThemeManager(ThemeManager themeManager) {
         this.themeManager = themeManager;
+        if (toolsHandler != null) {
+            toolsHandler.setThemeManager(themeManager);
+        }
         if (themeManager != null) {
             themeManager.addThemeChangeListener((oldTheme, newTheme) -> {
                 applyTheme(newTheme);
@@ -118,6 +125,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     public void setAppConfig(UIConfig uiConfig) {
         this.uiConfig = uiConfig;
+        if (toolsHandler != null) {
+            toolsHandler.setUiConfig(uiConfig);
+        }
     }
     
     private void applyTheme(Theme theme) {
@@ -153,68 +163,6 @@ public class MainView extends BorderPane implements LifecycleComponent {
         if (stage != null && scene != null) {
             new WindowResizer(stage, scene);
         }
-    }
-    
-    private void showSettingsDialog() {
-        if (uiConfig == null) {
-            uiConfig = new UIConfig();
-        }
-        
-        SettingsDialog dialog = new SettingsDialog(
-                uiConfig.isAutoSaveEnabled(),
-                uiConfig.getAutoSaveInterval(),
-                uiConfig.getChartCacheSize(),
-                uiConfig.isAlarmSoundEnabled(),
-                uiConfig.getAisUpdateInterval(),
-                uiConfig.getLocale()
-        );
-        
-        if (stage != null) {
-            dialog.setOwner(stage);
-        }
-        
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == javafx.scene.control.ButtonType.OK) {
-                uiConfig.setBoolean("workspace.autoSave", dialog.isAutoSaveEnabled());
-                uiConfig.setInt("workspace.autoSaveInterval", dialog.getAutoSaveInterval());
-                uiConfig.setInt("chart.cacheSize", dialog.getCacheSize());
-                uiConfig.setBoolean("alarm.soundEnabled", dialog.isAlarmSoundEnabled());
-                uiConfig.setInt("ais.updateInterval", dialog.getAisUpdateInterval());
-                uiConfig.setLocale(dialog.getLocale());
-                uiConfig.save();
-                
-                statusBar.showMessage("设置已保存");
-            }
-        });
-    }
-    
-    private void showThemeDialog() {
-        if (themeManager == null) {
-            showInfo("主题设置", "主题管理器未初始化");
-            return;
-        }
-        
-        ThemeDialog dialog = new ThemeDialog(themeManager);
-        
-        if (stage != null) {
-            dialog.setOwner(stage);
-        }
-        
-        dialog.showAndWait().ifPresent(result -> {
-            if (result == javafx.scene.control.ButtonType.OK) {
-                Theme selectedTheme = dialog.getSelectedTheme();
-                if (selectedTheme != null && selectedTheme != themeManager.getCurrentTheme()) {
-                    themeManager.setCurrentTheme(selectedTheme);
-                    
-                    if (uiConfig != null) {
-                        uiConfig.setTheme(selectedTheme.getName());
-                        uiConfig.save();
-                    }
-                    
-                    statusBar.showMessage("主题已切换为: " + selectedTheme.getDisplayName());
-                }
-            }
-        });
     }
 
     private void initializeLayout() {
@@ -382,335 +330,197 @@ public class MainView extends BorderPane implements LifecycleComponent {
         rightTabManager.registerPanel(new PropertyPanel());
         rightTabManager.registerPanel(new TerminalPanel());
         
+        initializeHandlers();
         setupRibbonActions();
+    }
+    
+    private void initializeHandlers() {
+        MessageCallback messageCallback = this::showInfo;
+        
+        fileHandler = new FileHandler(stage, chartDisplayArea, statusBar, messageCallback);
+        
+        viewHandler = new ViewHandler(chartDisplayArea, sideBarManager, rightTabManager, 
+                centerSplitPane, statusBar, this::updateDividerPositions);
+        
+        chartHandler = new ChartHandler(sideBarManager, messageCallback);
+        
+        routeHandler = new RouteHandler(messageCallback);
+        
+        alarmHandler = new AlarmHandler(messageCallback);
+        
+        measureHandler = new MeasureHandler(messageCallback);
+        
+        toolsHandler = new ToolsHandler(stage, statusBar, messageCallback);
+        if (themeManager != null) {
+            toolsHandler.setThemeManager(themeManager);
+        }
+        if (uiConfig != null) {
+            toolsHandler.setUiConfig(uiConfig);
+        }
     }
     
     private void setupRibbonActions() {
         ribbonMenuBar.setActionListener(new RibbonMenuBar.RibbonActionListener() {
             @Override
             public void onNewWorkspace() {
-                showInfo("新建工作区", "新建工作区功能开发中...");
+                fileHandler.onNewWorkspace();
             }
             
             @Override
             public void onOpenWorkspace() {
-                openFile();
+                fileHandler.onOpenWorkspace();
             }
             
             @Override
             public void onSaveWorkspace() {
-                showInfo("保存工作区", "保存工作区功能开发中...");
+                fileHandler.onSaveWorkspace();
             }
             
             @Override
             public void onExport() {
-                showInfo("导出", "导出功能开发中...");
+                fileHandler.onExport();
             }
             
             @Override
             public void onPrint() {
-                showInfo("打印", "打印功能开发中...");
+                fileHandler.onPrint();
             }
             
             @Override
             public void onZoomIn() {
-                chartDisplayArea.zoomIn();
+                viewHandler.onZoomIn();
             }
             
             @Override
             public void onZoomOut() {
-                chartDisplayArea.zoomOut();
+                viewHandler.onZoomOut();
             }
             
             @Override
             public void onFitToWindow() {
-                chartDisplayArea.fitToWindow();
+                viewHandler.onFitToWindow();
             }
             
             @Override
             public void onToggleSideBar() {
-                toggleSideBar();
+                viewHandler.onToggleSideBar();
             }
             
             @Override
             public void onToggleRightTab() {
-                toggleRightTab();
+                viewHandler.onToggleRightTab();
             }
             
             @Override
             public void onToggleStatusBar() {
-                if (getBottom() == null) {
-                    setBottom(statusBar);
-                } else {
-                    setBottom(null);
-                }
+                viewHandler.onToggleStatusBar(MainView.this);
             }
             
             @Override
             public void onLoadChart() {
-                showInfo("加载海图", "加载海图功能开发中...");
+                chartHandler.onLoadChart();
             }
             
             @Override
             public void onUnloadChart() {
-                showInfo("卸载海图", "卸载海图功能开发中...");
+                chartHandler.onUnloadChart();
             }
             
             @Override
             public void onLayerManager() {
-                sideBarManager.showPanel("layers");
+                chartHandler.onLayerManager();
             }
             
             @Override
             public void onPropertyQuery() {
-                showInfo("属性查询", "属性查询功能开发中...");
+                chartHandler.onPropertyQuery();
             }
             
             @Override
             public void onFeatureSearch() {
-                sideBarManager.showPanel("search");
+                chartHandler.onFeatureSearch();
             }
             
             @Override
             public void onCreateRoute() {
-                showInfo("创建航线", "创建航线功能开发中...");
+                routeHandler.onCreateRoute();
             }
             
             @Override
             public void onEditRoute() {
-                showInfo("编辑航线", "编辑航线功能开发中...");
+                routeHandler.onEditRoute();
             }
             
             @Override
             public void onDeleteRoute() {
-                showInfo("删除航线", "删除航线功能开发中...");
+                routeHandler.onDeleteRoute();
             }
             
             @Override
             public void onImportRoute() {
-                showInfo("导入航线", "导入航线功能开发中...");
+                routeHandler.onImportRoute();
             }
             
             @Override
             public void onExportRoute() {
-                showInfo("导出航线", "导出航线功能开发中...");
+                routeHandler.onExportRoute();
             }
             
             @Override
             public void onCheckRoute() {
-                showInfo("航线检查", "航线检查功能开发中...");
+                routeHandler.onCheckRoute();
             }
             
             @Override
             public void onAlarmSettings() {
-                showInfo("预警设置", "预警设置功能开发中...");
+                alarmHandler.onAlarmSettings();
             }
             
             @Override
             public void onAlarmRules() {
-                showInfo("预警规则", "预警规则功能开发中...");
+                alarmHandler.onAlarmRules();
             }
             
             @Override
             public void onAlarmHistory() {
-                showInfo("预警历史", "预警历史功能开发中...");
+                alarmHandler.onAlarmHistory();
             }
             
             @Override
             public void onAlarmStatistics() {
-                showInfo("预警统计", "预警统计功能开发中...");
+                alarmHandler.onAlarmStatistics();
             }
             
             @Override
             public void onAlarmTest() {
-                showInfo("预警测试", "预警测试功能开发中...");
+                alarmHandler.onAlarmTest();
             }
             
             @Override
             public void onMeasureDistance() {
-                showInfo("距离测量", "距离测量功能开发中...");
+                measureHandler.onMeasureDistance();
             }
             
             @Override
             public void onMeasureArea() {
-                showInfo("面积测量", "面积测量功能开发中...");
+                measureHandler.onMeasureArea();
             }
             
             @Override
             public void onMeasureBearing() {
-                showInfo("方位测量", "方位测量功能开发中...");
+                measureHandler.onMeasureBearing();
             }
             
             @Override
             public void onOptions() {
-                showSettingsDialog();
+                toolsHandler.onOptions();
             }
             
             @Override
             public void onThemeSettings() {
-                showThemeDialog();
+                toolsHandler.onThemeSettings();
             }
         });
-    }
-    
-    private void openFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("打开文件");
-        
-        FileChooser.ExtensionFilter imageFilter = new FileChooser.ExtensionFilter(
-                "图片文件 (*.png, *.jpg, *.bmp, *.webp)", 
-                "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.webp");
-        FileChooser.ExtensionFilter chartFilter = new FileChooser.ExtensionFilter(
-                "海图数据 (*.000)", "*.000");
-        FileChooser.ExtensionFilter allFilter = new FileChooser.ExtensionFilter(
-                "所有文件 (*.*)", "*.*");
-        
-        fileChooser.getExtensionFilters().addAll(imageFilter, chartFilter, allFilter);
-        
-        File selectedFile = fileChooser.showOpenDialog(stage);
-        if (selectedFile == null) {
-            return;
-        }
-        
-        String fileName = selectedFile.getName().toLowerCase();
-        
-        if (isImageFile(fileName)) {
-            openImageFile(selectedFile);
-        } else if (fileName.endsWith(".000")) {
-            openChartFile(selectedFile);
-        } else {
-            showInfo("不支持的文件类型", "不支持的文件格式: " + fileName);
-        }
-    }
-    
-    private boolean isImageFile(String fileName) {
-        return fileName.endsWith(".png") || 
-               fileName.endsWith(".jpg") || 
-               fileName.endsWith(".jpeg") || 
-               fileName.endsWith(".bmp") || 
-               fileName.endsWith(".webp");
-    }
-    
-    private void openImageFile(File imageFile) {
-        boolean success = chartDisplayArea.loadImage(imageFile);
-        if (success) {
-            statusBar.showMessage("已打开图片: " + imageFile.getName());
-        } else {
-            showInfo("打开失败", "无法加载图片文件: " + imageFile.getName());
-        }
-    }
-    
-    private ChartRenderService chartRenderService;
-    private boolean isChartLoaded = false;
-    
-    private void openChartFile(File chartFile) {
-        try {
-            if (chartRenderService == null) {
-                chartRenderService = new ChartRenderService();
-                setupViewportChangeListener();
-            }
-            
-            int renderWidth = (int) chartDisplayArea.getWidth();
-            int renderHeight = (int) chartDisplayArea.getHeight();
-            
-            if (renderWidth <= 0 || renderHeight <= 0) {
-                renderWidth = 800;
-                renderHeight = 600;
-            }
-            
-            ChartRenderService.RenderResult result = chartRenderService.loadAndRender(
-                    chartFile.getAbsolutePath(), renderWidth, renderHeight);
-            
-            if (result == null) {
-                showInfo("渲染失败", "无法渲染海图");
-                return;
-            }
-            
-            if (!result.isSuccess()) {
-                showInfo("加载失败", "无法加载海图文件: " + chartFile.getName() + 
-                        "\n错误: " + result.getErrorMessage());
-                return;
-            }
-            
-            boolean success = chartDisplayArea.loadChartImage(
-                    result.getPixels(), result.getWidth(), result.getHeight());
-            
-            if (success) {
-                isChartLoaded = true;
-                statusBar.showMessage("已打开海图: " + chartFile.getName());
-            } else {
-                showInfo("显示失败", "无法显示海图图像");
-            }
-            
-        } catch (UnsatisfiedLinkError e) {
-            showInfo("本地库错误", "无法加载本地渲染库: " + e.getMessage());
-        } catch (Exception e) {
-            showInfo("错误", "打开海图时发生错误: " + e.getMessage());
-        }
-    }
-    
-    private void setupViewportChangeListener() {
-        chartDisplayArea.setViewportChangeListener(new ChartDisplayArea.ViewportChangeListener() {
-            @Override
-            public void onViewportChanged(double centerX, double centerY, double scale) {
-            }
-            
-            @Override
-            public void onPan(double dx, double dy) {
-                if (!isChartLoaded || chartRenderService == null) {
-                    return;
-                }
-                panAndRender(dx, dy);
-            }
-            
-            @Override
-            public void onZoom(double factor, double pivotX, double pivotY) {
-                if (!isChartLoaded || chartRenderService == null) {
-                    return;
-                }
-                zoomAndRender(factor, pivotX, pivotY);
-            }
-        });
-    }
-    
-    private void panAndRender(double dx, double dy) {
-        if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
-            return;
-        }
-        
-        int renderWidth = (int) chartDisplayArea.getWidth();
-        int renderHeight = (int) chartDisplayArea.getHeight();
-        
-        if (renderWidth <= 0 || renderHeight <= 0) {
-            return;
-        }
-        
-        ChartRenderService.RenderResult result = chartRenderService.panAndRender(
-                renderWidth, renderHeight, dx, dy);
-        
-        if (result != null && result.isSuccess()) {
-            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
-        }
-    }
-    
-    private void zoomAndRender(double factor, double pivotX, double pivotY) {
-        if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
-            return;
-        }
-        
-        int renderWidth = (int) chartDisplayArea.getWidth();
-        int renderHeight = (int) chartDisplayArea.getHeight();
-        
-        if (renderWidth <= 0 || renderHeight <= 0) {
-            return;
-        }
-        
-        ChartRenderService.RenderResult result = chartRenderService.zoomAndRender(
-                renderWidth, renderHeight, factor, pivotX, pivotY);
-        
-        if (result != null && result.isSuccess()) {
-            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
-        }
     }
     
     private void showInfo(String title, String message) {
@@ -740,10 +550,10 @@ public class MainView extends BorderPane implements LifecycleComponent {
         sideBarManager.setExpandedWidth(config.getSidebarWidth());
         
         if (config.isShowRightPanel()) {
-            showRightTab();
+            viewHandler.showRightTab();
             rightTabManager.setPrefWidth(config.getRightPanelWidth());
         } else {
-            hideRightTab();
+            viewHandler.hideRightTab();
         }
         
         chartDisplayArea.setColumnCount(config.getChartColumns());
@@ -864,40 +674,27 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
 
     public void showSideBar() {
-        sideBarManager.expandPanel();
+        viewHandler.showSideBar();
     }
 
     public void hideSideBar() {
-        sideBarManager.collapsePanel();
+        viewHandler.hideSideBar();
     }
 
     public void toggleSideBar() {
-        if (sideBarManager.isExpanded()) {
-            hideSideBar();
-        } else {
-            showSideBar();
-        }
+        viewHandler.toggleSideBar();
     }
 
     public void showRightTab() {
-        if (!centerSplitPane.getItems().contains(rightTabManager)) {
-            centerSplitPane.getItems().add(rightTabManager);
-            javafx.application.Platform.runLater(() -> {
-                updateDividerPositions();
-            });
-        }
+        viewHandler.showRightTab();
     }
 
     public void hideRightTab() {
-        centerSplitPane.getItems().remove(rightTabManager);
+        viewHandler.hideRightTab();
     }
 
     public void toggleRightTab() {
-        if (centerSplitPane.getItems().contains(rightTabManager)) {
-            hideRightTab();
-        } else {
-            showRightTab();
-        }
+        viewHandler.toggleRightTab();
     }
 
     public void setLayoutMode(ResponsiveLayoutManager.LayoutMode mode) {
