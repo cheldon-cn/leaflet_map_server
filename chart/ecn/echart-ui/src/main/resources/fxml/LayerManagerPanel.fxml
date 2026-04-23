@@ -10,76 +10,63 @@
       fx:controller="cn.cycle.echart.ui.panel.LayerManagerPanelController"
       styleClass="layer-manager-panel" spacing="0">
     
-    <HBox styleClass="panel-header" alignment="CENTER_LEFT" minHeight="36" prefHeight="36">
-        <Label text="图层管理" styleClass="panel-title"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="configButton" styleClass="flat-button, icon-button" 
-                onAction="#onConfig">
-            <tooltip><Tooltip text="面板配置"/></tooltip>
-            <graphic>
-                <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
-                    <Image url="@/icons/settings.png"/>
-                </ImageView>
-            </graphic>
-        </Button>
-        <Button fx:id="hideButton" styleClass="flat-button, icon-button" 
-                onAction="#onHide">
-            <tooltip><Tooltip text="隐藏面板"/></tooltip>
-            <graphic>
-                <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
-                    <Image url="@/icons/sidebar_32x321.png"/>
-                </ImageView>
-            </graphic>
-        </Button>
-    </HBox>
+    <StackPane styleClass="panel-header" minHeight="36" prefHeight="36">
+        <HBox alignment="CENTER_LEFT" mouseTransparent="true">
+            <Label text="图层管理" styleClass="panel-title"/>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="2">
+            <Button fx:id="configButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onConfig">
+                <tooltip><Tooltip text="面板配置"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/settings.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="hideButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onHide">
+                <tooltip><Tooltip text="隐藏面板"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/sidebar_32x321.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </StackPane>
     
-    <HBox styleClass="toolbar-flat" alignment="CENTER_LEFT" minHeight="32" prefHeight="32" spacing="2">
-        <Button fx:id="addButton" styleClass="flat-button" text="添加" onAction="#onAddLayer">
-            <tooltip><Tooltip text="添加图层"/></tooltip>
-            <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
-                    <Image url="@/icons/new_32x32.png"/>
-                </ImageView>
-            </graphic>
-        </Button>
-        <Button fx:id="removeButton" styleClass="flat-button" text="移除" onAction="#onRemoveLayer">
-            <tooltip><Tooltip text="移除图层"/></tooltip>
-            <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
-                    <Image url="@/icons/delete_32x32.png"/>
-                </ImageView>
-            </graphic>
-        </Button>
-        <Separator orientation="VERTICAL"/>
-        <Button fx:id="moveUpButton" styleClass="flat-button" text="上移" onAction="#onMoveUp">
+    <HBox styleClass="toolbar-flat" alignment="CENTER_LEFT" minHeight="28" prefHeight="28" spacing="1">
+        <Separator orientation="VERTICAL" prefWidth="2"/>
+        <Button fx:id="moveUpButton" styleClass="flat-button, icon-button" prefWidth="16" onAction="#onMoveUp">
             <tooltip><Tooltip text="上移图层"/></tooltip>
             <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                <ImageView fitWidth="12" fitHeight="12" preserveRatio="true">
                     <Image url="@/icons/zoom-in_32x32.png"/>
                 </ImageView>
             </graphic>
         </Button>
-        <Button fx:id="moveDownButton" styleClass="flat-button" text="下移" onAction="#onMoveDown">
+        <Button fx:id="moveDownButton" styleClass="flat-button, icon-button" prefWidth="16" onAction="#onMoveDown">
             <tooltip><Tooltip text="下移图层"/></tooltip>
             <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                <ImageView fitWidth="12" fitHeight="12" preserveRatio="true">
                     <Image url="@/icons/zoom-out_32x32.png"/>
                 </ImageView>
             </graphic>
         </Button>
-        <Separator orientation="VERTICAL"/>
-        <Button fx:id="expandAllButton" styleClass="flat-button" text="展开" onAction="#onExpandAll">
+        <Separator orientation="VERTICAL" prefWidth="2"/>
+        <Button fx:id="expandAllButton" styleClass="flat-button, icon-button" prefWidth="16" onAction="#onExpandAll">
             <tooltip><Tooltip text="展开所有"/></tooltip>
             <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                <ImageView fitWidth="12" fitHeight="12" preserveRatio="true">
                     <Image url="@/icons/layers_32x32.png"/>
                 </ImageView>
             </graphic>
         </Button>
-        <Button fx:id="collapseAllButton" styleClass="flat-button" text="折叠" onAction="#onCollapseAll">
+        <Button fx:id="collapseAllButton" styleClass="flat-button, icon-button" prefWidth="16" onAction="#onCollapseAll">
             <tooltip><Tooltip text="折叠所有"/></tooltip>
             <graphic>
-                <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                <ImageView fitWidth="12" fitHeight="12" preserveRatio="true">
                     <Image url="@/icons/layers_small.png"/>
                 </ImageView>
             </graphic>

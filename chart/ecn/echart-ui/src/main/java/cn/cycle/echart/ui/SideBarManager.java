@@ -76,12 +76,22 @@ public class SideBarManager extends HBox {
         contentPane.getStyleClass().add("sidebar-content-pane");
         contentPane.setVisible(false);
         contentPane.setManaged(false);
-        HBox.setHgrow(contentPane, Priority.NEVER);
+        HBox.setHgrow(contentPane, Priority.ALWAYS);
         
         getChildren().addAll(buttonBar, contentPane);
         getStyleClass().add("side-bar-manager");
         setMinWidth(40);
         setPrefWidth(40);
+        
+        widthProperty().addListener((obs, oldVal, newVal) -> {
+            double totalWidth = newVal.doubleValue();
+            if (isExpanded && totalWidth > 40) {
+                double contentWidth = totalWidth - 40;
+                expandedWidth = contentWidth;
+                lastExpandedWidth = contentWidth;
+                contentPane.setPrefWidth(contentWidth);
+            }
+        });
     }
 
     public void registerPanel(SideBarPanel panel) {
@@ -152,17 +162,11 @@ public class SideBarManager extends HBox {
         }
         
         button.setOnAction(e -> {
-            if (button.isSelected()) {
-                if (activePanel != null && activePanel.getId().equals(panel.getId())) {
-                    collapsePanel();
-                    button.setSelected(false);
-                } else {
-                    showPanel(panel.getId());
-                }
+            if (isExpanded && activePanel != null && activePanel.getId().equals(panel.getId())) {
+                collapsePanel();
             } else {
-                if (activePanel != null && activePanel.getId().equals(panel.getId())) {
-                    collapsePanel();
-                }
+                showPanel(panel.getId());
+                button.setSelected(true);
             }
         });
         
@@ -278,6 +282,8 @@ public class SideBarManager extends HBox {
         expandedWidth = width;
         
         contentPane.setPrefWidth(width);
+        contentPane.setMinWidth(0);
+        setMinWidth(40);
         setPrefWidth(40 + width);
         currentWidthProperty.set(40 + width);
     }
@@ -294,6 +300,7 @@ public class SideBarManager extends HBox {
         contentPane.setVisible(false);
         contentPane.setManaged(false);
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
+        setMinWidth(40);
         setPrefWidth(40);
         currentWidthProperty.set(40);
         
@@ -349,6 +356,16 @@ public class SideBarManager extends HBox {
             contentPane.setPrefWidth(width);
             setPrefWidth(40 + width);
             currentWidthProperty.set(40 + width);
+        }
+    }
+    
+    public void syncWidthFromSplitPane(double totalWidth) {
+        double contentWidth = totalWidth - 40;
+        if (contentWidth > 0 && isExpanded) {
+            this.expandedWidth = contentWidth;
+            this.lastExpandedWidth = contentWidth;
+            contentPane.setPrefWidth(contentWidth);
+            currentWidthProperty.set(totalWidth);
         }
     }
 

@@ -6,11 +6,13 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.util.*;
@@ -34,6 +36,10 @@ public class LayerManagerPanelController implements Initializable {
     private Consumer<LayerNode> onLayerSelected;
     private Consumer<LayerNode> onLayerAction;
     private Runnable onHidePanel;
+    private Runnable onConfigPanel;
+    private Consumer<LayerNode> onViewProperties;
+    private boolean showLayerIcon = true;
+    private boolean autoExpandChart = true;
     
     private static final String CATEGORY_CHART = "海图数据";
     private static final String CATEGORY_ROUTE = "航线数据";
@@ -108,6 +114,44 @@ public class LayerManagerPanelController implements Initializable {
     
     @FXML
     private void onConfig() {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("面板配置");
+        dialog.setHeaderText("图层管理面板配置");
+        
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+        
+        CheckBox showIconCheckBox = new CheckBox("显示图层图标");
+        showIconCheckBox.setSelected(showLayerIcon);
+        
+        CheckBox autoExpandCheckBox = new CheckBox("自动展开海图节点");
+        autoExpandCheckBox.setSelected(autoExpandChart);
+        
+        content.getChildren().addAll(showIconCheckBox, autoExpandCheckBox);
+        
+        ButtonType okButton = new ButtonType("确定", ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("取消", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButton, cancelButton);
+        dialog.getDialogPane().setContent(content);
+        
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == okButton) {
+                showLayerIcon = showIconCheckBox.isSelected();
+                autoExpandChart = autoExpandCheckBox.isSelected();
+                refreshTreeDisplay();
+            }
+            return null;
+        });
+        
+        dialog.showAndWait();
+        
+        if (onConfigPanel != null) {
+            onConfigPanel.run();
+        }
+    }
+    
+    private void refreshTreeDisplay() {
+        layerTreeView.refresh();
     }
     
     @FXML
@@ -232,8 +276,11 @@ public class LayerManagerPanelController implements Initializable {
     @FXML
     private void onViewProperties() {
         TreeItem<LayerNode> selectedItem = layerTreeView.getSelectionModel().getSelectedItem();
-        if (selectedItem != null && onLayerSelected != null) {
-            onLayerSelected.accept(selectedItem.getValue());
+        if (selectedItem != null) {
+            LayerNode node = selectedItem.getValue();
+            if (onViewProperties != null) {
+                onViewProperties.accept(node);
+            }
         }
     }
     
@@ -318,6 +365,14 @@ public class LayerManagerPanelController implements Initializable {
         this.onHidePanel = callback;
     }
     
+    public void setOnConfigPanel(Runnable callback) {
+        this.onConfigPanel = callback;
+    }
+    
+    public void setOnViewProperties(Consumer<LayerNode> callback) {
+        this.onViewProperties = callback;
+    }
+    
     public TreeView<LayerNode> getLayerTreeView() {
         return layerTreeView;
     }
@@ -326,11 +381,16 @@ public class LayerManagerPanelController implements Initializable {
         private final HBox content;
         private final CheckBox checkBox;
         private final Label label;
+        private final ImageView iconView;
         
         public LayerTreeCell() {
             checkBox = new CheckBox();
             label = new Label();
-            content = new HBox(8, checkBox, label);
+            iconView = new ImageView();
+            iconView.setFitWidth(16);
+            iconView.setFitHeight(16);
+            iconView.setPreserveRatio(true);
+            content = new HBox(8, checkBox, iconView, label);
             content.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
         }
         
@@ -348,10 +408,60 @@ public class LayerManagerPanelController implements Initializable {
                     item.setVisible(newVal);
                 });
                 
+                updateIcon(item.getType());
+                
                 setGraphic(content);
                 setText(null);
                 
                 updateStyle(item.getType());
+            }
+        }
+        
+        private void updateIcon(LayerNodeType type) {
+            String iconPath = getIconPathForType(type);
+            if (iconPath != null) {
+                try {
+                    Image icon = new Image(getClass().getResourceAsStream(iconPath));
+                    if (icon != null) {
+                        iconView.setImage(icon);
+                        iconView.setVisible(true);
+                        iconView.setManaged(true);
+                    } else {
+                        iconView.setVisible(false);
+                        iconView.setManaged(false);
+                    }
+                } catch (Exception e) {
+                    iconView.setVisible(false);
+                    iconView.setManaged(false);
+                }
+            } else {
+                iconView.setVisible(false);
+                iconView.setManaged(false);
+            }
+        }
+        
+        private String getIconPathForType(LayerNodeType type) {
+            switch (type) {
+                case CATEGORY_CHART:
+                    return "/icons/layers.png";
+                case CATEGORY_ROUTE:
+                    return "/icons/route.png";
+                case CATEGORY_AIS:
+                    return "/icons/ais.png";
+                case CATEGORY_ALARM:
+                    return "/icons/alarm.png";
+                case CATEGORY_OVERLAY:
+                    return "/icons/layers_small.png";
+                case DATA_CHART:
+                    return "/icons/chart_32x32.png";
+                case DATA_ROUTE:
+                    return "/icons/route.png";
+                case DATA_AIS:
+                    return "/icons/ais.png";
+                case DATA_ALARM:
+                    return "/icons/alarm.png";
+                default:
+                    return "/icons/layers_small.png";
             }
         }
         

@@ -122,4 +122,16 @@ public class LayerManagerPanel implements FxSideBarPanel {
             controller.setOnHidePanel(callback);
         }
     }
+    
+    public void setOnConfigPanel(Runnable callback) {
+        if (controller != null) {
+            controller.setOnConfigPanel(callback);
+        }
+    }
+    
+    public void setOnViewProperties(java.util.function.Consumer<LayerManagerPanelController.LayerNode> callback) {
+        if (controller != null) {
+            controller.setOnViewProperties(callback);
+        }
+    }
 }
