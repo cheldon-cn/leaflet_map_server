@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="cn.cycle.echart.ui.panel.PropertyPanelController"
+      styleClass="property-panel" spacing="0">
+    
+    <HBox styleClass="panel-header" alignment="CENTER_LEFT" minHeight="36" prefHeight="36">
+        <Label text="属性" styleClass="panel-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="refreshButton" styleClass="flat-button, icon-button" 
+                onAction="#onRefresh">
+            <tooltip><Tooltip text="刷新"/></tooltip>
+            <graphic>
+                <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                    <Image url="@/icons/check_32x32.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+        <Button fx:id="pinButton" styleClass="flat-button, icon-button" 
+                onAction="#onPin">
+            <tooltip><Tooltip text="固定面板"/></tooltip>
+            <graphic>
+                <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                    <Image url="@/icons/property.png"/>
+                </ImageView>
+            </graphic>
+        </Button>
+    </HBox>
+    
+    <TitledPane fx:id="commonPropertiesPane" text="通用属性" expanded="true" animated="false">
+        <content>
+            <ScrollPane fitToWidth="true" fitToHeight="true" styleClass="property-scroll">
+                <content>
+                    <GridPane fx:id="commonPropertiesGrid" hgap="10" vgap="6" styleClass="property-grid">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="35" minWidth="80"/>
+                            <ColumnConstraints percentWidth="65" minWidth="100"/>
+                        </columnConstraints>
+                    </GridPane>
+                </content>
+            </ScrollPane>
+        </content>
+    </TitledPane>
+    
+    <TitledPane fx:id="dataPropertiesPane" text="数据关联属性" expanded="true" animated="false">
+        <content>
+            <ScrollPane fitToWidth="true" fitToHeight="true" styleClass="property-scroll">
+                <content>
+                    <GridPane fx:id="dataPropertiesGrid" hgap="10" vgap="6" styleClass="property-grid">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="35" minWidth="80"/>
+                            <ColumnConstraints percentWidth="65" minWidth="100"/>
+                        </columnConstraints>
+                    </GridPane>
+                </content>
+            </ScrollPane>
+        </content>
+    </TitledPane>
+    
+    <VBox fx:id="emptyPlaceholder" VBox.vgrow="ALWAYS" alignment="CENTER" 
+          styleClass="empty-placeholder" visible="false" managed="false">
+        <Label text="未选中任何对象" styleClass="placeholder-text"/>
+    </VBox>
+    
+</VBox>

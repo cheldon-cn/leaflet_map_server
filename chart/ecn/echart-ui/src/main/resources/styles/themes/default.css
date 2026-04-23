@@ -1,0 +1,32 @@
+.root {
+    -fx-background: #f5f5f5;
+    -fx-background-color: -fx-background;
+    -fx-text-background-color: #333333;
+    -fx-selection-bar: #0078d4;
+    -fx-selection-bar-text: #ffffff;
+    -fx-accent: #0078d4;
+    -fx-focus-color: #0078d4;
+    -fx-faint-focus-color: rgba(0, 120, 212, 0.2);
+}
+
+.button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 3;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-text-fill: -fx-text-background-color;
+}
+
+.button:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.06);
+}
+
+.button:pressed {
+    -fx-background-color: rgba(0, 0, 0, 0.12);
+}
+
+.button:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}

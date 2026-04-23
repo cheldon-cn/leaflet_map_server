@@ -114,7 +114,8 @@ public class EChartApp extends Application {
         double initHeight = screenBounds.getHeight() * deviceRatio;
         
         Scene scene = new Scene(mainView, initWidth, initHeight);
-        scene.getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("/styles/base.css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("/styles/themes/default.css").toExternalForm());
         return scene;
     }
 

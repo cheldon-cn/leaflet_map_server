@@ -295,9 +295,10 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void initializePanels() {
+        LayerManagerPanel layerManagerPanel = new LayerManagerPanel();
         SideBarManager.SideBarPanel layersPanel = new SideBarManager.SideBarPanel(
                 "layers", "图层管理", "/icons/layers.png", "图层管理面板",
-                new LayerManagerPanel());
+                layerManagerPanel.getContent());
         SideBarManager.SideBarPanel searchPanel = new SideBarManager.SideBarPanel(
                 "search", "搜索", "/icons/search.png", "搜索面板",
                 createPlaceholderPanel("搜索"));
@@ -325,9 +326,10 @@ public class MainView extends BorderPane implements LifecycleComponent {
         sideBarManager.registerPanel(measurePanel, 5);
         sideBarManager.registerPanel(settingsPanel, 6);
         
+        PropertyPanel propertyPanel = new PropertyPanel();
         rightTabManager.registerPanel(new AlarmPanel());
         rightTabManager.registerPanel(new LogPanel());
-        rightTabManager.registerPanel(new PropertyPanel());
+        rightTabManager.registerPanel(propertyPanel);
         rightTabManager.registerPanel(new TerminalPanel());
         
         initializeHandlers();
