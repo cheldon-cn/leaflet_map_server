@@ -1,5 +1,9 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.core.AppEvent;
+import cn.cycle.echart.core.AppEventBus;
+import cn.cycle.echart.core.AppEventType;
+import cn.cycle.echart.core.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
@@ -78,6 +82,14 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     private double imageHeight;
     
     private boolean chartMode = false;
+    
+    private java.nio.ByteBuffer reusableBuffer;
+    private int reusableBufferWidth = 0;
+    private int reusableBufferHeight = 0;
+    
+    private EventHandler<Object> chartEventSubscriber;
+    
+    private boolean[] dirtyLayers = new boolean[LAYER_COUNT];
 
     public ChartDisplayArea() {
         this.layers = new ArrayList<>();
@@ -366,7 +378,29 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         }
         
         clearAllLayers();
+        subscribeToChartEvents();
         initialized = true;
+    }
+    
+    private void subscribeToChartEvents() {
+        chartEventSubscriber = new EventHandler<Object>() {
+            @Override
+            public void onEvent(AppEvent event, Object data) {
+                handleChartEvent(event);
+            }
+        };
+        AppEventBus.getInstance().subscribe(AppEventType.CHART_LOADED, chartEventSubscriber);
+        AppEventBus.getInstance().subscribe(AppEventType.CHART_UPDATED, chartEventSubscriber);
+    }
+    
+    private void handleChartEvent(AppEvent event) {
+        byte[] pixels = event.getData("pixels", byte[].class);
+        Integer width = event.getData("width", Integer.class);
+        Integer height = event.getData("height", Integer.class);
+        
+        if (pixels != null && width != null && height != null) {
+            loadChartImage(pixels, width, height);
+        }
     }
 
     @Override
@@ -393,6 +427,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         }
         
         deactivate();
+        unsubscribeFromChartEvents();
         
         for (Canvas layer : layers) {
             layer.widthProperty().unbind();
@@ -401,6 +436,14 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         
         layers.clear();
         disposed = true;
+    }
+    
+    private void unsubscribeFromChartEvents() {
+        if (chartEventSubscriber != null) {
+            AppEventBus.getInstance().unsubscribe(AppEventType.CHART_LOADED, chartEventSubscriber);
+            AppEventBus.getInstance().unsubscribe(AppEventType.CHART_UPDATED, chartEventSubscriber);
+            chartEventSubscriber = null;
+        }
     }
 
     @Override
@@ -419,13 +462,59 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
     }
 
     public void redraw() {
-        clearAllLayers();
-        
-        drawBackgroundLayer();
-        drawChartLayer();
-        drawDataLayer();
-        drawInteractionLayer();
-        drawOverlayLayer();
+        markAllLayersDirty();
+        redrawDirtyLayers();
+    }
+    
+    public void redrawLayer(LayerType layerType) {
+        markLayerDirty(layerType);
+        redrawDirtyLayers();
+    }
+    
+    private void markAllLayersDirty() {
+        for (int i = 0; i < dirtyLayers.length; i++) {
+            dirtyLayers[i] = true;
+        }
+    }
+    
+    private void markLayerDirty(LayerType layerType) {
+        dirtyLayers[layerType.getIndex()] = true;
+    }
+    
+    private void redrawDirtyLayers() {
+        for (int i = 0; i < LAYER_COUNT; i++) {
+            if (dirtyLayers[i]) {
+                clearLayer(i);
+                drawLayer(i);
+                dirtyLayers[i] = false;
+            }
+        }
+    }
+    
+    private void clearLayer(int index) {
+        Canvas layer = layers.get(index);
+        javafx.scene.canvas.GraphicsContext gc = layer.getGraphicsContext2D();
+        gc.clearRect(0, 0, layer.getWidth(), layer.getHeight());
+    }
+    
+    private void drawLayer(int index) {
+        switch (index) {
+            case 0:
+                drawBackgroundLayer();
+                break;
+            case 1:
+                drawChartLayer();
+                break;
+            case 2:
+                drawDataLayer();
+                break;
+            case 3:
+                drawInteractionLayer();
+                break;
+            case 4:
+                drawOverlayLayer();
+                break;
+        }
     }
 
     private void clearAllLayers() {
@@ -927,21 +1016,41 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
             javafx.scene.image.WritablePixelFormat<java.nio.ByteBuffer> format = 
                 javafx.scene.image.PixelFormat.getByteBgraPreInstance();
             
+            java.nio.ByteBuffer buffer = getOrCreateBuffer(width, height);
+            buffer.clear();
+            buffer.put(pixels, 0, expectedSize);
+            buffer.flip();
+            
             javafx.scene.image.WritableImage writableImage = new javafx.scene.image.WritableImage(width, height);
-            writableImage.getPixelWriter().setPixels(0, 0, width, height, format, 
-                java.nio.ByteBuffer.wrap(pixels), width * 4);
+            writableImage.getPixelWriter().setPixels(0, 0, width, height, format, buffer, width * 4);
             
             this.displayImage = writableImage;
             this.imageWidth = width;
             this.imageHeight = height;
             this.chartMode = true;
             
-            redraw();
+            redrawLayer(LayerType.CHART);
             
             return true;
         } catch (Exception e) {
             System.err.println("Failed to load chart image: " + e.getMessage());
             return false;
         }
+    }
+    
+    private java.nio.ByteBuffer getOrCreateBuffer(int width, int height) {
+        int requiredSize = width * height * 4;
+        
+        if (reusableBuffer == null || 
+            reusableBufferWidth != width || 
+            reusableBufferHeight != height ||
+            reusableBuffer.capacity() < requiredSize) {
+            
+            reusableBuffer = java.nio.ByteBuffer.allocateDirect(requiredSize);
+            reusableBufferWidth = width;
+            reusableBufferHeight = height;
+        }
+        
+        return reusableBuffer;
     }
 }

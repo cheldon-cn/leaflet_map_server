@@ -94,6 +94,9 @@ public class EChartApp extends Application {
             mainView.enableWindowResize(scene);
             configureStage(primaryStage, scene);
             
+            mainView.initialize();
+            mainView.activate();
+            
             primaryStage.show();
             
             LogUtil.info(TAG, "E-Chart Application started successfully.");

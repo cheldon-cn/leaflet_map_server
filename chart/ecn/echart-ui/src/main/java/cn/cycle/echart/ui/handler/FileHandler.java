@@ -1,8 +1,15 @@
 package cn.cycle.echart.ui.handler;
 
+import cn.cycle.echart.core.AppEvent;
+import cn.cycle.echart.core.AppEventBus;
+import cn.cycle.echart.core.AppEventType;
 import cn.cycle.echart.render.ChartRenderService;
 import cn.cycle.echart.ui.ChartDisplayArea;
 import cn.cycle.echart.ui.StatusBar;
+import cn.cycle.echart.ui.service.ChartLoadService;
+import javafx.animation.AnimationTimer;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -10,20 +17,115 @@ import java.io.File;
 
 public class FileHandler {
 
+    private static final long RENDER_THROTTLE_INTERVAL = 50_000_000L;
+    
     private final Stage stage;
     private final ChartDisplayArea chartDisplayArea;
     private final StatusBar statusBar;
     private final MessageCallback messageCallback;
+    private final AppEventBus eventBus;
     
     private ChartRenderService chartRenderService;
+    private ChartLoadService chartLoadService;
     private boolean isChartLoaded = false;
+    
+    private double pendingPanDx = 0;
+    private double pendingPanDy = 0;
+    private double pendingZoomFactor = 1.0;
+    private double pendingZoomPivotX = 0;
+    private double pendingZoomPivotY = 0;
+    private boolean hasPendingPan = false;
+    private boolean hasPendingZoom = false;
+    private long lastRenderTime = 0;
+    private final AnimationTimer renderThrottleTimer;
+    private boolean isThrottleTimerRunning = false;
 
     public FileHandler(Stage stage, ChartDisplayArea chartDisplayArea, 
                        StatusBar statusBar, MessageCallback messageCallback) {
+        this(stage, chartDisplayArea, statusBar, messageCallback, AppEventBus.getInstance());
+    }
+    
+    public FileHandler(Stage stage, ChartDisplayArea chartDisplayArea, 
+                       StatusBar statusBar, MessageCallback messageCallback,
+                       AppEventBus eventBus) {
         this.stage = stage;
         this.chartDisplayArea = chartDisplayArea;
         this.statusBar = statusBar;
         this.messageCallback = messageCallback;
+        this.eventBus = eventBus;
+        this.renderThrottleTimer = createRenderThrottleTimer();
+        this.chartLoadService = new ChartLoadService();
+        setupLoadServiceHandlers();
+    }
+    
+    private AnimationTimer createRenderThrottleTimer() {
+        return new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (now - lastRenderTime < RENDER_THROTTLE_INTERVAL) {
+                    return;
+                }
+                
+                if (hasPendingPan || hasPendingZoom) {
+                    executeThrottledRender();
+                    lastRenderTime = now;
+                }
+            }
+        };
+    }
+    
+    private void setupLoadServiceHandlers() {
+        chartLoadService.setOnRunning(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                statusBar.showMessage("正在加载海图...");
+            }
+        });
+        
+        chartLoadService.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                ChartLoadService.LoadResult result = chartLoadService.getValue();
+                if (result.isSuccess()) {
+                    AppEvent chartEvent = new AppEvent(FileHandler.this, AppEventType.CHART_LOADED)
+                        .withData("pixels", result.getPixels())
+                        .withData("width", result.getWidth())
+                        .withData("height", result.getHeight())
+                        .withData("fileName", result.getFileName());
+                    eventBus.publish(chartEvent);
+                    isChartLoaded = true;
+                    chartRenderService = chartLoadService.getChartRenderService();
+                    statusBar.showMessage("已打开海图: " + result.getFileName());
+                    
+                    if (!isThrottleTimerRunning) {
+                        renderThrottleTimer.start();
+                        isThrottleTimerRunning = true;
+                    }
+                } else {
+                    AppEvent errorEvent = new AppEvent(FileHandler.this, AppEventType.CHART_LOADED)
+                        .withData("success", false)
+                        .withData("fileName", result.getFileName())
+                        .withData("errorMessage", result.getErrorMessage());
+                    eventBus.publish(errorEvent);
+                    messageCallback.showInfo("加载失败", 
+                            "无法加载海图文件: " + result.getFileName() + 
+                            "\n错误: " + result.getErrorMessage());
+                }
+            }
+        });
+        
+        chartLoadService.setOnFailed(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                Throwable exception = chartLoadService.getException();
+                String errorMsg = exception != null ? exception.getMessage() : "未知错误";
+                AppEvent errorEvent = new AppEvent(FileHandler.this, AppEventType.CHART_LOADED)
+                    .withData("success", false)
+                    .withData("errorMessage", errorMsg);
+                eventBus.publish(errorEvent);
+                messageCallback.showInfo("加载失败", "打开海图时发生错误: " + errorMsg);
+            }
+        });
     }
 
     public void onNewWorkspace() {
@@ -70,7 +172,7 @@ public class FileHandler {
         if (isImageFile(fileName)) {
             openImageFile(selectedFile);
         } else if (fileName.endsWith(".000")) {
-            openChartFile(selectedFile);
+            openChartFileAsync(selectedFile);
         } else {
             messageCallback.showInfo("不支持的文件类型", "不支持的文件格式: " + fileName);
         }
@@ -93,50 +195,33 @@ public class FileHandler {
         }
     }
 
-    private void openChartFile(File chartFile) {
-        try {
-            if (chartRenderService == null) {
-                chartRenderService = new ChartRenderService();
-                setupViewportChangeListener();
-            }
-            
-            int renderWidth = (int) chartDisplayArea.getWidth();
-            int renderHeight = (int) chartDisplayArea.getHeight();
-            
-            if (renderWidth <= 0 || renderHeight <= 0) {
-                renderWidth = 800;
-                renderHeight = 600;
-            }
-            
-            ChartRenderService.RenderResult result = chartRenderService.loadAndRender(
-                    chartFile.getAbsolutePath(), renderWidth, renderHeight);
-            
-            if (result == null) {
-                messageCallback.showInfo("渲染失败", "无法渲染海图");
-                return;
-            }
-            
-            if (!result.isSuccess()) {
-                messageCallback.showInfo("加载失败", "无法加载海图文件: " + chartFile.getName() + 
-                        "\n错误: " + result.getErrorMessage());
-                return;
-            }
-            
-            boolean success = chartDisplayArea.loadChartImage(
-                    result.getPixels(), result.getWidth(), result.getHeight());
-            
-            if (success) {
-                isChartLoaded = true;
-                statusBar.showMessage("已打开海图: " + chartFile.getName());
-            } else {
-                messageCallback.showInfo("显示失败", "无法显示海图图像");
-            }
-            
-        } catch (UnsatisfiedLinkError e) {
-            messageCallback.showInfo("本地库错误", "无法加载本地渲染库: " + e.getMessage());
-        } catch (Exception e) {
-            messageCallback.showInfo("错误", "打开海图时发生错误: " + e.getMessage());
+    private void openChartFileAsync(File chartFile) {
+        if (chartLoadService.isRunning()) {
+            chartLoadService.cancel();
         }
+        
+        if (chartLoadService.getState() == javafx.concurrent.Worker.State.SUCCEEDED ||
+            chartLoadService.getState() == javafx.concurrent.Worker.State.CANCELLED ||
+            chartLoadService.getState() == javafx.concurrent.Worker.State.FAILED) {
+            chartLoadService.reset();
+        }
+        
+        int renderWidth = (int) chartDisplayArea.getWidth();
+        int renderHeight = (int) chartDisplayArea.getHeight();
+        
+        if (renderWidth <= 0 || renderHeight <= 0) {
+            renderWidth = 800;
+            renderHeight = 600;
+        }
+        
+        chartLoadService.setChartFile(chartFile);
+        chartLoadService.setRenderSize(renderWidth, renderHeight);
+        if (chartRenderService != null) {
+            chartLoadService.setChartRenderService(chartRenderService);
+        }
+        
+        setupViewportChangeListener();
+        chartLoadService.start();
     }
 
     private void setupViewportChangeListener() {
@@ -150,7 +235,7 @@ public class FileHandler {
                 if (!isChartLoaded || chartRenderService == null) {
                     return;
                 }
-                panAndRender(dx, dy);
+                schedulePanRender(dx, dy);
             }
             
             @Override
@@ -158,33 +243,27 @@ public class FileHandler {
                 if (!isChartLoaded || chartRenderService == null) {
                     return;
                 }
-                zoomAndRender(factor, pivotX, pivotY);
+                scheduleZoomRender(factor, pivotX, pivotY);
             }
         });
     }
-
-    private void panAndRender(double dx, double dy) {
-        if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
-            return;
-        }
-        
-        int renderWidth = (int) chartDisplayArea.getWidth();
-        int renderHeight = (int) chartDisplayArea.getHeight();
-        
-        if (renderWidth <= 0 || renderHeight <= 0) {
-            return;
-        }
-        
-        ChartRenderService.RenderResult result = chartRenderService.panAndRender(
-                renderWidth, renderHeight, dx, dy);
-        
-        if (result != null && result.isSuccess()) {
-            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
-        }
+    
+    private void schedulePanRender(double dx, double dy) {
+        pendingPanDx += dx;
+        pendingPanDy += dy;
+        hasPendingPan = true;
     }
-
-    private void zoomAndRender(double factor, double pivotX, double pivotY) {
+    
+    private void scheduleZoomRender(double factor, double pivotX, double pivotY) {
+        pendingZoomFactor *= factor;
+        pendingZoomPivotX = pivotX;
+        pendingZoomPivotY = pivotY;
+        hasPendingZoom = true;
+    }
+    
+    private void executeThrottledRender() {
         if (chartRenderService == null || !chartRenderService.hasChartLoaded()) {
+            resetPendingOperations();
             return;
         }
         
@@ -192,14 +271,48 @@ public class FileHandler {
         int renderHeight = (int) chartDisplayArea.getHeight();
         
         if (renderWidth <= 0 || renderHeight <= 0) {
+            resetPendingOperations();
             return;
         }
         
-        ChartRenderService.RenderResult result = chartRenderService.zoomAndRender(
-                renderWidth, renderHeight, factor, pivotX, pivotY);
+        ChartRenderService.RenderResult result = null;
+        
+        if (hasPendingZoom) {
+            result = chartRenderService.zoomAndRender(
+                    renderWidth, renderHeight, pendingZoomFactor, 
+                    pendingZoomPivotX, pendingZoomPivotY);
+        } else if (hasPendingPan) {
+            result = chartRenderService.panAndRender(
+                    renderWidth, renderHeight, pendingPanDx, pendingPanDy);
+        }
         
         if (result != null && result.isSuccess()) {
-            chartDisplayArea.loadChartImage(result.getPixels(), result.getWidth(), result.getHeight());
+            AppEvent updateEvent = new AppEvent(this, AppEventType.CHART_UPDATED)
+                .withData("pixels", result.getPixels())
+                .withData("width", result.getWidth())
+                .withData("height", result.getHeight());
+            eventBus.publish(updateEvent);
+        }
+        
+        resetPendingOperations();
+    }
+    
+    private void resetPendingOperations() {
+        pendingPanDx = 0;
+        pendingPanDy = 0;
+        pendingZoomFactor = 1.0;
+        pendingZoomPivotX = 0;
+        pendingZoomPivotY = 0;
+        hasPendingPan = false;
+        hasPendingZoom = false;
+    }
+    
+    public void dispose() {
+        renderThrottleTimer.stop();
+        isThrottleTimerRunning = false;
+        chartLoadService.cancel();
+        if (chartRenderService != null) {
+            chartRenderService.dispose();
         }
     }
 }
