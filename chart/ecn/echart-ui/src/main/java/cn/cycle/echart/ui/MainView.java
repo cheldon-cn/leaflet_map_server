@@ -300,9 +300,12 @@ public class MainView extends BorderPane implements LifecycleComponent {
         SideBarManager.SideBarPanel layersPanel = new SideBarManager.SideBarPanel(
                 "layers", "图层管理", "/icons/layers.png", "图层管理面板",
                 layerManagerPanel.getContent());
-        SideBarManager.SideBarPanel searchPanel = new SideBarManager.SideBarPanel(
+        
+        SearchPanel searchPanel = new SearchPanel();
+        SideBarManager.SideBarPanel searchSideBarPanel = new SideBarManager.SideBarPanel(
                 "search", "搜索", "/icons/search.png", "搜索面板",
-                createPlaceholderPanel("搜索"));
+                searchPanel.getContent());
+        
         SideBarManager.SideBarPanel routePanel = new SideBarManager.SideBarPanel(
                 "route", "航线", "/icons/route.png", "航线规划面板",
                 new RoutePanel());
@@ -312,20 +315,24 @@ public class MainView extends BorderPane implements LifecycleComponent {
         SideBarManager.SideBarPanel aisPanel = new SideBarManager.SideBarPanel(
                 "ais", "AIS", "/icons/ais.png", "AIS目标面板",
                 createPlaceholderPanel("AIS目标"));
-        SideBarManager.SideBarPanel measurePanel = new SideBarManager.SideBarPanel(
+        
+        MeasurePanel measurePanel = new MeasurePanel();
+        SideBarManager.SideBarPanel measureSideBarPanel = new SideBarManager.SideBarPanel(
                 "measure", "测量", "/icons/measure.png", "测量工具面板",
-                createPlaceholderPanel("测量工具"));
-        SideBarManager.SideBarPanel settingsPanel = new SideBarManager.SideBarPanel(
+                measurePanel.getContent());
+        
+        SettingsPanel settingsPanel = new SettingsPanel();
+        SideBarManager.SideBarPanel settingsSideBarPanel = new SideBarManager.SideBarPanel(
                 "settings", "设置", "/icons/settings.png", "设置面板",
-                createPlaceholderPanel("设置"));
+                settingsPanel.getContent());
         
         sideBarManager.registerPanel(layersPanel, 0);
-        sideBarManager.registerPanel(searchPanel, 1);
+        sideBarManager.registerPanel(searchSideBarPanel, 1);
         sideBarManager.registerPanel(routePanel, 2);
         sideBarManager.registerPanel(alarmPanel, 3);
         sideBarManager.registerPanel(aisPanel, 4);
-        sideBarManager.registerPanel(measurePanel, 5);
-        sideBarManager.registerPanel(settingsPanel, 6);
+        sideBarManager.registerPanel(measureSideBarPanel, 5);
+        sideBarManager.registerPanel(settingsSideBarPanel, 6);
         
         PropertyPanel propertyPanel = new PropertyPanel();
         rightTabManager.registerPanel(new AlarmPanel());
@@ -335,6 +342,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         
         initializeHandlers();
         setupLayerPanelCallbacks(layerManagerPanel, propertyPanel);
+        setupSearchPanelCallbacks(searchPanel);
+        setupMeasurePanelCallbacks(measurePanel);
+        setupSettingsPanelCallbacks(settingsPanel);
         setupRibbonActions();
     }
     
@@ -366,6 +376,44 @@ public class MainView extends BorderPane implements LifecycleComponent {
         });
         
         chartHandler.setLayerManagerPanel(layerManagerPanel);
+    }
+    
+    private void setupSearchPanelCallbacks(SearchPanel searchPanel) {
+        searchPanel.setOnHidePanel(() -> {
+            sideBarManager.collapsePanel();
+            updateDividerPositions();
+        });
+        
+        searchPanel.setOnSearchResultSelected(result -> {
+            showInfo("搜索结果", "选中: " + result.getName() + "\n类型: " + result.getType() + "\n位置: " + result.getLocation());
+        });
+    }
+    
+    private void setupMeasurePanelCallbacks(MeasurePanel measurePanel) {
+        measurePanel.setOnHidePanel(() -> {
+            sideBarManager.collapsePanel();
+            updateDividerPositions();
+        });
+        
+        measurePanel.setOnMeasurementSelected(measurement -> {
+            showInfo("测量结果", "选中: " + measurement.getValue() + " " + measurement.getUnit() + 
+                    "\n类型: " + measurement.getMode() + "\n描述: " + measurement.getDescription());
+        });
+        
+        measurePanel.setOnMeasureModeChanged(mode -> {
+            statusBar.showMessage("测量模式: " + mode.toString());
+        });
+    }
+    
+    private void setupSettingsPanelCallbacks(SettingsPanel settingsPanel) {
+        settingsPanel.setOnHidePanel(() -> {
+            sideBarManager.collapsePanel();
+            updateDividerPositions();
+        });
+        
+        settingsPanel.setOnSettingsChanged(() -> {
+            statusBar.showMessage("设置已更改");
+        });
     }
     
     private void initializeHandlers() {

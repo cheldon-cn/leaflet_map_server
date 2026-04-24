@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="cn.cycle.echart.ui.panel.SearchPanelController"
+      styleClass="search-panel" spacing="0">
+    
+    <StackPane styleClass="panel-header" minHeight="36" prefHeight="36">
+        <HBox alignment="CENTER_LEFT" mouseTransparent="true">
+            <Label text="搜索" styleClass="panel-title"/>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="2">
+            <Button fx:id="clearButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onClear" disable="true">
+                <tooltip><Tooltip text="清空搜索"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/close_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="hideButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onHide">
+                <tooltip><Tooltip text="隐藏面板"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/sidebar_32x321.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </StackPane>
+    
+    <VBox styleClass="search-input-area" spacing="8">
+        <padding>
+            <Insets top="8" right="8" bottom="8" left="8"/>
+        </padding>
+        
+        <HBox spacing="4" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="输入搜索关键词..." 
+                       HBox.hgrow="ALWAYS" styleClass="search-input"/>
+            <Button fx:id="searchButton" styleClass="flat-button, icon-button" 
+                    minWidth="32" prefWidth="32" onAction="#onSearch">
+                <tooltip><Tooltip text="搜索"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/search_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+        
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Label text="搜索类型:" styleClass="label-text"/>
+            <ComboBox fx:id="searchTypeComboBox" prefWidth="150" styleClass="search-type-combo"/>
+        </HBox>
+        
+        <HBox spacing="12" alignment="CENTER_LEFT" styleClass="search-options">
+            <CheckBox fx:id="caseSensitiveCheckBox" text="区分大小写"/>
+            <CheckBox fx:id="wholeWordCheckBox" text="全词匹配"/>
+            <CheckBox fx:id="regexCheckBox" text="正则表达式"/>
+        </HBox>
+    </VBox>
+    
+    <Separator/>
+    
+    <HBox styleClass="result-header" alignment="CENTER_LEFT" minHeight="28" prefHeight="28">
+        <padding>
+            <Insets left="8" right="8"/>
+        </padding>
+        <Label fx:id="resultCountLabel" text="找到 0 个结果" styleClass="result-count-label"/>
+    </HBox>
+    
+    <ListView fx:id="resultListView" VBox.vgrow="ALWAYS" styleClass="result-list">
+    </ListView>
+    
+    <VBox fx:id="emptyPlaceholder" VBox.vgrow="ALWAYS" alignment="CENTER" 
+          styleClass="empty-placeholder" visible="true" managed="true">
+        <VBox spacing="8" alignment="CENTER">
+            <ImageView fitWidth="48" fitHeight="48" preserveRatio="true">
+                <Image url="@/icons/search_32x32.png"/>
+            </ImageView>
+            <Label text="输入关键词开始搜索" styleClass="placeholder-text"/>
+            <Label text="支持搜索海图、航线、AIS等数据" styleClass="placeholder-hint"/>
+        </VBox>
+    </VBox>
+    
+</VBox>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="cn.cycle.echart.ui.panel.MeasurePanelController"
+      styleClass="measure-panel" spacing="0">
+    
+    <StackPane styleClass="panel-header" minHeight="36" prefHeight="36">
+        <HBox alignment="CENTER_LEFT" mouseTransparent="true">
+            <Label text="测量工具" styleClass="panel-title"/>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="2">
+            <Button fx:id="clearButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onClear">
+                <tooltip><Tooltip text="清空测量"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/close_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="hideButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onHide">
+                <tooltip><Tooltip text="隐藏面板"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/sidebar_32x321.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </StackPane>
+    
+    <VBox styleClass="measure-mode-area" spacing="8">
+        <padding>
+            <Insets top="8" right="8" bottom="8" left="8"/>
+        </padding>
+        
+        <Label text="测量模式" styleClass="section-label"/>
+        
+        <HBox spacing="4" alignment="CENTER_LEFT">
+            <ToggleButton fx:id="distanceButton" styleClass="flat-button, icon-button" 
+                         minWidth="32" prefWidth="32" selected="true">
+                <tooltip><Tooltip text="距离测量"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/measure.png"/>
+                    </ImageView>
+                </graphic>
+            </ToggleButton>
+            <ToggleButton fx:id="areaButton" styleClass="flat-button, icon-button" 
+                         minWidth="32" prefWidth="32">
+                <tooltip><Tooltip text="面积测量"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/layers_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </ToggleButton>
+            <ToggleButton fx:id="angleButton" styleClass="flat-button, icon-button" 
+                         minWidth="32" prefWidth="32">
+                <tooltip><Tooltip text="角度测量"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/compass.png"/>
+                    </ImageView>
+                </graphic>
+            </ToggleButton>
+            <ToggleButton fx:id="coordinateButton" styleClass="flat-button, icon-button" 
+                         minWidth="32" prefWidth="32">
+                <tooltip><Tooltip text="坐标拾取"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/location.png"/>
+                    </ImageView>
+                </graphic>
+            </ToggleButton>
+        </HBox>
+        
+        <HBox spacing="4" alignment="CENTER_LEFT">
+            <Button fx:id="undoButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" onAction="#onUndo">
+                <tooltip><Tooltip text="撤销"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                        <Image url="@/icons/back.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="redoButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" onAction="#onRedo">
+                <tooltip><Tooltip text="重做"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="14" fitHeight="14" preserveRatio="true">
+                        <Image url="@/icons/forward.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </VBox>
+    
+    <Separator/>
+    
+    <VBox styleClass="measure-result-area" spacing="8">
+        <padding>
+            <Insets top="8" right="8" bottom="8" left="8"/>
+        </padding>
+        
+        <Label fx:id="currentModeLabel" text="当前模式: 距离测量" styleClass="mode-label"/>
+        <Label fx:id="resultLabel" text="等待测量..." styleClass="result-label"/>
+    </VBox>
+    
+    <Separator/>
+    
+    <HBox styleClass="result-header" alignment="CENTER_LEFT" minHeight="28" prefHeight="28">
+        <padding>
+            <Insets left="8" right="8"/>
+        </padding>
+        <Label text="测量历史" styleClass="history-label"/>
+    </HBox>
+    
+    <ListView fx:id="measurementListView" VBox.vgrow="ALWAYS" styleClass="measurement-list">
+    </ListView>
+    
+    <VBox fx:id="emptyPlaceholder" VBox.vgrow="ALWAYS" alignment="CENTER" 
+          styleClass="empty-placeholder" visible="true" managed="true">
+        <VBox spacing="8" alignment="CENTER">
+            <ImageView fitWidth="48" fitHeight="48" preserveRatio="true">
+                <Image url="@/icons/measure.png"/>
+            </ImageView>
+            <Label text="选择测量模式开始测量" styleClass="placeholder-text"/>
+            <Label text="点击地图进行测量操作" styleClass="placeholder-hint"/>
+        </VBox>
+    </VBox>
+    
+</VBox>

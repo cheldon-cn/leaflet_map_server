@@ -531,7 +531,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         gc.save();
         applyTransform(gc);
         
-        gc.setFill(javafx.scene.paint.Color.LIGHTBLUE);
+        gc.setFill(javafx.scene.paint.Color.LIGHTGREY);//LIGHTBLUE,ALICEBLUE,WHITE
         gc.fillRect(-layer.getWidth(), -layer.getHeight(), 
                    layer.getWidth() * 2, layer.getHeight() * 2);
         
@@ -559,7 +559,7 @@ public class ChartDisplayArea extends StackPane implements LifecycleComponent {
         } else {
             gc.setStroke(javafx.scene.paint.Color.BLUE);
             gc.setLineWidth(1);
-            gc.strokeRect(-100, -100, 200, 200);
+            gc.strokeRect(-180, -90, 180, 90);
         }
         
         gc.restore();

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<VBox xmlns="http://javafx.com/javafx/11" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="cn.cycle.echart.ui.panel.SettingsPanelController"
+      styleClass="settings-panel" spacing="0">
+    
+    <StackPane styleClass="panel-header" minHeight="36" prefHeight="36">
+        <HBox alignment="CENTER_LEFT" mouseTransparent="true">
+            <Label text="设置" styleClass="panel-title"/>
+        </HBox>
+        <HBox alignment="CENTER_RIGHT" spacing="2">
+            <Button fx:id="resetButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onReset">
+                <tooltip><Tooltip text="重置默认"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/refresh_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="applyButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onApply">
+                <tooltip><Tooltip text="应用设置"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/check_32x32.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="hideButton" styleClass="flat-button, icon-button" 
+                    minWidth="28" prefWidth="28" maxWidth="28" onAction="#onHide">
+                <tooltip><Tooltip text="隐藏面板"/></tooltip>
+                <graphic>
+                    <ImageView fitWidth="16" fitHeight="16" preserveRatio="true">
+                        <Image url="@/icons/sidebar_32x321.png"/>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </HBox>
+    </StackPane>
+    
+    <Accordion fx:id="settingsAccordion" VBox.vgrow="ALWAYS">
+        <panes>
+        
+            <TitledPane fx:id="displayPane" text="显示设置" expanded="true">
+                <content>
+                    <VBox spacing="12" styleClass="settings-section">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        
+                        <CheckBox fx:id="darkThemeCheckBox" text="启用深色主题"/>
+                        <CheckBox fx:id="showGridCheckBox" text="显示网格"/>
+                        <CheckBox fx:id="showScaleBarCheckBox" text="显示比例尺"/>
+                        <CheckBox fx:id="showCompassCheckBox" text="显示指南针"/>
+                        <CheckBox fx:id="showCoordinatesCheckBox" text="显示坐标信息"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="缩放速度:" prefWidth="80"/>
+                            <Slider fx:id="zoomSpeedSlider" min="0.5" max="3.0" value="1.0" 
+                                   prefWidth="150" showTickLabels="true" showTickMarks="true" 
+                                   majorTickUnit="0.5" minorTickCount="1"/>
+                            <Label fx:id="zoomSpeedLabel" text="1.0x" prefWidth="40"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        
+            <TitledPane fx:id="chartPane" text="海图设置">
+                <content>
+                    <VBox spacing="12" styleClass="settings-section">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="海图样式:" prefWidth="80"/>
+                            <ComboBox fx:id="chartStyleComboBox" prefWidth="150"/>
+                        </HBox>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="深度单位:" prefWidth="80"/>
+                            <ComboBox fx:id="depthUnitComboBox" prefWidth="150"/>
+                        </HBox>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="坐标格式:" prefWidth="80"/>
+                            <ComboBox fx:id="coordinateFormatComboBox" prefWidth="150"/>
+                        </HBox>
+                        
+                        <CheckBox fx:id="autoLoadChartsCheckBox" text="自动加载海图"/>
+                        <CheckBox fx:id="showChartInfoCheckBox" text="显示海图信息"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="缓存路径:" prefWidth="80"/>
+                            <TextField fx:id="chartCachePathField" HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="browseCachePathButton" text="浏览" onAction="#onBrowseCachePath"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        
+            <TitledPane fx:id="navigationPane" text="导航设置">
+                <content>
+                    <VBox spacing="12" styleClass="settings-section">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        
+                        <CheckBox fx:id="enableNavigationCheckBox" text="启用导航功能"/>
+                        <CheckBox fx:id="autoCenterCheckBox" text="自动居中显示"/>
+                        <CheckBox fx:id="showRouteCheckBox" text="显示航线"/>
+                        <CheckBox fx:id="showTrackCheckBox" text="显示航迹"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="航迹记录间隔:" prefWidth="100"/>
+                            <Slider fx:id="trackIntervalSlider" min="1" max="60" value="10" 
+                                   prefWidth="150" showTickLabels="true" showTickMarks="true" 
+                                   majorTickUnit="10" minorTickCount="4"/>
+                            <Label fx:id="trackIntervalLabel" text="10 秒" prefWidth="50"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        
+            <TitledPane fx:id="performancePane" text="性能设置">
+                <content>
+                    <VBox spacing="12" styleClass="settings-section">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        
+                        <CheckBox fx:id="enableCacheCheckBox" text="启用缓存"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="缓存大小:" prefWidth="80"/>
+                            <Slider fx:id="cacheSizeSlider" min="100" max="2000" value="500" 
+                                   prefWidth="150" showTickLabels="true" showTickMarks="true" 
+                                   majorTickUnit="500" minorTickCount="4"/>
+                            <Label fx:id="cacheSizeLabel" text="500 MB" prefWidth="60"/>
+                        </HBox>
+                        
+                        <CheckBox fx:id="enableGpuAccelerationCheckBox" text="启用GPU加速"/>
+                        <CheckBox fx:id="enableMultithreadingCheckBox" text="启用多线程"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="线程数:" prefWidth="80"/>
+                            <ComboBox fx:id="threadCountComboBox" prefWidth="150"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        
+            <TitledPane fx:id="advancedPane" text="高级设置">
+                <content>
+                    <VBox spacing="12" styleClass="settings-section">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        
+                        <CheckBox fx:id="enableLoggingCheckBox" text="启用日志记录"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="日志级别:" prefWidth="80"/>
+                            <ComboBox fx:id="logLevelComboBox" prefWidth="150"/>
+                        </HBox>
+                        
+                        <CheckBox fx:id="autoSaveCheckBox" text="启用自动保存"/>
+                        
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="保存间隔:" prefWidth="80"/>
+                            <Slider fx:id="autoSaveIntervalSlider" min="1" max="30" value="5" 
+                                   prefWidth="150" showTickLabels="true" showTickMarks="true" 
+                                   majorTickUnit="5" minorTickCount="4"/>
+                            <Label fx:id="autoSaveIntervalLabel" text="5 分钟" prefWidth="50"/>
+                        </HBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        
+        </panes>
+    </Accordion>
+    
+</VBox>

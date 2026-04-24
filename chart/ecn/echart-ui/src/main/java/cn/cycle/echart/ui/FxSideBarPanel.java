@@ -101,7 +101,7 @@ public interface FxSideBarPanel extends PanelDescriptor {
 
     @Override
     default int getPanelMinWidth() {
-        return 150;
+        return 50;
     }
 
     @Override
@@ -111,7 +111,7 @@ public interface FxSideBarPanel extends PanelDescriptor {
 
     @Override
     default int getPanelDefaultWidth() {
-        return 250;
+        return 50;
     }
 
     @Override
