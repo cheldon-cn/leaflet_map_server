@@ -26,3 +26,6 @@ project(':echart-theme').projectDir = new File(settingsDir, '../echart-theme')
 
 include ':echart-render'
 project(':echart-render').projectDir = new File(settingsDir, '../echart-render')
+
+include ':echart-facade'
+project(':echart-facade').projectDir = new File(settingsDir, '../echart-facade')

@@ -1,9 +1,9 @@
 package cn.cycle.echart.ui.panel;
 
 import cn.cycle.echart.ui.FxRightTabPanel;
+import cn.cycle.echart.facade.RouteFacade;
 import cn.cycle.echart.route.Route;
 import cn.cycle.echart.route.Waypoint;
-import cn.cycle.echart.route.RouteManager;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
@@ -31,7 +31,7 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
     private final Tab routesTab;
     private final Tab waypointsTab;
     
-    private RouteManager routeManager;
+    private RouteFacade routeFacade;
     private final Tab tab;
     
     private Route selectedRoute;
@@ -40,8 +40,8 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
         this(null);
     }
 
-    public RoutePanel(RouteManager routeManager) {
-        this.routeManager = routeManager;
+    public RoutePanel(RouteFacade routeFacade) {
+        this.routeFacade = routeFacade;
         this.routeListView = new ListView<>();
         this.waypointListView = new ListView<>();
         this.tabPane = new TabPane();
@@ -52,14 +52,14 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
         this.tab.setClosable(false);
         
         initializeLayout();
-        if (routeManager != null) {
+        if (routeFacade != null) {
             loadData();
         }
     }
     
-    public void setRouteManager(RouteManager routeManager) {
-        this.routeManager = routeManager;
-        if (routeManager != null) {
+    public void setRouteFacade(RouteFacade routeFacade) {
+        this.routeFacade = routeFacade;
+        if (routeFacade != null) {
             loadData();
         }
     }
@@ -129,7 +129,7 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
     private void loadData() {
         routeListView.getItems().clear();
         
-        List<Route> routes = routeManager.getAllRoutes();
+        List<Route> routes = routeFacade.getAllRoutes();
         routeListView.getItems().addAll(routes);
     }
 
@@ -151,7 +151,7 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
         dialog.setContentText("名称:");
         
         dialog.showAndWait().ifPresent(name -> {
-            Route route = routeManager.createRoute(name);
+            Route route = routeFacade.createRoute(name);
             routeListView.getItems().add(route);
             routeListView.getSelectionModel().select(route);
         });
@@ -189,7 +189,7 @@ public class RoutePanel extends BorderPane implements FxRightTabPanel {
         
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                routeManager.deleteRoute(selected.getId());
+                routeFacade.deleteRoute(selected.getId());
                 routeListView.getItems().remove(selected);
                 waypointListView.getItems().clear();
             }

@@ -1,7 +1,7 @@
 # JDK 11 / JavaFX 11/17 / Gradle 7.6+ 迁移计划
 
-**版本**: v1.0  
-**日期**: 2026-04-24  
+**版本**: v1.1  
+**日期**: 2026-04-25  
 **状态**: 规划中  
 **目标**: 从JDK 1.8升级到JDK 11，从JavaFX 8升级到JavaFX 11/17，从Gradle 4.5.1升级到Gradle 7.6+
 
@@ -23,30 +23,35 @@
 | JDK | 1.8 | 11 (LTS) | P0 |
 | JavaFX | 8 | 17 (LTS) | P0 |
 | Gradle | 4.5.1 | 7.6+ | P0 |
-| JUnit | 4.12 | 5.8+ | P1 |
-| ControlsFX | 8.40.18 | 11.1+ | P1 |
+| JUnit | 4.12 | 5.9.3 | P1 |
+| ControlsFX | 8.40.18 | 11.2.0 | P1 |
 
 ### 1.3 迁移范围
 
 #### ECN模块 (15个)
 
-| 序号 | 模块名 | Layer | 是否依赖JavaFX | 迁移复杂度 |
-|------|--------|-------|----------------|------------|
-| 1 | fxribbon | Ribbon | ✅ 是 | 高 |
-| 2 | echart-core | 0 | ❌ 否 | 低 |
-| 3 | echart-i18n | 1 | ❌ 否 | 低 |
-| 4 | echart-render | 2 | ❌ 否 | 低 |
-| 5 | echart-data | 2 | ❌ 否 | 低 |
-| 6 | echart-alarm | 3 | ❌ 否 | 低 |
-| 7 | echart-ais | 3 | ❌ 否 | 低 |
-| 8 | echart-route | 3 | ❌ 否 | 低 |
-| 9 | echart-workspace | 3 | ❌ 否 | 低 |
-| 10 | echart-ui | 4 | ✅ 是 | 高 |
-| 11 | echart-ui-render | 5 | ✅ 是 | 高 |
-| 12 | echart-theme | 5 | ❌ 否 | 低 |
-| 13 | echart-plugin | 5 | ❌ 否 | 低 |
-| 14 | echart-facade | 6 | ❌ 否 | 低 |
-| 15 | echart-app | 7 | ✅ 是 | 高 |
+| 序号 | 模块名 | Layer | 是否依赖JavaFX | 多端复用分类 | 迁移复杂度 |
+|------|--------|-------|----------------|-------------|------------|
+| 1 | fxribbon | Ribbon | ✅ 是 | JavaFX平台UI库 | 高 |
+| 2 | echart-core | 0 | ❌ 否 | 公共内核库 | 低 |
+| 3 | echart-i18n | 1 | ❌ 否 | 公共业务库 | 低 |
+| 4 | echart-render | 2 | ❌ 否 | 公共业务库 | 低 |
+| 5 | echart-data | 2 | ❌ 否 | 公共业务库 | 低 |
+| 6 | echart-alarm | 3 | ❌ 否 | 公共业务库 | 低 |
+| 7 | echart-ais | 3 | ❌ 否 | 公共业务库 | 低 |
+| 8 | echart-route | 3 | ❌ 否 | 公共业务库 | 低 |
+| 9 | echart-workspace | 3 | ❌ 否 | 公共业务库 | 低 |
+| 10 | echart-ui | 4 | ✅ 是 | JavaFX平台UI库 | 高 |
+| 11 | echart-ui-render | 5 | ✅ 是 | JavaFX平台UI库 | 高 |
+| 12 | echart-theme | 5 | ❌ 否 | 公共业务库 | 低 |
+| 13 | echart-plugin | 5 | ❌ 否 | 公共业务库 | 低 |
+| 14 | echart-facade | 6 | ❌ 否 | 公共业务库 | 低 |
+| 15 | echart-app | 7 | ✅ 是 | JavaFX平台UI库 | 高 |
+
+> **多端复用分类说明**:
+> - **公共内核库**: 无外部依赖的核心框架，所有平台共享
+> - **公共业务库**: 不依赖JavaFX的业务逻辑模块，可在Android/Web等平台复用
+> - **JavaFX平台UI库**: 依赖JavaFX的UI模块，需为不同平台单独适配
 
 #### Cycle模块 (3个)
 
@@ -390,7 +395,8 @@ ext {
     projectGroup = 'cn.cycle.echart'
     
     javafxVersion = '17'
-    javafxPlatform = 'win'
+    javafxPlatform = System.getProperty('javafx.platform', 'win')
+    controlsfxVersion = '11.2.0'
     
     buildDir = new File(rootProject.projectDir, '../../build/ecn')
     installDir = new File(rootProject.projectDir, '../../install/bin')
@@ -620,7 +626,7 @@ dependencies {
     api project(':echart-theme')
     api project(':echart-render')
     implementation files('../../install/bin/fxribbon-2.1.0.jar')
-    implementation "org.controlsfx:controlsfx:${javafxVersion}.1.2"
+    implementation "org.controlsfx:controlsfx:${controlsfxVersion}"
     
     testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
@@ -738,8 +744,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation "org.junit.jupiter:junit-jupiter:5.9.3"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.9.3"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -804,7 +810,7 @@ plugins {
 }
 
 group projectGroup
-version '2.2.0'
+version '2.1.0'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -940,7 +946,7 @@ dependencies {
 **修改后**:
 ```gradle
 dependencies {
-    implementation "org.controlsfx:controlsfx:${javafxVersion}.1.2"
+    implementation "org.controlsfx:controlsfx:${controlsfxVersion}"
 }
 ```
 
@@ -1075,12 +1081,12 @@ pipeline {
 | 9 | echart-theme | P0 | 低 | 1h | 📋 Todo |
 | 10 | echart-plugin | P0 | 低 | 1h | 📋 Todo |
 | 11 | echart-facade | P0 | 低 | 1h | 📋 Todo |
-| 12 | fxribbon | P0 | 高 | 4h | 📋 Todo |
-| 13 | echart-ui | P0 | 高 | 6h | 📋 Todo |
-| 14 | echart-ui-render | P0 | 高 | 4h | 📋 Todo |
-| 15 | echart-app | P0 | 高 | 4h | 📋 Todo |
+| 12 | fxribbon | P0 | 高 | 8h | 📋 Todo |
+| 13 | echart-ui | P0 | 高 | 12h | 📋 Todo |
+| 14 | echart-ui-render | P0 | 高 | 8h | 📋 Todo |
+| 15 | echart-app | P0 | 高 | 8h | 📋 Todo |
 
-**总预估工时**: 30小时
+**总预估工时**: 50小时
 
 ### 5.2 Cycle模块迁移清单
 
@@ -1098,11 +1104,11 @@ pipeline {
 |------|------|----------|--------|
 | 阶段一 | 环境准备 | 8h | 运维工程师 |
 | 阶段二 | Gradle升级 | 16h | 开发工程师 |
-| 阶段三 | 代码迁移 | 24h | 开发工程师 |
+| 阶段三 | 代码迁移 | 44h | 开发工程师 |
 | 阶段四 | 测试验证 | 16h | 测试工程师 |
 | 阶段五 | 部署发布 | 8h | 运维工程师 |
 
-**总预估工时**: 72小时 (9人天)
+**总预估工时**: 92小时 (12人天)
 
 ---
 
@@ -1214,6 +1220,7 @@ A: 需要使用JDK 11重新编译本地库，确保兼容性。
 | 版本 | 日期 | 变更内容 | 变更人 |
 |------|------|----------|--------|
 | v1.0 | 2026-04-24 | 初始版本 | AI Migration Planner |
+| v1.1 | 2026-04-25 | 根据检查报告修正: P0-修正ControlsFX版本号格式(${controlsfxVersion}); P1-统一JUnit版本引用(${junitVersion}); P1-JavaFX平台自动检测(System.getProperty); P1-fxribbon版本保持2.1.0; P2-调整JavaFX模块工时估算; 新增多端复用分类列 | AI Code Reviewer |
 
 ---
 

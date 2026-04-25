@@ -31,7 +31,7 @@ import java.util.Objects;
  */
 public class SideBarManager extends HBox {
 
-    private static final double SIDEBAR_WIDTH = 280.0;
+    private static final double SIDEBAR_WIDTH = 200.0;
     private static final double COLLAPSED_WIDTH = 0.0;
     private static final double ICON_SIZE = 20.0;
     public static final double MIN_EXPANDED_WIDTH = 100.0;

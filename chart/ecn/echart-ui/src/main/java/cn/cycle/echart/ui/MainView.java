@@ -1,5 +1,9 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.core.ServiceLocator;
+import cn.cycle.echart.facade.AlarmFacade;
+import cn.cycle.echart.facade.ApplicationFacade;
+import cn.cycle.echart.facade.RouteFacade;
 import cn.cycle.echart.theme.Theme;
 import cn.cycle.echart.theme.ThemeManager;
 import cn.cycle.echart.ui.handler.*;
@@ -296,6 +300,10 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void initializePanels() {
+        RouteFacade routeFacade = ServiceLocator.getService(RouteFacade.class);
+        AlarmFacade alarmFacade = ServiceLocator.getService(AlarmFacade.class);
+        ApplicationFacade applicationFacade = ServiceLocator.getService(ApplicationFacade.class);
+        
         LayerManagerPanel layerManagerPanel = new LayerManagerPanel();
         SideBarManager.SideBarPanel layersPanel = new SideBarManager.SideBarPanel(
                 "layers", "图层管理", "/icons/layers.png", "图层管理面板",
@@ -306,12 +314,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 "search", "搜索", "/icons/search.png", "搜索面板",
                 searchPanel.getContent());
         
-        SideBarManager.SideBarPanel routePanel = new SideBarManager.SideBarPanel(
+        RoutePanel routePanel = new RoutePanel(routeFacade);
+        SideBarManager.SideBarPanel routeSideBarPanel = new SideBarManager.SideBarPanel(
                 "route", "航线", "/icons/route.png", "航线规划面板",
-                new RoutePanel());
-        SideBarManager.SideBarPanel alarmPanel = new SideBarManager.SideBarPanel(
+                routePanel);
+        AlarmPanel alarmPanel = new AlarmPanel(alarmFacade);
+        SideBarManager.SideBarPanel alarmSideBarPanel = new SideBarManager.SideBarPanel(
                 "alarm", "预警", "/icons/alarm.png", "预警管理面板",
-                new AlarmPanel());
+                alarmPanel);
         SideBarManager.SideBarPanel aisPanel = new SideBarManager.SideBarPanel(
                 "ais", "AIS", "/icons/ais.png", "AIS目标面板",
                 createPlaceholderPanel("AIS目标"));
@@ -328,14 +338,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
         
         sideBarManager.registerPanel(layersPanel, 0);
         sideBarManager.registerPanel(searchSideBarPanel, 1);
-        sideBarManager.registerPanel(routePanel, 2);
-        sideBarManager.registerPanel(alarmPanel, 3);
+        sideBarManager.registerPanel(routeSideBarPanel, 2);
+        sideBarManager.registerPanel(alarmSideBarPanel, 3);
         sideBarManager.registerPanel(aisPanel, 4);
         sideBarManager.registerPanel(measureSideBarPanel, 5);
         sideBarManager.registerPanel(settingsSideBarPanel, 6);
         
         PropertyPanel propertyPanel = new PropertyPanel();
-        rightTabManager.registerPanel(new AlarmPanel());
+        rightTabManager.registerPanel(alarmPanel);
         rightTabManager.registerPanel(new LogPanel());
         rightTabManager.registerPanel(propertyPanel);
         rightTabManager.registerPanel(new TerminalPanel());

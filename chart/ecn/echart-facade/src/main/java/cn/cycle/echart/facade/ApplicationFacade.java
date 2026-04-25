@@ -1,10 +1,8 @@
 package cn.cycle.echart.facade;
 
-import cn.cycle.echart.alarm.AlarmManager;
-import cn.cycle.echart.ais.AISTargetManager;
-import cn.cycle.echart.data.ChartFileManager;
-import cn.cycle.echart.route.RouteManager;
-import cn.cycle.echart.workspace.WorkspaceManager;
+import cn.cycle.echart.data.ChartFile;
+
+import java.util.List;
 
 /**
  * 应用门面接口。
@@ -55,40 +53,15 @@ public interface ApplicationFacade {
      */
     boolean isRunning();
 
-    /**
-     * 获取海图文件管理器。
-     * 
-     * @return 海图文件管理器
-     */
-    ChartFileManager getChartFileManager();
+    AlarmFacade getAlarmFacade();
 
-    /**
-     * 获取预警管理器。
-     * 
-     * @return 预警管理器
-     */
-    AlarmManager getAlarmManager();
+    RouteFacade getRouteFacade();
 
-    /**
-     * 获取AIS目标管理器。
-     * 
-     * @return AIS目标管理器
-     */
-    AISTargetManager getAisTargetManager();
+    WorkspaceFacade getWorkspaceFacade();
 
-    /**
-     * 获取航线管理器。
-     * 
-     * @return 航线管理器
-     */
-    RouteManager getRouteManager();
+    AISFacade getAisFacade();
 
-    /**
-     * 获取工作区管理器。
-     * 
-     * @return 工作区管理器
-     */
-    WorkspaceManager getWorkspaceManager();
+    List<ChartFile> getLoadedCharts();
 
     /**
      * 加载工作区。

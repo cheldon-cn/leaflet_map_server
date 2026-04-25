@@ -1,7 +1,7 @@
 package cn.cycle.echart.ui.panel;
 
 import cn.cycle.echart.ui.FxRightTabPanel;
-import cn.cycle.echart.alarm.AlarmManager;
+import cn.cycle.echart.facade.AlarmFacade;
 import cn.cycle.chart.api.alert.Alert;
 import cn.cycle.chart.api.alert.Alert.Severity;
 import cn.cycle.chart.api.alert.Alert.Type;
@@ -33,15 +33,15 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     private final Tab activeTab;
     private final Tab historyTab;
     
-    private AlarmManager alarmManager;
+    private AlarmFacade alarmFacade;
     private final Tab tab;
 
     public AlarmPanel() {
         this(null);
     }
 
-    public AlarmPanel(AlarmManager alarmManager) {
-        this.alarmManager = alarmManager;
+    public AlarmPanel(AlarmFacade alarmFacade) {
+        this.alarmFacade = alarmFacade;
         this.activeListView = new ListView<>();
         this.historyListView = new ListView<>();
         this.tabPane = new TabPane();
@@ -52,14 +52,14 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
         this.tab.setClosable(false);
         
         initializeLayout();
-        if (alarmManager != null) {
+        if (alarmFacade != null) {
             loadData();
         }
     }
     
-    public void setAlarmManager(AlarmManager alarmManager) {
-        this.alarmManager = alarmManager;
-        if (alarmManager != null) {
+    public void setAlarmFacade(AlarmFacade alarmFacade) {
+        this.alarmFacade = alarmFacade;
+        if (alarmFacade != null) {
             loadData();
         }
     }
@@ -129,13 +129,13 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     private void loadData() {
         activeListView.getItems().clear();
         
-        if (alarmManager == null) {
-            activeListView.getItems().add(new Alert(Type.SYSTEM, Severity.INFO, "预警管理器未初始化", "等待AlarmManager注入"));
+        if (alarmFacade == null) {
+            activeListView.getItems().add(new Alert(Type.SYSTEM, Severity.INFO, "预警门面未初始化", "等待AlarmFacade注入"));
             loadHistory();
             return;
         }
         
-        List<Alert> alerts = alarmManager.getActiveAlerts();
+        List<Alert> alerts = alarmFacade.getActiveAlerts();
         activeListView.getItems().addAll(alerts);
         
         loadHistory();
@@ -147,8 +147,8 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
     }
 
     private void acknowledgeAlarm() {
-        if (alarmManager == null) {
-            showWarning("预警管理器未初始化");
+        if (alarmFacade == null) {
+            showWarning("预警模块尚未初始化，暂时无法使用预警相关功能");
             return;
         }
         Alert selected = activeListView.getSelectionModel().getSelectedItem();
@@ -157,13 +157,13 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
             return;
         }
         
-        alarmManager.acknowledgeAlert(selected.getId());
+        alarmFacade.acknowledgeAlert(selected.getId());
         activeListView.refresh();
     }
 
     private void clearAlarm() {
-        if (alarmManager == null) {
-            showWarning("预警管理器未初始化");
+        if (alarmFacade == null) {
+            showWarning("预警模块尚未初始化，暂时无法使用预警相关功能");
             return;
         }
         Alert selected = activeListView.getSelectionModel().getSelectedItem();
@@ -172,7 +172,7 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
             return;
         }
         
-        alarmManager.clearAlert(selected.getId());
+        alarmFacade.clearAlert(selected.getId());
         activeListView.getItems().remove(selected);
     }
 
@@ -185,7 +185,7 @@ public class AlarmPanel extends BorderPane implements FxRightTabPanel {
         
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                alarmManager.clearAllAlerts();
+                alarmFacade.clearAllAlerts();
                 activeListView.getItems().clear();
             }
         });

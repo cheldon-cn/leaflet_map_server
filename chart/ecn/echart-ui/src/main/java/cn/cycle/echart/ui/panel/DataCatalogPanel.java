@@ -2,7 +2,8 @@ package cn.cycle.echart.ui.panel;
 
 import cn.cycle.echart.ui.FxSideBarPanel;
 import cn.cycle.echart.data.ChartFile;
-import cn.cycle.echart.data.ChartFileManager;
+import cn.cycle.echart.facade.ApplicationFacade;
+import cn.cycle.echart.facade.FacadeException;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.layout.BorderPane;
@@ -26,10 +27,10 @@ public class DataCatalogPanel extends BorderPane implements FxSideBarPanel {
     private static final String PANEL_ID = "data-catalog-panel";
     
     private final TreeView<String> treeView;
-    private final ChartFileManager chartFileManager;
+    private final ApplicationFacade applicationFacade;
     
-    public DataCatalogPanel(ChartFileManager chartFileManager) {
-        this.chartFileManager = Objects.requireNonNull(chartFileManager, "chartFileManager cannot be null");
+    public DataCatalogPanel(ApplicationFacade applicationFacade) {
+        this.applicationFacade = Objects.requireNonNull(applicationFacade, "applicationFacade cannot be null");
         this.treeView = new TreeView<>();
         
         initializeLayout();
@@ -75,7 +76,7 @@ public class DataCatalogPanel extends BorderPane implements FxSideBarPanel {
         TreeItem<String> root = treeView.getRoot();
         root.getChildren().clear();
         
-        List<ChartFile> charts = chartFileManager.getLoadedCharts();
+        List<ChartFile> charts = applicationFacade.getLoadedCharts();
         for (ChartFile chart : charts) {
             TreeItem<String> item = new TreeItem<>(chart.getName());
             root.getChildren().add(item);
@@ -93,10 +94,10 @@ public class DataCatalogPanel extends BorderPane implements FxSideBarPanel {
         
         File file = fileChooser.showOpenDialog(getScene().getWindow());
         if (file != null) {
-            ChartFile chart = chartFileManager.loadChart(file.getAbsolutePath());
-            if (chart != null) {
+            try {
+                applicationFacade.loadChart(file.getAbsolutePath());
                 loadData();
-            } else {
+            } catch (FacadeException e) {
                 showError("加载失败", "无法加载海图文件: " + file.getName());
             }
         }
@@ -110,10 +111,14 @@ public class DataCatalogPanel extends BorderPane implements FxSideBarPanel {
         }
         
         String chartName = selected.getValue();
-        List<ChartFile> charts = chartFileManager.getLoadedCharts();
+        List<ChartFile> charts = applicationFacade.getLoadedCharts();
         for (ChartFile chart : charts) {
             if (chart.getName().equals(chartName)) {
-                chartFileManager.unloadChart(chart.getId());
+                try {
+                    applicationFacade.unloadChart(chart.getId());
+                } catch (FacadeException e) {
+                    showError("卸载失败", "无法卸载海图: " + chartName);
+                }
                 loadData();
                 break;
             }

@@ -55,38 +55,44 @@ public class DefaultApplicationFacadeTest {
     }
 
     @Test
-    public void testGetChartFileManager() throws FacadeException {
+    public void testGetAlarmFacade() throws FacadeException {
         facade.initialize();
         
-        assertNotNull(facade.getChartFileManager());
+        assertNotNull(facade.getAlarmFacade());
     }
 
     @Test
-    public void testGetAlarmManager() throws FacadeException {
+    public void testGetRouteFacade() throws FacadeException {
         facade.initialize();
         
-        assertNotNull(facade.getAlarmManager());
+        assertNotNull(facade.getRouteFacade());
     }
 
     @Test
-    public void testGetAisTargetManager() throws FacadeException {
+    public void testGetWorkspaceFacade() throws FacadeException {
         facade.initialize();
         
-        assertNotNull(facade.getAisTargetManager());
+        assertNotNull(facade.getWorkspaceFacade());
     }
 
     @Test
-    public void testGetRouteManager() throws FacadeException {
+    public void testGetAisFacade() throws FacadeException {
         facade.initialize();
         
-        assertNotNull(facade.getRouteManager());
+        assertNotNull(facade.getAisFacade());
     }
 
     @Test
-    public void testGetWorkspaceManager() throws FacadeException {
+    public void testGetLoadedCharts() throws FacadeException {
         facade.initialize();
         
-        assertNotNull(facade.getWorkspaceManager());
+        assertNotNull(facade.getLoadedCharts());
+    }
+
+    @Test
+    public void testGetLoadedChartsBeforeInit() {
+        assertNotNull(facade.getLoadedCharts());
+        assertTrue(facade.getLoadedCharts().isEmpty());
     }
 
     @Test(expected = FacadeException.class)

@@ -2,9 +2,9 @@ package cn.cycle.echart.ui;
 
 import cn.cycle.echart.core.EventBus;
 import cn.cycle.echart.core.ServiceLocator;
+import cn.cycle.echart.facade.WorkspaceFacade;
 import cn.cycle.echart.i18n.I18nManager;
 import cn.cycle.echart.workspace.Workspace;
-import cn.cycle.echart.workspace.WorkspaceManager;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -24,7 +24,7 @@ public class FxAppContext {
     
     private final EventBus eventBus;
     private final I18nManager i18nManager;
-    private final WorkspaceManager workspaceManager;
+    private final WorkspaceFacade workspaceFacade;
     private final ServiceLocator serviceLocator;
     private final FxPlatformAdapter platformAdapter;
     
@@ -32,10 +32,10 @@ public class FxAppContext {
     private Locale currentLocale;
 
     private FxAppContext(EventBus eventBus, I18nManager i18nManager, 
-            WorkspaceManager workspaceManager, ServiceLocator serviceLocator) {
+            WorkspaceFacade workspaceFacade, ServiceLocator serviceLocator) {
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus cannot be null");
         this.i18nManager = Objects.requireNonNull(i18nManager, "i18nManager cannot be null");
-        this.workspaceManager = Objects.requireNonNull(workspaceManager, "workspaceManager cannot be null");
+        this.workspaceFacade = Objects.requireNonNull(workspaceFacade, "workspaceFacade cannot be null");
         this.serviceLocator = Objects.requireNonNull(serviceLocator, "serviceLocator cannot be null");
         this.platformAdapter = new FxPlatformAdapter();
         this.currentLocale = Locale.getDefault();
@@ -49,11 +49,11 @@ public class FxAppContext {
     }
 
     public static synchronized void initialize(EventBus eventBus, I18nManager i18nManager,
-            WorkspaceManager workspaceManager, ServiceLocator serviceLocator) {
+            WorkspaceFacade workspaceFacade, ServiceLocator serviceLocator) {
         if (instance != null) {
             throw new IllegalStateException("FxAppContext already initialized.");
         }
-        instance = new FxAppContext(eventBus, i18nManager, workspaceManager, serviceLocator);
+        instance = new FxAppContext(eventBus, i18nManager, workspaceFacade, serviceLocator);
     }
 
     public static synchronized void shutdown() {
@@ -68,8 +68,8 @@ public class FxAppContext {
         return i18nManager;
     }
 
-    public WorkspaceManager getWorkspaceManager() {
-        return workspaceManager;
+    public WorkspaceFacade getWorkspaceFacade() {
+        return workspaceFacade;
     }
 
     public ServiceLocator getServiceLocator() {
