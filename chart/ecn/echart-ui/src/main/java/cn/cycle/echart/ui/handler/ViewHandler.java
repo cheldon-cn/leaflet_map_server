@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui.handler;
 
+import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.ui.ChartDisplayArea;
 import cn.cycle.echart.ui.SideBarManager;
 import cn.cycle.echart.ui.RightTabManager;
@@ -58,11 +59,29 @@ public class ViewHandler {
     }
 
     public void showSideBar() {
-        sideBarManager.expandPanel();
+        if (!sideBarManager.isExpanded()) {
+            String panelId = sideBarManager.getFirstPanelId();
+            if (panelId != null) {
+                sideBarManager.showPanel(panelId);
+            } else {
+                sideBarManager.expandPanel();
+            }
+        }
+        if (updateDividerCallback != null) {
+            javafx.application.Platform.runLater(() -> {
+                LogUtil.debug("ViewHandler", "showSideBar: calling updateDividerCallback");
+                updateDividerCallback.run();
+            });
+        }
     }
 
     public void hideSideBar() {
         sideBarManager.collapsePanel();
+        if (updateDividerCallback != null) {
+            javafx.application.Platform.runLater(() -> {
+                updateDividerCallback.run();
+            });
+        }
     }
 
     public void toggleSideBar() {

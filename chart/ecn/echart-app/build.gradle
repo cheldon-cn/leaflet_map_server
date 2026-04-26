@@ -1,81 +1,53 @@
 apply from: '../config/common.gradle'
 
-apply plugin: 'java'
-apply plugin: 'maven'
 apply plugin: 'application'
 
-group projectGroup
-version projectVersion
-
-sourceCompatibility = javaVersion
-targetCompatibility = javaVersion
-
-[compileJava, compileTestJava, javadoc]*.options*.encoding = encoding
-
-buildDir = new File(projectDir, '../../build/ecn/echart-app')
+configureJavaModule(project, 'echart-app')
 
 mainClassName = 'cn.cycle.echart.app.EChartApp'
 
 dependencies {
-    compile project(':echart-core')
-    compile project(':echart-i18n')
-    compile project(':echart-data')
-    compile project(':echart-render')
-    compile project(':echart-alarm')
-    compile project(':echart-ais')
-    compile project(':echart-route')
-    compile project(':echart-workspace')
-    compile project(':echart-ui')
-    compile project(':echart-ui-render')
-    compile project(':echart-theme')
-    compile project(':echart-plugin')
-    compile project(':echart-facade')
+    implementation lib('echart-core')
+    implementation lib('echart-i18n')
+    implementation lib('echart-data')
+    implementation lib('echart-render')
+    implementation lib('echart-alarm')
+    implementation lib('echart-ais')
+    implementation lib('echart-route')
+    implementation lib('echart-workspace')
+    implementation lib('echart-ui')
+    implementation lib('echart-ui-render')
+    implementation lib('echart-theme')
+    implementation lib('echart-plugin')
+    implementation lib('echart-facade')
+    implementation lib('javawrapper')
+    implementation lib('fxribbon')
+    implementation "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-fxml:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-swing:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-media:${javafxVersion}:${javafxPlatform}"
     
-    testCompile group: 'junit', name: 'junit', version: junitVersion
-    testCompile 'org.mockito:mockito-core:2.23.0'
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+    testImplementation 'org.mockito:mockito-core:2.23.0'
 }
 
 jar {
-    baseName = 'echart-app'
+    archiveBaseName.set('echart-app')
     
     manifest {
         attributes 'Implementation-Title': 'E-Chart Application',
-                   'Implementation-Version': version,
+                   'Implementation-Version': archiveVersion.get(),
                    'Main-Class': mainClassName
     }
     
     from {
-        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourcesJar
-}
-
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
     
-    forkEvery = 1
-    maxParallelForks = 1
-    enableAssertions = false
-    jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
-
-task installJar(type: Copy, dependsOn: jar) {
-    from jar.archivePath
-    into installDir
-}
-
-build.finalizedBy installJar
 
 run {
     jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]

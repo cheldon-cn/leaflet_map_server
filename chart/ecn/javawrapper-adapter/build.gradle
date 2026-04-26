@@ -1,0 +1,72 @@
+apply from: '../config/common.gradle'
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+group projectGroup
+version projectVersion
+
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+
+[compileJava, compileTestJava, javadoc]*.options*.encoding = encoding
+
+buildDir = new File(projectDir, '../../build/ecn/javawrapper-adapter')
+
+def javafxVersion = '17'
+def javafxPlatform = System.getProperty('javafx.platform', 'win')
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation files('../../install/bin/javawrapper-2.1.0.jar')
+    implementation "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+    
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
+}
+
+jar {
+    archiveBaseName.set('javawrapper-adapter')
+    
+    manifest {
+        attributes 'Implementation-Title': 'JavaWrapper JavaFX Adapter',
+                   'Implementation-Version': archiveVersion.get()
+    }
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+    
+    forkEvery = 1
+    maxParallelForks = 1
+    enableAssertions = false
+    jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+task installJar(type: Copy, dependsOn: jar) {
+    from jar.archivePath
+    into installDir
+}
+
+build.finalizedBy installJar
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+        }
+    }
+}

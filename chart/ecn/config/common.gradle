@@ -1,16 +1,101 @@
 ext {
-    javaVersion = 1.8
+    javaVersion = 11
     encoding = 'UTF-8'
     junitVersion = '4.12'
     projectVersion = '1.2.1-alpha'
     projectGroup = 'cn.cycle.echart'
     
+    javafxVersion = '17'
+    javafxPlatform = System.getProperty('javafx.platform', 'win')
+    controlsfxVersion = '11.2.0'
+    
     buildDir = new File(rootProject.projectDir, '../../build/ecn')
     installDir = new File(rootProject.projectDir, '../../install/bin')
     policyFile = new File(rootProject.projectDir, '../config/java.policy')
+    
+    installDirPath = '../../install/bin/'
 }
 
 repositories {
     mavenCentral()
     mavenLocal()
+}
+
+def createSourcesJar(Project project) {
+    project.task('sourcesJar', type: Jar, dependsOn: project.classes) {
+        archiveClassifier.set('sources')
+        from project.sourceSets.main.allSource
+    }
+}
+
+def createInstallJar(Project project) {
+    project.task('installJar', type: Copy, dependsOn: project.jar) {
+        from project.jar.archivePath
+        into installDir
+    }
+    project.build.finalizedBy project.tasks.findByName('installJar')
+}
+
+def configureTest(Project project) {
+    project.test {
+        testLogging {
+            events "passed", "skipped", "failed"
+            exceptionFormat "full"
+        }
+        
+        forkEvery = 1
+        maxParallelForks = 1
+        enableAssertions = false
+        jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
+    }
+}
+
+def configurePublishing(Project project) {
+    project.publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from project.components.java
+                artifact project.tasks.findByName('sourcesJar')
+            }
+        }
+    }
+}
+
+def configureJavaModule(Project project, String moduleName) {
+    project.apply plugin: 'java'
+    project.apply plugin: 'maven-publish'
+    
+    project.group projectGroup
+    project.version projectVersion
+    
+    project.sourceCompatibility = javaVersion
+    project.targetCompatibility = javaVersion
+    
+    [project.compileJava, project.compileTestJava, project.javadoc]*.options*.encoding = encoding
+    
+    project.buildDir = new File(project.projectDir, '../../build/ecn/' + moduleName)
+    
+    createSourcesJar(project)
+    createInstallJar(project)
+    configureTest(project)
+    configurePublishing(project)
+}
+
+def addJavaFXDependencies(Project project, List<String> modules) {
+    modules.each { module ->
+        project.dependencies.add('implementation', "org.openjfx:${module}:${javafxVersion}:${javafxPlatform}")
+    }
+}
+
+ext.createSourcesJar = this.&createSourcesJar
+ext.createInstallJar = this.&createInstallJar
+ext.configureTest = this.&configureTest
+ext.configurePublishing = this.&configurePublishing
+ext.configureJavaModule = this.&configureJavaModule
+ext.addJavaFXDependencies = this.&addJavaFXDependencies
+
+ext.lib = { String moduleName ->
+    def version = moduleName == 'javawrapper' ? '2.1.0' : 
+                  moduleName == 'fxribbon' ? '2.1.0' : projectVersion
+    files("${installDirPath}${moduleName}-${version}.jar")
 }

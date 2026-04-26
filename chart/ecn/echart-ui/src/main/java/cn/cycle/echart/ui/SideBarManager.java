@@ -13,6 +13,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
+import cn.cycle.echart.core.LogUtil;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +53,11 @@ public class SideBarManager extends HBox {
     
     private final ReadOnlyBooleanWrapper expandedProperty = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyDoubleWrapper currentWidthProperty = new ReadOnlyDoubleWrapper(40);
+    
+    private Runnable onBeforeExpand;
+    private Runnable onAfterExpand;
+    private Runnable onBeforeCollapse;
+    private Runnable onAfterCollapse;
 
     public SideBarManager() {
         this.buttonBar = new VBox();
@@ -162,6 +169,8 @@ public class SideBarManager extends HBox {
         }
         
         button.setOnAction(e -> {
+            LogUtil.debug("SideBarManager", "Button clicked: panelId=%s, isExpanded=%s, activePanel=%s",
+                    panel.getId(), isExpanded, activePanel != null ? activePanel.getId() : "null");
             if (isExpanded && activePanel != null && activePanel.getId().equals(panel.getId())) {
                 collapsePanel();
             } else {
@@ -201,6 +210,7 @@ public class SideBarManager extends HBox {
     public void showPanel(String panelId, double width, boolean fromDrag) {
         SideBarPanel panel = panels.get(panelId);
         if (panel == null) {
+            LogUtil.debug("SideBarManager", "showPanel: panel not found for id=%s, availablePanels=%s", panelId, panels.keySet());
             return;
         }
         
@@ -274,18 +284,33 @@ public class SideBarManager extends HBox {
             return;
         }
         
+        LogUtil.debug("SideBarManager", "[EXPAND BEFORE] buttonBar=40, contentPane=%s, total=%s", 
+                contentPane.getPrefWidth(), getPrefWidth());
+        
+        if (onBeforeExpand != null) {
+            onBeforeExpand.run();
+        }
+        
         isExpanded = true;
-        expandedProperty.set(true);
-        contentPane.setVisible(true);
-        contentPane.setManaged(true);
         
         expandedWidth = width;
         
         contentPane.setPrefWidth(width);
         contentPane.setMinWidth(0);
-        setMinWidth(40);
+        contentPane.setVisible(true);
+        contentPane.setManaged(true);
+        setMinWidth(40 + width);
         setPrefWidth(40 + width);
         currentWidthProperty.set(40 + width);
+        
+        expandedProperty.set(true);
+        
+        LogUtil.debug("SideBarManager", "[EXPAND AFTER] buttonBar=40, contentPane=%s, total=%s", 
+                contentPane.getPrefWidth(), getPrefWidth());
+        
+        if (onAfterExpand != null) {
+            javafx.application.Platform.runLater(onAfterExpand);
+        }
     }
 
     public void collapsePanel() {
@@ -293,10 +318,16 @@ public class SideBarManager extends HBox {
             return;
         }
         
+        LogUtil.debug("SideBarManager", "[COLLAPSE BEFORE] buttonBar=40, contentPane=%s, total=%s", 
+                contentPane.getPrefWidth(), getPrefWidth());
+        
+        if (onBeforeCollapse != null) {
+            onBeforeCollapse.run();
+        }
+        
         lastExpandedWidth = expandedWidth;
         
         isExpanded = false;
-        expandedProperty.set(false);
         contentPane.setVisible(false);
         contentPane.setManaged(false);
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
@@ -311,7 +342,14 @@ public class SideBarManager extends HBox {
             activePanel = null;
         }
         
+        expandedProperty.set(false);
         toggleGroup.selectToggle(null);
+        
+        LogUtil.debug("SideBarManager", "[COLLAPSE AFTER] buttonBar=40, contentPane=0, total=40");
+        
+        if (onAfterCollapse != null) {
+            javafx.application.Platform.runLater(onAfterCollapse);
+        }
     }
     
     public String getFirstPanelId() {
@@ -403,6 +441,22 @@ public class SideBarManager extends HBox {
     
     public double getCurrentWidth() {
         return currentWidthProperty.get();
+    }
+    
+    public void setOnBeforeExpand(Runnable callback) {
+        this.onBeforeExpand = callback;
+    }
+    
+    public void setOnAfterExpand(Runnable callback) {
+        this.onAfterExpand = callback;
+    }
+    
+    public void setOnBeforeCollapse(Runnable callback) {
+        this.onBeforeCollapse = callback;
+    }
+    
+    public void setOnAfterCollapse(Runnable callback) {
+        this.onAfterCollapse = callback;
     }
 
     public static class SideBarPanel {

@@ -14,9 +14,10 @@
 
 | 环境 | 要求 | 说明 |
 |------|------|------|
-| JDK | 1.8+ | 推荐使用 `F:\enc\java` |
-| JAVA_HOME | 必须设置 | 指向 JDK 1.8 安装目录 |
-| Gradle | 4.5.1 | 位于 `gradle/gradle-4.5.1/` |
+| JDK | 11+ | 推荐使用 `E:\java\jdk-11.0.30.7` |
+| JAVA_HOME | 必须设置 | 指向 JDK 11 安装目录 |
+| Gradle | 7.6.6 | 位于 `cycle/gradlew.bat` |
+| JavaFX | 17 | 位于 `E:\java\jfx-17-18` |
 
 ### Gradle 配置
 
@@ -24,16 +25,31 @@
 
 | 配置项 | 值 | 说明 |
 |--------|-----|------|
-| javaVersion | 1.8 | Java 版本 |
+| javaVersion | 11 | Java 版本 |
 | encoding | UTF-8 | 编码格式 |
 | junitVersion | 4.12 | JUnit 版本 |
 | projectVersion | 1.2.1-alpha | 项目版本 |
 | projectGroup | cn.cycle.echart | 项目组 |
+| javafxVersion | 17 | JavaFX 版本 |
+| javafxPlatform | win | JavaFX 平台（win/linux/mac） |
+| controlsfxVersion | 11.2.0 | ControlsFX 版本 |
+
+### 通用配置函数
+
+`common.gradle` 提供以下通用配置函数：
+
+| 函数名 | 说明 |
+|--------|------|
+| `configureJavaModule(project, moduleName)` | 配置 Java 模块（插件、版本、编码、构建目录、任务） |
+| `createSourcesJar(project)` | 创建源码 JAR 任务 |
+| `createInstallJar(project)` | 创建安装 JAR 任务 |
+| `configureTest(project)` | 配置测试任务 |
+| `configurePublishing(project)` | 配置发布任务 |
+| `addJavaFXDependencies(project, modules)` | 添加 JavaFX 依赖 |
 
 ### 编译与安装目录
 
-> **基准目录**: 所有路径均相对于**项目根目录**（即 `e:\program\trae\chart/`）
-
+> **基准目录**: 所有路径均相对于**项目根目录**（即 `F:\cycle\trae\chart\cycle/`）
 | 目录类型 | 路径 | 说明 |
 |----------|------|------|
 | 编译根目录 | `build/ecn/` | Gradle 构建输出目录 |
@@ -46,40 +62,53 @@
 
 | 模块 | 编译产物 | 输出目录 |
 |------|----------|----------|
-| fxribbon | fxribbon-2.1.0.jar | build/ecn/fxribbon/libs/ |
-| echart-core | echart-core-1.2.1-alpha.jar | build/ecn/echart-core/libs/ |
-| echart-i18n | echart-i18n-1.2.1-alpha.jar | build/ecn/echart-i18n/libs/ |
-| echart-render | echart-render-1.2.1-alpha.jar | build/ecn/echart-render/libs/ |
-| echart-data | echart-data-1.2.1-alpha.jar | build/ecn/echart-data/libs/ |
-| echart-alarm | echart-alarm-1.2.1-alpha.jar | build/ecn/echart-alarm/libs/ |
-| echart-ais | echart-ais-1.2.1-alpha.jar | build/ecn/echart-ais/libs/ |
-| echart-route | echart-route-1.2.1-alpha.jar | build/ecn/echart-route/libs/ |
-| echart-workspace | echart-workspace-1.2.1-alpha.jar | build/ecn/echart-workspace/libs/ |
-| echart-ui | echart-ui-1.2.1-alpha.jar | build/ecn/echart-ui/libs/ |
-| echart-ui-render | echart-ui-render-1.2.1-alpha.jar | build/ecn/echart-ui-render/libs/ |
-| echart-theme | echart-theme-1.2.1-alpha.jar | build/ecn/echart-theme/libs/ |
-| echart-plugin | echart-plugin-1.2.1-alpha.jar | build/ecn/echart-plugin/libs/ |
-| echart-facade | echart-facade-1.2.1-alpha.jar | build/ecn/echart-facade/libs/ |
-| echart-app | echart-app-1.2.1-alpha.jar | build/ecn/echart-app/libs/ |
+| fxribbon | fxribbon-2.1.0.jar | install/bin/ |
+| echart-core | echart-core-1.2.1-alpha.jar | install/bin/ |
+| echart-i18n | echart-i18n-1.2.1-alpha.jar | install/bin/ |
+| echart-render | echart-render-1.2.1-alpha.jar | install/bin/ |
+| echart-data | echart-data-1.2.1-alpha.jar | install/bin/ |
+| echart-alarm | echart-alarm-1.2.1-alpha.jar | install/bin/ |
+| echart-ais | echart-ais-1.2.1-alpha.jar | install/bin/ |
+| echart-route | echart-route-1.2.1-alpha.jar | install/bin/ |
+| echart-workspace | echart-workspace-1.2.1-alpha.jar | install/bin/ |
+| echart-ui | echart-ui-1.2.1-alpha.jar | install/bin/ |
+| echart-ui-render | echart-ui-render-1.2.1-alpha.jar | install/bin/ |
+| echart-theme | echart-theme-1.2.1-alpha.jar | install/bin/ |
+| echart-plugin | echart-plugin-1.2.1-alpha.jar | install/bin/ |
+| echart-facade | echart-facade-1.2.1-alpha.jar | install/bin/ |
+| echart-app | echart-app-1.2.1-alpha.jar | install/bin/ |
+| javawrapper | javawrapper-2.1.0.jar | install/bin/ |
+| javawrapper-adapter | javawrapper-adapter-1.2.1-alpha.jar | install/bin/ |
 
-### 外部JAR依赖
-| JAR文件 | 使用模块 | 来源 |
-|---------|----------|------|
-| javawrapper-2.1.0.jar | echart-render, echart-alarm | install/bin/ |
-| fxribbon-2.1.0.jar | echart-ui | install/bin/ |
-| controlsfx-8.40.18.jar | echart-ui | ecn\controlsfx-8.40.18 |
-| mockito-core-2.23.0.jar | echart-ui-render, echart-theme, echart-plugin, echart-facade, echart-app | Maven中央仓库(仅测试) |
+### 外部依赖
+
+| 依赖 | 版本 | 使用模块 | 来源 |
+|------|------|----------|------|
+| JavaFX Base | 17 | echart-theme, fxribbon, echart-ui-render, echart-ui, echart-app | Maven Central |
+| JavaFX Graphics | 17 | echart-theme, fxribbon, echart-ui-render, echart-ui, echart-app | Maven Central |
+| JavaFX Controls | 17 | echart-theme, fxribbon, echart-ui-render, echart-ui, echart-app | Maven Central |
+| JavaFX FXML | 17 | echart-ui, echart-app | Maven Central |
+| JavaFX Swing | 17 | echart-ui, echart-app | Maven Central |
+| JavaFX Media | 17 | echart-ui, echart-app | Maven Central |
+| ControlsFX | 11.2.0 | echart-ui | Maven Central |
+| JUnit | 4.12 | 所有模块 | Maven Central |
+| Mockito | 2.23.0 | echart-app | Maven Central |
+
 ### 编译命令
 
 ```powershell
 # 设置 JAVA_HOME
-$env:JAVA_HOME='F:\enc\java'
+$env:JAVA_HOME='E:\java\jdk-11.0.30.7'
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 # 编译单个模块（跳过测试）
-gradle/gradle-4.5.1/bin/gradle.bat -p ecn/[模块名] build -x test
+.\cycle\gradlew.bat -p ecn\[模块名] build -x test --no-daemon
 
 # 示例：编译 echart-core
-gradle/gradle-4.5.1/bin/gradle.bat -p ecn/echart-core build -x test
+.\cycle\gradlew.bat -p ecn\echart-core build -x test --no-daemon
+
+# 编译所有模块
+.\cycle\gradlew.bat -p ecn build -x test --no-daemon
 ```
 
 ### 模块依赖层级
@@ -88,24 +117,25 @@ gradle/gradle-4.5.1/bin/gradle.bat -p ecn/echart-core build -x test
 Ribbon Layer: fxribbon (JavaFX Ribbon控件库，无依赖)
     ↓
 Layer 0: echart-core (无依赖)
+         javawrapper (公共内核库，无依赖)
     ↓
 Layer 1: echart-i18n (依赖 echart-core)
     ↓
 Layer 2: echart-render (依赖 echart-core, javawrapper)
          echart-data (依赖 echart-core)
     ↓
-Layer 3: echart-alarm (依赖 echart-core)
-         echart-ais (依赖 echart-core)
-         echart-route (无依赖)
-         echart-workspace (依赖 echart-route, echart-ais)
+Layer 3: echart-alarm (依赖 echart-core, javawrapper)
+         echart-ais (依赖 echart-core, echart-alarm, javawrapper)
+         echart-route (依赖 echart-core)
+         echart-workspace (依赖 echart-core, echart-ais, echart-route)
     ↓
 Layer 4: echart-plugin (依赖 echart-core)
          echart-ui-render (依赖 echart-render)
-         echart-theme (无依赖)
+         echart-theme (无依赖，仅JavaFX)
     ↓
-Layer 5: echart-facade (依赖 echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace)
+Layer 5: echart-facade (依赖 echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, javawrapper)
     ↓
-Layer 6: echart-ui (依赖 echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, fxribbon, controlsfx)
+Layer 6: echart-ui (依赖 echart-core, echart-i18n, echart-facade, echart-theme, echart-render, echart-data, echart-route, echart-workspace, fxribbon)
     ↓
 Layer 7: echart-app (依赖所有模块)
 ```
@@ -117,7 +147,7 @@ Layer 7: echart-app (依赖所有模块)
 | 顺序 | 模块 | Layer |
 |------|------|-------|
 | 1 | fxribbon | Ribbon |
-| 2 | echart-core | 0 |
+| 2 | echart-core, javawrapper | 0 |
 | 3 | echart-i18n | 1 |
 | 4 | echart-render, echart-data | 2 |
 | 5 | echart-alarm, echart-ais, echart-route | 3 |
@@ -139,14 +169,14 @@ Layer 7: echart-app (依赖所有模块)
 | 4 | echart-render | 2 | cn.cycle.echart.render | echart-core, javawrapper | 公共业务库 | 渲染引擎核心 |
 | 5 | echart-data | 2 | cn.cycle.echart.data | echart-core | 公共业务库 | 数据管理核心 |
 | 6 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core, javawrapper | 公共业务库 | 预警系统核心 |
-| 7 | echart-ais | 3 | cn.cycle.echart.ais | echart-core, echart-alarm | 公共业务库 | AIS集成核心 |
+| 7 | echart-ais | 3 | cn.cycle.echart.ais | echart-core, echart-alarm, javawrapper | 公共业务库 | AIS集成核心 |
 | 8 | echart-route | 3 | cn.cycle.echart.route | echart-core, echart-data | 公共业务库 | 航线规划核心 |
 | 9 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-core, echart-data, echart-alarm, echart-ais, echart-route | 公共业务库 | 工作区管理 |
-| 10 | echart-ui | 6 | cn.cycle.echart.ui | echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, fxribbon, controlsfx | JavaFX平台UI库 | JavaFX UI控件 |
+| 10 | echart-ui | 6 | cn.cycle.echart.ui | echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, fxribbon, controlsfx, javawrapper | JavaFX平台UI库 | JavaFX UI控件 |
 | 11 | echart-ui-render | 4 | cn.cycle.echart.ui.render | echart-core, echart-render, echart-data | JavaFX平台UI库 | JavaFX Canvas渲染 |
 | 12 | echart-theme | 4 | cn.cycle.echart.theme | echart-core | 公共业务库 | 主题管理 |
 | 13 | echart-plugin | 4 | cn.cycle.echart.plugin | echart-core | 公共业务库 | 插件系统 |
-| 14 | echart-facade | 5 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace | 公共业务库 | 服务门面层 |
+| 14 | echart-facade | 5 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, javawrapper | 公共业务库 | 服务门面层 |
 | 15 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | JavaFX平台UI库 | 应用入口 |
 
 > **多端复用分类说明**:
@@ -157,35 +187,44 @@ Layer 7: echart-app (依赖所有模块)
 ---
 
 ## 1. fxribbon (Ribbon Layer)
-**路径**: `ecn/fxribbon/src/main/java/com/cycle/`
+
+**路径**: `ecn/fxribbon/src/main/java/com/cycle/`  
 **依赖**: JavaFX 8 
 **版本**: 2.1.0
+
 ### 类列表
+
 | 类名 | 类型 | 说明 |
 |------|------|------|
 | Ribbon | 类 | Ribbon控件主容器 |
 | RibbonTab | 类 | Ribbon标签页 |
 | RibbonGroup | 类 | Ribbon功能组 |
 | RibbonMenuBar | 类 | Ribbon菜单栏 |
+
 ### 核心方法
+
 #### Ribbon
 - `ObservableList<RibbonTab> getTabs()` - 获取标签页列表
 - `RibbonTab getSelectedRibbonTab()` - 获取选中标签页
 - `void setSelectedRibbonTab(RibbonTab)` - 设置选中标签页
 - `Node getQuickAccessBar()` - 获取快速访问栏
 - `Node getWindowControls()` - 获取窗口控件
+
 #### RibbonTab
 - `ObservableList<RibbonGroup> getRibbonGroups()` - 获取功能组列表
 - `void setContextualColor(String)` - 设置上下文颜色
 - `String getContextualColor()` - 获取上下文颜色
+
 #### RibbonGroup
 - `String getTitle()` - 获取标题
 - `void setTitle(String)` - 设置标题
 - `ObservableList<Node> getChildren()` - 获取子节点
+
 ---
+
 ## 2. echart-core (Layer 0)
 
-**路径**: `ecn/echart-core/src/main/java/cn/cycle/echart/core/`
+**路径**: `ecn/echart-core/src/main/java/cn/cycle/echart/core/`  
 **依赖**: 无
 
 ### 类列表
@@ -279,9 +318,12 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
+
+
+
 ## 3. echart-i18n (Layer 1)
 
-**路径**: `ecn/echart-i18n/src/main/java/cn/cycle/echart/i18n/`
+**路径**: `ecn/echart-i18n/src/main/java/cn/cycle/echart/i18n/`  
 **依赖**: echart-core
 
 ### 类列表
@@ -322,7 +364,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 4. echart-render (Layer 2)
 
-**路径**: `ecn/echart-render/src/main/java/cn/cycle/echart/render/`
+**路径**: `ecn/echart-render/src/main/java/cn/cycle/echart/render/`  
 **依赖**: echart-core, javawrapper-2.1.0.jar
 
 ### 类列表
@@ -407,7 +449,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 5. echart-data (Layer 2)
 
-**路径**: `ecn/echart-data/src/main/java/cn/cycle/echart/data/`
+**路径**: `ecn/echart-data/src/main/java/cn/cycle/echart/data/`  
 **依赖**: echart-core
 
 ### 类列表
@@ -475,7 +517,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 6. echart-alarm (Layer 3)
 
-**路径**: `ecn/echart-alarm/src/main/java/cn/cycle/echart/alarm/`
+**路径**: `ecn/echart-alarm/src/main/java/cn/cycle/echart/alarm/`  
 **依赖**: echart-core, javawrapper-2.1.0.jar
 
 ### 类列表
@@ -525,7 +567,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 7. echart-ais (Layer 3)
 
-**路径**: `ecn/echart-ais/src/main/java/cn/cycle/echart/ais/`
+**路径**: `ecn/echart-ais/src/main/java/cn/cycle/echart/ais/`  
 **依赖**: echart-core, echart-alarm
 
 ### 类列表
@@ -581,7 +623,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 8. echart-route (Layer 3)
 
-**路径**: `ecn/echart-route/src/main/java/cn/cycle/echart/route/`
+**路径**: `ecn/echart-route/src/main/java/cn/cycle/echart/route/`  
 **依赖**: echart-core, echart-data
 
 ### 类列表
@@ -674,7 +716,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 9. echart-workspace (Layer 3)
 
-**路径**: `ecn/echart-workspace/src/main/java/cn/cycle/echart/workspace/`
+**路径**: `ecn/echart-workspace/src/main/java/cn/cycle/echart/workspace/`  
 **依赖**: echart-core, echart-data, echart-alarm, echart-ais, echart-route
 
 ### 类列表
@@ -748,7 +790,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 10. echart-ui (Layer 4)
 
-**路径**: `ecn/echart-ui/src/main/java/cn/cycle/echart/ui/`
+**路径**: `ecn/echart-ui/src/main/java/cn/cycle/echart/ui/`  
 **依赖**: echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-theme, echart-render, fxribbon, controlsfx
 
 ### 类列表
@@ -887,7 +929,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 11. echart-ui-render (Layer 5)
 
-**路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`
+**路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`  
 **依赖**: echart-core, echart-render, echart-data
 
 ### 类列表
@@ -1013,7 +1055,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 12. echart-theme (Layer 5)
 
-**路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`
+**路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`  
 **依赖**: echart-core
 
 ### 类列表
@@ -1064,7 +1106,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 13. echart-plugin (Layer 5)
 
-**路径**: `ecn/echart-plugin/src/main/java/cn/cycle/echart/plugin/`
+**路径**: `ecn/echart-plugin/src/main/java/cn/cycle/echart/plugin/`  
 **依赖**: echart-core
 
 ### 类列表
@@ -1133,7 +1175,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 14. echart-facade (Layer 6)
 
-**路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`
+**路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`  
 **依赖**: echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace
 
 ### 类列表
@@ -1178,7 +1220,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ## 15. echart-app (Layer 7)
 
-**路径**: `ecn/echart-app/src/main/java/cn/cycle/echart/app/`
+**路径**: `ecn/echart-app/src/main/java/cn/cycle/echart/app/`  
 **依赖**: echart-core, echart-i18n, echart-data, echart-render, echart-alarm, echart-ais, echart-route, echart-workspace, echart-ui, echart-ui-render, echart-theme, echart-plugin, echart-facade  
 **主类**: cn.cycle.echart.app.EChartApp
 
@@ -1230,8 +1272,11 @@ Layer 7: echart-app (依赖所有模块)
 ---
 
 ## 多端复用架构说明
+
 > **设计目标**: 基于同一内核、业务层在多端复用（Android、JavaFX App、Web），UI库单独适配。
+
 ### 架构分层
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      应用入口层                              │
@@ -1254,19 +1299,25 @@ Layer 7: echart-app (依赖所有模块)
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
 ### 分类明细
+
 | 分类 | 模块 | 数量 | 复用范围 |
 |------|------|------|----------|
 | 公共内核库 | echart-core | 1 | 所有平台 |
 | 公共业务库 | echart-i18n, echart-render, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-theme, echart-plugin, echart-facade | 10 | 所有平台 |
 | JavaFX平台UI库 | fxribbon, echart-ui, echart-ui-render, echart-app | 4 | 仅JavaFX Desktop |
+
 ### 多端适配要点
+
 | 目标平台 | 公共内核/业务库 | UI适配方案 |
 |----------|----------------|------------|
 | JavaFX Desktop | 直接复用 | 使用现有JavaFX平台UI库 |
 | Android | 直接复用 | 需新建Android UI模块（Jetpack Compose等） |
 | Web | 直接复用 | 需新建Web前端（React/Vue等）+ REST API |
+
 ---
+
 ## 模块依赖关系图
 
 ```

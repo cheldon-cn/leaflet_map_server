@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.core.ServiceLocator;
 import cn.cycle.echart.facade.AlarmFacade;
 import cn.cycle.echart.facade.ApplicationFacade;
@@ -51,6 +52,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private UIConfig uiConfig;
     
     private boolean isDraggingDivider = false;
+    private boolean isProgrammaticUpdate = false;
 
     private boolean initialized = false;
     private boolean active = false;
@@ -85,6 +87,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         this.stage = stage;
         if (stage != null) {
             titleBar = new TitleBar(stage);
+            titleBar.maxWidthProperty().bind(stage.widthProperty());
+            contentPane.maxWidthProperty().bind(stage.widthProperty());
+            centerSplitPane.maxWidthProperty().bind(stage.widthProperty());
             StackPane.setAlignment(titleBar, Pos.TOP_CENTER);
             rootContainer.getChildren().add(titleBar);
             
@@ -203,10 +208,23 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void setupSideBarListeners() {
+        sideBarManager.setOnBeforeExpand(() -> logLayoutInfo("EXPAND BEFORE"));
+        sideBarManager.setOnAfterExpand(() -> logLayoutInfo("EXPAND AFTER"));
+        sideBarManager.setOnBeforeCollapse(() -> logLayoutInfo("COLLAPSE BEFORE"));
+        sideBarManager.setOnAfterCollapse(() -> logLayoutInfo("COLLAPSE AFTER"));
+        
         sideBarManager.expandedProperty().addListener((obs, oldVal, newVal) -> {
-            javafx.application.Platform.runLater(() -> {
+            if (!isDraggingDivider && !isProgrammaticUpdate) {
                 updateDividerPositions();
-            });
+            }
+        });
+        
+        sideBarManager.currentWidthProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isDraggingDivider && !isProgrammaticUpdate) {
+                javafx.application.Platform.runLater(() -> {
+                    updateDividerPositions();
+                });
+            }
         });
     }
     
@@ -214,6 +232,18 @@ public class MainView extends BorderPane implements LifecycleComponent {
         final double COLLAPSE_THRESHOLD = 80.0;
         
         centerSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
+            if (isDraggingDivider) {
+                double splitWidth = centerSplitPane.getWidth();
+                if (splitWidth <= 0) return;
+                double actualWidth = newVal.doubleValue() * splitWidth;
+                sideBarManager.syncWidthFromSplitPane(actualWidth);
+                return;
+            }
+            
+            if (isProgrammaticUpdate) {
+                return;
+            }
+            
             double splitWidth = centerSplitPane.getWidth();
             if (splitWidth <= 0) return;
             
@@ -222,37 +252,44 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             if (contentWidth < COLLAPSE_THRESHOLD) {
                 if (sideBarManager.isExpanded()) {
-                    isDraggingDivider = true;
+                    isProgrammaticUpdate = true;
                     try {
                         sideBarManager.collapsePanel();
                     } finally {
-                        isDraggingDivider = false;
+                        isProgrammaticUpdate = false;
                     }
                 }
             } else {
                 if (!sideBarManager.isExpanded()) {
-                    isDraggingDivider = true;
+                    isProgrammaticUpdate = true;
                     try {
                         String firstPanelId = sideBarManager.getFirstPanelId();
                         if (firstPanelId != null) {
                             sideBarManager.showPanel(firstPanelId, contentWidth, true);
                         }
                     } finally {
-                        isDraggingDivider = false;
+                        isProgrammaticUpdate = false;
                     }
+                } else {
+                    sideBarManager.syncWidthFromSplitPane(actualWidth);
                 }
             }
         });
         
-        centerSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
-            double rightWidth = (1 - newVal.doubleValue()) * centerSplitPane.getWidth();
-            if (rightWidth > 0 && Math.abs(rightWidth - rightTabManager.getPrefWidth()) > 5) {
-                rightTabManager.setPrefWidth(rightWidth);
-            }
-        });
+        if (centerSplitPane.getDividers().size() >= 2) {
+            centerSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
+                if (isDraggingDivider || isProgrammaticUpdate) {
+                    return;
+                }
+                double rightWidth = (1 - newVal.doubleValue()) * centerSplitPane.getWidth();
+                if (rightWidth > 0 && Math.abs(rightWidth - rightTabManager.getPrefWidth()) > 5) {
+                    rightTabManager.setPrefWidth(rightWidth);
+                }
+            });
+        }
         
         rightTabManager.prefWidthProperty().addListener((obs, oldVal, newVal) -> {
-            if (!isDraggingDivider) {
+            if (!isDraggingDivider && !isProgrammaticUpdate) {
                 javafx.application.Platform.runLater(() -> {
                     updateDividerPositions();
                 });
@@ -260,16 +297,34 @@ public class MainView extends BorderPane implements LifecycleComponent {
         });
         
         centerSplitPane.widthProperty().addListener((obs, oldVal, newVal) -> {
-            if (!isDraggingDivider) {
+            if (!isDraggingDivider && !isProgrammaticUpdate) {
                 javafx.application.Platform.runLater(() -> {
                     updateDividerPositions();
+                });
+            }
+        });
+        
+        setupDividerDragDetection();
+    }
+    
+    private void setupDividerDragDetection() {
+        javafx.application.Platform.runLater(() -> {
+            for (javafx.scene.Node node : centerSplitPane.lookupAll(".split-pane-divider")) {
+                node.setOnMousePressed(e -> isDraggingDivider = true);
+                node.setOnMouseReleased(e -> {
+                    isDraggingDivider = false;
+                    if (sideBarManager.isExpanded() && !centerSplitPane.getDividers().isEmpty()) {
+                        double splitWidth = centerSplitPane.getWidth();
+                        double dividerPos = centerSplitPane.getDividers().get(0).getPosition();
+                        sideBarManager.syncWidthFromSplitPane(dividerPos * splitWidth);
+                    }
                 });
             }
         });
     }
     
     private void updateDividerPositions() {
-        if (isDraggingDivider) {
+        if (isDraggingDivider || isProgrammaticUpdate) {
             return;
         }
         
@@ -296,10 +351,39 @@ public class MainView extends BorderPane implements LifecycleComponent {
         leftRatio = Math.max(40.0 / splitWidth, Math.min(leftRatio, 0.4));
         rightRatio = Math.max(0.5, Math.min(rightRatio, 1.0 - 200.0 / splitWidth));
         
-        centerSplitPane.setDividerPositions(leftRatio, rightRatio);
+        isProgrammaticUpdate = true;
+        try {
+            int dividerCount = centerSplitPane.getDividers().size();
+            if (dividerCount >= 2) {
+                centerSplitPane.setDividerPositions(leftRatio, rightRatio);
+            } else if (dividerCount == 1) {
+                centerSplitPane.setDividerPositions(leftRatio);
+            }
+        } finally {
+            isProgrammaticUpdate = false;
+        }
+    }
+    
+    private void logLayoutInfo(String phase) {
+        double windowWidth = stage != null ? stage.getWidth() : 0;
+        double leftWidth = sideBarManager.getCurrentWidth();
+        double leftPrefWidth = sideBarManager.getPrefWidth();
+        boolean rightVisible = centerSplitPane.getItems().contains(rightTabManager);
+        double rightWidth = rightVisible ? rightTabManager.getPrefWidth() : 0;
+        double splitWidth = centerSplitPane.getWidth();
+        double chartWidth = splitWidth - leftWidth - rightWidth;
+        if (chartWidth < 0) chartWidth = chartDisplayArea.getWidth();
+        
+        double leftRatio = windowWidth > 0 ? (leftWidth / windowWidth * 100) : 0;
+        double chartRatio = windowWidth > 0 ? (chartWidth / windowWidth * 100) : 0;
+        double rightRatio = windowWidth > 0 ? (rightWidth / windowWidth * 100) : 0;
+        
+        LogUtil.debug("MainView", "[%s] window=%.1f | left=%.1f(pref=%.1f)(%.1f%%) | chart=%.1f(%.1f%%) | right=%.1f(visible=%s)(%.1f%%) | split=%.1f", 
+                phase, windowWidth, leftWidth, leftPrefWidth, leftRatio, chartWidth, chartRatio, rightWidth, rightVisible, rightRatio, splitWidth);
     }
     
     private void initializePanels() {
+        LogUtil.debug("MainView", "initializePanels: starting...");
         RouteFacade routeFacade = ServiceLocator.getService(RouteFacade.class);
         AlarmFacade alarmFacade = ServiceLocator.getService(AlarmFacade.class);
         ApplicationFacade applicationFacade = ServiceLocator.getService(ApplicationFacade.class);

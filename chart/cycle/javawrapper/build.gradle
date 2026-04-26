@@ -5,8 +5,10 @@ plugins {
 group 'cn.cycle.chart'
 // version '1.0.0'
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 repositories {
     mavenCentral()
@@ -16,16 +18,17 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
 jar {
-    destinationDir = new File(rootDir, '../build/test')
+    archiveBaseName.set('javawrapper')
+    destinationDirectory.set(new File(rootDir, '../install/bin'))
     manifest {
         attributes(
             'Implementation-Title': 'Cycle Chart Java Wrapper',
-            'Implementation-Version': version
+            'Implementation-Version': archiveVersion.get()
         )
     }
 }

@@ -135,6 +135,11 @@ public class TitleBar extends HBox {
         setHeight(32);
         setMinHeight(32);
         setMaxHeight(32);
+        
+        widthProperty().addListener((obs, oldVal, newVal) -> {
+            LogUtil.debug("TitleBar", "widthProperty: %s -> %s, windowControls.width=%s, stage.width=%s", 
+                    oldVal, newVal, windowControls.getWidth(), stage != null ? stage.getWidth() : "null");
+        });
     }
     
     private void onLogin() {
@@ -164,26 +169,20 @@ public class TitleBar extends HBox {
     private void setupDragHandler() {
         setOnMousePressed(event -> {
             if (event.isConsumed()) {
-                LogUtil.debug(TAG, "MousePressed: event already consumed, skipping");
                 return;
             }
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
             dragging = true;
-            LogUtil.debug(TAG, "MousePressed: offset=(%s, %s)", xOffset, yOffset);
         });
         
         setOnMouseDragged(event -> {
             if (event.isConsumed() || !dragging) {
-                if (event.isConsumed()) {
-                    LogUtil.debug(TAG, "MouseDragged: event consumed, skipping");
-                }
                 return;
             }
             if (stage != null && !stage.isMaximized() && !windowControls.isMaximized()) {
                 double newX = event.getScreenX() - xOffset;
                 double newY = event.getScreenY() - yOffset;
-                LogUtil.debug(TAG, "MouseDragged: moving window to (%s, %s)", newX, newY);
                 stage.setX(newX);
                 stage.setY(newY);
             }

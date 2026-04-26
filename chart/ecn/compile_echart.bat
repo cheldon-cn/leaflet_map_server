@@ -2,12 +2,12 @@
 setlocal EnableDelayedExpansion
 
 echo ========================================
-echo  ECN EChart Build Script v1.0
+echo  ECN EChart Build Script v2.0
 echo ========================================
 echo.
 
-set "JAVA_HOME=F:\enc\java"
-set "GRADLE_CMD=gradle\gradle-4.5.1\bin\gradle.bat"
+set "JAVA_HOME=E:\java\jdk-11.0.30.7"
+set "GRADLE_CMD=..\cycle\gradlew.bat"
 set "BUILD_ROOT=build\ecn"
 set "INSTALL_DIR=install\bin"
 
@@ -24,7 +24,7 @@ if not exist "%JAVA_HOME%\bin\java.exe" (
 )
 
 if not exist "%GRADLE_CMD%" (
-    echo [ERROR] Gradle not found: %GRADLE_CMD%
+    echo [ERROR] Gradle wrapper not found: %GRADLE_CMD%
     exit /b 1
 )
 
@@ -33,43 +33,50 @@ echo  Phase 1: Build All Modules
 echo ========================================
 echo.
 
-echo [Layer 0] Building echart-core...
-call "%GRADLE_CMD%" -p ecn\echart-core build -x test
-if errorlevel 1 goto :build_error
+echo [Ribbon] Building fxribbon...
+call "%GRADLE_CMD%" -p ecn\fxribbon build -x test --no-daemon
 
 echo.
-echo [Layer 1] Building  echart-i18n...
-call "%GRADLE_CMD%" -p ecn\echart-i18n build -x test
+echo [Layer 0] Building javawrapper, echart-core...
+call "%GRADLE_CMD%" -p cycle\javawrapper build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-core build -x test --no-daemon
+
+echo.
+echo [Layer 1] Building echart-i18n...
+call "%GRADLE_CMD%" -p ecn\echart-i18n build -x test --no-daemon
 
 echo.
 echo [Layer 2] Building echart-render, echart-data...
-call "%GRADLE_CMD%" -p ecn\echart-render build -x test
-call "%GRADLE_CMD%" -p ecn\echart-data build -x test
+call "%GRADLE_CMD%" -p ecn\echart-render build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-data build -x test --no-daemon
 
 echo.
-echo [Layer 3] Building echart-alarm, echart-ais, echart-route, echart-workspace...
-call "%GRADLE_CMD%" -p ecn\echart-alarm build -x test
-call "%GRADLE_CMD%" -p ecn\echart-ais build -x test
-call "%GRADLE_CMD%" -p ecn\echart-route build -x test
-call "%GRADLE_CMD%" -p ecn\echart-workspace build -x test
+echo [Layer 3] Building echart-alarm, echart-ais, echart-route...
+call "%GRADLE_CMD%" -p ecn\echart-alarm build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-ais build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-route build -x test --no-daemon
 
 echo.
-echo [Layer 4] Building echart-ui...
-call "%GRADLE_CMD%" -p ecn\echart-ui build -x test
+echo [Layer 3] Building echart-workspace...
+call "%GRADLE_CMD%" -p ecn\echart-workspace build -x test --no-daemon
 
 echo.
-echo [Layer 5] Building echart-ui-render, echart-theme, echart-plugin...
-call "%GRADLE_CMD%" -p ecn\echart-ui-render build -x test
-call "%GRADLE_CMD%" -p ecn\echart-theme build -x test
-call "%GRADLE_CMD%" -p ecn\echart-plugin build -x test
+echo [Layer 4] Building echart-plugin, echart-ui-render, echart-theme...
+call "%GRADLE_CMD%" -p ecn\echart-plugin build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-ui-render build -x test --no-daemon
+call "%GRADLE_CMD%" -p ecn\echart-theme build -x test --no-daemon
 
 echo.
-echo [Layer 6] Building echart-facade...
-call "%GRADLE_CMD%" -p ecn\echart-facade build -x test
+echo [Layer 5] Building echart-facade...
+call "%GRADLE_CMD%" -p ecn\echart-facade build -x test --no-daemon
+
+echo.
+echo [Layer 6] Building echart-ui...
+call "%GRADLE_CMD%" -p ecn\echart-ui build -x test --no-daemon
 
 echo.
 echo [Layer 7] Building echart-app...
-call "%GRADLE_CMD%" -p ecn\echart-app build -x test
+call "%GRADLE_CMD%" -p ecn\echart-app build -x test --no-daemon
 
 echo.
 echo ========================================
@@ -83,7 +90,7 @@ if not exist "%INSTALL_DIR%" (
 )
 
 echo Installing JAR files...
-for %%m in (echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-ui echart-ui-render echart-theme echart-plugin echart-facade echart-app) do (
+for %%m in (javawrapper fxribbon echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-plugin echart-ui-render echart-theme echart-facade echart-ui echart-app) do (
     if exist "%BUILD_ROOT%\%%m\libs\%%m-*.jar" (
         for %%f in ("%BUILD_ROOT%\%%m\libs\%%m-*.jar") do (
             echo %%~nf | findstr /C:"-sources" >nul
@@ -106,11 +113,6 @@ dir /b "%INSTALL_DIR%\*.jar" 2>nul
 echo.
 
 goto :end
-
-:build_error
-echo.
-echo [ERROR] Build failed
-exit /b 1
 
 :end
 endlocal

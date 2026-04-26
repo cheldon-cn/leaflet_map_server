@@ -1,62 +1,33 @@
 apply from: '../config/common.gradle'
 
-apply plugin: 'java'
-apply plugin: 'maven'
-
-group projectGroup
-version projectVersion
-
-sourceCompatibility = javaVersion
-targetCompatibility = javaVersion
-
-[compileJava, compileTestJava, javadoc]*.options*.encoding = encoding
-
-buildDir = new File(projectDir, '../../build/ecn/echart-ui')
+configureJavaModule(project, 'echart-ui')
 
 dependencies {
-    compile project(':echart-core')
-    compile project(':echart-i18n')
-    compile project(':echart-facade')
-    compile project(':echart-theme')
-    compile project(':echart-render')
-    compile files('../../install/bin/fxribbon-2.1.0.jar')
-    compile 'org.controlsfx:controlsfx:8.40.18'
-    testCompile group: 'junit', name: 'junit', version: junitVersion
+    implementation lib('echart-core')
+    implementation lib('echart-i18n')
+    implementation lib('echart-facade')
+    implementation lib('echart-theme')
+    implementation lib('echart-render')
+    implementation lib('echart-data')
+    implementation lib('echart-route')
+    implementation lib('echart-workspace')
+    implementation lib('javawrapper')
+    implementation lib('fxribbon')
+    implementation "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-controls:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-fxml:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-swing:${javafxVersion}:${javafxPlatform}"
+    implementation "org.openjfx:javafx-media:${javafxVersion}:${javafxPlatform}"
+    implementation "org.controlsfx:controlsfx:${controlsfxVersion}"
+    testImplementation group: 'junit', name: 'junit', version: junitVersion
 }
 
 jar {
-    baseName = 'echart-ui'
+    archiveBaseName.set('echart-ui')
     
     manifest {
         attributes 'Implementation-Title': 'E-Chart UI Library',
-                   'Implementation-Version': version
+                   'Implementation-Version': archiveVersion.get()
     }
-}
-
-test {
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-    }
-    
-    forkEvery = 1
-    maxParallelForks = 1
-    enableAssertions = false
-    jvmArgs = ['-Djava.security.policy=' + policyFile.absolutePath]
-}
-
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-task installJar(type: Copy, dependsOn: jar) {
-    from jar.archivePath
-    into installDir
-}
-
-build.finalizedBy installJar
-
-artifacts {
-    archives sourcesJar
 }
