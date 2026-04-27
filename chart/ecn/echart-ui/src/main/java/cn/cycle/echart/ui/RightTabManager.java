@@ -135,4 +135,8 @@ public class RightTabManager extends TabPane {
     public Map<String, FxRightTabPanel> getPanels() {
         return new HashMap<>(panels);
     }
+    
+    public boolean hasTabs() {
+        return !getTabs().isEmpty();
+    }
 }

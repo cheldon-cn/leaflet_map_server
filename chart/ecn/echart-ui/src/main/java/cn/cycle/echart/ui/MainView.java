@@ -325,6 +325,8 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     private void updateDividerPositions() {
         if (isDraggingDivider || isProgrammaticUpdate) {
+            LogUtil.debug("MainView", "[updateDividerPositions] SKIPPED: isDraggingDivider=%s, isProgrammaticUpdate=%s", 
+                    isDraggingDivider, isProgrammaticUpdate);
             return;
         }
         
@@ -332,7 +334,11 @@ public class MainView extends BorderPane implements LifecycleComponent {
         if (splitWidth <= 0) return;
         
         double leftWidth = sideBarManager.getCurrentWidth();
-        double rightWidth = rightTabManager.getPrefWidth();
+        boolean rightVisible = centerSplitPane.getItems().contains(rightTabManager);
+        double rightWidth = rightVisible ? rightTabManager.getPrefWidth() : 0;
+        double chartExpectedWidth = splitWidth - leftWidth - rightWidth;
+        LogUtil.debug("MainView", "[updateDividerPositions] splitWidth=%.1f, leftWidth=%.1f, rightWidth=%.1f, chartExpectedWidth=%.1f", 
+                splitWidth, leftWidth, rightWidth, chartExpectedWidth);
         
         double leftRatio = leftWidth / splitWidth;
         double rightRatio = 1.0 - rightWidth / splitWidth;
@@ -349,7 +355,13 @@ public class MainView extends BorderPane implements LifecycleComponent {
         }
         
         leftRatio = Math.max(40.0 / splitWidth, Math.min(leftRatio, 0.4));
+        if (rightVisible) {
         rightRatio = Math.max(0.5, Math.min(rightRatio, 1.0 - 200.0 / splitWidth));
+        } else {
+            rightRatio = 1.0;
+        }
+        LogUtil.debug("MainView", "[updateDividerPositions] leftRatio=%.3f, rightRatio=%.3f, dividerCount=%d", 
+                leftRatio, rightRatio, centerSplitPane.getDividers().size());
         
         isProgrammaticUpdate = true;
         try {
@@ -359,9 +371,15 @@ public class MainView extends BorderPane implements LifecycleComponent {
             } else if (dividerCount == 1) {
                 centerSplitPane.setDividerPositions(leftRatio);
             }
+            LogUtil.debug("MainView", "[updateDividerPositions] divider[0].position=%.3f", 
+                    centerSplitPane.getDividers().get(0).getPosition());
         } finally {
             isProgrammaticUpdate = false;
         }
+        javafx.application.Platform.runLater(() -> {
+            LogUtil.debug("MainView", "[updateDividerPositions] RUNLATER: chartDisplayArea.getWidth()=%.1f", 
+                    chartDisplayArea.getWidth());
+        });
     }
     
     private void logLayoutInfo(String phase) {
@@ -371,8 +389,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
         boolean rightVisible = centerSplitPane.getItems().contains(rightTabManager);
         double rightWidth = rightVisible ? rightTabManager.getPrefWidth() : 0;
         double splitWidth = centerSplitPane.getWidth();
-        double chartWidth = splitWidth - leftWidth - rightWidth;
-        if (chartWidth < 0) chartWidth = chartDisplayArea.getWidth();
+        double chartWidth = windowWidth - leftWidth - rightWidth;
         
         double leftRatio = windowWidth > 0 ? (leftWidth / windowWidth * 100) : 0;
         double chartRatio = windowWidth > 0 ? (chartWidth / windowWidth * 100) : 0;
@@ -433,6 +450,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
         rightTabManager.registerPanel(new LogPanel());
         rightTabManager.registerPanel(propertyPanel);
         rightTabManager.registerPanel(new TerminalPanel());
+        rightTabManager.selectPanel("property-panel");
         
         initializeHandlers();
         setupLayerPanelCallbacks(layerManagerPanel, propertyPanel);
@@ -766,8 +784,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         
         chartDisplayArea.activate();
         
-        ResponsiveLayoutManager.LayoutConfig config = 
-                ResponsiveLayoutManager.LayoutConfig.forMode(responsiveLayoutManager.getCurrentMode());
+        double currentWidth = getWidth();
+        ResponsiveLayoutManager.LayoutMode actualMode = ResponsiveLayoutManager.determineLayoutModeForWidth(currentWidth);
+        ResponsiveLayoutManager.LayoutConfig config = ResponsiveLayoutManager.LayoutConfig.forMode(actualMode);
         applyLayoutConfig(config);
     }
 
