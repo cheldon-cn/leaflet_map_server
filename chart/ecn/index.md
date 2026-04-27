@@ -16,7 +16,7 @@
 |------|------|------|
 | JDK | 11+ | 推荐使用 `E:\java\jdk-11.0.30.7` |
 | JAVA_HOME | 必须设置 | 指向 JDK 11 安装目录 |
-| Gradle | 7.6.6 | 位于 `cycle/gradlew.bat` |
+| Gradle | 7.6.6 | 位于 `E:\java\gradle\gradle-7.6.6\bin\gradle.bat` |
 | JavaFX | 17 | 位于 `E:\java\jfx-17-18` |
 
 ### Gradle 配置

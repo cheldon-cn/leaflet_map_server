@@ -106,6 +106,12 @@ for %%m in (javawrapper fxribbon echart-core echart-i18n echart-render echart-da
 
 echo.
 echo ========================================
+echo  Phase 3: Copy Dependencies
+echo ========================================
+echo.
+echo Copying ControlsFX library...
+echo.
+echo ========================================
 echo  Build Complete
 echo ========================================
 echo JAR files installed to: %INSTALL_DIR%

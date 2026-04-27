@@ -114,15 +114,33 @@ public class EChartApp extends Application {
         double initHeight = screenBounds.getHeight() * deviceRatio;
         
         Scene scene = new Scene(mainView, initWidth, initHeight);
-        scene.getStylesheets().add(getClass().getResource("/styles/base.css").toExternalForm());
-        scene.getStylesheets().add(getClass().getResource("/styles/themes/default.css").toExternalForm());
+        
+        java.net.URL baseCss = getClass().getResource("/styles/base.css");
+        if (baseCss != null) {
+            scene.getStylesheets().add(baseCss.toExternalForm());
+        } else {
+            LogUtil.warn(TAG, "CSS file not found: /styles/base.css");
+        }
+        
+        java.net.URL defaultCss = getClass().getResource("/styles/themes/default.css");
+        if (defaultCss != null) {
+            scene.getStylesheets().add(defaultCss.toExternalForm());
+        } else {
+            LogUtil.warn(TAG, "CSS file not found: /styles/themes/default.css");
+        }
+        
         return scene;
     }
 
     protected void applyTheme(Scene scene) {
         String styleSheet = themeManager.getCurrentTheme().getStyleSheet();
         if (styleSheet != null) {
-            scene.getStylesheets().add(getClass().getResource(styleSheet).toExternalForm());
+            java.net.URL cssUrl = getClass().getResource(styleSheet);
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+            } else {
+                LogUtil.warn(TAG, "Theme CSS file not found: " + styleSheet);
+            }
         }
     }
 
