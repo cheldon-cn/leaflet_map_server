@@ -6,6 +6,7 @@ include ':echart-alarm'
 include ':echart-ais'
 include ':echart-route'
 include ':echart-workspace'
+include ':javawrapper'
 
 project(':echart-core').projectDir = new File('../echart-core')
 project(':echart-data').projectDir = new File('../echart-data')
@@ -13,3 +14,4 @@ project(':echart-alarm').projectDir = new File('../echart-alarm')
 project(':echart-ais').projectDir = new File('../echart-ais')
 project(':echart-route').projectDir = new File('../echart-route')
 project(':echart-workspace').projectDir = new File('../echart-workspace')
+project(':javawrapper').projectDir = new File('../javawrapper')

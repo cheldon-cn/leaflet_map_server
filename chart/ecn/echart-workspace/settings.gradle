@@ -14,3 +14,6 @@ project(':echart-ais').projectDir = new File(settingsDir, '../echart-ais')
 
 include ':echart-route'
 project(':echart-route').projectDir = new File(settingsDir, '../echart-route')
+
+include ':javawrapper'
+project(':javawrapper').projectDir = new File(settingsDir, '../javawrapper')

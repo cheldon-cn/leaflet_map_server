@@ -2,3 +2,6 @@ rootProject.name = 'echart-alarm'
 
 include ':echart-core'
 project(':echart-core').projectDir = new File(settingsDir, '../echart-core')
+
+include ':javawrapper'
+project(':javawrapper').projectDir = new File(settingsDir, '../javawrapper')

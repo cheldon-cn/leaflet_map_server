@@ -29,3 +29,9 @@ project(':echart-render').projectDir = new File(settingsDir, '../echart-render')
 
 include ':echart-facade'
 project(':echart-facade').projectDir = new File(settingsDir, '../echart-facade')
+
+include ':javawrapper'
+project(':javawrapper').projectDir = new File(settingsDir, '../javawrapper')
+
+include ':fxribbon'
+project(':fxribbon').projectDir = new File(settingsDir, '../fxribbon')

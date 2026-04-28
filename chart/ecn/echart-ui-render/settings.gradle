@@ -3,7 +3,9 @@ rootProject.name = 'echart-ui-render'
 include ':echart-core'
 include ':echart-render'
 include ':echart-data'
+include ':javawrapper'
 
 project(':echart-core').projectDir = new File('../echart-core')
 project(':echart-render').projectDir = new File('../echart-render')
 project(':echart-data').projectDir = new File('../echart-data')
+project(':javawrapper').projectDir = new File('../javawrapper')

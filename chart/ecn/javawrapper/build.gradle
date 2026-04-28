@@ -1,0 +1,47 @@
+plugins {
+    id 'java-library'
+}
+
+group 'cn.cycle.chart'
+version '2.1.0'
+
+buildDir = new File(rootDir, '../../build/ecn/javawrapper')
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.12'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveBaseName.set('javawrapper')
+    manifest {
+        attributes(
+            'Implementation-Title': 'Cycle Chart Java Wrapper',
+            'Implementation-Version': archiveVersion.get()
+        )
+    }
+}
+
+task installJar(type: Copy, dependsOn: jar) {
+    from jar.archivePath
+    into new File(rootDir, '../../install/bin')
+}
+
+build.finalizedBy installJar
+
+test {
+    workingDir = new File(rootDir, '../../build/test')
+    jvmArgs = ['-Djava.library.path=' + new File(rootDir, '../../build/test').absolutePath]
+}

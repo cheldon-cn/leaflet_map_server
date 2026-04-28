@@ -95,7 +95,13 @@ ext.configureJavaModule = this.&configureJavaModule
 ext.addJavaFXDependencies = this.&addJavaFXDependencies
 
 ext.lib = { String moduleName ->
-    def version = moduleName == 'javawrapper' ? '2.1.0' : 
-                  moduleName == 'fxribbon' ? '2.1.0' : projectVersion
-    files("${installDirPath}${moduleName}-${version}.jar")
+    def dependencyProject = rootProject.allprojects.find { it.name == moduleName }
+    if (dependencyProject != null && dependencyProject != project) {
+        project.dependencies.project(path: ":${moduleName}")
+    } else {
+        def version = moduleName == 'javawrapper' ? '2.1.0' : 
+                      moduleName == 'fxribbon' ? '2.1.0' : projectVersion
+        def jarPath = "${installDirPath}${moduleName}-${version}.jar"
+        files(jarPath)
+    }
 }

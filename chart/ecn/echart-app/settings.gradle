@@ -13,6 +13,8 @@ include ':echart-ui-render'
 include ':echart-theme'
 include ':echart-plugin'
 include ':echart-facade'
+include ':javawrapper'
+include ':fxribbon'
 
 project(':echart-core').projectDir = new File('../echart-core')
 project(':echart-i18n').projectDir = new File('../echart-i18n')
@@ -27,3 +29,5 @@ project(':echart-ui-render').projectDir = new File('../echart-ui-render')
 project(':echart-theme').projectDir = new File('../echart-theme')
 project(':echart-plugin').projectDir = new File('../echart-plugin')
 project(':echart-facade').projectDir = new File('../echart-facade')
+project(':javawrapper').projectDir = new File('../javawrapper')
+project(':fxribbon').projectDir = new File('../fxribbon')

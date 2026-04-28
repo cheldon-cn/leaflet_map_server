@@ -38,7 +38,7 @@ if not exist "%INSTALL_DIR%" (
 
 set SUCCESS_COUNT=0
 set FAIL_COUNT=0
-set TOTAL_COUNT=17
+set TOTAL_COUNT=16
 
 echo ========================================
 echo Building modules (by dependency layer)
@@ -50,7 +50,7 @@ call :BuildModule fxribbon ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 
 echo [Layer 0] Building javawrapper ...
-call :BuildModule javawrapper cycle
+call :BuildModule javawrapper ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 
 echo [Layer 0] Building echart-core ...
@@ -177,7 +177,19 @@ exit /b %ERRORLEVEL%
 set COPIED_COUNT=0
 
 for %%M in (javawrapper fxribbon echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-plugin echart-ui-render echart-theme echart-facade echart-ui echart-app) do (
-    if exist "%BUILD_ROOT%%%M\libs\%%M-*.jar" (
+    if "%%M"=="javawrapper" (
+        set JAR_VER=2.1.0
+    ) else if "%%M"=="fxribbon" (
+        set JAR_VER=2.1.0
+    ) else (
+        set JAR_VER=%JAR_VERSION%
+    )
+    
+    if exist "%BUILD_ROOT%%%M\libs\%%M-!JAR_VER!.jar" (
+        copy /Y "%BUILD_ROOT%%%M\libs\%%M-!JAR_VER!.jar" "%INSTALL_DIR%" >nul
+        echo [COPY] %%M-!JAR_VER!.jar
+        set /a COPIED_COUNT+=1
+    ) else if exist "%BUILD_ROOT%%%M\libs\%%M-*.jar" (
         for %%f in ("%BUILD_ROOT%%%M\libs\%%M-*.jar") do (
             echo %%~nf | findstr /C:"-sources" >nul
             if errorlevel 1 (

@@ -2,6 +2,8 @@ apply from: '../config/common.gradle'
 
 configureJavaModule(project, 'fxribbon')
 
+version = '2.1.0'
+
 dependencies {
     implementation "org.openjfx:javafx-base:${javafxVersion}:${javafxPlatform}"
     implementation "org.openjfx:javafx-graphics:${javafxVersion}:${javafxPlatform}"

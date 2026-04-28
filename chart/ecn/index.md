@@ -1,7 +1,7 @@
 # ECN 模块索引
 
-> **版本**: v1.0  
-> **日期**: 2026-04-20  
+> **版本**: v1.1  
+> **日期**: 2026-04-28  
 > **用途**: 辅助大模型快速定位查找各模块及模块中方法
 
 ---
@@ -17,7 +17,7 @@
 | JDK | 11+ | 推荐使用 `E:\java\jdk-11.0.30.7` |
 | JAVA_HOME | 必须设置 | 指向 JDK 11 安装目录 |
 | Gradle | 7.6.6 | 位于 `E:\java\gradle\gradle-7.6.6\bin\gradle.bat` |
-| JavaFX | 17 | 位于 `E:\java\jfx-17-18` |
+| JavaFX | 17 | 位于 `E:\java\javafx-sdk-17.0.19` |
 
 ### Gradle 配置
 
@@ -63,6 +63,7 @@
 | 模块 | 编译产物 | 输出目录 |
 |------|----------|----------|
 | fxribbon | fxribbon-2.1.0.jar | install/bin/ |
+| javawrapper | javawrapper-2.1.0.jar | install/bin/ |
 | echart-core | echart-core-1.2.1-alpha.jar | install/bin/ |
 | echart-i18n | echart-i18n-1.2.1-alpha.jar | install/bin/ |
 | echart-render | echart-render-1.2.1-alpha.jar | install/bin/ |
@@ -71,13 +72,12 @@
 | echart-ais | echart-ais-1.2.1-alpha.jar | install/bin/ |
 | echart-route | echart-route-1.2.1-alpha.jar | install/bin/ |
 | echart-workspace | echart-workspace-1.2.1-alpha.jar | install/bin/ |
-| echart-ui | echart-ui-1.2.1-alpha.jar | install/bin/ |
+| echart-plugin | echart-plugin-1.2.1-alpha.jar | install/bin/ |
 | echart-ui-render | echart-ui-render-1.2.1-alpha.jar | install/bin/ |
 | echart-theme | echart-theme-1.2.1-alpha.jar | install/bin/ |
-| echart-plugin | echart-plugin-1.2.1-alpha.jar | install/bin/ |
 | echart-facade | echart-facade-1.2.1-alpha.jar | install/bin/ |
+| echart-ui | echart-ui-1.2.1-alpha.jar | install/bin/ |
 | echart-app | echart-app-1.2.1-alpha.jar | install/bin/ |
-| javawrapper | javawrapper-2.1.0.jar | install/bin/ |
 | javawrapper-adapter | javawrapper-adapter-1.2.1-alpha.jar | install/bin/ |
 
 ### 外部依赖
@@ -163,21 +163,22 @@ Layer 7: echart-app (依赖所有模块)
 
 | 序号 | 模块名 | Layer | 包路径 | 依赖 | 多端复用分类 | 说明 |
 |------|--------|-------|--------|------|-------------|------|
-| 1 | fxribbon | Ribbon | com.cycle.control | JavaFX 8 | JavaFX平台UI库 | JavaFX Ribbon控件库 |
-| 2 | echart-core | 0 | cn.cycle.echart.core | 无 | 公共内核库 | 核心框架，平台无关 |
-| 3 | echart-i18n | 1 | cn.cycle.echart.i18n | echart-core | 公共业务库 | 国际化支持 |
-| 4 | echart-render | 2 | cn.cycle.echart.render | echart-core, javawrapper | 公共业务库 | 渲染引擎核心 |
-| 5 | echart-data | 2 | cn.cycle.echart.data | echart-core | 公共业务库 | 数据管理核心 |
-| 6 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core, javawrapper | 公共业务库 | 预警系统核心 |
-| 7 | echart-ais | 3 | cn.cycle.echart.ais | echart-core, echart-alarm, javawrapper | 公共业务库 | AIS集成核心 |
-| 8 | echart-route | 3 | cn.cycle.echart.route | echart-core, echart-data | 公共业务库 | 航线规划核心 |
-| 9 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-core, echart-data, echart-alarm, echart-ais, echart-route | 公共业务库 | 工作区管理 |
-| 10 | echart-ui | 6 | cn.cycle.echart.ui | echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, fxribbon, controlsfx, javawrapper | JavaFX平台UI库 | JavaFX UI控件 |
-| 11 | echart-ui-render | 4 | cn.cycle.echart.ui.render | echart-core, echart-render, echart-data | JavaFX平台UI库 | JavaFX Canvas渲染 |
-| 12 | echart-theme | 4 | cn.cycle.echart.theme | echart-core | 公共业务库 | 主题管理 |
-| 13 | echart-plugin | 4 | cn.cycle.echart.plugin | echart-core | 公共业务库 | 插件系统 |
+| 1 | fxribbon | Ribbon | com.cycle.control | JavaFX 17 | JavaFX平台UI库 | JavaFX Ribbon控件库 |
+| 2 | javawrapper | 0 | cn.cycle.chart.jni | 无 | 公共内核库 | JNI封装库，平台无关 |
+| 3 | echart-core | 0 | cn.cycle.echart.core | 无 | 公共内核库 | 核心框架，平台无关 |
+| 4 | echart-i18n | 1 | cn.cycle.echart.i18n | echart-core | 公共业务库 | 国际化支持 |
+| 5 | echart-render | 2 | cn.cycle.echart.render | echart-core, javawrapper | 公共业务库 | 渲染引擎核心 |
+| 6 | echart-data | 2 | cn.cycle.echart.data | echart-core | 公共业务库 | 数据管理核心 |
+| 7 | echart-alarm | 3 | cn.cycle.echart.alarm | echart-core, javawrapper | 公共业务库 | 预警系统核心 |
+| 8 | echart-ais | 3 | cn.cycle.echart.ais | echart-core, echart-alarm, javawrapper | 公共业务库 | AIS集成核心 |
+| 9 | echart-route | 3 | cn.cycle.echart.route | echart-core, echart-data | 公共业务库 | 航线规划核心 |
+| 10 | echart-workspace | 3 | cn.cycle.echart.workspace | echart-core, echart-data, echart-alarm, echart-ais, echart-route, javawrapper | 公共业务库 | 工作区管理 |
+| 11 | echart-plugin | 4 | cn.cycle.echart.plugin | echart-core | 公共业务库 | 插件系统 |
+| 12 | echart-ui-render | 4 | cn.cycle.echart.ui.render | echart-core, echart-render, echart-data, javawrapper | JavaFX平台UI库 | JavaFX Canvas渲染 |
+| 13 | echart-theme | 4 | cn.cycle.echart.theme | JavaFX 17 | JavaFX平台UI库 | 主题管理 |
 | 14 | echart-facade | 5 | cn.cycle.echart.facade | echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, javawrapper | 公共业务库 | 服务门面层 |
-| 15 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | JavaFX平台UI库 | 应用入口 |
+| 15 | echart-ui | 6 | cn.cycle.echart.ui | echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, echart-plugin, echart-ui-render, fxribbon, javawrapper | JavaFX平台UI库 | JavaFX UI控件 |
+| 16 | echart-app | 7 | cn.cycle.echart.app | 所有模块 | JavaFX平台UI库 | 应用入口 |
 
 > **多端复用分类说明**:
 > - **公共内核库**: 无外部依赖的核心框架，所有平台共享
@@ -189,7 +190,7 @@ Layer 7: echart-app (依赖所有模块)
 ## 1. fxribbon (Ribbon Layer)
 
 **路径**: `ecn/fxribbon/src/main/java/com/cycle/`  
-**依赖**: JavaFX 8 
+**依赖**: JavaFX 17  
 **版本**: 2.1.0
 
 ### 类列表
@@ -222,7 +223,42 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 2. echart-core (Layer 0)
+## 2. javawrapper (Layer 0)
+
+**路径**: `ecn/javawrapper/src/main/java/cn/cycle/chart/jni/`  
+**依赖**: 无  
+**版本**: 2.1.0
+
+### 类列表
+
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| JniBridge | 类 | JNI桥接器，提供本地方法调用入口 |
+| NativeHandle | 类 | 本地资源句柄封装 |
+| NativeObject | 抽象类 | 本地对象基类，管理本地资源生命周期 |
+
+### 核心方法
+
+#### JniBridge
+- `static native void initialize()` - 初始化本地库
+- `static native void dispose()` - 释放本地资源
+- `static native long allocateHandle()` - 分配本地句柄
+- `static native void freeHandle(long)` - 释放本地句柄
+
+#### NativeHandle
+- `long getAddress()` - 获取本地内存地址
+- `boolean isValid()` - 句柄是否有效
+- `void dispose()` - 释放句柄资源
+
+#### NativeObject
+- `long getNativePointer()` - 获取本地指针
+- `boolean isDisposed()` - 是否已释放
+- `void dispose()` - 释放本地资源
+- `void finalize()` - 析构时自动释放
+
+---
+
+## 3. echart-core (Layer 0)
 
 **路径**: `ecn/echart-core/src/main/java/cn/cycle/echart/core/`  
 **依赖**: 无
@@ -321,7 +357,7 @@ Layer 7: echart-app (依赖所有模块)
 
 
 
-## 3. echart-i18n (Layer 1)
+## 4. echart-i18n (Layer 1)
 
 **路径**: `ecn/echart-i18n/src/main/java/cn/cycle/echart/i18n/`  
 **依赖**: echart-core
@@ -362,10 +398,10 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 4. echart-render (Layer 2)
+## 5. echart-render (Layer 2)
 
 **路径**: `ecn/echart-render/src/main/java/cn/cycle/echart/render/`  
-**依赖**: echart-core, javawrapper-2.1.0.jar
+**依赖**: echart-core, javawrapper
 
 ### 类列表
 
@@ -447,7 +483,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 5. echart-data (Layer 2)
+## 6. echart-data (Layer 2)
 
 **路径**: `ecn/echart-data/src/main/java/cn/cycle/echart/data/`  
 **依赖**: echart-core
@@ -515,10 +551,10 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 6. echart-alarm (Layer 3)
+## 7. echart-alarm (Layer 3)
 
 **路径**: `ecn/echart-alarm/src/main/java/cn/cycle/echart/alarm/`  
-**依赖**: echart-core, javawrapper-2.1.0.jar
+**依赖**: echart-core, javawrapper
 
 ### 类列表
 
@@ -565,7 +601,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 7. echart-ais (Layer 3)
+## 8. echart-ais (Layer 3)
 
 **路径**: `ecn/echart-ais/src/main/java/cn/cycle/echart/ais/`  
 **依赖**: echart-core, echart-alarm
@@ -621,7 +657,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 8. echart-route (Layer 3)
+## 9. echart-route (Layer 3)
 
 **路径**: `ecn/echart-route/src/main/java/cn/cycle/echart/route/`  
 **依赖**: echart-core, echart-data
@@ -714,7 +750,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 9. echart-workspace (Layer 3)
+## 10. echart-workspace (Layer 3)
 
 **路径**: `ecn/echart-workspace/src/main/java/cn/cycle/echart/workspace/`  
 **依赖**: echart-core, echart-data, echart-alarm, echart-ais, echart-route
@@ -788,10 +824,303 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 10. echart-ui (Layer 4)
+## 11. echart-plugin (Layer 4)
+
+**路径**: `ecn/echart-plugin/src/main/java/cn/cycle/echart/plugin/`  
+**依赖**: echart-core
+
+### 类列表
+
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| Plugin | 接口 | 插件接口 |
+| AbstractPlugin | 抽象类 | 插件基类 |
+| PluginContext | 接口 | 插件上下文 |
+| PluginManager | 类 | 插件管理器(实现PluginContext) |
+| PluginState | 枚举 | 插件状态 |
+| PluginException | 类 | 插件异常 |
+
+### 核心方法
+
+#### PluginManager (同时实现PluginContext)
+- `void registerPlugin(Plugin)` - 注册插件
+- `void unregisterPlugin(String)` - 取消注册插件
+- `void initializePlugin(String)` - 初始化插件
+- `void startPlugin(String)` - 启动插件
+- `void stopPlugin(String)` - 停止插件
+- `Plugin getPlugin(String)` - 获取插件
+- `List<Plugin> getPlugins()` - 获取所有插件
+- `List<Plugin> getPluginsByState(PluginState)` - 按状态获取插件
+- `boolean hasPlugin(String)` - 插件是否存在
+- `int getPluginCount()` - 插件数量
+- `void startAll()` - 启动所有插件
+- `void stopAll()` - 停止所有插件
+- `void addLifecycleListener(PluginLifecycleListener)` - 添加生命周期监听
+- `void removeLifecycleListener(PluginLifecycleListener)` - 移除生命周期监听
+- `ServiceLocator getServiceLocator()` - 获取服务定位器
+- `Object getProperty(String)` - 获取属性
+- `Object getProperty(String, Object)` - 获取属性(带默认值)
+- `void setProperty(String, Object)` - 设置属性
+- `Map<String, Object> getProperties()` - 获取所有属性
+- `String getDataDirectory()` - 获取数据目录
+- `String getConfigDirectory()` - 获取配置目录
+- `PluginManager getPluginManager()` - 获取插件管理器
+- `void log(LogLevel, String)` - 记录日志
+- `void log(LogLevel, String, Throwable)` - 记录日志(带异常)
+
+#### AbstractPlugin (实现Plugin接口)
+- `String getId()` - 获取插件ID
+- `String getName()` - 获取插件名称
+- `String getVersion()` - 获取版本
+- `String getDescription()` - 获取描述
+- `String getAuthor()` - 获取作者
+- `Map<String, Object> getConfiguration()` - 获取配置
+- `PluginState getState()` - 获取状态
+- `void initialize(PluginContext)` - 初始化
+- `void start()` - 启动
+- `void stop()` - 停止
+- `void destroy()` - 销毁
+
+#### PluginState
+- `String getDisplayName()` - 获取显示名称
+- `boolean isRunning()` - 是否运行中
+- `boolean isStopped()` - 是否已停止
+- `boolean canStart()` - 是否可启动
+- `boolean canStop()` - 是否可停止
+
+#### PluginException
+- `String getPluginId()` - 获取插件ID
+
+---
+
+---
+
+## 12. echart-ui-render (Layer 4)
+
+**路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`  
+**依赖**: echart-core, echart-render, echart-data
+
+### 类列表
+
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| FxRenderContext | 类 | JavaFX渲染上下文 |
+| FxCanvasRenderer | 类 | JavaFX Canvas渲染器 |
+| ChartFeatureRenderer | 类 | 海图要素渲染器 |
+| TileCache | 类 | 瓦片缓存 |
+| MeasurementTool | 类 | 测量工具 |
+| DistanceMeasurement | 类 | 距离测量 |
+| AreaMeasurement | 类 | 面积测量 |
+| BearingMeasurement | 类 | 方位测量 |
+
+### 核心方法
+
+#### FxRenderContext
+- `int getWidth()` - 获取宽度
+- `int getHeight()` - 获取高度
+- `double getZoom()` - 获取缩放
+- `void setZoom(double)` - 设置缩放
+- `Rectangle2D getViewport()` - 获取视口
+- `void setViewport(Rectangle2D)` - 设置视口
+- `boolean needsRender()` - 是否需要渲染
+- `void markDirty()` - 标记脏
+- `void clearDirty()` - 清除脏标记
+- `double getDevicePixelRatio()` - 获取设备像素比
+- `void setDevicePixelRatio(double)` - 设置设备像素比
+- `void dispose()` - 销毁
+- `GraphicsContext getGraphicsContext()` - 获取图形上下文
+- `Canvas getCanvas()` - 获取画布
+- `void resize(double, double)` - 调整大小
+- `void clear()` - 清除
+
+#### FxCanvasRenderer
+- `void start()` - 启动渲染
+- `void stop()` - 停止渲染
+- `void requestRepaint()` - 请求重绘
+- `void setZoom(double)` - 设置缩放
+- `double getZoom()` - 获取缩放
+- `void zoomIn()` - 放大
+- `void zoomOut()` - 缩小
+- `void setBackgroundColor(Color)` - 设置背景色
+- `Color getBackgroundColor()` - 获取背景色
+- `LayerManager getLayerManager()` - 获取图层管理器
+- `RenderEngine getEngine()` - 获取渲染引擎
+- `FxRenderContext getContext()` - 获取渲染上下文
+- `Canvas getCanvas()` - 获取画布
+- `boolean isRunning()` - 是否运行中
+- `void dispose()` - 销毁
+
+#### ChartFeatureRenderer
+- `void render(RenderContext)` - 渲染
+- `boolean needsRender(RenderContext)` - 是否需要渲染
+- `void setWaterColor(Color)` - 设置水色
+- `void setLandColor(Color)` - 设置陆地色
+- `void setDepthColor(Color)` - 设置深度色
+
+#### TileCache
+- `synchronized Tile get(String)` - 获取瓦片
+- `synchronized void put(String, Tile)` - 放入瓦片
+- `synchronized void remove(String)` - 移除瓦片
+- `synchronized void clear()` - 清除缓存
+- `synchronized int size()` - 缓存大小
+- `synchronized boolean containsKey(String)` - 是否包含键
+- `double getHitRate()` - 命中率
+- `int getMaxSize()` - 最大容量
+- `static String generateKey(int, int, int)` - 生成键
+
+#### MeasurementTool
+- `void setMode(MeasurementMode)` - 设置测量模式
+- `MeasurementMode getMode()` - 获取测量模式
+- `void addPoint(double, double)` - 添加测量点
+- `void removeLastPoint()` - 移除最后一个点
+- `void clearPoints()` - 清除所有点
+- `void setActive(boolean)` - 设置激活状态
+- `boolean isActive()` - 是否激活
+- `void render(RenderContext)` - 渲染
+- `double getTotalDistance()` - 获取总距离
+- `double getTotalArea()` - 获取总面积
+- `double getCurrentBearing()` - 获取当前方位
+- `List<Point> getPoints()` - 获取测量点
+- `void setLineColor(Color)` - 设置线颜色
+- `void setPointColor(Color)` - 设置点颜色
+- `void setTextColor(Color)` - 设置文字颜色
+
+#### DistanceMeasurement
+- `double getDistanceInNauticalMiles()` - 海里距离
+- `double getDistanceInKilometers()` - 公里距离
+- `double getDistanceInMeters()` - 米距离
+- `String getFormattedDistance()` - 格式化距离
+- `double getSegmentDistance(int)` - 航段距离
+- `double getAverageSpeed(double)` - 平均速度
+- `double getEstimatedTimeOfArrival(double)` - 预计到达时间
+
+#### AreaMeasurement
+- `double getAreaInSquareNauticalMiles()` - 平方海里面积
+- `double getAreaInSquareKilometers()` - 平方公里面积
+- `double getAreaInSquareMeters()` - 平方米面积
+- `String getFormattedArea()` - 格式化面积
+- `double getPerimeter()` - 周长
+- `double getPerimeterInNauticalMiles()` - 海里周长
+- `double getPerimeterInKilometers()` - 公里周长
+- `Point getCentroid()` - 质心
+- `boolean isPointInside(double, double)` - 点是否在区域内
+
+#### BearingMeasurement
+- `double getBearingInDegrees()` - 度数方位
+- `double getBearingInRadians()` - 弧度方位
+- `String getFormattedBearing()` - 格式化方位
+- `String getCompassDirection(double)` - 罗盘方向
+- `double getReciprocalBearing()` - 反方位
+- `String getFormattedReciprocalBearing()` - 格式化反方位
+- `double getRelativeBearing(double)` - 相对方位
+- `boolean isAhead(double)` - 是否前方
+- `boolean isAstern(double)` - 是否后方
+- `boolean isPort(double)` - 是否左舷
+- `boolean isStarboard(double)` - 是否右舷
+- `double getQuadrant()` - 象限
+
+---
+
+## 13. echart-theme (Layer 4)
+
+**路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`  
+**依赖**: echart-core
+
+### 类列表
+
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| Theme | 接口 | 主题接口 |
+| AbstractTheme | 抽象类 | 主题基类 |
+| LightTheme | 类 | 亮色主题 |
+| DarkTheme | 类 | 暗色主题 |
+| ThemeManager | 类 | 主题管理器 |
+
+### 核心方法
+
+#### ThemeManager
+- `void registerTheme(Theme)` - 注册主题
+- `void unregisterTheme(String)` - 取消注册主题
+- `Theme getTheme(String)` - 获取主题
+- `List<Theme> getAvailableThemes()` - 获取可用主题
+- `Theme getCurrentTheme()` - 获取当前主题
+- `void setCurrentTheme(Theme)` - 设置当前主题
+- `void setCurrentTheme(String)` - 按名称设置当前主题
+- `Theme getDefaultTheme()` - 获取默认主题
+- `void setDefaultTheme(Theme)` - 设置默认主题
+- `void resetToDefault()` - 重置为默认
+- `boolean hasTheme(String)` - 主题是否存在
+- `int getThemeCount()` - 主题数量
+- `void addThemeChangeListener(ThemeChangeListener)` - 添加主题变更监听
+- `void removeThemeChangeListener(ThemeChangeListener)` - 移除主题变更监听
+- `void loadThemeFromProperties(Properties)` - 从属性加载主题
+- `void saveThemeToProperties(Properties)` - 保存主题到属性
+
+#### AbstractTheme (实现Theme接口)
+- `String getName()` - 获取主题名称
+- `String getDisplayName()` - 获取显示名称
+- `String getDescription()` - 获取描述
+- `String getVersion()` - 获取版本
+- `String getAuthor()` - 获取作者
+- `boolean isDark()` - 是否暗色主题
+- `Map<String, String> getColors()` - 获取颜色映射
+- `String getColor(String)` - 获取颜色
+- `Map<String, String> getFonts()` - 获取字体映射
+- `String getFont(String)` - 获取字体
+- `String getStyleSheet()` - 获取样式表
+- `String getIconPath()` - 获取图标路径
+
+---
+
+
+## 14. echart-facade (Layer 5)
+
+**路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`  
+**依赖**: echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, javawrapper
+
+
+### 类列表
+
+| 类名 | 类型 | 说明 |
+|------|------|------|
+| ApplicationFacade | 接口 | 应用门面接口 |
+| DefaultApplicationFacade | 类 | 默认应用门面实现 |
+| FacadeException | 类 | 门面异常 |
+
+### 核心方法
+
+#### ApplicationFacade (接口)
+- `void initialize()` - 初始化
+- `void start()` - 启动
+- `void stop()` - 停止
+- `void destroy()` - 销毁
+- `boolean isInitialized()` - 是否已初始化
+- `boolean isRunning()` - 是否运行中
+
+#### DefaultApplicationFacade
+- `void initialize()` - 初始化
+- `void start()` - 启动
+- `void stop()` - 停止
+- `void destroy()` - 销毁
+- `boolean isInitialized()` - 是否已初始化
+- `boolean isRunning()` - 是否运行中
+- `ChartFileManager getChartFileManager()` - 获取海图文件管理器
+- `AlarmManager getAlarmManager()` - 获取预警管理器
+- `AISTargetManager getAisTargetManager()` - 获取AIS目标管理器
+- `RouteManager getRouteManager()` - 获取航线管理器
+- `WorkspaceManager getWorkspaceManager()` - 获取工作区管理器
+- `void loadWorkspace(String)` - 加载工作区
+- `void saveWorkspace()` - 保存工作区
+- `void loadChart(String)` - 加载海图
+- `void unloadChart(String)` - 卸载海图
+
+#### FacadeException
+- `String getOperation()` - 获取操作名称
+
+## 15. echart-ui (Layer 6)
 
 **路径**: `ecn/echart-ui/src/main/java/cn/cycle/echart/ui/`  
-**依赖**: echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-theme, echart-render, fxribbon, controlsfx
+**依赖**: echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, echart-plugin, echart-ui-render, fxribbon, javawrapper
 
 ### 类列表
 
@@ -927,298 +1256,7 @@ Layer 7: echart-app (依赖所有模块)
 
 ---
 
-## 11. echart-ui-render (Layer 5)
-
-**路径**: `ecn/echart-ui-render/src/main/java/cn/cycle/echart/ui/render/`  
-**依赖**: echart-core, echart-render, echart-data
-
-### 类列表
-
-| 类名 | 类型 | 说明 |
-|------|------|------|
-| FxRenderContext | 类 | JavaFX渲染上下文 |
-| FxCanvasRenderer | 类 | JavaFX Canvas渲染器 |
-| ChartFeatureRenderer | 类 | 海图要素渲染器 |
-| TileCache | 类 | 瓦片缓存 |
-| MeasurementTool | 类 | 测量工具 |
-| DistanceMeasurement | 类 | 距离测量 |
-| AreaMeasurement | 类 | 面积测量 |
-| BearingMeasurement | 类 | 方位测量 |
-
-### 核心方法
-
-#### FxRenderContext
-- `int getWidth()` - 获取宽度
-- `int getHeight()` - 获取高度
-- `double getZoom()` - 获取缩放
-- `void setZoom(double)` - 设置缩放
-- `Rectangle2D getViewport()` - 获取视口
-- `void setViewport(Rectangle2D)` - 设置视口
-- `boolean needsRender()` - 是否需要渲染
-- `void markDirty()` - 标记脏
-- `void clearDirty()` - 清除脏标记
-- `double getDevicePixelRatio()` - 获取设备像素比
-- `void setDevicePixelRatio(double)` - 设置设备像素比
-- `void dispose()` - 销毁
-- `GraphicsContext getGraphicsContext()` - 获取图形上下文
-- `Canvas getCanvas()` - 获取画布
-- `void resize(double, double)` - 调整大小
-- `void clear()` - 清除
-
-#### FxCanvasRenderer
-- `void start()` - 启动渲染
-- `void stop()` - 停止渲染
-- `void requestRepaint()` - 请求重绘
-- `void setZoom(double)` - 设置缩放
-- `double getZoom()` - 获取缩放
-- `void zoomIn()` - 放大
-- `void zoomOut()` - 缩小
-- `void setBackgroundColor(Color)` - 设置背景色
-- `Color getBackgroundColor()` - 获取背景色
-- `LayerManager getLayerManager()` - 获取图层管理器
-- `RenderEngine getEngine()` - 获取渲染引擎
-- `FxRenderContext getContext()` - 获取渲染上下文
-- `Canvas getCanvas()` - 获取画布
-- `boolean isRunning()` - 是否运行中
-- `void dispose()` - 销毁
-
-#### ChartFeatureRenderer
-- `void render(RenderContext)` - 渲染
-- `boolean needsRender(RenderContext)` - 是否需要渲染
-- `void setWaterColor(Color)` - 设置水色
-- `void setLandColor(Color)` - 设置陆地色
-- `void setDepthColor(Color)` - 设置深度色
-
-#### TileCache
-- `synchronized Tile get(String)` - 获取瓦片
-- `synchronized void put(String, Tile)` - 放入瓦片
-- `synchronized void remove(String)` - 移除瓦片
-- `synchronized void clear()` - 清除缓存
-- `synchronized int size()` - 缓存大小
-- `synchronized boolean containsKey(String)` - 是否包含键
-- `double getHitRate()` - 命中率
-- `int getMaxSize()` - 最大容量
-- `static String generateKey(int, int, int)` - 生成键
-
-#### MeasurementTool
-- `void setMode(MeasurementMode)` - 设置测量模式
-- `MeasurementMode getMode()` - 获取测量模式
-- `void addPoint(double, double)` - 添加测量点
-- `void removeLastPoint()` - 移除最后一个点
-- `void clearPoints()` - 清除所有点
-- `void setActive(boolean)` - 设置激活状态
-- `boolean isActive()` - 是否激活
-- `void render(RenderContext)` - 渲染
-- `double getTotalDistance()` - 获取总距离
-- `double getTotalArea()` - 获取总面积
-- `double getCurrentBearing()` - 获取当前方位
-- `List<Point> getPoints()` - 获取测量点
-- `void setLineColor(Color)` - 设置线颜色
-- `void setPointColor(Color)` - 设置点颜色
-- `void setTextColor(Color)` - 设置文字颜色
-
-#### DistanceMeasurement
-- `double getDistanceInNauticalMiles()` - 海里距离
-- `double getDistanceInKilometers()` - 公里距离
-- `double getDistanceInMeters()` - 米距离
-- `String getFormattedDistance()` - 格式化距离
-- `double getSegmentDistance(int)` - 航段距离
-- `double getAverageSpeed(double)` - 平均速度
-- `double getEstimatedTimeOfArrival(double)` - 预计到达时间
-
-#### AreaMeasurement
-- `double getAreaInSquareNauticalMiles()` - 平方海里面积
-- `double getAreaInSquareKilometers()` - 平方公里面积
-- `double getAreaInSquareMeters()` - 平方米面积
-- `String getFormattedArea()` - 格式化面积
-- `double getPerimeter()` - 周长
-- `double getPerimeterInNauticalMiles()` - 海里周长
-- `double getPerimeterInKilometers()` - 公里周长
-- `Point getCentroid()` - 质心
-- `boolean isPointInside(double, double)` - 点是否在区域内
-
-#### BearingMeasurement
-- `double getBearingInDegrees()` - 度数方位
-- `double getBearingInRadians()` - 弧度方位
-- `String getFormattedBearing()` - 格式化方位
-- `String getCompassDirection(double)` - 罗盘方向
-- `double getReciprocalBearing()` - 反方位
-- `String getFormattedReciprocalBearing()` - 格式化反方位
-- `double getRelativeBearing(double)` - 相对方位
-- `boolean isAhead(double)` - 是否前方
-- `boolean isAstern(double)` - 是否后方
-- `boolean isPort(double)` - 是否左舷
-- `boolean isStarboard(double)` - 是否右舷
-- `double getQuadrant()` - 象限
-
----
-
-## 12. echart-theme (Layer 5)
-
-**路径**: `ecn/echart-theme/src/main/java/cn/cycle/echart/theme/`  
-**依赖**: echart-core
-
-### 类列表
-
-| 类名 | 类型 | 说明 |
-|------|------|------|
-| Theme | 接口 | 主题接口 |
-| AbstractTheme | 抽象类 | 主题基类 |
-| LightTheme | 类 | 亮色主题 |
-| DarkTheme | 类 | 暗色主题 |
-| ThemeManager | 类 | 主题管理器 |
-
-### 核心方法
-
-#### ThemeManager
-- `void registerTheme(Theme)` - 注册主题
-- `void unregisterTheme(String)` - 取消注册主题
-- `Theme getTheme(String)` - 获取主题
-- `List<Theme> getAvailableThemes()` - 获取可用主题
-- `Theme getCurrentTheme()` - 获取当前主题
-- `void setCurrentTheme(Theme)` - 设置当前主题
-- `void setCurrentTheme(String)` - 按名称设置当前主题
-- `Theme getDefaultTheme()` - 获取默认主题
-- `void setDefaultTheme(Theme)` - 设置默认主题
-- `void resetToDefault()` - 重置为默认
-- `boolean hasTheme(String)` - 主题是否存在
-- `int getThemeCount()` - 主题数量
-- `void addThemeChangeListener(ThemeChangeListener)` - 添加主题变更监听
-- `void removeThemeChangeListener(ThemeChangeListener)` - 移除主题变更监听
-- `void loadThemeFromProperties(Properties)` - 从属性加载主题
-- `void saveThemeToProperties(Properties)` - 保存主题到属性
-
-#### AbstractTheme (实现Theme接口)
-- `String getName()` - 获取主题名称
-- `String getDisplayName()` - 获取显示名称
-- `String getDescription()` - 获取描述
-- `String getVersion()` - 获取版本
-- `String getAuthor()` - 获取作者
-- `boolean isDark()` - 是否暗色主题
-- `Map<String, String> getColors()` - 获取颜色映射
-- `String getColor(String)` - 获取颜色
-- `Map<String, String> getFonts()` - 获取字体映射
-- `String getFont(String)` - 获取字体
-- `String getStyleSheet()` - 获取样式表
-- `String getIconPath()` - 获取图标路径
-
----
-
-## 13. echart-plugin (Layer 5)
-
-**路径**: `ecn/echart-plugin/src/main/java/cn/cycle/echart/plugin/`  
-**依赖**: echart-core
-
-### 类列表
-
-| 类名 | 类型 | 说明 |
-|------|------|------|
-| Plugin | 接口 | 插件接口 |
-| AbstractPlugin | 抽象类 | 插件基类 |
-| PluginContext | 接口 | 插件上下文 |
-| PluginManager | 类 | 插件管理器(实现PluginContext) |
-| PluginState | 枚举 | 插件状态 |
-| PluginException | 类 | 插件异常 |
-
-### 核心方法
-
-#### PluginManager (同时实现PluginContext)
-- `void registerPlugin(Plugin)` - 注册插件
-- `void unregisterPlugin(String)` - 取消注册插件
-- `void initializePlugin(String)` - 初始化插件
-- `void startPlugin(String)` - 启动插件
-- `void stopPlugin(String)` - 停止插件
-- `Plugin getPlugin(String)` - 获取插件
-- `List<Plugin> getPlugins()` - 获取所有插件
-- `List<Plugin> getPluginsByState(PluginState)` - 按状态获取插件
-- `boolean hasPlugin(String)` - 插件是否存在
-- `int getPluginCount()` - 插件数量
-- `void startAll()` - 启动所有插件
-- `void stopAll()` - 停止所有插件
-- `void addLifecycleListener(PluginLifecycleListener)` - 添加生命周期监听
-- `void removeLifecycleListener(PluginLifecycleListener)` - 移除生命周期监听
-- `ServiceLocator getServiceLocator()` - 获取服务定位器
-- `Object getProperty(String)` - 获取属性
-- `Object getProperty(String, Object)` - 获取属性(带默认值)
-- `void setProperty(String, Object)` - 设置属性
-- `Map<String, Object> getProperties()` - 获取所有属性
-- `String getDataDirectory()` - 获取数据目录
-- `String getConfigDirectory()` - 获取配置目录
-- `PluginManager getPluginManager()` - 获取插件管理器
-- `void log(LogLevel, String)` - 记录日志
-- `void log(LogLevel, String, Throwable)` - 记录日志(带异常)
-
-#### AbstractPlugin (实现Plugin接口)
-- `String getId()` - 获取插件ID
-- `String getName()` - 获取插件名称
-- `String getVersion()` - 获取版本
-- `String getDescription()` - 获取描述
-- `String getAuthor()` - 获取作者
-- `Map<String, Object> getConfiguration()` - 获取配置
-- `PluginState getState()` - 获取状态
-- `void initialize(PluginContext)` - 初始化
-- `void start()` - 启动
-- `void stop()` - 停止
-- `void destroy()` - 销毁
-
-#### PluginState
-- `String getDisplayName()` - 获取显示名称
-- `boolean isRunning()` - 是否运行中
-- `boolean isStopped()` - 是否已停止
-- `boolean canStart()` - 是否可启动
-- `boolean canStop()` - 是否可停止
-
-#### PluginException
-- `String getPluginId()` - 获取插件ID
-
----
-
-## 14. echart-facade (Layer 6)
-
-**路径**: `ecn/echart-facade/src/main/java/cn/cycle/echart/facade/`  
-**依赖**: echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace
-
-### 类列表
-
-| 类名 | 类型 | 说明 |
-|------|------|------|
-| ApplicationFacade | 接口 | 应用门面接口 |
-| DefaultApplicationFacade | 类 | 默认应用门面实现 |
-| FacadeException | 类 | 门面异常 |
-
-### 核心方法
-
-#### ApplicationFacade (接口)
-- `void initialize()` - 初始化
-- `void start()` - 启动
-- `void stop()` - 停止
-- `void destroy()` - 销毁
-- `boolean isInitialized()` - 是否已初始化
-- `boolean isRunning()` - 是否运行中
-
-#### DefaultApplicationFacade
-- `void initialize()` - 初始化
-- `void start()` - 启动
-- `void stop()` - 停止
-- `void destroy()` - 销毁
-- `boolean isInitialized()` - 是否已初始化
-- `boolean isRunning()` - 是否运行中
-- `ChartFileManager getChartFileManager()` - 获取海图文件管理器
-- `AlarmManager getAlarmManager()` - 获取预警管理器
-- `AISTargetManager getAisTargetManager()` - 获取AIS目标管理器
-- `RouteManager getRouteManager()` - 获取航线管理器
-- `WorkspaceManager getWorkspaceManager()` - 获取工作区管理器
-- `void loadWorkspace(String)` - 加载工作区
-- `void saveWorkspace()` - 保存工作区
-- `void loadChart(String)` - 加载海图
-- `void unloadChart(String)` - 卸载海图
-
-#### FacadeException
-- `String getOperation()` - 获取操作名称
-
----
-
-## 15. echart-app (Layer 7)
+## 16. echart-app (Layer 7)
 
 **路径**: `ecn/echart-app/src/main/java/cn/cycle/echart/app/`  
 **依赖**: echart-core, echart-i18n, echart-data, echart-render, echart-alarm, echart-ais, echart-route, echart-workspace, echart-ui, echart-ui-render, echart-theme, echart-plugin, echart-facade  
@@ -1321,25 +1359,27 @@ Layer 7: echart-app (依赖所有模块)
 ## 模块依赖关系图
 
 ```
-Layer 0:  echart-core
-            │
+Ribbon:  fxribbon (JavaFX 17 Ribbon控件库)
+          │
+Layer 0:  ├── javawrapper (JNI封装库，无依赖)
+          ├── echart-core (核心框架，无依赖)
 Layer 1:  ├── echart-i18n ── echart-core
             │
 Layer 2:  ├── echart-render ── echart-core, javawrapper
             ├── echart-data ── echart-core
             │
 Layer 3:  ├── echart-alarm ── echart-core, javawrapper
-            ├── echart-ais ── echart-core, echart-alarm
+            ├── echart-ais ── echart-core, echart-alarm, javawrapper
             ├── echart-route ── echart-core, echart-data
-            ├── echart-workspace ── echart-core, echart-data, echart-alarm, echart-ais, echart-route
+            ├── echart-workspace ── echart-core, echart-data, echart-alarm, echart-ais, echart-route, javawrapper
             │
-Layer 4:  ├── echart-ui ── echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-theme, echart-render, fxribbon, controlsfx
+Layer 4:  ├── echart-plugin ── echart-core
+            ├── echart-ui-render ── echart-core, echart-render, echart-data, javawrapper
+            ├── echart-theme ── JavaFX 17
             │
-Layer 5:  ├── echart-ui-render ── echart-core, echart-render, echart-data
-            ├── echart-theme ── echart-core
-            ├── echart-plugin ── echart-core
+Layer 5:  ├── echart-facade ── echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, javawrapper
             │
-Layer 6:  ├── echart-facade ── echart-core, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace
+Layer 6:  ├── echart-ui ── echart-core, echart-i18n, echart-data, echart-alarm, echart-ais, echart-route, echart-workspace, echart-facade, echart-theme, echart-render, echart-plugin, echart-ui-render, fxribbon, javawrapper
             │
 Layer 7:  └── echart-app ── 所有模块
 ```
