@@ -88,7 +88,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         if (stage != null) {
             titleBar = new TitleBar(stage);
             titleBar.maxWidthProperty().bind(stage.widthProperty());
+            contentPane.minWidthProperty().bind(stage.widthProperty());
             contentPane.maxWidthProperty().bind(stage.widthProperty());
+            centerSplitPane.minWidthProperty().bind(stage.widthProperty());
             centerSplitPane.maxWidthProperty().bind(stage.widthProperty());
             StackPane.setAlignment(titleBar, Pos.TOP_CENTER);
             rootContainer.getChildren().add(titleBar);
@@ -231,7 +233,28 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private void setupDividerListeners() {
         final double COLLAPSE_THRESHOLD = 80.0;
         
+        // 在 SplitPane 上添加鼠标释放监听器
+        centerSplitPane.setOnMouseReleased(event -> {
+            if (isDraggingDivider) {
+                isDraggingDivider = false;
+                // 用户结束拖动，延迟恢复约束
+                javafx.application.Platform.runLater(() -> {
+                    if (!isDraggingDivider) {
+                        SplitPane.setResizableWithParent(sideBarManager, false);
+                    }
+                });
+            }
+        });
+        
+        // 监听分割条拖动事件
         centerSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
+            // 如果不是程序化更新，说明是用户拖动
+            if (!isProgrammaticUpdate) {
+                isDraggingDivider = true;
+                // 用户正在拖动，允许调整
+                SplitPane.setResizableWithParent(sideBarManager, true);
+            }
+            
             if (isDraggingDivider) {
                 double splitWidth = centerSplitPane.getWidth();
                 if (splitWidth <= 0) return;
@@ -365,6 +388,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         
         isProgrammaticUpdate = true;
         try {
+            // 临时允许程序化调整
+            SplitPane.setResizableWithParent(sideBarManager, true);
+            
             int dividerCount = centerSplitPane.getDividers().size();
             if (dividerCount >= 2) {
                 centerSplitPane.setDividerPositions(leftRatio, rightRatio);
@@ -373,6 +399,14 @@ public class MainView extends BorderPane implements LifecycleComponent {
             }
             LogUtil.debug("MainView", "[updateDividerPositions] divider[0].position=%.3f", 
                     centerSplitPane.getDividers().get(0).getPosition());
+            
+            // 延迟恢复约束，给用户拖动机会
+            javafx.application.Platform.runLater(() -> {
+                // 检查是否正在进行用户交互
+                if (!isDraggingDivider) {
+                    SplitPane.setResizableWithParent(sideBarManager, false);
+                }
+            });
         } finally {
             isProgrammaticUpdate = false;
         }
