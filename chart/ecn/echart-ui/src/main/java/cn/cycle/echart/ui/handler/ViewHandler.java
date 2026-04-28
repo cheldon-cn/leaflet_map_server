@@ -1,33 +1,29 @@
 package cn.cycle.echart.ui.handler;
 
-import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.ui.ChartDisplayArea;
 import cn.cycle.echart.ui.SideBarManager;
 import cn.cycle.echart.ui.RightTabManager;
 import cn.cycle.echart.ui.StatusBar;
-import javafx.scene.control.SplitPane;
+import javafx.scene.layout.HBox;
 
 public class ViewHandler {
 
     private final ChartDisplayArea chartDisplayArea;
     private final SideBarManager sideBarManager;
     private final RightTabManager rightTabManager;
-    private final SplitPane centerSplitPane;
+    private final HBox centerBox;
     private final StatusBar statusBar;
-    private final Runnable updateDividerCallback;
 
     public ViewHandler(ChartDisplayArea chartDisplayArea, 
                        SideBarManager sideBarManager,
                        RightTabManager rightTabManager,
-                       SplitPane centerSplitPane,
-                       StatusBar statusBar,
-                       Runnable updateDividerCallback) {
+                       HBox centerBox,
+                       StatusBar statusBar) {
         this.chartDisplayArea = chartDisplayArea;
         this.sideBarManager = sideBarManager;
         this.rightTabManager = rightTabManager;
-        this.centerSplitPane = centerSplitPane;
+        this.centerBox = centerBox;
         this.statusBar = statusBar;
-        this.updateDividerCallback = updateDividerCallback;
     }
 
     public void onZoomIn() {
@@ -67,21 +63,10 @@ public class ViewHandler {
                 sideBarManager.expandPanel();
             }
         }
-        if (updateDividerCallback != null) {
-            javafx.application.Platform.runLater(() -> {
-                LogUtil.debug("ViewHandler", "showSideBar: calling updateDividerCallback");
-                updateDividerCallback.run();
-            });
-        }
     }
 
     public void hideSideBar() {
         sideBarManager.collapsePanel();
-        if (updateDividerCallback != null) {
-            javafx.application.Platform.runLater(() -> {
-                updateDividerCallback.run();
-            });
-        }
     }
 
     public void toggleSideBar() {
@@ -93,22 +78,17 @@ public class ViewHandler {
     }
 
     public void showRightTab() {
-        if (!centerSplitPane.getItems().contains(rightTabManager)) {
-            centerSplitPane.getItems().add(rightTabManager);
-            javafx.application.Platform.runLater(() -> {
-                if (updateDividerCallback != null) {
-                    updateDividerCallback.run();
-                }
-            });
+        if (!centerBox.getChildren().contains(rightTabManager)) {
+            centerBox.getChildren().add(rightTabManager);
         }
     }
 
     public void hideRightTab() {
-        centerSplitPane.getItems().remove(rightTabManager);
+        centerBox.getChildren().remove(rightTabManager);
     }
 
     public void toggleRightTab() {
-        if (centerSplitPane.getItems().contains(rightTabManager)) {
+        if (centerBox.getChildren().contains(rightTabManager)) {
             hideRightTab();
         } else {
             showRightTab();

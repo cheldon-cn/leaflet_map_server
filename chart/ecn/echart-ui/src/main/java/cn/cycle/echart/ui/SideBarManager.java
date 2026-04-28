@@ -83,22 +83,12 @@ public class SideBarManager extends HBox {
         contentPane.getStyleClass().add("sidebar-content-pane");
         contentPane.setVisible(false);
         contentPane.setManaged(false);
-        HBox.setHgrow(contentPane, Priority.ALWAYS);
         
         getChildren().addAll(buttonBar, contentPane);
         getStyleClass().add("side-bar-manager");
         setMinWidth(40);
         setPrefWidth(40);
-        
-        widthProperty().addListener((obs, oldVal, newVal) -> {
-            double totalWidth = newVal.doubleValue();
-            if (isExpanded && totalWidth > 40) {
-                double contentWidth = totalWidth - 40;
-                expandedWidth = contentWidth;
-                lastExpandedWidth = contentWidth;
-                contentPane.setPrefWidth(contentWidth);
-            }
-        });
+        setMaxWidth(40);
     }
 
     public void registerPanel(SideBarPanel panel) {
@@ -303,14 +293,18 @@ public class SideBarManager extends HBox {
         
         expandedWidth = width;
         
+        double totalWidth = 40 + width;
+        
         contentPane.setPrefWidth(width);
         contentPane.setMinWidth(width);
+        contentPane.setMaxWidth(width);
         contentPane.setVisible(true);
         contentPane.setManaged(true);
-        setMinWidth(40 + MIN_EXPANDED_WIDTH);
-        setPrefWidth(40 + width);
-        // 移除 setMaxWidth，允许用户拖拽调整
-        currentWidthProperty.set(40 + width);
+        
+        setMinWidth(totalWidth);
+        setPrefWidth(totalWidth);
+        setMaxWidth(totalWidth);
+        currentWidthProperty.set(totalWidth);
         
         expandedProperty.set(true);
         
@@ -341,6 +335,7 @@ public class SideBarManager extends HBox {
         contentPane.setManaged(false);
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
+        contentPane.setMaxWidth(0);
         setMinWidth(40);
         setPrefWidth(40);
         setMaxWidth(40);
@@ -399,31 +394,18 @@ public class SideBarManager extends HBox {
     }
     
     public void setExpandedWidth(double width, boolean fromDrag) {
-        // 确保最小宽度约束
         double actualWidth = Math.max(width, MIN_EXPANDED_WIDTH);
         this.expandedWidth = actualWidth;
         this.lastExpandedWidth = actualWidth;
         if (isExpanded) {
+            double totalWidth = 40 + actualWidth;
             contentPane.setPrefWidth(actualWidth);
             contentPane.setMinWidth(actualWidth);
-            setMinWidth(40 + MIN_EXPANDED_WIDTH);
-            setPrefWidth(40 + actualWidth);
-            // 移除 setMaxWidth，允许用户拖拽调整
-            currentWidthProperty.set(40 + width);
-        }
-    }
-    
-    public void syncWidthFromSplitPane(double totalWidth) {
-        double contentWidth = totalWidth - 40;
-        if (contentWidth > 0 && isExpanded) {
-            // 确保最小宽度约束
-            double actualContentWidth = Math.max(contentWidth, MIN_EXPANDED_WIDTH);
-            this.expandedWidth = actualContentWidth;
-            this.lastExpandedWidth = actualContentWidth;
-            contentPane.setPrefWidth(actualContentWidth);
-            contentPane.setMinWidth(actualContentWidth);
-            setPrefWidth(40 + actualContentWidth);
-            currentWidthProperty.set(40 + actualContentWidth);
+            contentPane.setMaxWidth(actualWidth);
+            setMinWidth(totalWidth);
+            setPrefWidth(totalWidth);
+            setMaxWidth(totalWidth);
+            currentWidthProperty.set(totalWidth);
         }
     }
 
