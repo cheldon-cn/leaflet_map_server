@@ -31,6 +31,10 @@ public class RibbonMenuBar extends Ribbon {
     private RibbonTab alarmTab;
     private RibbonTab toolsTab;
     
+    private ToggleButton sideBarToggleButton;
+    private ToggleButton rightTabToggleButton;
+    private ToggleButton statusBarToggleButton;
+    
     private boolean initialized = false;
 
     public RibbonMenuBar() {
@@ -96,10 +100,15 @@ public class RibbonMenuBar extends Ribbon {
 
         RibbonGroup panelGroup = new RibbonGroup();
         panelGroup.setTitle("面板");
+        
+        sideBarToggleButton = createToggleButton("侧边栏", "显示/隐藏侧边栏", "sidebar_32x32.png", this::onToggleSideBar);
+        rightTabToggleButton = createToggleButton("右侧面板", "显示/隐藏右侧面板", "right-tab_32x32.png", this::onToggleRightTab);
+        statusBarToggleButton = createToggleButton("状态栏", "显示/隐藏状态栏", "status-bar_32x32.png", this::onToggleStatusBar);
+        
         panelGroup.getNodes().addAll(
-                createToggleButton("侧边栏", "显示/隐藏侧边栏", "sidebar_32x32.png", this::onToggleSideBar),
-                createToggleButton("右侧面板", "显示/隐藏右侧面板", "right-tab_32x32.png", this::onToggleRightTab),
-                createToggleButton("状态栏", "显示/隐藏状态栏", "status-bar_32x32.png", this::onToggleStatusBar)
+                sideBarToggleButton,
+                rightTabToggleButton,
+                statusBarToggleButton
         );
 
         tab.getRibbonGroups().addAll(zoomGroup, panelGroup);
@@ -226,7 +235,6 @@ public class RibbonMenuBar extends Ribbon {
     private ToggleButton createToggleButton(String text, String tooltip, String iconFile, Runnable action) {
         ToggleButton button = new ToggleButton(text);
         button.setTooltip(new Tooltip(tooltip));
-        button.setSelected(true);
         
         ImageView icon = loadIcon(iconFile);
         if (icon != null) {
@@ -240,6 +248,18 @@ public class RibbonMenuBar extends Ribbon {
         });
         
         return button;
+    }
+    
+    public void updateToggleButtonStates(boolean sideBarVisible, boolean rightTabVisible, boolean statusBarVisible) {
+        if (sideBarToggleButton != null) {
+            sideBarToggleButton.setSelected(sideBarVisible);
+        }
+        if (rightTabToggleButton != null) {
+            rightTabToggleButton.setSelected(rightTabVisible);
+        }
+        if (statusBarToggleButton != null) {
+            statusBarToggleButton.setSelected(statusBarVisible);
+        }
     }
     
     private ImageView loadIcon(String iconFile) {

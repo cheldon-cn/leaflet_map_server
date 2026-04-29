@@ -1,18 +1,26 @@
 package cn.cycle.echart.ui.handler;
 
+import cn.cycle.echart.core.LogUtil;
 import cn.cycle.echart.ui.ChartDisplayArea;
 import cn.cycle.echart.ui.SideBarManager;
 import cn.cycle.echart.ui.RightTabManager;
 import cn.cycle.echart.ui.StatusBar;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
 public class ViewHandler {
+
+    private static final double STATUS_BAR_PREF_HEIGHT = 28.0;
+    private static final double STATUS_BAR_MIN_HEIGHT = 24.0;
 
     private final ChartDisplayArea chartDisplayArea;
     private final SideBarManager sideBarManager;
     private final RightTabManager rightTabManager;
     private final HBox centerBox;
     private final StatusBar statusBar;
+    private BorderPane mainView;
+    private HBox statusBarWrapper;
+    private boolean statusBarVisible = true;
 
     public ViewHandler(ChartDisplayArea chartDisplayArea, 
                        SideBarManager sideBarManager,
@@ -24,6 +32,14 @@ public class ViewHandler {
         this.rightTabManager = rightTabManager;
         this.centerBox = centerBox;
         this.statusBar = statusBar;
+    }
+    
+    public void setMainView(BorderPane mainView) {
+        this.mainView = mainView;
+    }
+    
+    public void setStatusBarWrapper(HBox statusBarWrapper) {
+        this.statusBarWrapper = statusBarWrapper;
     }
 
     public void onZoomIn() {
@@ -46,12 +62,32 @@ public class ViewHandler {
         toggleRightTab();
     }
 
-    public void onToggleStatusBar(javafx.scene.layout.BorderPane parent) {
-        if (parent.getBottom() == null) {
-            parent.setBottom(statusBar);
-        } else {
-            parent.setBottom(null);
+    public void onToggleStatusBar() {
+        if (mainView == null || statusBarWrapper == null) {
+            LogUtil.debug("ViewHandler", "onToggleStatusBar: mainView=%s, statusBarWrapper=%s", mainView, statusBarWrapper);
+            return;
         }
+        
+        LogUtil.debug("ViewHandler", "onToggleStatusBar: before - statusBarVisible=%s, wrapper.prefHeight=%s, wrapper.minHeight=%s", 
+            statusBarVisible, statusBarWrapper.getPrefHeight(), statusBarWrapper.getMinHeight());
+        
+        if (statusBarVisible) {
+            statusBarWrapper.setPrefHeight(0);
+            statusBarWrapper.setMinHeight(0);
+            statusBarWrapper.setMaxHeight(0);
+            statusBar.setVisible(false);
+            statusBarVisible = false;
+        } else {
+            statusBarWrapper.setPrefHeight(STATUS_BAR_PREF_HEIGHT);
+            statusBarWrapper.setMinHeight(STATUS_BAR_MIN_HEIGHT);
+            statusBarWrapper.setMaxHeight(Double.MAX_VALUE);
+            statusBar.setVisible(true);
+            statusBarVisible = true;
+        }
+        
+        LogUtil.debug("ViewHandler", "onToggleStatusBar: after - statusBarVisible=%s, wrapper.prefHeight=%s, wrapper.minHeight=%s, wrapper.height=%s, mainView.height=%s", 
+            statusBarVisible, statusBarWrapper.getPrefHeight(), statusBarWrapper.getMinHeight(), 
+            statusBarWrapper.getHeight(), mainView.getHeight());
     }
 
     public void showSideBar() {
@@ -93,5 +129,18 @@ public class ViewHandler {
         } else {
             showRightTab();
         }
+    }
+    
+    public boolean isSideBarVisible() {
+        return sideBarManager.isExpanded();
+    }
+    
+    public boolean isRightTabVisible() {
+        return centerBox.getChildren().contains(rightTabManager);
+    }
+    
+    public boolean isStatusBarVisible() {
+        LogUtil.debug("ViewHandler", "isStatusBarVisible: %s", statusBarVisible);
+        return statusBarVisible;
     }
 }

@@ -9,13 +9,11 @@ import cn.cycle.echart.theme.Theme;
 import cn.cycle.echart.theme.ThemeManager;
 import cn.cycle.echart.ui.handler.*;
 import cn.cycle.echart.ui.panel.*;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -32,8 +30,6 @@ import java.util.Objects;
  */
 public class MainView extends BorderPane implements LifecycleComponent {
 
-    private final StackPane rootContainer;
-    private final BorderPane contentPane;
     private final HBox centerBox;
     private final RibbonMenuBar ribbonMenuBar;
     private final ActivityBar activityBar;
@@ -42,6 +38,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private final RightTabManager rightTabManager;
     private final StatusBar statusBar;
     private final ResponsiveLayoutManager responsiveLayoutManager;
+    
+    private HBox statusBarWrapper;
+    private VBox contentContainer;
     
     private TitleBar titleBar;
     private Stage stage;
@@ -62,8 +61,6 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private ToolsHandler toolsHandler;
 
     public MainView() {
-        this.rootContainer = new StackPane();
-        this.contentPane = new BorderPane();
         this.centerBox = new HBox();
         this.ribbonMenuBar = new RibbonMenuBar();
         this.activityBar = new ActivityBar();
@@ -83,12 +80,13 @@ public class MainView extends BorderPane implements LifecycleComponent {
         if (stage != null) {
             titleBar = new TitleBar(stage);
             titleBar.maxWidthProperty().bind(stage.widthProperty());
-            contentPane.minWidthProperty().bind(stage.widthProperty());
-            contentPane.maxWidthProperty().bind(stage.widthProperty());
+            
+            VBox topContainer = new VBox();
+            topContainer.getChildren().addAll(titleBar, ribbonMenuBar);
+            setTop(topContainer);
+            
             centerBox.minWidthProperty().bind(stage.widthProperty());
             centerBox.maxWidthProperty().bind(stage.widthProperty());
-            StackPane.setAlignment(titleBar, Pos.TOP_CENTER);
-            rootContainer.getChildren().add(titleBar);
             
             titleBar.setOnSettingsAction(() -> {
                 toolsHandler.onOptions();
@@ -179,13 +177,18 @@ public class MainView extends BorderPane implements LifecycleComponent {
         HBox.setHgrow(chartDisplayArea, Priority.ALWAYS);
         chartDisplayArea.setMinWidth(400);
         
-        contentPane.setTop(ribbonMenuBar);
-        contentPane.setCenter(centerBox);
-        contentPane.setBottom(statusBar);
-        contentPane.setPadding(new Insets(32, 0, 0, 0));
+        statusBarWrapper = new HBox(statusBar);
+        statusBarWrapper.setPrefHeight(28);
+        statusBarWrapper.setMinHeight(28);
+        statusBarWrapper.setMaxHeight(28);
+        HBox.setHgrow(statusBar, Priority.ALWAYS);
         
-        rootContainer.getChildren().add(contentPane);
-        setCenter(rootContainer);
+        contentContainer = new VBox();
+        contentContainer.getChildren().add(centerBox);
+        VBox.setVgrow(centerBox, Priority.ALWAYS);
+        
+        setCenter(contentContainer);
+        setBottom(statusBarWrapper);
         
         getStyleClass().add("main-view");
     }
@@ -322,6 +325,8 @@ public class MainView extends BorderPane implements LifecycleComponent {
         
         viewHandler = new ViewHandler(chartDisplayArea, sideBarManager, rightTabManager, 
                 centerBox, statusBar);
+        viewHandler.setMainView(this);
+        viewHandler.setStatusBarWrapper(statusBarWrapper);
         
         chartHandler = new ChartHandler(sideBarManager, messageCallback);
         
@@ -394,7 +399,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             @Override
             public void onToggleStatusBar() {
-                viewHandler.onToggleStatusBar(MainView.this);
+                viewHandler.onToggleStatusBar();
             }
             
             @Override
@@ -502,6 +507,19 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 toolsHandler.onThemeSettings();
             }
         });
+        
+        syncToggleButtonStates();
+    }
+    
+    private void syncToggleButtonStates() {
+        boolean sideBarVisible = viewHandler.isSideBarVisible();
+        boolean rightTabVisible = viewHandler.isRightTabVisible();
+        boolean statusBarVisible = viewHandler.isStatusBarVisible();
+        
+        LogUtil.debug("MainView", "syncToggleButtonStates: sideBar=%s, rightTab=%s, statusBar=%s", 
+            sideBarVisible, rightTabVisible, statusBarVisible);
+        
+        ribbonMenuBar.updateToggleButtonStates(sideBarVisible, rightTabVisible, statusBarVisible);
     }
     
     private void showInfo(String title, String message) {
