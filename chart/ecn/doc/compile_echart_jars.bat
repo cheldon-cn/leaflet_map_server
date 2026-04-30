@@ -176,30 +176,14 @@ if "%BUILD_MODE%"=="module" (
 )
 
 if "%BUILD_MODE%"=="layer" (
-    if %TARGET_LAYER% LEQ 0 (
-        call :BuildLayer0
-    )
-    if %TARGET_LAYER% LEQ 1 (
-        call :BuildLayer1
-    )
-    if %TARGET_LAYER% LEQ 2 (
-        call :BuildLayer2
-    )
-    if %TARGET_LAYER% LEQ 3 (
-        call :BuildLayer3
-    )
-    if %TARGET_LAYER% LEQ 4 (
-        call :BuildLayer4
-    )
-    if %TARGET_LAYER% LEQ 5 (
-        call :BuildLayer5
-    )
-    if %TARGET_LAYER% LEQ 6 (
-        call :BuildLayer6
-    )
-    if %TARGET_LAYER% LEQ 7 (
-        call :BuildLayer7
-    )
+    if %TARGET_LAYER% LEQ 0 call :BuildLayer0
+    if %TARGET_LAYER% LEQ 1 call :BuildLayer1
+    if %TARGET_LAYER% LEQ 2 call :BuildLayer2
+    if %TARGET_LAYER% LEQ 3 call :BuildLayer3
+    if %TARGET_LAYER% LEQ 4 call :BuildLayer4
+    if %TARGET_LAYER% LEQ 5 call :BuildLayer5
+    if %TARGET_LAYER% LEQ 6 call :BuildLayer6
+    if %TARGET_LAYER% LEQ 7 call :BuildLayer7
     exit /b 0
 )
 
@@ -235,7 +219,6 @@ echo [Layer 0] Building javawrapper ...
 call :BuildModule javawrapper ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo [Layer 0] Building echart-core ...
 call :BuildModule echart-core ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
@@ -256,7 +239,6 @@ echo [Layer 2] Building echart-render ...
 call :BuildModule echart-render ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 2] Building echart-data ...
 call :BuildModule echart-data ecn
@@ -270,19 +252,16 @@ echo [Layer 3] Building echart-alarm ...
 call :BuildModule echart-alarm ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 3] Building echart-ais ...
 call :BuildModule echart-ais ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 3] Building echart-route ...
 call :BuildModule echart-route ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 3] Building echart-workspace ...
 call :BuildModule echart-workspace ecn
@@ -296,13 +275,11 @@ echo [Layer 4] Building echart-plugin ...
 call :BuildModule echart-plugin ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 4] Building echart-ui-render ...
 call :BuildModule echart-ui-render ecn
 if !ERRORLEVEL! EQU 0 ( set /a SUCCESS_COUNT+=1 ) else ( set /a FAIL_COUNT+=1 )
 set /a TOTAL_COUNT+=1
-
 echo.
 echo [Layer 4] Building echart-theme ...
 call :BuildModule echart-theme ecn
@@ -338,17 +315,13 @@ exit /b 0
 set MODULE_NAME=%~1
 set MODULE_DIR=%~2
 set MODULE_PATH=%PROJECT_ROOT%%MODULE_DIR%\%MODULE_NAME%
-
 echo [BUILD] %MODULE_NAME%
 echo   Path: %MODULE_PATH%
-
 if not exist "%MODULE_PATH%" (
     echo [ERROR] Module dir not found: %MODULE_PATH%
     exit /b 1
 )
-
 call "%GRADLE_CMD%" -p "%MODULE_PATH%" build -x test --parallel
-
 if %ERRORLEVEL% EQU 0 (
     echo [SUCCESS] %MODULE_NAME% build complete
 ) else (
@@ -358,7 +331,6 @@ exit /b %ERRORLEVEL%
 
 :CopyJars
 set COPIED_COUNT=0
-
 for %%M in (javawrapper fxribbon echart-core echart-i18n echart-render echart-data echart-alarm echart-ais echart-route echart-workspace echart-plugin echart-ui-render echart-theme echart-facade echart-ui echart-app) do (
     if "%%M"=="javawrapper" (
         set JAR_VER=2.1.0
@@ -367,7 +339,6 @@ for %%M in (javawrapper fxribbon echart-core echart-i18n echart-render echart-da
     ) else (
         set JAR_VER=%JAR_VERSION%
     )
-    
     if exist "%BUILD_ROOT%%%M\libs\%%M-!JAR_VER!.jar" (
         copy /Y "%BUILD_ROOT%%%M\libs\%%M-!JAR_VER!.jar" "%INSTALL_DIR%" >nul
         echo [COPY] %%M-!JAR_VER!.jar
@@ -383,9 +354,6 @@ for %%M in (javawrapper fxribbon echart-core echart-i18n echart-render echart-da
         )
     )
 )
-
 echo.
 echo Copied %COPIED_COUNT% JAR files to %INSTALL_DIR%
 exit /b 0
-
-endlocal

@@ -7,30 +7,34 @@ import cn.cycle.echart.ui.RightTabManager;
 import cn.cycle.echart.ui.StatusBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.control.SplitPane;
 
 public class ViewHandler {
 
     private static final double STATUS_BAR_PREF_HEIGHT = 28.0;
     private static final double STATUS_BAR_MIN_HEIGHT = 24.0;
+    private static final double RIGHT_PANEL_WIDTH = 300;
 
     private final ChartDisplayArea chartDisplayArea;
     private final SideBarManager sideBarManager;
     private final RightTabManager rightTabManager;
-    private final HBox centerBox;
+    private final SplitPane centerSplitPane;
     private final StatusBar statusBar;
     private BorderPane mainView;
     private HBox statusBarWrapper;
     private boolean statusBarVisible = true;
+    private boolean rightTabVisible = true;
+    private double lastRightPanelWidth = RIGHT_PANEL_WIDTH;
 
     public ViewHandler(ChartDisplayArea chartDisplayArea, 
                        SideBarManager sideBarManager,
                        RightTabManager rightTabManager,
-                       HBox centerBox,
+                       SplitPane centerSplitPane,
                        StatusBar statusBar) {
         this.chartDisplayArea = chartDisplayArea;
         this.sideBarManager = sideBarManager;
         this.rightTabManager = rightTabManager;
-        this.centerBox = centerBox;
+        this.centerSplitPane = centerSplitPane;
         this.statusBar = statusBar;
     }
     
@@ -114,17 +118,27 @@ public class ViewHandler {
     }
 
     public void showRightTab() {
-        if (!centerBox.getChildren().contains(rightTabManager)) {
-            centerBox.getChildren().add(rightTabManager);
+        if (!centerSplitPane.getItems().contains(rightTabManager)) {
+            rightTabManager.setVisible(true);
+            rightTabManager.setManaged(true);
+            rightTabManager.setPrefWidth(lastRightPanelWidth);
+            centerSplitPane.getItems().add(rightTabManager);
+            rightTabVisible = true;
         }
     }
 
     public void hideRightTab() {
-        centerBox.getChildren().remove(rightTabManager);
+        if (centerSplitPane.getItems().contains(rightTabManager)) {
+            lastRightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : RIGHT_PANEL_WIDTH;
+            centerSplitPane.getItems().remove(rightTabManager);
+            rightTabManager.setVisible(false);
+            rightTabManager.setManaged(false);
+            rightTabVisible = false;
+        }
     }
 
     public void toggleRightTab() {
-        if (centerBox.getChildren().contains(rightTabManager)) {
+        if (centerSplitPane.getItems().contains(rightTabManager)) {
             hideRightTab();
         } else {
             showRightTab();
@@ -136,7 +150,7 @@ public class ViewHandler {
     }
     
     public boolean isRightTabVisible() {
-        return centerBox.getChildren().contains(rightTabManager);
+        return centerSplitPane.getItems().contains(rightTabManager);
     }
     
     public boolean isStatusBarVisible() {

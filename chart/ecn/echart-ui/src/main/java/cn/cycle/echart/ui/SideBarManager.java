@@ -25,7 +25,7 @@ import java.util.Objects;
  * 侧边栏管理器。
  * 
  * <p>使用ToggleButton+StackPane模式管理侧边栏面板的显示和切换。</p>
- * <p>支持面板折叠/展开动画。</p>
+ * <p>内部包含按钮栏和内容面板，之间无分割条。</p>
  * 
  * @author Cycle Team
  * @version 1.0.0
@@ -33,11 +33,11 @@ import java.util.Objects;
  */
 public class SideBarManager extends HBox {
 
-    private static final double SIDEBAR_WIDTH = 200.0;
+    public static final double SIDEBAR_WIDTH = 200.0;
     private static final double COLLAPSED_WIDTH = 0.0;
     private static final double ICON_SIZE = 20.0;
+    public static final double SIDEBAR_BUTTON_WIDTH = 40.0;
     public static final double MIN_EXPANDED_WIDTH = 100.0;
-    public static final double MAX_EXPANDED_WIDTH_RATIO = 0.4;
 
     private final VBox buttonBar;
     private final StackPane contentPane;
@@ -52,7 +52,7 @@ public class SideBarManager extends HBox {
     private double lastExpandedWidth = SIDEBAR_WIDTH;
     
     private final ReadOnlyBooleanWrapper expandedProperty = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyDoubleWrapper currentWidthProperty = new ReadOnlyDoubleWrapper(40);
+    private final ReadOnlyDoubleWrapper currentWidthProperty = new ReadOnlyDoubleWrapper(SIDEBAR_BUTTON_WIDTH);
     
     private Runnable onBeforeExpand;
     private Runnable onAfterExpand;
@@ -74,21 +74,23 @@ public class SideBarManager extends HBox {
         buttonBar.setSpacing(2);
         buttonBar.setPadding(new javafx.geometry.Insets(4, 2, 4, 2));
         buttonBar.getStyleClass().add("sidebar-button-bar");
-        buttonBar.setPrefWidth(40);
-        buttonBar.setMinWidth(40);
-        buttonBar.setMaxWidth(40);
+        buttonBar.setPrefWidth(SIDEBAR_BUTTON_WIDTH);
+        buttonBar.setMinWidth(SIDEBAR_BUTTON_WIDTH);
+        buttonBar.setMaxWidth(SIDEBAR_BUTTON_WIDTH);
         
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
+        contentPane.setMaxWidth(0);
         contentPane.getStyleClass().add("sidebar-content-pane");
         contentPane.setVisible(false);
-        contentPane.setManaged(false);
         
         getChildren().addAll(buttonBar, contentPane);
+        
+        setMinWidth(SIDEBAR_BUTTON_WIDTH);
+        setPrefWidth(SIDEBAR_BUTTON_WIDTH);
+        //setMaxWidth(SIDEBAR_BUTTON_WIDTH);
+        
         getStyleClass().add("side-bar-manager");
-        setMinWidth(40);
-        setPrefWidth(40);
-        setMaxWidth(40);
     }
 
     public void registerPanel(SideBarPanel panel) {
@@ -104,7 +106,6 @@ public class SideBarManager extends HBox {
         
         javafx.scene.Node content = panel.getContent();
         content.setVisible(false);
-        content.setManaged(false);
         StackPane.setAlignment(content, javafx.geometry.Pos.TOP_LEFT);
         contentPane.getChildren().add(content);
     }
@@ -122,7 +123,6 @@ public class SideBarManager extends HBox {
         
         javafx.scene.Node content = panel.getContent();
         content.setVisible(false);
-        content.setManaged(false);
         StackPane.setAlignment(content, javafx.geometry.Pos.TOP_LEFT);
         contentPane.getChildren().add(content);
     }
@@ -190,46 +190,36 @@ public class SideBarManager extends HBox {
     }
 
     public void showPanel(String panelId) {
-        showPanel(panelId, -1, false);
+        showPanel(panelId, -1);
     }
     
     public void showPanel(String panelId, double width) {
-        showPanel(panelId, width, false);
-    }
-    
-    public void showPanel(String panelId, double width, boolean fromDrag) {
         SideBarPanel panel = panels.get(panelId);
         if (panel == null) {
             LogUtil.debug("SideBarManager", "showPanel: panel not found for id=%s, availablePanels=%s", panelId, panels.keySet());
             return;
         }
-        
+         LogUtil.debug("SideBarManager", "showPanel: panelId=%s, availablePanels=%s", panelId, panels.keySet());
         if (activePanel != null && activePanel != panel) {
             activePanel.getContent().setVisible(false);
-            activePanel.getContent().setManaged(false);
             activePanel.onDeactivate();
         }
         
         activePanel = panel;
         panel.getContent().setVisible(true);
-        panel.getContent().setManaged(true);
         panel.getContent().toFront();
         panel.onActivate();
         
         if (!isExpanded) {
             if (width > 0) {
-                expandPanel(width, fromDrag);
+                expandPanel(width);
             } else {
                 expandPanel();
             }
         } else {
-            // 已展开状态下切换面板
-            double targetWidth = Math.max(width, MIN_EXPANDED_WIDTH);
+            double targetWidth = width > 0 ? width : lastExpandedWidth;
             if (targetWidth <= 0) {
-                targetWidth = Math.max(lastExpandedWidth, MIN_EXPANDED_WIDTH);
-            }
-            if (targetWidth <= 0) {
-                targetWidth = Math.max(SIDEBAR_WIDTH, MIN_EXPANDED_WIDTH);
+                targetWidth = SIDEBAR_WIDTH;
             }
             setExpandedWidth(targetWidth);
         }
@@ -270,20 +260,16 @@ public class SideBarManager extends HBox {
     }
 
     public void expandPanel() {
-        expandPanel(lastExpandedWidth > 0 ? lastExpandedWidth : SIDEBAR_WIDTH, false);
+        expandPanel(lastExpandedWidth > 0 ? lastExpandedWidth : SIDEBAR_WIDTH);
     }
     
     public void expandPanel(double width) {
-        expandPanel(width, false);
-    }
-    
-    public void expandPanel(double width, boolean fromDrag) {
         if (isExpanded) {
             return;
         }
         
-        LogUtil.debug("SideBarManager", "[EXPAND BEFORE] buttonBar=40, contentPane=%s, total=%s", 
-                contentPane.getPrefWidth(), getPrefWidth());
+        LogUtil.debug("SideBarManager", "[EXPAND BEFORE] buttonBar=%s, contentPane=%s, total=%s", 
+                SIDEBAR_BUTTON_WIDTH, contentPane.getPrefWidth(), getPrefWidth());
         
         if (onBeforeExpand != null) {
             onBeforeExpand.run();
@@ -291,25 +277,24 @@ public class SideBarManager extends HBox {
         
         isExpanded = true;
         
-        expandedWidth = width;
+        expandedWidth = Math.max(width, MIN_EXPANDED_WIDTH);
         
-        double totalWidth = 40 + width;
+        double totalWidth = SIDEBAR_BUTTON_WIDTH + expandedWidth;
         
-        contentPane.setPrefWidth(width);
-        contentPane.setMinWidth(width);
-        contentPane.setMaxWidth(width);
+        contentPane.setPrefWidth(expandedWidth);
+        contentPane.setMinWidth(MIN_EXPANDED_WIDTH);
+        contentPane.setMaxWidth(Double.MAX_VALUE);
         contentPane.setVisible(true);
-        contentPane.setManaged(true);
         
-        setMinWidth(totalWidth);
+        //setMinWidth(totalWidth);
         setPrefWidth(totalWidth);
-        setMaxWidth(totalWidth);
-        currentWidthProperty.set(totalWidth);
+        //setMaxWidth(totalWidth);
         
+        currentWidthProperty.set(totalWidth);
         expandedProperty.set(true);
         
-        LogUtil.debug("SideBarManager", "[EXPAND AFTER] buttonBar=40, contentPane=%s, total=%s", 
-                contentPane.getPrefWidth(), getPrefWidth());
+        LogUtil.debug("SideBarManager", "[EXPAND AFTER] buttonBar=%s, contentPane=%s, total=%s", 
+                SIDEBAR_BUTTON_WIDTH, contentPane.getPrefWidth(), getPrefWidth());
         
         if (onAfterExpand != null) {
             javafx.application.Platform.runLater(onAfterExpand);
@@ -321,8 +306,8 @@ public class SideBarManager extends HBox {
             return;
         }
         
-        LogUtil.debug("SideBarManager", "[COLLAPSE BEFORE] buttonBar=40, contentPane=%s, total=%s", 
-                contentPane.getPrefWidth(), getPrefWidth());
+        LogUtil.debug("SideBarManager", "[COLLAPSE BEFORE] buttonBar=%s, contentPane=%s, total=%s", 
+                SIDEBAR_BUTTON_WIDTH, contentPane.getPrefWidth(), getPrefWidth());
         
         if (onBeforeCollapse != null) {
             onBeforeCollapse.run();
@@ -332,18 +317,18 @@ public class SideBarManager extends HBox {
         
         isExpanded = false;
         contentPane.setVisible(false);
-        contentPane.setManaged(false);
         contentPane.setPrefWidth(COLLAPSED_WIDTH);
         contentPane.setMinWidth(0);
         contentPane.setMaxWidth(0);
-        setMinWidth(40);
-        setPrefWidth(40);
-        setMaxWidth(40);
-        currentWidthProperty.set(40);
+        
+        //setMinWidth(SIDEBAR_BUTTON_WIDTH);
+        setPrefWidth(SIDEBAR_BUTTON_WIDTH);
+        //setMaxWidth(SIDEBAR_BUTTON_WIDTH);
+        
+        currentWidthProperty.set(SIDEBAR_BUTTON_WIDTH);
         
         if (activePanel != null) {
             activePanel.getContent().setVisible(false);
-            activePanel.getContent().setManaged(false);
             activePanel.onDeactivate();
             activePanel = null;
         }
@@ -351,7 +336,8 @@ public class SideBarManager extends HBox {
         expandedProperty.set(false);
         toggleGroup.selectToggle(null);
         
-        LogUtil.debug("SideBarManager", "[COLLAPSE AFTER] buttonBar=40, contentPane=0, total=40");
+        LogUtil.debug("SideBarManager", "[COLLAPSE AFTER] buttonBar=%s, contentPane=0, total=%s", 
+                SIDEBAR_BUTTON_WIDTH, SIDEBAR_BUTTON_WIDTH);
         
         if (onAfterCollapse != null) {
             javafx.application.Platform.runLater(onAfterCollapse);
@@ -390,21 +376,19 @@ public class SideBarManager extends HBox {
     }
 
     public void setExpandedWidth(double width) {
-        setExpandedWidth(width, false);
-    }
-    
-    public void setExpandedWidth(double width, boolean fromDrag) {
         double actualWidth = Math.max(width, MIN_EXPANDED_WIDTH);
         this.expandedWidth = actualWidth;
         this.lastExpandedWidth = actualWidth;
+        
         if (isExpanded) {
-            double totalWidth = 40 + actualWidth;
+            double totalWidth = SIDEBAR_BUTTON_WIDTH + actualWidth;
             contentPane.setPrefWidth(actualWidth);
-            contentPane.setMinWidth(actualWidth);
-            contentPane.setMaxWidth(actualWidth);
-            setMinWidth(totalWidth);
+            contentPane.setMinWidth(MIN_EXPANDED_WIDTH);
+            
+            //setMinWidth(totalWidth);
             setPrefWidth(totalWidth);
-            setMaxWidth(totalWidth);
+            //setMaxWidth(totalWidth);
+            
             currentWidthProperty.set(totalWidth);
         }
     }

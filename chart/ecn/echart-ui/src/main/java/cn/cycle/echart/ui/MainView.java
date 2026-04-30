@@ -11,6 +11,7 @@ import cn.cycle.echart.ui.handler.*;
 import cn.cycle.echart.ui.panel.*;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -30,7 +31,7 @@ import java.util.Objects;
  */
 public class MainView extends BorderPane implements LifecycleComponent {
 
-    private final HBox centerBox;
+    private final SplitPane centerBox;
     private final RibbonMenuBar ribbonMenuBar;
     private final ActivityBar activityBar;
     private final SideBarManager sideBarManager;
@@ -40,7 +41,6 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private final ResponsiveLayoutManager responsiveLayoutManager;
     
     private HBox statusBarWrapper;
-    private VBox contentContainer;
     
     private TitleBar titleBar;
     private Stage stage;
@@ -61,7 +61,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private ToolsHandler toolsHandler;
 
     public MainView() {
-        this.centerBox = new HBox();
+        this.centerBox = new SplitPane();
         this.ribbonMenuBar = new RibbonMenuBar();
         this.activityBar = new ActivityBar();
         this.sideBarManager = new SideBarManager();
@@ -172,25 +172,75 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
 
     private void initializeLayout() {
-        centerBox.getChildren().addAll(sideBarManager, chartDisplayArea, rightTabManager);
+        centerBox.getItems().addAll(sideBarManager, chartDisplayArea, rightTabManager);
         centerBox.setStyle("-fx-background-color: derive(-fx-base, -5%);");
-        HBox.setHgrow(chartDisplayArea, Priority.ALWAYS);
+        
+        sideBarManager.setMinWidth(SideBarManager.SIDEBAR_BUTTON_WIDTH);
         chartDisplayArea.setMinWidth(400);
+        rightTabManager.setMinWidth(200);
+        rightTabManager.setPrefWidth(300);
+        
+        SplitPane.setResizableWithParent(sideBarManager, false);
+        SplitPane.setResizableWithParent(rightTabManager, false);
         
         statusBarWrapper = new HBox(statusBar);
         statusBarWrapper.setPrefHeight(28);
         statusBarWrapper.setMinHeight(28);
-        statusBarWrapper.setMaxHeight(28);
         HBox.setHgrow(statusBar, Priority.ALWAYS);
         
-        contentContainer = new VBox();
-        contentContainer.getChildren().add(centerBox);
-        VBox.setVgrow(centerBox, Priority.ALWAYS);
-        
-        setCenter(contentContainer);
+        setCenter(centerBox);
         setBottom(statusBarWrapper);
         
         getStyleClass().add("main-view");
+        
+        setupSplitPaneListeners();
+    }
+    
+    private void setupSplitPaneListeners() {
+        sideBarManager.setOnAfterExpand(() -> {
+            updateDividerPositions();
+        });
+        
+        sideBarManager.setOnAfterCollapse(() -> {
+            updateDividerPositions();
+        });
+        
+        javafx.application.Platform.runLater(() -> {
+            updateDividerPositions();
+            
+            if (centerBox.getDividers().size() >= 2) {
+                centerBox.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
+                    double totalWidth = centerBox.getWidth();
+                    if (totalWidth <= 0) return;
+                    
+                    double sidebarMaxWidth = SideBarManager.SIDEBAR_BUTTON_WIDTH + sideBarManager.getExpandedWidth();
+                    double maxPos = sidebarMaxWidth / totalWidth;
+                    
+                    if (newVal.doubleValue() > maxPos && sideBarManager.isExpanded()) {
+                        javafx.application.Platform.runLater(() -> {
+                            centerBox.setDividerPosition(0, maxPos);
+                        });
+                    }
+                });
+            }
+        });
+    }
+    
+    private void updateDividerPositions() {
+        javafx.application.Platform.runLater(() -> {
+            if (centerBox.getDividers().size() < 2) return;
+            
+            double totalWidth = centerBox.getWidth();
+            if (totalWidth <= 0) return;
+            
+            double sidebarWidth = sideBarManager.getCurrentWidth();
+            double rightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : 300;
+            
+            double divider0Pos = sidebarWidth / totalWidth;
+            double divider1Pos = (totalWidth - rightPanelWidth) / totalWidth;
+            
+            centerBox.setDividerPositions(divider0Pos, divider1Pos);
+        });
     }
     
     private void initializePanels() {
