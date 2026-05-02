@@ -54,7 +54,7 @@ public class RightTabManager extends TabPane {
         getStyleClass().add("right-tab-manager");
         setPrefWidth(300);
         setMinWidth(200);
-        setMaxWidth(300);
+        setMaxWidth(360);
     }
 
     public void registerPanel(FxRightTabPanel panel) {

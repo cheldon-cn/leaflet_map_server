@@ -647,7 +647,7 @@ public void expandPanel() {
     isExpanded = true;
     contentPane.setVisible(true);
     contentPane.setManaged(true);
-    contentPane.setPrefWidth(expandedWidth);  // 默认280px
+    contentPane.setPrefWidth(expandedWidth);  // 默认200px
     setPrefWidth(40 + expandedWidth);
 }
 ```
@@ -1257,7 +1257,7 @@ primaryStage.show();          // 显示窗口
 
 **常量说明**:
 - `SIDEBAR_BUTTON_WIDTH = 40px` (侧边栏按钮栏宽度)
-- `SIDEBAR_CONTENT_WIDTH = 280px` (侧边栏内容面板宽度，可调整)
+- `SIDEBAR_CONTENT_WIDTH = 200px` (侧边栏内容面板宽度，可调整)
 - `RIGHT_PANEL_WIDTH = RightTabManager.getPrefWidth()` (右侧面板宽度，默认300px，可调整)
 
 | 组件 | 初始状态 |
@@ -1527,7 +1527,7 @@ ToggleButton.setOnAction() 触发
 
 **常量说明**:
 - `SIDEBAR_BUTTON_WIDTH = 40px` (侧边栏按钮栏宽度)
-- `SIDEBAR_CONTENT_WIDTH = 280px` (侧边栏内容面板宽度，可调整)
+- `SIDEBAR_CONTENT_WIDTH = 200px` (侧边栏内容面板宽度，可调整)
 - `RIGHT_PANEL_WIDTH = RightTabManager.getPrefWidth()` (右侧面板宽度，默认300px，可调整)
 
 **展开后布局示意**:
@@ -1961,7 +1961,7 @@ public class ViewHandler {
 **展开状态**:
 - 内容面板：setVisible(true)、setManaged(true)、setPrefWidth(展开宽度)
 - 整体宽度：40px + 内容宽度
-- 默认展开宽度：280px（由SIDEBAR_CONTENT_WIDTH常量定义）
+- 默认展开宽度：200px（由SIDEBAR_CONTENT_WIDTH常量定义）
 
 **按钮点击行为**:
 - 点击已展开的活动面板按钮：触发折叠

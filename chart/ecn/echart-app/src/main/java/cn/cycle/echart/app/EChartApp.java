@@ -30,6 +30,8 @@ import java.util.Locale;
 public class EChartApp extends Application {
 
     private static final String TAG = "EChartApp";
+    private static final double MIN_WINDOW_WIDTH = 800.0;
+    private static final double MIN_WINDOW_HEIGHT = 600.0;
 
     private ApplicationFacade facade;
     private ThemeManager themeManager;
@@ -147,13 +149,13 @@ public class EChartApp extends Application {
     protected void configureStage(Stage stage, Scene scene) {
         stage.setTitle(i18nManager.getMessage("app.title", "E-Chart Display and Alarm Application"));
         stage.setScene(scene);
-        stage.setMinWidth(800);
-        stage.setMinHeight(600);
+        stage.setMinWidth(MIN_WINDOW_WIDTH);
+        stage.setMinHeight(MIN_WINDOW_HEIGHT);
         stage.initStyle(javafx.stage.StageStyle.UNDECORATED);
         
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-        double initWidth = screenBounds.getWidth() * deviceRatio;
-        double initHeight = screenBounds.getHeight() * deviceRatio;
+        double initWidth = Math.max(screenBounds.getWidth() * deviceRatio, MIN_WINDOW_WIDTH);
+        double initHeight = Math.max(screenBounds.getHeight() * deviceRatio, MIN_WINDOW_HEIGHT);
         double initX = screenBounds.getMinX() + (screenBounds.getWidth() - initWidth) / 2;
         double initY = screenBounds.getMinY() + (screenBounds.getHeight() - initHeight) / 2;
         stage.setX(initX);

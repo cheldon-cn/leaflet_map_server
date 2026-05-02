@@ -31,6 +31,8 @@ import java.util.Objects;
  */
 public class MainView extends BorderPane implements LifecycleComponent {
 
+    private static final double MIN_WINDOW_WIDTH = 800.0;
+
     private final SplitPane centerBox;
     private final RibbonMenuBar ribbonMenuBar;
     private final ActivityBar activityBar;
@@ -113,7 +115,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             chartHandler.setStage(stage);
             
-            stage.setMinWidth(800);
+            stage.setMinWidth(MIN_WINDOW_WIDTH);
         }
     }
     
@@ -206,9 +208,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
         });
         
         javafx.application.Platform.runLater(() -> {
-            updateDividerPositions();
-            
-            if (centerBox.getDividers().size() >= 2) {
+            if (centerBox.getDividers().size() >= 1) {
                 centerBox.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
                     double totalWidth = centerBox.getWidth();
                     if (totalWidth <= 0) return;
@@ -227,8 +227,11 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void updateDividerPositions() {
+      
         javafx.application.Platform.runLater(() -> {
-            if (centerBox.getDividers().size() < 2) return;
+              LogUtil.debug("MainView", "updateDividerPositions called: dividers.size=%s, centerBox.width=%s",
+                centerBox.getDividers().size(), centerBox.getWidth());
+            if (centerBox.getDividers().size() < 1) return;
             
             double totalWidth = centerBox.getWidth();
             if (totalWidth <= 0) return;
@@ -238,6 +241,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
             
             double divider0Pos = sidebarWidth / totalWidth;
             double divider1Pos = (totalWidth - rightPanelWidth) / totalWidth;
+            
+            LogUtil.debug("MainView", "updateDividerPositions: totalWidth=%s, sidebarWidth=%s, rightPanelWidth=%s, divider0Pos=%s, divider1Pos=%s, isExpanded=%s",
+                    totalWidth, sidebarWidth, rightPanelWidth, divider0Pos, divider1Pos, sideBarManager.isExpanded());
             
             centerBox.setDividerPositions(divider0Pos, divider1Pos);
         });
@@ -643,6 +649,8 @@ public class MainView extends BorderPane implements LifecycleComponent {
         ResponsiveLayoutManager.LayoutMode actualMode = ResponsiveLayoutManager.determineLayoutModeForWidth(currentWidth);
         ResponsiveLayoutManager.LayoutConfig config = ResponsiveLayoutManager.LayoutConfig.forMode(actualMode);
         applyLayoutConfig(config);
+        
+        updateDividerPositions();
     }
 
     @Override

@@ -48,7 +48,7 @@ public class StatusBar extends org.controlsfx.control.StatusBar {
     private void initializeLayout() {
         setText("就绪");
         
-        setMinHeight(24);
+        setMinHeight(25);
         setPrefHeight(28);
         
         coordinatesLabel.getStyleClass().add("status-coordinates");
