@@ -11,9 +11,9 @@ import javafx.scene.control.SplitPane;
 
 public class ViewHandler {
 
+    public static final double DEFAULT_RIGHT_PANEL_WIDTH = 300.0;
     private static final double STATUS_BAR_PREF_HEIGHT = 28.0;
     private static final double STATUS_BAR_MIN_HEIGHT = 24.0;
-    private static final double RIGHT_PANEL_WIDTH = 300;
 
     private final ChartDisplayArea chartDisplayArea;
     private final SideBarManager sideBarManager;
@@ -24,7 +24,8 @@ public class ViewHandler {
     private HBox statusBarWrapper;
     private boolean statusBarVisible = true;
     private boolean rightTabVisible = true;
-    private double lastRightPanelWidth = RIGHT_PANEL_WIDTH;
+    private double lastRightPanelWidth = DEFAULT_RIGHT_PANEL_WIDTH;
+    private Runnable onDividerUpdateNeeded;
 
     public ViewHandler(ChartDisplayArea chartDisplayArea, 
                        SideBarManager sideBarManager,
@@ -44,6 +45,10 @@ public class ViewHandler {
     
     public void setStatusBarWrapper(HBox statusBarWrapper) {
         this.statusBarWrapper = statusBarWrapper;
+    }
+    
+    public void setOnDividerUpdateNeeded(Runnable callback) {
+        this.onDividerUpdateNeeded = callback;
     }
 
     public void onZoomIn() {
@@ -118,22 +123,35 @@ public class ViewHandler {
     }
 
     public void showRightTab() {
+        showRightTab(lastRightPanelWidth);
+    }
+    
+    public void showRightTab(double width) {
         if (!centerSplitPane.getItems().contains(rightTabManager)) {
+            double actualWidth = width > 0 ? width : DEFAULT_RIGHT_PANEL_WIDTH;
             rightTabManager.setVisible(true);
             rightTabManager.setManaged(true);
-            rightTabManager.setPrefWidth(lastRightPanelWidth);
+            rightTabManager.setPrefWidth(actualWidth);
             centerSplitPane.getItems().add(rightTabManager);
             rightTabVisible = true;
+            
+            if (onDividerUpdateNeeded != null) {
+                javafx.application.Platform.runLater(onDividerUpdateNeeded);
+            }
         }
     }
 
     public void hideRightTab() {
         if (centerSplitPane.getItems().contains(rightTabManager)) {
-            lastRightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : RIGHT_PANEL_WIDTH;
+            lastRightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : DEFAULT_RIGHT_PANEL_WIDTH;
             centerSplitPane.getItems().remove(rightTabManager);
             rightTabManager.setVisible(false);
             rightTabManager.setManaged(false);
             rightTabVisible = false;
+            
+            if (onDividerUpdateNeeded != null) {
+                javafx.application.Platform.runLater(onDividerUpdateNeeded);
+            }
         }
     }
 

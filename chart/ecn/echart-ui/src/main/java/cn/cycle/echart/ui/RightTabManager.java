@@ -1,5 +1,6 @@
 package cn.cycle.echart.ui;
 
+import cn.cycle.echart.ui.handler.ViewHandler;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 
@@ -17,6 +18,9 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public class RightTabManager extends TabPane {
+
+    private static final double MIN_PANEL_WIDTH = 200.0;
+    private static final double MAX_PANEL_WIDTH = 360.0;
 
     private final Map<String, FxRightTabPanel> panels;
     private FxRightTabPanel selectedPanel;
@@ -52,9 +56,9 @@ public class RightTabManager extends TabPane {
         });
         
         getStyleClass().add("right-tab-manager");
-        setPrefWidth(300);
-        setMinWidth(200);
-        setMaxWidth(360);
+        setPrefWidth(ViewHandler.DEFAULT_RIGHT_PANEL_WIDTH);
+        setMinWidth(MIN_PANEL_WIDTH);
+        setMaxWidth(MAX_PANEL_WIDTH);
     }
 
     public void registerPanel(FxRightTabPanel panel) {

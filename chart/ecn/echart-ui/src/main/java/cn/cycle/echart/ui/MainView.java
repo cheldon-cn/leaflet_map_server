@@ -229,15 +229,15 @@ public class MainView extends BorderPane implements LifecycleComponent {
     private void updateDividerPositions() {
       
         javafx.application.Platform.runLater(() -> {
-              LogUtil.debug("MainView", "updateDividerPositions called: dividers.size=%s, centerBox.width=%s",
-                centerBox.getDividers().size(), centerBox.getWidth());
+              LogUtil.debug("MainView", "updateDividerPositions called: dividers.size=%s, centerBox.width=%s, sidebarWidth=%s",
+                centerBox.getDividers().size(), centerBox.getWidth(),sideBarManager.getCurrentWidth());
             if (centerBox.getDividers().size() < 1) return;
             
             double totalWidth = centerBox.getWidth();
             if (totalWidth <= 0) return;
             
             double sidebarWidth = sideBarManager.getCurrentWidth();
-            double rightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : 300;
+            double rightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : ViewHandler.DEFAULT_RIGHT_PANEL_WIDTH;
             
             double divider0Pos = sidebarWidth / totalWidth;
             double divider1Pos = (totalWidth - rightPanelWidth) / totalWidth;
@@ -383,6 +383,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 centerBox, statusBar);
         viewHandler.setMainView(this);
         viewHandler.setStatusBarWrapper(statusBarWrapper);
+        viewHandler.setOnDividerUpdateNeeded(this::updateDividerPositions);
         
         chartHandler = new ChartHandler(sideBarManager, messageCallback);
         
@@ -605,8 +606,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
         sideBarManager.setExpandedWidth(config.getSidebarWidth());
         
         if (config.isShowRightPanel()) {
-            viewHandler.showRightTab();
-            rightTabManager.setPrefWidth(config.getRightPanelWidth());
+            viewHandler.showRightTab(config.getRightPanelWidth());
         } else {
             viewHandler.hideRightTab();
         }
