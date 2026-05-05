@@ -116,6 +116,47 @@ public class MainView extends BorderPane implements LifecycleComponent {
             chartHandler.setStage(stage);
             
             stage.setMinWidth(MIN_WINDOW_WIDTH);
+            
+            stage.heightProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal.doubleValue() > 0) {
+                    double centerBoxHeight = centerBox.getHeight();
+                    double statusBarHeight = statusBarWrapper != null ? statusBarWrapper.getHeight() : 0;
+                    double topHeight = getTop() != null ? ((VBox) getTop()).getHeight() : 0;
+                    double expectedHeight = Math.round(newVal.doubleValue() - topHeight - statusBarHeight);
+                    
+                    LogUtil.debug("MainView", "=== HEIGHT CHANGE ===\nstage.height: %s -> %s | centerBox.height=%s, statusBar.height=%s, top.height=%s | expected centerBox.height=%s (stage - top - bottom, rounded) | centerBox.minHeight=%s, centerBox.prefHeight=%s, centerBox.maxHeight=%s",
+                            oldVal, newVal, centerBoxHeight, statusBarHeight, topHeight, expectedHeight,
+                            centerBox.minHeight(-1), centerBox.prefHeight(-1), centerBox.getMaxHeight());
+                    
+                    for (int i = 0; i < centerBox.getItems().size(); i++) {
+                        javafx.scene.Node item = centerBox.getItems().get(i);
+                        String maxH = (item instanceof javafx.scene.layout.Region) 
+                                ? String.valueOf(((javafx.scene.layout.Region) item).getMaxHeight()) : "N/A";
+                        LogUtil.debug("MainView", "  item[%d] %s: minH=%s, prefH=%s, maxH=%s, actualH=%s", 
+                                i, item.getClass().getSimpleName(),
+                                item.minHeight(-1), item.prefHeight(-1), maxH, item.getBoundsInParent().getHeight());
+                    }
+                    
+                    if (Math.abs(centerBoxHeight - expectedHeight) > 0.5) {
+                        LogUtil.debug("MainView", ">>> FIXING: setPrefHeight(%s) + setMinHeight(0)", expectedHeight);
+                        centerBox.setMinHeight(0);
+                        centerBox.setPrefHeight(expectedHeight);
+                        for (javafx.scene.Node item : centerBox.getItems()) {
+                            if (item instanceof javafx.scene.layout.Region) {
+                                ((javafx.scene.layout.Region) item).setMinHeight(0);
+                            }
+                        }
+                        requestLayout();
+                    }
+                }
+            });
+            
+            centerBox.heightProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal.doubleValue() > 0) {
+                    LogUtil.debug("MainView", "centerBox.height: %s -> %s, stage.height=%s", 
+                            oldVal, newVal, stage.getHeight());
+                }
+            });
         }
     }
     
@@ -214,6 +255,7 @@ public class MainView extends BorderPane implements LifecycleComponent {
                 });
             }
         });
+        
         javafx.application.Platform.runLater(() -> {
             if (centerBox.getDividers().size() >= 1) {
                 centerBox.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
@@ -234,27 +276,30 @@ public class MainView extends BorderPane implements LifecycleComponent {
     }
     
     private void updateDividerPositions() {
-      
-            int dividerCount = centerBox.getDividers().size();
-            int itemCount = centerBox.getItems().size();
-            
-            double totalWidth = centerBox.getWidth();
-            LogUtil.debug("MainView", "updateDividerPositions: dividerCount=%s, itemCount=%s, totalWidth=%s", 
-                    dividerCount, itemCount, totalWidth);
-            if (dividerCount < 1) return;
-            if (totalWidth <= 0) return;
-            
-            double sidebarWidth = sideBarManager.getCurrentWidth();
-            double rightPanelWidth = viewHandler.getRightPanelWidth();
-            
-            double divider0Pos = sidebarWidth / totalWidth;
+        int dividerCount = centerBox.getDividers().size();
+        int itemCount = centerBox.getItems().size();
+        double totalWidth = centerBox.getWidth();
+        
+        LogUtil.debug("MainView", "updateDividerPositions: dividerCount=%s, itemCount=%s, totalWidth=%s", 
+                dividerCount, itemCount, totalWidth);
+        
+        if (dividerCount < 1) return;
+        if (totalWidth <= 0) return;
+        
+        double sidebarWidth = sideBarManager.getCurrentWidth();
+        double rightPanelWidth = viewHandler.getRightPanelWidth();
+        
+        double divider0Pos = sidebarWidth / totalWidth;
+        
         if (dividerCount >= 2) {
             double chartDisplayMinWidth = chartDisplayArea.getMinWidth();
             double availableForChartAndRight = totalWidth - sidebarWidth;
             double maxRightPanelWidth = availableForChartAndRight - chartDisplayMinWidth;
+            
             double effectiveRightPanelWidth = Math.min(rightPanelWidth, maxRightPanelWidth);
             effectiveRightPanelWidth = Math.max(effectiveRightPanelWidth, rightTabManager.getMinWidth());
             effectiveRightPanelWidth = Math.round(effectiveRightPanelWidth);
+            
             double divider1Pos = (totalWidth - effectiveRightPanelWidth) / totalWidth;
             
             LogUtil.debug("MainView", "updateDividerPositions: sidebarWidth=%s, rightPanelWidth=%s, "
@@ -262,11 +307,11 @@ public class MainView extends BorderPane implements LifecycleComponent {
                     sidebarWidth, rightPanelWidth, effectiveRightPanelWidth, divider0Pos, divider1Pos);
             
             centerBox.setDividerPositions(divider0Pos, divider1Pos);
-            } else {
+        } else {
             LogUtil.debug("MainView", "updateDividerPositions: sidebarWidth=%s, divider0Pos=%s",
                     sidebarWidth, divider0Pos);
-                centerBox.setDividerPosition(0, divider0Pos);
-            }
+            centerBox.setDividerPosition(0, divider0Pos);
+        }
     }
     
     private void initializePanels() {

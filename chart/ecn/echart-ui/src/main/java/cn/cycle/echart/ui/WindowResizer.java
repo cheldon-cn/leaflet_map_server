@@ -59,11 +59,8 @@ public class WindowResizer {
                     startHeight = stage.getHeight();
                     startWindowX = stage.getX();
                     startWindowY = stage.getY();
-                    LogUtil.debug(TAG, "=== RESIZE START ===");
-                    LogUtil.debug(TAG, "Direction: %s", direction);
-                    LogUtil.debug(TAG, "Mouse: (%s, %s)", startX, startY);
-                    LogUtil.debug(TAG, "Window: pos=(%s, %s) size=(%s, %s)", startWindowX, startWindowY, startWidth, startHeight);
-                    LogUtil.debug(TAG, "Stage actual: width=%s height=%s", stage.getWidth(), stage.getHeight());
+                    LogUtil.debug(TAG, "=== RESIZE START ===\nDirection: %s\nMouse: (%s, %s)\nWindow: pos=(%s, %s) size=(%s, %s)\nStage actual: width=%s height=%s",
+                            direction, startX, startY, startWindowX, startWindowY, startWidth, startHeight, stage.getWidth(), stage.getHeight());
                     event.consume();
                     LogUtil.debug(TAG, "After consume: event.isConsumed()=%s", event.isConsumed());
                 }
@@ -89,42 +86,52 @@ public class WindowResizer {
                 double newX = startWindowX;
                 double newY = startWindowY;
                 
-                LogUtil.debug(TAG, "=== RESIZE DRAG (before calc) ===");
-                LogUtil.debug(TAG, "startHeight=%s, deltaY=%s", startHeight, deltaY);
-                LogUtil.debug(TAG, "calc: startHeight - deltaY = %s", (startHeight - deltaY));
-                
+                LogUtil.debug(TAG, "=== RESIZE DRAG (before calc) === | startHeight=%s, deltaY=%s", startHeight, deltaY);
+               
                 switch (direction) {
                     case E:
-                        newWidth = Math.max(minWidth, startWidth + deltaX);
+                        LogUtil.debug(TAG, "calc: startWidth + deltaX = %s", (startWidth + deltaX));
+                        newWidth = Math.round(Math.max(minWidth, startWidth + deltaX));
                         break;
                     case W:
-                        newWidth = Math.max(minWidth, startWidth - deltaX);
+                        LogUtil.debug(TAG, "calc: startWidth - deltaX = %s", (startWidth - deltaX));
+                        newWidth = Math.round(Math.max(minWidth, startWidth - deltaX));
                         newX = startWindowX + startWidth - newWidth;
                         break;
                     case S:
-                        newHeight = Math.max(minHeight, startHeight + deltaY);
+                        LogUtil.debug(TAG, "calc: startHeight + deltaY = %s", (startHeight + deltaY));
+                        newHeight = Math.round(Math.max(minHeight, startHeight + deltaY));
                         break;
                     case N:
-                        newHeight = Math.max(minHeight, startHeight - deltaY);
+                        LogUtil.debug(TAG, "calc: startHeight - deltaY = %s", (startHeight - deltaY));
+                        newHeight = Math.round(Math.max(minHeight, startHeight - deltaY));
                         newY = startWindowY + startHeight - newHeight;
                         break;
                     case SE:
-                        newWidth = Math.max(minWidth, startWidth + deltaX);
-                        newHeight = Math.max(minHeight, startHeight + deltaY);
+                        LogUtil.debug(TAG, "calc: startWidth + deltaX = %s, startHeight + deltaY = %s", 
+                                (startWidth + deltaX), (startHeight + deltaY));
+                        newWidth = Math.round(Math.max(minWidth, startWidth + deltaX));
+                        newHeight = Math.round(Math.max(minHeight, startHeight + deltaY));
                         break;
                     case SW:
-                        newWidth = Math.max(minWidth, startWidth - deltaX);
-                        newHeight = Math.max(minHeight, startHeight + deltaY);
+                        LogUtil.debug(TAG, "calc: startWidth - deltaX = %s, startHeight + deltaY = %s", 
+                                (startWidth - deltaX), (startHeight + deltaY));
+                        newWidth = Math.round(Math.max(minWidth, startWidth - deltaX));
+                        newHeight = Math.round(Math.max(minHeight, startHeight + deltaY));
                         newX = startWindowX + startWidth - newWidth;
                         break;
                     case NE:
-                        newWidth = Math.max(minWidth, startWidth + deltaX);
-                        newHeight = Math.max(minHeight, startHeight - deltaY);
+                        LogUtil.debug(TAG, "calc: startWidth + deltaX = %s, startHeight - deltaY = %s", 
+                                (startWidth + deltaX), (startHeight - deltaY));
+                        newWidth = Math.round(Math.max(minWidth, startWidth + deltaX));
+                        newHeight = Math.round(Math.max(minHeight, startHeight - deltaY));
                         newY = startWindowY + startHeight - newHeight;
                         break;
                     case NW:
-                        newWidth = Math.max(minWidth, startWidth - deltaX);
-                        newHeight = Math.max(minHeight, startHeight - deltaY);
+                        LogUtil.debug(TAG, "calc: startWidth - deltaX = %s, startHeight - deltaY = %s", 
+                                (startWidth - deltaX), (startHeight - deltaY));
+                        newWidth = Math.round(Math.max(minWidth, startWidth - deltaX));
+                        newHeight = Math.round(Math.max(minHeight, startHeight - deltaY));
                         newX = startWindowX + startWidth - newWidth;
                         newY = startWindowY + startHeight - newHeight;
                         break;
@@ -132,16 +139,13 @@ public class WindowResizer {
                         break;
                 }
                 
-                LogUtil.debug(TAG, "=== RESIZE DRAG (after calc) ===");
-                LogUtil.debug(TAG, "newHeight=%s, newY=%s", newHeight, newY);
-                LogUtil.debug(TAG, "New: pos=(%s, %s) size=(%s, %s)", newX, newY, newWidth, newHeight);
+                LogUtil.debug(TAG, "=== RESIZE DRAG (after calc) === | newHeight=%s, newY=%s | New: pos=(%s, %s) size=(%s, %s) |After set: stage.getY()=%s, stage.getHeight()=%s",
+                        newHeight, newY, newX, newY, newWidth, newHeight, stage.getY(), stage.getHeight());
                 
                 stage.setX(newX);
                 stage.setY(newY);
                 stage.setWidth(newWidth);
                 stage.setHeight(newHeight);
-                
-                LogUtil.debug(TAG, "After set: stage.getY()=%s, stage.getHeight()=%s", stage.getY(), stage.getHeight());
                 
                 event.consume();
             }

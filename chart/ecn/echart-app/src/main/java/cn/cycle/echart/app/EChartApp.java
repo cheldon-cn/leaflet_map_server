@@ -31,7 +31,7 @@ public class EChartApp extends Application {
 
     private static final String TAG = "EChartApp";
     private static final double MIN_WINDOW_WIDTH = 800.0;
-    private static final double MIN_WINDOW_HEIGHT = 600.0;
+    private static final double MIN_WINDOW_HEIGHT = 450.0;
 
     private ApplicationFacade facade;
     private ThemeManager themeManager;
