@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISLookupTable name="S57_ENC_AREA" type="ENC_AREA" description="CARIS S-57 ENC 面物标符号化查询表" standard="CARIS HPD S-52">
+  <MetaData>
+    <Source>C:\Program Files\CARIS\HPD\[version]\system\S57Config\symbolization\lookup\</Source>
+    <Software>CARIS HPD Product Editor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Standard>IHO S-52 Presentation Library Ed 4.0</Standard>
+  </MetaData>
+  
+  <LookupEntries>
+    <Section name="Area_Lookup" description="面物标查询表">
+      <Category name="Land_Areas">
+        <Entry>
+          <ObjectClass>LNDARE</ObjectClass>
+          <Code>26010</Code>
+          <FillColor>LANDF</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26010</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>陆地区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BUISGL</ObjectClass>
+          <Code>26020</Code>
+          <FillColor>BUISGL</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26020</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>建筑物区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BUAARE</ObjectClass>
+          <Code>26030</Code>
+          <FillColor>BUAARE</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26030</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>建成区</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Water_Areas">
+        <Entry>
+          <ObjectClass>DEPARE</ObjectClass>
+          <Code>26110</Code>
+          <FillColor>DEPVS</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>DEPCNT</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26110</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="DRVAL1" operator="&lt;=" value="2" fillColor="DEPVS"/>
+            <Condition field="DRVAL1" operator="&lt;=" value="5" fillColor="DEPMS"/>
+            <Condition field="DRVAL1" operator="&lt;=" value="10" fillColor="DEPDW"/>
+            <Condition field="DRVAL1" operator="&gt;" value="10" fillColor="DEPMD"/>
+          </Conditions>
+          <Description>水深区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>DRGARE</ObjectClass>
+          <Code>26120</Code>
+          <FillColor>DRGARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>DEPCNT</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26120</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>疏浚区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>UNSARE</ObjectClass>
+          <Code>26130</Code>
+          <FillColor>UNSARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>DEPCNT</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26130</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>不可靠水深区域</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Restricted_Areas">
+        <Entry>
+          <ObjectClass>RESARE</ObjectClass>
+          <Code>26210</Code>
+          <FillColor>RESARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>2</BoundaryWidth>
+          <BoundaryColor>CHRED</BoundaryColor>
+          <Pattern>DIAMOND</Pattern>
+          <Priority>4</Priority>
+          <Group>26210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>限制区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>MIPARE</ObjectClass>
+          <Code>26220</Code>
+          <FillColor>MIPARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>2</BoundaryWidth>
+          <BoundaryColor>CHRED</BoundaryColor>
+          <Pattern>DIAMOND</Pattern>
+          <Priority>4</Priority>
+          <Group>26220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>军事区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>CSTARE</ObjectClass>
+          <Code>26230</Code>
+          <FillColor>CSTARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHRED</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26230</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>海关区域</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Anchorage">
+        <Entry>
+          <ObjectClass>ACHARE</ObjectClass>
+          <Code>26310</Code>
+          <FillColor>ACHARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26310</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>锚地</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>ACHBRT</ObjectClass>
+          <Code>26320</Code>
+          <FillColor>ACHBRT</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26320</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>深水锚地</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Fairways">
+        <Entry>
+          <ObjectClass>FAIRWY</ObjectClass>
+          <Code>26410</Code>
+          <FillColor>FAIRWY</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26410</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>航道</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>RCRTCL</ObjectClass>
+          <Code>26420</Code>
+          <FillColor>RCRTCL</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26420</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>推荐航道</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Seabed">
+        <Entry>
+          <ObjectClass>SBDARE</ObjectClass>
+          <Code>26510</Code>
+          <FillColor>SBDARE</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26510</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Conditions>
+            <Condition field="NATSUR" value="1" fillColor="SBDARE_SAND"/>
+            <Condition field="NATSUR" value="2" fillColor="SBDARE_MUD"/>
+            <Condition field="NATSUR" value="3" fillColor="SBDARE_CLAY"/>
+            <Condition field="NATSUR" value="4" fillColor="SBDARE_SILT"/>
+            <Condition field="NATSUR" value="5" fillColor="SBDARE_STONE"/>
+            <Condition field="NATSUR" value="6" fillColor="SBDARE_GRAVEL"/>
+            <Condition field="NATSUR" value="7" fillColor="SBDARE_PEBBLES"/>
+            <Condition field="NATSUR" value="8" fillColor="SBDARE_Cobbles"/>
+            <Condition field="NATSUR" value="9" fillColor="SBDARE_ROCK"/>
+            <Condition field="NATSUR" value="11" fillColor="SBDARE_CORAL"/>
+          </Conditions>
+          <Description>海底区域</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>CORAL</ObjectClass>
+          <Code>26520</Code>
+          <FillColor>CORAL</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLK</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26520</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>珊瑚礁</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>WEDKLP</ObjectClass>
+          <Code>26530</Code>
+          <FillColor>WEDKLP</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>2</Priority>
+          <Group>26530</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>海藻区</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Traffic_Separation">
+        <Entry>
+          <ObjectClass>TSSRON</ObjectClass>
+          <Code>26610</Code>
+          <FillColor>TSSRON</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26610</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>分道通航制</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>TSEZNE</ObjectClass>
+          <Code>26620</Code>
+          <FillColor>TSEZNE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26620</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>分道通航区</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Ice_Areas">
+        <Entry>
+          <ObjectClass>ICEARE</ObjectClass>
+          <Code>26710</Code>
+          <FillColor>ICEARE</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHBLU</BoundaryColor>
+          <Priority>4</Priority>
+          <Group>26710</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>冰区</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Automatic_Update">
+        <Entry>
+          <ObjectClass>CHRVDEL</ObjectClass>
+          <Code>26810</Code>
+          <FillColor>CHGRF</FillColor>
+          <BoundaryStyle>DASH</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHRED</BoundaryColor>
+          <Pattern>DIAMOND</Pattern>
+          <Priority>1</Priority>
+          <Group>26200</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>自动更新-删除对象(面)-Ed4.0新增</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>CHRVID</ObjectClass>
+          <Code>26820</Code>
+          <FillColor>CHGRF</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>1</BoundaryWidth>
+          <BoundaryColor>CHGRN</BoundaryColor>
+          <Priority>1</Priority>
+          <Group>26200</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>自动更新-插入/修改对象(面)-Ed4.0新增</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Mariner_Navigation">
+        <Entry>
+          <ObjectClass>DNGHLK</ObjectClass>
+          <Code>26910</Code>
+          <FillColor>DNGHLK</FillColor>
+          <BoundaryStyle>SOLD</BoundaryStyle>
+          <BoundaryWidth>2</BoundaryWidth>
+          <BoundaryColor>DNGHLK</BoundaryColor>
+          <Pattern>DIAMOND</Pattern>
+          <Priority>1</Priority>
+          <Group>26300</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>ALL</DisplayCategory>
+          <Description>危险高亮区域-PartII-Ed4.0新增</Description>
+        </Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+  
+  <FillPatterns>
+    <Pattern name="DIAMOND" description="菱形填充"/>
+    <Pattern name="HORIZONTAL" description="水平线填充"/>
+    <Pattern name="VERTICAL" description="垂直线填充"/>
+    <Pattern name="DIAGONAL" description="对角线填充"/>
+    <Pattern name="CROSS" description="交叉线填充"/>
+    <Pattern name="DOTS" description="点填充"/>
+  </FillPatterns>
+</CARISLookupTable>

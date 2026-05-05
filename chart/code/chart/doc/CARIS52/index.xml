@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISDocumentation name="CARIS52Index" description="CARIS HPD/PCE S-52表示库文档索引" standard="CARIS HPD S-52">
+  <MetaData>
+    <Software>CARIS HPD (Hydrographic Production Database)</Software>
+    <Components>Source Editor, Product Editor, Paper Chart Editor (PCE)</Components>
+    <SourcePath>C:\Program Files\CARIS\HPD\[version]\system\</SourcePath>
+    <CreateDate>2026-05-05</CreateDate>
+    <Reference>https://www.teledynecaris.com/en/products/hpd/</Reference>
+  </MetaData>
+  
+  <Overview>
+    <Title>CARIS HPD S-52 表示库文档</Title>
+    <Description>
+      CARIS HPD (Hydrographic Production Database) 是一个企业级系统，用于管理、编辑和生产海道测量数据和航海产品。
+      它将矢量要素、水深数据和元数据集中存储在版本化数据库中，支持多用户工作流程创建和维护电子航海图(ENC)、纸质海图和航海出版物。
+    </Description>
+    <KeyFeatures>
+      <Feature>单一数据源、多用户数据库，支持版本控制和审计追踪</Feature>
+      <Feature>支持 IHO S-57 和 S-100 系列标准，提供验证和表示工具</Feature>
+      <Feature>产品导向编辑，支持 ENC 和纸质海图编译、制图综合和符号化</Feature>
+      <Feature>工作流和变更管理，跟踪编辑、质量检查和航海通告更新</Feature>
+      <Feature>多比例尺数据管理和产品建模，跨不同比例尺和格式重用内容</Feature>
+    </KeyFeatures>
+  </Overview>
+  
+  <Components>
+    <Component name="Source Editor" description="源编辑器 - 管理原始测量数据"/>
+    <Component name="Product Editor" description="产品编辑器 - 创建和维护 ENC 产品">
+      <Features>
+        <Feature>内置质量控制检查，确保符合 S-57 和 S-58 标准</Feature>
+        <Feature>支持 S-100 系列标准</Feature>
+      </Features>
+    </Component>
+    <Component name="Paper Chart Editor" description="纸质海图编辑器 (PCE) - 编译和发布纸质海图">
+      <Features>
+        <Feature>从 HPD 数据库创建矢量或栅格格式纸质海图</Feature>
+        <Feature>符合 IHO S-4, INT1, INT2, INT3 标准的制图表示</Feature>
+        <Feature>支持自定义海图配置</Feature>
+      </Features>
+    </Component>
+  </Components>
+  
+  <DirectoryStructure>
+    <Directory name="PCEConfig" description="纸质海图编辑器配置">
+      <SubDirectory name="lookup" description="查询表文件夹">
+        <File name="PCE_Lookup.xml" description="纸质海图查询表"/>
+      </SubDirectory>
+    </Directory>
+    <Directory name="S57Config" description="S-57 配置">
+      <SubDirectory name="symbolization" description="符号化配置">
+        <SubDirectory name="lookup" description="查询表文件夹">
+          <File name="S57_Point_Lookup.xml" description="点物标查询表"/>
+          <File name="S57_Line_Lookup.xml" description="线物标查询表"/>
+          <File name="S57_Area_Lookup.xml" description="面物标查询表"/>
+        </SubDirectory>
+      </SubDirectory>
+    </Directory>
+    <Directory name="ColorTable" description="颜色表文件夹">
+      <File name="DayBright.xml" description="白昼颜色表"/>
+      <File name="Dusk.xml" description="晨昏颜色表"/>
+      <File name="Night.xml" description="夜晚颜色表"/>
+    </Directory>
+  </DirectoryStructure>
+  
+  <LookupTableFormat>
+    <Description>
+      CARIS 查询表定义了 S-57 物标到 S-52 符号的映射关系。
+      每个条目包含物标类、符号、优先级、显示类别等信息。
+    </Description>
+    <Fields>
+      <Field name="ObjectClass" description="物标类代码，如 BOYCAR, LIGHTS"/>
+      <Field name="Code" description="物标代码"/>
+      <Field name="Symbol" description="符号名称"/>
+      <Field name="Priority" description="显示优先级 (1-9)"/>
+      <Field name="Group" description="显示组"/>
+      <Field name="Radar" description="雷达相关性"/>
+      <Field name="DisplayCategory" description="显示类别: BASE/STANDARD/OTHER"/>
+      <Field name="Conditions" description="条件符号化规则"/>
+    </Fields>
+  </LookupTableFormat>
+  
+  <DisplayCategories>
+    <Category name="BASE" description="基础显示">
+      <Description>始终显示，包含安全相关信息</Description>
+      <Objects>海岸线、等深线、危险物标、助航标志</Objects>
+    </Category>
+    <Category name="STANDARD" description="标准显示">
+      <Description>默认显示，包含常用信息</Description>
+      <Objects>锚地、航道、限制区域、海底区域</Objects>
+    </Category>
+    <Category name="OTHER" description="其他显示">
+      <Description>按需显示，包含补充信息</Description>
+      <Objects>地名、详细水深、辅助信息</Objects>
+    </Category>
+  </DisplayCategories>
+  
+  <PriorityLevels>
+    <Level value="1-2" description="最低优先级 - 背景填充、水深区域"/>
+    <Level value="3" description="中优先级 - 危险物标、海岸线、灯塔"/>
+    <Level value="4" description="高优先级 - 助航标志、限制区域"/>
+    <Level value="5-9" description="最高优先级 - 文本、重要符号、用户对象"/>
+  </PriorityLevels>
+  
+  <ConditionSymbology>
+    <Description>
+      条件符号化允许根据物标属性动态选择符号。
+      CARIS 支持基于属性值的条件判断。
+    </Description>
+    <Examples>
+      <Example>
+        <ObjectClass>BOYCAR</ObjectClass>
+        <Condition field="CATCAM" value="1" symbol="BOYCAR01" description="北方位标"/>
+        <Condition field="CATCAM" value="2" symbol="BOYCAR02" description="东方位标"/>
+        <Condition field="CATCAM" value="3" symbol="BOYCAR03" description="南方位标"/>
+        <Condition field="CATCAM" value="4" symbol="BOYCAR04" description="西方位标"/>
+      </Example>
+      <Example>
+        <ObjectClass>DEPARE</ObjectClass>
+        <Condition field="DRVAL1" operator="&lt;=" value="2" fillColor="DEPVS" description="0-2m"/>
+        <Condition field="DRVAL1" operator="&lt;=" value="5" fillColor="DEPMS" description="2-5m"/>
+        <Condition field="DRVAL1" operator="&lt;=" value="10" fillColor="DEPDW" description="5-10m"/>
+      </Example>
+    </Examples>
+  </ConditionSymbology>
+  
+  <ColorSchemes>
+    <Scheme name="DayBright" description="白昼模式">
+      <Usage>正常日光条件下的显示</Usage>
+      <Characteristics>高对比度、鲜艳颜色</Characteristics>
+    </Scheme>
+    <Scheme name="Dusk" description="晨昏模式">
+      <Usage>黎明或黄昏条件下的显示</Usage>
+      <Characteristics>中等亮度、柔和颜色</Characteristics>
+    </Scheme>
+    <Scheme name="Night" description="夜晚模式">
+      <Usage>夜间条件下的显示</Usage>
+      <Characteristics>低亮度、暗色调、保护夜视</Characteristics>
+    </Scheme>
+  </ColorSchemes>
+  
+  <Standards>
+    <Standard name="IHO S-52" description="电子海图显示与信息系统海图内容与显示规范"/>
+    <Standard name="IHO S-57" description="电子海图数据传输标准"/>
+    <Standard name="IHO S-58" description="ENC 验证检查"/>
+    <Standard name="IHO S-4" description="国际海图规范"/>
+    <Standard name="INT1" description="国际海图符号规范"/>
+    <Standard name="INT2" description="国际海图图式规范"/>
+    <Standard name="INT3" description="国际海图注记规范"/>
+    <Standard name="S-100" description="通用海道测量数据模型"/>
+  </Standards>
+  
+  <Notes>
+    <Note priority="high">CARIS HPD 支持从同一数据源创建多种产品，确保数据一致性</Note>
+    <Note priority="high">Paper Chart Editor 支持矢量或栅格格式输出</Note>
+    <Note priority="medium">支持 Oracle 数据库的多用户并发访问</Note>
+    <Note priority="medium">内置版本控制和审计追踪功能</Note>
+  </Notes>
+  
+  <References>
+    <Reference name="CARIS HPD 产品页面" url="https://www.teledynecaris.com/en/products/hpd/"/>
+    <Reference name="CARIS Paper Chart Composer" url="https://www.teledynecaris.com/en/products/paper-chart-composer/"/>
+    <Reference name="IHO S-52 标准" url="https://iho.int/en/s-57-enc-portrayal"/>
+    <Reference name="IHO S-57 对象目录" url="https://iho.int/en/s-57-object-catalogue"/>
+  </References>
+</CARISDocumentation>

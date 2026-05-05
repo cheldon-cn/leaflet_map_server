@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapLookupTable name="psymref_paperchart" type="POINT_COMPLEX" description="复杂点符号显示命令" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/LookupTable/psymref_paperchart.dic</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Format>物标缩写,属性条件,符号指令,优先级,雷达,显示类别,视图分组</Format>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <CommandFormat>
+    <Field index="1" name="ObjectClass" description="物标缩写，如BOYCAR、LIGHTS"/>
+    <Field index="2" name="Condition" description="属性条件，格式为属性字段+值，如PRODCT3表示PRODCT=3"/>
+    <Field index="3" name="Symbol" description="符号指令，如SY(BOYCAR01)、LC(PIPSOL06)"/>
+    <Field index="4" name="Priority" description="显示优先级(1-9)，数值越大越后绘制"/>
+    <Field index="5" name="Radar" description="是否跟雷达相关，目前都是O"/>
+    <Field index="6" name="DisplayCategory" description="显示类别：Base/Standard/OTHER"/>
+    <Field index="7" name="ViewingGroup" description="视图分组，逻辑分组不影响显示效果"/>
+  </CommandFormat>
+  
+  <SymbolInstructions>
+    <Instruction name="SY" syntax="SY(符号名)" description="点符号">
+      <Example>SY(BOYCAR01)</Example>
+    </Instruction>
+    <Instruction name="LS" syntax="LS(线型,线宽,颜色)" description="线型渲染">
+      <Example>LS(SOLD,3,CHGRD)</Example>
+      <LineStyles>
+        <Style name="SOLD" description="实线"/>
+        <Style name="DASH" description="虚线"/>
+        <Style name="DOT" description="点线"/>
+      </LineStyles>
+    </Instruction>
+    <Instruction name="LC" syntax="LC(线符号名)" description="线符号">
+      <Example>LC(PIPSOL06)</Example>
+    </Instruction>
+    <Instruction name="AP" syntax="AP(面符号名)" description="面填充图案">
+      <Example>AP(DIAMOND01)</Example>
+    </Instruction>
+    <Instruction name="AC" syntax="AC(颜色名称)" description="面填充色">
+      <Example>AC(LANDF)</Example>
+    </Instruction>
+    <Instruction name="TE" syntax="TE('格式',字段,水平对齐,垂直对齐,间隔,视图组,X偏移,Y偏移,颜色,优先级)" description="文本标签">
+      <Example>TE('bn%s','OBJNAM',2,1,2,'15110',-1,-1,CHBLK,21)</Example>
+    </Instruction>
+    <Instruction name="TX" syntax="TX(...)" description="文本显示，规则与TE类似"/>
+    <Instruction name="CS" syntax="CS(符号名)" description="内部符号命令，不可自定义修改"/>
+  </SymbolInstructions>
+  
+  <LookupEntries>
+    <Section name="Section One" description="主要查询条目">
+      <Category name="Buoys">
+        <Entry>"BOYCAR","","SY(BOYCAR01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM1","SY(BOYCAR01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM2","SY(BOYCAR02)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM3","SY(BOYCAR03)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM4","SY(BOYCAR04)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYINB","","SY(BOYINB01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYISD","","SY(BOYISD01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","","SY(BOYLAT01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM1","SY(BOYLAT01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM2","SY(BOYLAT02)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM3","SY(BOYLAT03)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM4","SY(BOYLAT04)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYSAW","","SY(BOYSAW01)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYSPP","","SY(BOYSPP01)","4","O","BASE","22210"</Entry>
+      </Category>
+      
+      <Category name="Beacons">
+        <Entry>"BCNCAR","","SY(BCNCAR01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNCAR","CATCAM1","SY(BCNCAR01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNCAR","CATCAM2","SY(BCNCAR02)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNCAR","CATCAM3","SY(BCNCAR03)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNCAR","CATCAM4","SY(BCNCAR04)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNISD","","SY(BCNISD01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","","SY(BCNLAT01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","CATLAM1","SY(BCNLAT01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","CATLAM2","SY(BCNLAT02)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNSAW","","SY(BCNSAW01)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNSPP","","SY(BCNSPP01)","4","O","BASE","22220"</Entry>
+      </Category>
+      
+      <Category name="Lights">
+        <Entry>"LIGHTS","","SY(LIGHTS01)","3","O","BASE","22230"</Entry>
+        <Entry>"LIGHTS","CATLIT1","SY(LIGHTS01)","3","O","BASE","22230"</Entry>
+        <Entry>"LIGHTS","CATLIT2","SY(LIGHTS02)","3","O","BASE","22230"</Entry>
+        <Entry>"LIGHTS","CATLIT3","SY(LIGHTS03)","3","O","BASE","22230"</Entry>
+        <Entry>"LIGHTS","CATLIT4","SY(LIGHTS04)","3","O","BASE","22230"</Entry>
+        <Entry>"LIGHTS","CATLIT5","SY(LIGHTS05)","3","O","BASE","22230"</Entry>
+        <Entry>"LITFLT","","SY(LITFLT01)","3","O","BASE","22230"</Entry>
+        <Entry>"LITVES","","SY(LITVES01)","3","O","BASE","22230"</Entry>
+      </Category>
+      
+      <Category name="Landmarks">
+        <Entry>"LNDMRK","","SY(LNDMRK01)","4","O","STANDARD","22240"</Entry>
+        <Entry>"LNDMRK","CATLMK1","SY(LNDMRK01)","4","O","STANDARD","22240"</Entry>
+        <Entry>"LNDMRK","CATLMK2","SY(LNDMRK02)","4","O","STANDARD","22240"</Entry>
+        <Entry>"LNDMRK","CATLMK3","SY(LNDMRK03)","4","O","STANDARD","22240"</Entry>
+        <Entry>"BUISGL","","SY(BUISGL01)","4","O","STANDARD","22250"</Entry>
+        <Entry>"TOWERS","","SY(TOWERS01)","4","O","STANDARD","22250"</Entry>
+        <Entry>"MONUMT","","SY(MONUMT01)","4","O","STANDARD","22250"</Entry>
+        <Entry>"WIMCON","","SY(WIMCON01)","4","O","STANDARD","22250"</Entry>
+      </Category>
+      
+      <Category name="Ports">
+        <Entry>"PILBOP","","SY(PILBOP01)","4","O","STANDARD","22260"</Entry>
+        <Entry>"PONTON","","SY(PONTON01)","4","O","STANDARD","22260"</Entry>
+        <Entry>"HULKES","","SY(HULKES01)","4","O","STANDARD","22260"</Entry>
+        <Entry>"CRANES","","SY(CRANES01)","4","O","STANDARD","22260"</Entry>
+      </Category>
+      
+      <Category name="RadioRadar">
+        <Entry>"RADSTA","","SY(RADSTA01)","4","O","STANDARD","22270"</Entry>
+        <Entry>"RDOSTA","","SY(RDOSTA01)","4","O","STANDARD","22270"</Entry>
+        <Entry>"RTPBCN","","SY(RTPBCN01)","4","O","STANDARD","22270"</Entry>
+        <Entry>"FOGSIG","","SY(FOGSIG01)","4","O","STANDARD","22270"</Entry>
+        <Entry>"RSCSTA","","SY(RSCSTA01)","4","O","STANDARD","22270"</Entry>
+      </Category>
+      
+      <Category name="Dangers">
+        <Entry>"WRECKS","","SY(WRECKS01)","3","O","BASE","22280"</Entry>
+        <Entry>"WRECKS","CATWRK1","SY(WRECKS01)","3","O","BASE","22280"</Entry>
+        <Entry>"WRECKS","CATWRK2","SY(WRECKS02)","3","O","BASE","22280"</Entry>
+        <Entry>"WRECKS","CATWRK3","SY(WRECKS03)","3","O","BASE","22280"</Entry>
+        <Entry>"OBSTRN","","SY(OBSTRN01)","3","O","BASE","22280"</Entry>
+        <Entry>"OBSTRN","CATOBS1","SY(OBSTRN01)","3","O","BASE","22280"</Entry>
+        <Entry>"OBSTRN","CATOBS2","SY(OBSTRN02)","3","O","BASE","22280"</Entry>
+        <Entry>"UWTROC","","SY(UWTROC01)","3","O","BASE","22280"</Entry>
+        <Entry>"ISOHAZ","","SY(ISOHAZ01)","3","O","BASE","22280"</Entry>
+      </Category>
+      
+      <Category name="Anchorage">
+        <Entry>"ACHARE","","SY(ACHARE01)","4","O","STANDARD","22290"</Entry>
+        <Entry>"ACHBRT","","SY(ACHBRT01)","4","O","STANDARD","22290"</Entry>
+        <Entry>"BERTHS","","SY(BERTHS01)","4","O","STANDARD","22290"</Entry>
+      </Category>
+      
+      <Category name="Military">
+        <Entry>"MIPARE","","SY(MIPARE01)","4","O","STANDARD","22300"</Entry>
+        <Entry>"RESARE","","SY(RESARE01)","4","O","STANDARD","22300"</Entry>
+        <Entry>"CSTARE","","SY(CSTARE01)","4","O","STANDARD","22300"</Entry>
+      </Category>
+      
+      <Category name="Services">
+        <Entry>"SBDARE","","SY(SBDARE01)","4","O","STANDARD","22310"</Entry>
+        <Entry>"SBDARE","CATSBD1","SY(SBDARE01)","4","O","STANDARD","22310"</Entry>
+        <Entry>"SBDARE","CATSBD2","SY(SBDARE02)","4","O","STANDARD","22310"</Entry>
+        <Entry>"ICEARE","","SY(ICEARE01)","4","O","STANDARD","22310"</Entry>
+        <Entry>"LOGPON","","SY(LOGPON01)","4","O","STANDARD","22310"</Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+</SuperMapLookupTable>

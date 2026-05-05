@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapSymbolLibrary name="S52SymbolLib" description="SuperMap S-52符号库" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/SymbolLib/</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <SymbolTypes>
+    <Type name="MarkerSymbol" description="点符号库" file="MarkerSymbol.sym"/>
+    <Type name="LineSymbol" description="线符号库" file="LineSymbol.sym"/>
+    <Type name="FillSymbol" description="面符号库" file="FillSymbol.sym"/>
+  </SymbolTypes>
+  
+  <MarkerSymbols>
+    <Category name="Buoys" prefix="BOY" count="30+">
+      <Symbol id="BOYCAR01" name="方位标浮标-北" size="3.5mm"/>
+      <Symbol id="BOYCAR02" name="方位标浮标-东" size="3.5mm"/>
+      <Symbol id="BOYCAR03" name="方位标浮标-南" size="3.5mm"/>
+      <Symbol id="BOYCAR04" name="方位标浮标-西" size="3.5mm"/>
+      <Symbol id="BOYCAR11" name="方位标浮标-北(简化)" size="2.5mm"/>
+      <Symbol id="BOYCAR12" name="方位标浮标-东(简化)" size="2.5mm"/>
+      <Symbol id="BOYCAR13" name="方位标浮标-南(简化)" size="2.5mm"/>
+      <Symbol id="BOYCAR14" name="方位标浮标-西(简化)" size="2.5mm"/>
+      <Symbol id="BOYINB01" name="安装浮标" size="3.5mm"/>
+      <Symbol id="BOYINB11" name="安装浮标(简化)" size="2.5mm"/>
+      <Symbol id="BOYISD01" name="孤立危险标浮标" size="3.5mm"/>
+      <Symbol id="BOYISD11" name="孤立危险标浮标(简化)" size="2.5mm"/>
+      <Symbol id="BOYLAT01" name="侧面标浮标-左侧标" size="3.5mm"/>
+      <Symbol id="BOYLAT02" name="侧面标浮标-右侧标" size="3.5mm"/>
+      <Symbol id="BOYLAT03" name="侧面标浮标-推荐航道左侧" size="3.5mm"/>
+      <Symbol id="BOYLAT04" name="侧面标浮标-推荐航道右侧" size="3.5mm"/>
+      <Symbol id="BOYLAT11" name="侧面标浮标-左侧标(简化)" size="2.5mm"/>
+      <Symbol id="BOYLAT12" name="侧面标浮标-右侧标(简化)" size="2.5mm"/>
+      <Symbol id="BOYSAW01" name="安全水域标浮标" size="3.5mm"/>
+      <Symbol id="BOYSAW11" name="安全水域标浮标(简化)" size="2.5mm"/>
+      <Symbol id="BOYSPP01" name="特殊用途浮标" size="3.5mm"/>
+      <Symbol id="BOYSPP11" name="特殊用途浮标(简化)" size="2.5mm"/>
+    </Category>
+    
+    <Category name="Beacons" prefix="BCN" count="20+">
+      <Symbol id="BCNCAR01" name="方位标信标-北" size="3.0mm"/>
+      <Symbol id="BCNCAR02" name="方位标信标-东" size="3.0mm"/>
+      <Symbol id="BCNCAR03" name="方位标信标-南" size="3.0mm"/>
+      <Symbol id="BCNCAR04" name="方位标信标-西" size="3.0mm"/>
+      <Symbol id="BCNCAR11" name="方位标信标-北(简化)" size="2.0mm"/>
+      <Symbol id="BCNISD01" name="孤立危险标信标" size="3.0mm"/>
+      <Symbol id="BCNISD11" name="孤立危险标信标(简化)" size="2.0mm"/>
+      <Symbol id="BCNLAT01" name="侧面标信标-左侧标" size="3.0mm"/>
+      <Symbol id="BCNLAT02" name="侧面标信标-右侧标" size="3.0mm"/>
+      <Symbol id="BCNLAT11" name="侧面标信标-左侧标(简化)" size="2.0mm"/>
+      <Symbol id="BCNLAT12" name="侧面标信标-右侧标(简化)" size="2.0mm"/>
+      <Symbol id="BCNSAW01" name="安全水域标信标" size="3.0mm"/>
+      <Symbol id="BCNSAW11" name="安全水域标信标(简化)" size="2.0mm"/>
+      <Symbol id="BCNSPP01" name="特殊用途信标" size="3.0mm"/>
+      <Symbol id="BCNSPP11" name="特殊用途信标(简化)" size="2.0mm"/>
+    </Category>
+    
+    <Category name="Lights" prefix="LIGHTS" count="15+">
+      <Symbol id="LIGHTS01" name="灯塔-一般" size="4.0mm"/>
+      <Symbol id="LIGHTS02" name="灯塔-红色" size="4.0mm"/>
+      <Symbol id="LIGHTS03" name="灯塔-绿色" size="4.0mm"/>
+      <Symbol id="LIGHTS04" name="灯塔-黄色" size="4.0mm"/>
+      <Symbol id="LIGHTS05" name="灯塔-白色" size="4.0mm"/>
+      <Symbol id="LIGHTS11" name="灯塔(简化)" size="3.0mm"/>
+      <Symbol id="LITFLT01" name="浮动灯标" size="3.5mm"/>
+      <Symbol id="LITFLT11" name="浮动灯标(简化)" size="2.5mm"/>
+      <Symbol id="LITVES01" name="灯船" size="5.0mm"/>
+      <Symbol id="LITVES11" name="灯船(简化)" size="3.5mm"/>
+    </Category>
+    
+    <Category name="Landmarks" prefix="LNDMRK" count="20+">
+      <Symbol id="LNDMRK01" name="陆标-教堂" size="3.0mm"/>
+      <Symbol id="LNDMRK02" name="陆标-塔" size="3.0mm"/>
+      <Symbol id="LNDMRK03" name="陆标-烟囱" size="3.0mm"/>
+      <Symbol id="LNDMRK04" name="陆标-纪念碑" size="3.0mm"/>
+      <Symbol id="LNDMRK05" name="陆标-旗杆" size="3.0mm"/>
+      <Symbol id="LNDMRK06" name="陆标-雕像" size="3.0mm"/>
+      <Symbol id="LNDMRK07" name="陆标-穹顶" size="3.0mm"/>
+      <Symbol id="LNDMRK08" name="陆标-天线" size="3.0mm"/>
+      <Symbol id="LNDMRK09" name="陆标-风车" size="3.0mm"/>
+      <Symbol id="LNDMRK10" name="陆标-灯塔" size="3.0mm"/>
+      <Symbol id="BUISGL01" name="大型建筑物" size="3.0mm"/>
+      <Symbol id="TOWERS01" name="塔" size="3.0mm"/>
+      <Symbol id="MONUMT01" name="纪念碑" size="3.0mm"/>
+      <Symbol id="WIMCON01" name="风力发电设施" size="4.0mm"/>
+    </Category>
+    
+    <Category name="Dangers" prefix="WRECKS" count="15+">
+      <Symbol id="WRECKS01" name="沉船-危险" size="4.0mm"/>
+      <Symbol id="WRECKS02" name="沉船-非危险" size="4.0mm"/>
+      <Symbol id="WRECKS03" name="沉船-残骸" size="4.0mm"/>
+      <Symbol id="WRECKS11" name="沉船(简化)" size="3.0mm"/>
+      <Symbol id="OBSTRN01" name="障碍物-一般" size="4.0mm"/>
+      <Symbol id="OBSTRN02" name="障碍物-礁石" size="4.0mm"/>
+      <Symbol id="OBSTRN11" name="障碍物(简化)" size="3.0mm"/>
+      <Symbol id="UWTROC01" name="水下岩石" size="4.0mm"/>
+      <Symbol id="UWTROC11" name="水下岩石(简化)" size="3.0mm"/>
+      <Symbol id="ISOHAZ01" name="隔离危险区" size="4.0mm"/>
+    </Category>
+    
+    <Category name="RadioRadar" prefix="RAD" count="10+">
+      <Symbol id="RADSTA01" name="雷达站" size="3.0mm"/>
+      <Symbol id="RDOSTA01" name="无线电电台" size="3.0mm"/>
+      <Symbol id="RTPBCN01" name="雷达应答器" size="3.0mm"/>
+      <Symbol id="FOGSIG01" name="雾号" size="3.0mm"/>
+      <Symbol id="RSCSTA01" name="搜救站" size="3.0mm"/>
+    </Category>
+    
+    <Category name="Ports" prefix="PIL" count="10+">
+      <Symbol id="PILBOP01" name="引航站" size="4.0mm"/>
+      <Symbol id="PONTON01" name="浮码头" size="3.0mm"/>
+      <Symbol id="HULKES01" name="废船/趸船" size="3.0mm"/>
+      <Symbol id="CRANES01" name="起重机" size="3.0mm"/>
+      <Symbol id="BERTHS01" name="泊位" size="3.0mm"/>
+    </Category>
+    
+    <Category name="Anchorage" prefix="ACH" count="5+">
+      <Symbol id="ACHARE01" name="锚地" size="5.0mm"/>
+      <Symbol id="ACHBRT01" name="深水锚地" size="5.0mm"/>
+    </Category>
+    
+    <Category name="Military" prefix="MIP" count="5+">
+      <Symbol id="MIPARE01" name="军事区域" size="4.0mm"/>
+      <Symbol id="RESARE01" name="限制区域" size="4.0mm"/>
+      <Symbol id="CSTARE01" name="海关区域" size="4.0mm"/>
+    </Category>
+    
+    <Category name="Services" prefix="SBD" count="10+">
+      <Symbol id="SBDARE01" name="海底区域-沙" size="3.0mm"/>
+      <Symbol id="SBDARE02" name="海底区域-泥" size="3.0mm"/>
+      <Symbol id="ICEARE01" name="冰区" size="3.0mm"/>
+      <Symbol id="LOGPON01" name="木材转运点" size="3.0mm"/>
+    </Category>
+  </MarkerSymbols>
+  
+  <LineSymbols>
+    <Category name="Cables" prefix="CBL" count="5+">
+      <Symbol id="CBLSUB01" name="海底电缆" width="1.0mm"/>
+      <Symbol id="CBLOHD01" name="架空电缆" width="1.0mm"/>
+    </Category>
+    
+    <Category name="Pipelines" prefix="PIP" count="10+">
+      <Symbol id="PIPSOL01" name="海底管道-油" width="1.0mm"/>
+      <Symbol id="PIPSOL02" name="海底管道-气" width="1.0mm"/>
+      <Symbol id="PIPSOL03" name="海底管道-水" width="1.0mm"/>
+      <Symbol id="PIPSOL04" name="海底管道-化学品" width="1.0mm"/>
+      <Symbol id="PIPSOL05" name="海底管道-液化气" width="1.0mm"/>
+      <Symbol id="PIPSOL06" name="海底管道-其他" width="1.0mm"/>
+      <Symbol id="PIPSOL07" name="海底管道-未知" width="1.0mm"/>
+      <Symbol id="PIPOHD01" name="架空管道" width="1.0mm"/>
+    </Category>
+    
+    <Category name="Ferry" prefix="FER" count="5+">
+      <Symbol id="FERYRT01" name="轮渡航线" width="0.5mm"/>
+    </Category>
+  </LineSymbols>
+  
+  <FillSymbols>
+    <Category name="Patterns" prefix="AP" count="20+">
+      <Symbol id="DIAMOND01" name="菱形填充" spacing="5mm"/>
+      <Symbol id="HORIZONTAL01" name="水平线填充" spacing="3mm"/>
+      <Symbol id="VERTICAL01" name="垂直线填充" spacing="3mm"/>
+      <Symbol id="DIAGONAL01" name="对角线填充" spacing="3mm"/>
+      <Symbol id="CROSS01" name="交叉线填充" spacing="5mm"/>
+      <Symbol id="DOTS01" name="点填充" spacing="3mm"/>
+    </Category>
+  </FillSymbols>
+  
+  <SymbolEditorNotes>
+    <Note>在符号编辑器中，可按照S-52标准中符号宽高比例进行绘制</Note>
+    <Note>设置符号的默认大小为标准中要求的符号大小</Note>
+    <Note>可打开符号库预览符号，也可绘制新的海图符号进行符号扩展</Note>
+  </SymbolEditorNotes>
+</SuperMapSymbolLibrary>

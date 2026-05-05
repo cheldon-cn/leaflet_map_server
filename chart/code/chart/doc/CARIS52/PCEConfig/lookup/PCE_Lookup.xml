@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISLookupTable name="PCE_PAPER_CHART" type="PAPER_CHART" description="CARIS Paper Chart Editor 纸质海图查询表" standard="CARIS HPD/PCE S-52">
+  <MetaData>
+    <Source>C:\Program Files\CARIS\HPD\[version]\system\PCEConfig\lookup\</Source>
+    <Software>CARIS HPD Paper Chart Editor (PCE)</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Standard>IHO S-4, INT1, INT2, INT3</Standard>
+    <Reference>https://www.teledynecaris.com/en/products/hpd/</Reference>
+  </MetaData>
+  
+  <LookupStructure>
+    <Description>
+      CARIS Paper Chart Editor (PCE) 用于编译和发布纸质海图产品。
+      支持从 HPD 数据库创建矢量或栅格格式的纸质海图。
+      查询表定义了纸质海图的符号化规则和显示指令。
+    </Description>
+    <Features>
+      <Feature>符合 IHO S-4, INT1, INT2, INT3 标准的制图表示</Feature>
+      <Feature>支持自定义海图配置</Feature>
+      <Feature>与 ENC 产品共享同一数据源，确保一致性</Feature>
+    </Features>
+  </LookupStructure>
+  
+  <LookupEntries>
+    <Section name="Point_Symbols" description="点符号查询表">
+      <Category name="Navigation_Aids">
+        <Entry objectClass="BOYCAR" symbol="BOYCAR_PAPER" description="方位标浮标-纸质海图符号"/>
+        <Entry objectClass="BOYLAT" symbol="BOYLAT_PAPER" description="侧面标浮标-纸质海图符号"/>
+        <Entry objectClass="BOYSAW" symbol="BOYSAW_PAPER" description="安全水域标浮标-纸质海图符号"/>
+        <Entry objectClass="BOYISD" symbol="BOYISD_PAPER" description="孤立危险标浮标-纸质海图符号"/>
+        <Entry objectClass="BCNCAR" symbol="BCNCAR_PAPER" description="方位标信标-纸质海图符号"/>
+        <Entry objectClass="BCNLAT" symbol="BCNLAT_PAPER" description="侧面标信标-纸质海图符号"/>
+        <Entry objectClass="BCNSAW" symbol="BCNSAW_PAPER" description="安全水域标信标-纸质海图符号"/>
+        <Entry objectClass="LIGHTS" symbol="LIGHTS_PAPER" description="灯塔-纸质海图符号"/>
+        <Entry objectClass="LITFLT" symbol="LITFLT_PAPER" description="浮动灯标-纸质海图符号"/>
+        <Entry objectClass="LITVES" symbol="LITVES_PAPER" description="灯船-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Landmarks">
+        <Entry objectClass="LNDMRK" symbol="LNDMRK_PAPER" description="陆标-纸质海图符号"/>
+        <Entry objectClass="BUISGL" symbol="BUISGL_PAPER" description="大型建筑物-纸质海图符号"/>
+        <Entry objectClass="TOWERS" symbol="TOWERS_PAPER" description="塔-纸质海图符号"/>
+        <Entry objectClass="MONUMT" symbol="MONUMT_PAPER" description="纪念碑-纸质海图符号"/>
+        <Entry objectClass="WIMCON" symbol="WIMCON_PAPER" description="风力发电设施-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Dangers">
+        <Entry objectClass="WRECKS" symbol="WRECKS_PAPER" description="沉船-纸质海图符号"/>
+        <Entry objectClass="OBSTRN" symbol="OBSTRN_PAPER" description="障碍物-纸质海图符号"/>
+        <Entry objectClass="UWTROC" symbol="UWTROC_PAPER" description="水下岩石-纸质海图符号"/>
+        <Entry objectClass="ISOHAZ" symbol="ISOHAZ_PAPER" description="隔离危险区-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Radio_Radar">
+        <Entry objectClass="RADSTA" symbol="RADSTA_PAPER" description="雷达站-纸质海图符号"/>
+        <Entry objectClass="RDOSTA" symbol="RDOSTA_PAPER" description="无线电电台-纸质海图符号"/>
+        <Entry objectClass="RTPBCN" symbol="RTPBCN_PAPER" description="雷达应答器-纸质海图符号"/>
+        <Entry objectClass="FOGSIG" symbol="FOGSIG_PAPER" description="雾号-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Ports_Services">
+        <Entry objectClass="PILBOP" symbol="PILBOP_PAPER" description="引航站-纸质海图符号"/>
+        <Entry objectClass="PONTON" symbol="PONTON_PAPER" description="浮码头-纸质海图符号"/>
+        <Entry objectClass="HULKES" symbol="HULKES_PAPER" description="废船/趸船-纸质海图符号"/>
+        <Entry objectClass="CRANES" symbol="CRANES_PAPER" description="起重机-纸质海图符号"/>
+        <Entry objectClass="BERTHS" symbol="BERTHS_PAPER" description="泊位-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Anchorage">
+        <Entry objectClass="ACHARE" symbol="ACHARE_PAPER" description="锚地-纸质海图符号"/>
+        <Entry objectClass="ACHBRT" symbol="ACHBRT_PAPER" description="深水锚地-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Military_Restricted">
+        <Entry objectClass="MIPARE" symbol="MIPARE_PAPER" description="军事区域-纸质海图符号"/>
+        <Entry objectClass="RESARE" symbol="RESARE_PAPER" description="限制区域-纸质海图符号"/>
+        <Entry objectClass="CSTARE" symbol="CSTARE_PAPER" description="海关区域-纸质海图符号"/>
+      </Category>
+    </Section>
+    
+    <Section name="Line_Symbols" description="线符号查询表">
+      <Category name="Coastline">
+        <Entry objectClass="COALNE" symbol="COALNE_PAPER" description="海岸线-纸质海图符号"/>
+        <Entry objectClass="SLCONS" symbol="SLCONS_PAPER" description="海岸线构筑物-纸质海图符号"/>
+        <Entry objectClass="SHORLN" symbol="SHORLN_PAPER" description="岸线-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Depth_Contours">
+        <Entry objectClass="DEPCNT" symbol="DEPCNT_PAPER" description="等深线-纸质海图符号"/>
+        <Entry objectClass="DRGARE" symbol="DRGARE_PAPER" description="疏浚区域边界-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Navigation_Routes">
+        <Entry objectClass="FAIRWY" symbol="FAIRWY_PAPER" description="航道-纸质海图符号"/>
+        <Entry objectClass="RCRTCL" symbol="RCRTCL_PAPER" description="推荐航线-纸质海图符号"/>
+        <Entry objectClass="TSELNE" symbol="TSELNE_PAPER" description="交通分隔线-纸质海图符号"/>
+        <Entry objectClass="FERYRT" symbol="FERYRT_PAPER" description="轮渡航线-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Cables_Pipelines">
+        <Entry objectClass="CBLSUB" symbol="CBLSUB_PAPER" description="海底电缆-纸质海图符号"/>
+        <Entry objectClass="CBLOHD" symbol="CBLOHD_PAPER" description="架空电缆-纸质海图符号"/>
+        <Entry objectClass="PIPSOL" symbol="PIPSOL_PAPER" description="海底管道-纸质海图符号"/>
+        <Entry objectClass="PIPOHD" symbol="PIPOHD_PAPER" description="架空管道-纸质海图符号"/>
+      </Category>
+      
+      <Category name="Bridges_Structures">
+        <Entry objectClass="BRIDGE" symbol="BRIDGE_PAPER" description="桥梁-纸质海图符号"/>
+        <Entry objectClass="CAUSWY" symbol="CAUSWY_PAPER" description="堤道-纸质海图符号"/>
+        <Entry objectClass="DAMCON" symbol="DAMCON_PAPER" description="水坝-纸质海图符号"/>
+        <Entry objectClass="GATCON" symbol="GATCON_PAPER" description="闸门-纸质海图符号"/>
+      </Category>
+    </Section>
+    
+    <Section name="Area_Symbols" description="面符号查询表">
+      <Category name="Land_Areas">
+        <Entry objectClass="LNDARE" symbol="LNDARE_PAPER" description="陆地区域-纸质海图填充"/>
+        <Entry objectClass="BUISGL" symbol="BUISGL_PAPER" description="建筑物区域-纸质海图填充"/>
+        <Entry objectClass="BUAARE" symbol="BUAARE_PAPER" description="建成区-纸质海图填充"/>
+      </Category>
+      
+      <Category name="Water_Areas">
+        <Entry objectClass="DEPARE" symbol="DEPARE_PAPER" description="水深区域-纸质海图填充"/>
+        <Entry objectClass="DRGARE" symbol="DRGARE_PAPER" description="疏浚区域-纸质海图填充"/>
+        <Entry objectClass="UNSARE" symbol="UNSARE_PAPER" description="不可靠水深区域-纸质海图填充"/>
+      </Category>
+      
+      <Category name="Restricted_Areas">
+        <Entry objectClass="RESARE" symbol="RESARE_PAPER" description="限制区域-纸质海图填充"/>
+        <Entry objectClass="MIPARE" symbol="MIPARE_PAPER" description="军事区域-纸质海图填充"/>
+        <Entry objectClass="ACHARE" symbol="ACHARE_PAPER" description="锚地-纸质海图填充"/>
+        <Entry objectClass="FAIRWY" symbol="FAIRWY_PAPER" description="航道-纸质海图填充"/>
+      </Category>
+      
+      <Category name="Seabed">
+        <Entry objectClass="SBDARE" symbol="SBDARE_PAPER" description="海底区域-纸质海图填充"/>
+        <Entry objectClass="CORAL" symbol="CORAL_PAPER" description="珊瑚礁-纸质海图填充"/>
+        <Entry objectClass="WEDKLP" symbol="WEDKLP_PAPER" description="海藻区-纸质海图填充"/>
+      </Category>
+    </Section>
+  </LookupEntries>
+  
+  <CartographicRules>
+    <Rule name="Marginalia" description="图廓整饰">
+      <Item>标题、图号、比例尺、投影</Item>
+      <Item>深度基准面、高程基准面</Item>
+      <Item>图例、注意事项</Item>
+      <Item>坐标网格、经纬度标注</Item>
+    </Rule>
+    <Rule name="Generalization" description="制图综合">
+      <Item>要素选取与化简</Item>
+      <Item>符号冲突处理</Item>
+      <Item>注记配置与避让</Item>
+    </Rule>
+    <Rule name="Annotation" description="注记规则">
+      <Item>水深注记</Item>
+      <Item>地名注记</Item>
+      <Item>助航标志注记</Item>
+      <Item>灯光特性注记</Item>
+    </Rule>
+  </CartographicRules>
+</CARISLookupTable>

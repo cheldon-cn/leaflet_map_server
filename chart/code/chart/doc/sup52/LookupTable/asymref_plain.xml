@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapLookupTable name="asymref_plain" type="AREA_PLAIN" description="简单边界面符号显示命令" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/LookupTable/asymref_plain.dic</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Format>物标缩写,属性条件,符号指令,优先级,雷达,显示类别,视图分组</Format>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <CommandFormat>
+    <Field index="1" name="ObjectClass" description="物标缩写"/>
+    <Field index="2" name="Condition" description="属性条件"/>
+    <Field index="3" name="Symbol" description="符号指令"/>
+    <Field index="4" name="Priority" description="显示优先级"/>
+    <Field index="5" name="Radar" description="雷达相关"/>
+    <Field index="6" name="DisplayCategory" description="显示类别"/>
+    <Field index="7" name="ViewingGroup" description="视图分组"/>
+  </CommandFormat>
+  
+  <LookupEntries>
+    <Section name="Section One">
+      <Category name="LandAreas">
+        <Entry>"LNDARE","","AC(LANDF);LS(SOLD,1,CHBLK)","2","O","BASE","26010"</Entry>
+        <Entry>"BUISGL","","AC(CHGRD);LS(SOLD,1,CHBLK)","4","O","STANDARD","26010"</Entry>
+        <Entry>"BUAARE","","AC(CHGRD);LS(SOLD,1,CHBLK)","4","O","STANDARD","26010"</Entry>
+      </Category>
+      
+      <Category name="WaterAreas">
+        <Entry>"DEPARE","","AC(DEPVS);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DEPARE","DRVAL10","AC(DEPVS);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DEPARE","DRVAL12","AC(DEPMS);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DEPARE","DRVAL15","AC(DEPDW);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DEPARE","DRVAL110","AC(DEPMD);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DEPARE","DRVAL120","AC(DEPVD);LS(SOLD,1,DEPCNT)","2","O","BASE","26020"</Entry>
+        <Entry>"DRGARE","","AC(DEPVS);LS(DASH,1,DEPVS)","3","O","BASE","26020"</Entry>
+        <Entry>"UNSARE","","AC(DEPVS);LS(DASH,1,DEPVS)","4","O","STANDARD","26020"</Entry>
+      </Category>
+      
+      <Category name="ShallowWater">
+        <Entry>"DEPIT","","AC(DEPIT);LS(SOLD,1,DEPCNT)","3","O","BASE","26030"</Entry>
+        <Entry>"DEPSC","","AC(DEPSC);LS(SOLD,1,DEPCNT)","3","O","BASE","26030"</Entry>
+        <Entry>"DEPSP","","AC(DEPSP);LS(SOLD,1,DEPCNT)","3","O","BASE","26030"</Entry>
+      </Category>
+      
+      <Category name="RestrictedAreas">
+        <Entry>"RESARE","","AC(RESARE);LS(DASH,2,CHRED)","4","O","STANDARD","26040"</Entry>
+        <Entry>"MIPARE","","AC(MIPARE);LS(DASH,2,CHORN)","4","O","STANDARD","26040"</Entry>
+        <Entry>"CSTARE","","AC(CHGRD);LS(DASH,2,CHYEL)","4","O","STANDARD","26040"</Entry>
+      </Category>
+      
+      <Category name="Anchorages">
+        <Entry>"ACHARE","","AC(ACHARE);LS(DASH,1,CHGRN)","4","O","STANDARD","26050"</Entry>
+        <Entry>"ACHBRT","","AC(ACHARE);LS(DASH,1,CHGRN)","4","O","STANDARD","26050"</Entry>
+        <Entry>"BERTHS","","AC(CHGRD);LS(SOLD,1,CHBLK)","4","O","STANDARD","26050"</Entry>
+      </Category>
+      
+      <Category name="Fairways">
+        <Entry>"FAIRWY","","AC(FAIRWY);LS(DASH,2,CHGRN)","4","O","STANDARD","26060"</Entry>
+      </Category>
+      
+      <Category name="DangerAreas">
+        <Entry>"DMPGRD","","AC(CHGRD);LS(SOLD,2,CHRED)","3","O","BASE","26070"</Entry>
+        <Entry>"MARCUL","","AC(CHGRD);LS(DASH,1,CHGRN)","4","O","STANDARD","26070"</Entry>
+        <Entry>"CTNARE","","AC(CHGRD);LS(DASH,2,CHYEL)","4","O","STANDARD","26070"</Entry>
+      </Category>
+      
+      <Category name="CablesPipelines">
+        <Entry>"CBLARE","","AC(CBLARE);LS(DASH,1,CHPNA)","4","O","STANDARD","26080"</Entry>
+        <Entry>"PIPARE","","AC(PIPARE);LS(DASH,1,CHPNA)","4","O","STANDARD","26080"</Entry>
+      </Category>
+      
+      <Category name="OffshoreStructures">
+        <Entry>"OSPARE","","AC(OSPARE);LS(DASH,2,CHPNA)","4","O","STANDARD","26090"</Entry>
+        <Entry>"OFSPLF","","AC(CHGRD);LS(SOLD,2,CHBLK)","4","O","STANDARD","26090"</Entry>
+        <Entry>"WIMCON","","AC(CHGRD);LS(SOLD,1,CHBLK)","4","O","STANDARD","26090"</Entry>
+      </Category>
+      
+      <Category name="Seabed">
+        <Entry>"SBDARE","","AC(SBDARE);LS(SOLD,1,CHBRN)","4","O","STANDARD","26100"</Entry>
+        <Entry>"CORAL","","AC(CORAL);LS(SOLD,1,CHRED)","4","O","STANDARD","26100"</Entry>
+        <Entry>"WEDKLP","","AC(WEDKLP);LS(SOLD,1,CHGRN)","4","O","STANDARD","26100"</Entry>
+      </Category>
+      
+      <Category name="IceSnow">
+        <Entry>"ICEARE","","AC(ICEARE);LS(DASH,1,CHBLU)","4","O","STANDARD","26110"</Entry>
+        <Entry>"SNOW","","AC(SNOW);LS(SOLD,1,CHBLK)","4","O","STANDARD","26110"</Entry>
+      </Category>
+      
+      <Category name="TerritorialWaters">
+        <Entry>"TESARE","","AC(CHGRD);LS(DASH,2,CHPNA)","4","O","STANDARD","26120"</Entry>
+        <Entry>"EEZARE","","AC(CHGRD);LS(DASH,2,CHPNA)","4","O","STANDARD","26120"</Entry>
+      </Category>
+      
+      <Category name="OtherAreas">
+        <Entry>"LOGPON","","AC(CHGRD);LS(DASH,1,CHBRN)","4","O","STANDARD","26130"</Entry>
+        <Entry>"EXCNST","","AC(CHGRD);LS(DASH,1,CHYEL)","4","O","STANDARD","26130"</Entry>
+        <Entry>"PRCARE","","AC(CHGRD);LS(DASH,1,CHGRN)","4","O","STANDARD","26130"</Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+</SuperMapLookupTable>

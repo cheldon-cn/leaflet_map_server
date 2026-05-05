@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52ColorTable name="DayBright" description="白昼明亮模式颜色表" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library</Source>
+    <Reference>https://iho.int/uploads/user/pubs/standards/s-52/</Reference>
+  </MetaData>
+  
+  <ColorTokens>
+    <Category name="ChartBackground">
+      <Color token="NODTA" rgb="#FFFFFF" description="无数据区域背景色"/>
+      <Color token="CHGRF" rgb="#A0A0A0" description="图表背景色-灰色"/>
+      <Color token="CHGRD" rgb="#C0C0C0" description="图表背景色-浅灰"/>
+    </Category>
+    
+    <Category name="LandAreas">
+      <Color token="LANDF" rgb="#B8A088" description="陆地填充色"/>
+      <Color token="LANDA" rgb="#D4C4A8" description="陆地区域色"/>
+      <Color token="LNDARE" rgb="#B8A088" description="陆地区域"/>
+    </Category>
+    
+    <Category name="WaterAreas">
+      <Color token="DEPVS" rgb="#99CCFF" description="深水区-非常浅"/>
+      <Color token="DEPMS" rgb="#66B2FF" description="深水区-中等浅"/>
+      <Color token="DEPDW" rgb="#3399FF" description="深水区-深"/>
+      <Color token="DEPMD" rgb="#0066CC" description="深水区-中等深"/>
+      <Color token="DEPVD" rgb="#004C99" description="深水区-非常深"/>
+      <Color token="DRGARE" rgb="#99CCFF" description="疏浚区域"/>
+      <Color token="UNSARE" rgb="#99CCFF" description="不可靠水深区域"/>
+    </Category>
+    
+    <Category name="ShallowWater">
+      <Color token="DEPIT" rgb="#FFFF99" description="等深线间区域"/>
+      <Color token="DEPSC" rgb="#FFFF66" description="浅水区-大陆架"/>
+      <Color token="DEPSP" rgb="#FFFF00" description="浅水区-特殊"/>
+      <Color token="SHLOW" rgb="#FFFF00" description="浅水警示区"/>
+    </Category>
+    
+    <Category name="NavigationAids">
+      <Color token="CHBLK" rgb="#000000" description="黑色-文本和符号"/>
+      <Color token="CHWHT" rgb="#FFFFFF" description="白色"/>
+      <Color token="CHRED" rgb="#FF0000" description="红色-危险/警示"/>
+      <Color token="CHGRN" rgb="#00FF00" description="绿色-安全/航道"/>
+      <Color token="CHBLU" rgb="#0000FF" description="蓝色"/>
+      <Color token="CHYEL" rgb="#FFFF00" description="黄色-注意"/>
+      <Color token="CHORN" rgb="#FF8000" description="橙色"/>
+      <Color token="CHPNA" rgb="#FF00FF" description="紫色"/>
+      <Color token="CHBRN" rgb="#8B4513" description="棕色"/>
+    </Category>
+    
+    <Category name="BuoysBeacons">
+      <Color token="BCNLAT" rgb="#FF0000" description="侧面标-红色"/>
+      <Color token="BCNGRN" rgb="#00FF00" description="侧面标-绿色"/>
+      <Color token="BCNYEL" rgb="#FFFF00" description="侧面标-黄色"/>
+      <Color token="BCNBLK" rgb="#000000" description="侧面标-黑色"/>
+      <Color token="BCNWHT" rgb="#FFFFFF" description="侧面标-白色"/>
+      <Color token="BCNISD" rgb="#000000" description="孤立危险标"/>
+      <Color token="BCNSAW" rgb="#FFFF00" description="安全水域标"/>
+      <Color token="BCNCAR" rgb="#000000" description="方位标"/>
+    </Category>
+    
+    <Category name="Lights">
+      <Color token="LITRED" rgb="#FF0000" description="灯光-红色"/>
+      <Color token="LITGRN" rgb="#00FF00" description="灯光-绿色"/>
+      <Color token="LITYEL" rgb="#FFFF00" description="灯光-黄色"/>
+      <Color token="LITWHT" rgb="#FFFFFF" description="灯光-白色"/>
+      <Color token="LITBLU" rgb="#0000FF" description="灯光-蓝色"/>
+      <Color token="LITORN" rgb="#FF8000" description="灯光-橙色"/>
+      <Color token="LITPNA" rgb="#FF00FF" description="灯光-紫色"/>
+    </Category>
+    
+    <Category name="RestrictedAreas">
+      <Color token="RESARE" rgb="#FFCCCC" description="限制区域"/>
+      <Color token="ACHARE" rgb="#CCFFCC" description="锚地"/>
+      <Color token="FAIRWY" rgb="#CCFFFF" description="航道"/>
+      <Color token="OSPARE" rgb="#FFCCFF" description="海上构筑物"/>
+    </Category>
+    
+    <Category name="DangerAreas">
+      <Color token="DANGER" rgb="#FF0000" description="危险区域"/>
+      <Color token="WRECKS" rgb="#FF6666" description="沉船"/>
+      <Color token="OBSTRN" rgb="#FF9966" description="障碍物"/>
+      <Color token="UWTROC" rgb="#FF6666" description="水下岩石"/>
+      <Color token="ISOHAZ" rgb="#FF0000" description="隔离危险区"/>
+      <Color token="DNGHLK" rgb="#FF00FF" description="危险高亮-Ed4.0新增"/>
+    </Category>
+    
+    <Category name="DataQuality">
+      <Color token="DMPINC" rgb="#FFA500" description="数据质量指示-Ed4.0新增"/>
+      <Color token="QUAPOS" rgb="#FFA500" description="质量位置标记-Ed4.0新增"/>
+      <Color token="CHGRY" rgb="#808080" description="灰色-未测量区域"/>
+    </Category>
+    
+    <Category name="RoutesTracks">
+      <Color token="TSELNE" rgb="#FF00FF" description="交通分隔线"/>
+      <Color token="DWRTPT" rgb="#FF00FF" description="深水航线点"/>
+      <Color token="RCRTCL" rgb="#FF8000" description="推荐航线"/>
+      <Color token="FAIRWY" rgb="#00FFFF" description="航道中线"/>
+    </Category>
+    
+    <Category name="Contours">
+      <Color token="DEPCNT" rgb="#0066CC" description="等深线"/>
+      <Color token="SLCONS" rgb="#8B4513" description="海岸线构筑物"/>
+      <Color token="COALNE" rgb="#000000" description="海岸线"/>
+    </Category>
+    
+    <Category name="Structures">
+      <Color token="BUISGL" rgb="#808080" description="建筑物-大"/>
+      <Color token="BRIDGE" rgb="#000000" description="桥梁"/>
+      <Color token="PIPSOL" rgb="#8B4513" description="海底管道"/>
+      <Color token="CBLSUB" rgb="#8B4513" description="海底电缆"/>
+      <Color token="PONTON" rgb="#808080" description="浮码头"/>
+    </Category>
+    
+    <Category name="TextLabels">
+      <Color token="TXTBK" rgb="#000000" description="文本黑色"/>
+      <Color token="TXTWH" rgb="#FFFFFF" description="文本白色"/>
+      <Color token="TXTRE" rgb="#FF0000" description="文本红色"/>
+      <Color token="TXTGR" rgb="#00FF00" description="文本绿色"/>
+      <Color token="TXTBL" rgb="#0000FF" description="文本蓝色"/>
+      <Color token="TXTYE" rgb="#FFFF00" description="文本黄色"/>
+    </Category>
+    
+    <Category name="SpecialPurpose">
+      <Color token="MIPARE" rgb="#FFE4B5" description="军事区域"/>
+      <Color token="SPLARE" rgb="#FFCCCC" description="特殊区域"/>
+      <Color token="CBLARE" rgb="#DDA0DD" description="电缆区域"/>
+      <Color token="PIPARE" rgb="#DDA0DD" description="管道区域"/>
+      <Color token="PILBOP" rgb="#98FB98" description="引航站"/>
+    </Category>
+    
+    <Category name="RadarRadio">
+      <Color token="RADSTA" rgb="#FF00FF" description="雷达站"/>
+      <Color token="RDOSTA" rgb="#FF00FF" description="无线电电台"/>
+      <Color token="RTPBCN" rgb="#FF00FF" description="雷达应答器"/>
+      <Color token="FOGSIG" rgb="#FF00FF" description="雾号"/>
+    </Category>
+    
+    <Category name="Seabed">
+      <Color token="SBDARE" rgb="#C0C0C0" description="海底区域"/>
+      <Color token="CORAL" rgb="#FFB6C1" description="珊瑚礁"/>
+      <Color token="WEDKLP" rgb="#90EE90" description="海藻区"/>
+    </Category>
+    
+    <Category name="IceSnow">
+      <Color token="ICEARE" rgb="#E0FFFF" description="冰区"/>
+      <Color token="SNOW" rgb="#FFFFFF" description="雪地区域"/>
+    </Category>
+  </ColorTokens>
+</S52ColorTable>

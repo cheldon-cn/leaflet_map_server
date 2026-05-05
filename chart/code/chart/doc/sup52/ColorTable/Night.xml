@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapColorTable name="Night" description="夜晚颜色表" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/ColorTable/Night.xml</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <Colors>
+    <Color token="NODTA" r="0" g="0" b="0" description="无数据区域背景色"/>
+    <Color token="CHGRF" r="26" g="26" b="26" description="图表背景色-灰色"/>
+    <Color token="CHGRD" r="13" g="13" b="13" description="图表背景色-浅灰"/>
+    
+    <Color token="LANDF" r="30" g="26" b="22" description="陆地填充色"/>
+    <Color token="LANDA" r="37" g="32" b="25" description="陆地区域色"/>
+    
+    <Color token="DEPVS" r="13" g="26" b="38" description="深水区-非常浅"/>
+    <Color token="DEPMS" r="10" g="21" b="32" description="深水区-中等浅"/>
+    <Color token="DEPDW" r="6" g="13" b="19" description="深水区-深"/>
+    <Color token="DEPMD" r="3" g="8" b="10" description="深水区-中等深"/>
+    <Color token="DEPVD" r="1" g="3" b="5" description="深水区-非常深"/>
+    <Color token="DRGARE" r="13" g="26" b="38" description="疏浚区域"/>
+    <Color token="UNSARE" r="13" g="26" b="38" description="不可靠水深区域"/>
+    
+    <Color token="DEPIT" r="26" g="26" b="13" description="等深线间区域"/>
+    <Color token="DEPSC" r="21" g="21" b="10" description="浅水区-大陆架"/>
+    <Color token="DEPSP" r="16" g="16" b="8" description="浅水区-特殊"/>
+    <Color token="SHLOW" r="26" g="26" b="13" description="浅水警示区"/>
+    
+    <Color token="CHBLK" r="128" g="128" b="128" description="黑色-文本和符号"/>
+    <Color token="CHWHT" r="77" g="77" b="77" description="白色"/>
+    <Color token="CHRED" r="128" g="26" b="26" description="红色-危险/警示"/>
+    <Color token="CHGRN" r="26" g="128" b="26" description="绿色-安全/航道"/>
+    <Color token="CHBLU" r="26" g="26" b="128" description="蓝色"/>
+    <Color token="CHYEL" r="128" g="128" b="26" description="黄色-注意"/>
+    <Color token="CHORN" r="128" g="64" b="26" description="橙色"/>
+    <Color token="CHPNA" r="128" g="26" b="128" description="紫色"/>
+    <Color token="CHBRN" r="77" g="43" b="21" description="棕色"/>
+    <Color token="CHGRY" r="64" g="64" b="64" description="灰色"/>
+    
+    <Color token="BCNLAT" r="128" g="26" b="26" description="侧面标-红色"/>
+    <Color token="BCNGRN" r="26" g="128" b="26" description="侧面标-绿色"/>
+    <Color token="BCNYEL" r="128" g="128" b="26" description="侧面标-黄色"/>
+    <Color token="BCNBLK" r="51" g="51" b="51" description="侧面标-黑色"/>
+    <Color token="BCNWHT" r="77" g="77" b="77" description="侧面标-白色"/>
+    <Color token="BCNISD" r="51" g="51" b="51" description="孤立危险标"/>
+    <Color token="BCNSAW" r="128" g="128" b="26" description="安全水域标"/>
+    <Color token="BCNCAR" r="51" g="51" b="51" description="方位标"/>
+    
+    <Color token="LITRED" r="128" g="26" b="26" description="灯光-红色"/>
+    <Color token="LITGRN" r="26" g="128" b="26" description="灯光-绿色"/>
+    <Color token="LITYEL" r="128" g="128" b="26" description="灯光-黄色"/>
+    <Color token="LITWHT" r="128" g="128" b="128" description="灯光-白色"/>
+    <Color token="LITBLU" r="26" g="26" b="128" description="灯光-蓝色"/>
+    <Color token="LITORN" r="128" g="64" b="26" description="灯光-橙色"/>
+    <Color token="LITPNA" r="128" g="26" b="128" description="灯光-紫色-Ed4.0新增"/>
+    
+    <Color token="RESARE" r="51" g="26" b="26" description="限制区域"/>
+    <Color token="ACHARE" r="26" g="51" b="26" description="锚地"/>
+    <Color token="FAIRWY" r="26" g="26" b="51" description="航道"/>
+    <Color token="OSPARE" r="51" g="26" b="51" description="海上构筑物"/>
+    
+    <Color token="DANGER" r="128" g="26" b="26" description="危险区域"/>
+    <Color token="WRECKS" r="77" g="26" b="26" description="沉船"/>
+    <Color token="OBSTRN" r="77" g="51" b="26" description="障碍物"/>
+    <Color token="UWTROC" r="77" g="26" b="26" description="水下岩石"/>
+    <Color token="ISOHAZ" r="128" g="26" b="26" description="隔离危险区"/>
+    <Color token="DNGHLK" r="77" g="26" b="77" description="危险高亮-Ed4.0新增"/>
+    
+    <Color token="DMPINC" r="77" g="51" b="26" description="数据质量指示-Ed4.0新增"/>
+    <Color token="QUAPOS" r="77" g="51" b="26" description="质量位置标记-Ed4.0新增"/>
+    
+    <Color token="TSELNE" r="77" g="26" b="77" description="交通分隔线"/>
+    <Color token="DWRTPT" r="77" g="26" b="77" description="深水航线点"/>
+    <Color token="RCRTCL" r="77" g="51" b="26" description="推荐航线"/>
+    
+    <Color token="DEPCNT" r="26" g="51" b="77" description="等深线"/>
+    <Color token="COALNE" r="51" g="51" b="51" description="海岸线"/>
+    
+    <Color token="BUISGL" r="26" g="26" b="26" description="建筑物"/>
+    <Color token="BRIDGE" r="51" g="51" b="51" description="桥梁"/>
+    <Color token="PIPSOL" r="45" g="26" b="13" description="海底管道"/>
+    <Color token="CBLSUB" r="45" g="26" b="13" description="海底电缆"/>
+    
+    <Color token="MIPARE" r="45" g="41" b="34" description="军事区域"/>
+    <Color token="SPLARE" r="51" g="26" b="26" description="特殊区域"/>
+    <Color token="CBLARE" r="42" g="34" b="42" description="电缆区域"/>
+    <Color token="PIPARE" r="42" g="34" b="42" description="管道区域"/>
+    <Color token="PILBOP" r="26" g="51" b="26" description="引航站"/>
+    
+    <Color token="RADSTA" r="77" g="26" b="77" description="雷达站"/>
+    <Color token="RDOSTA" r="77" g="26" b="77" description="无线电电台"/>
+    <Color token="RTPBCN" r="77" g="26" b="77" description="雷达应答器"/>
+    <Color token="FOGSIG" r="77" g="26" b="77" description="雾号"/>
+    
+    <Color token="SBDARE" r="26" g="26" b="26" description="海底区域"/>
+    <Color token="CORAL" r="45" g="26" b="28" description="珊瑚礁"/>
+    <Color token="WEDKLP" r="26" g="45" b="26" description="海藻区"/>
+    
+    <Color token="ICEARE" r="26" g="45" b="45" description="冰区"/>
+    <Color token="SNOW" r="45" g="45" b="45" description="雪地区域"/>
+    
+    <Color token="TXTBK" r="128" g="128" b="128" description="文本黑色"/>
+    <Color token="TXTWH" r="77" g="77" b="77" description="文本白色"/>
+    <Color token="TXTRE" r="128" g="26" b="26" description="文本红色"/>
+    <Color token="TXTGR" r="26" g="128" b="26" description="文本绿色"/>
+    <Color token="TXTBL" r="26" g="26" b="128" description="文本蓝色"/>
+    <Color token="TXTYE" r="128" g="128" b="26" description="文本黄色"/>
+  </Colors>
+</SuperMapColorTable>

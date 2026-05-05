@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapLookupTable name="lsymref" type="LINE" description="线符号显示命令" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/LookupTable/lsymref.dic</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Format>物标缩写,属性条件,符号指令,优先级,雷达,显示类别,视图分组</Format>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <CommandFormat>
+    <Field index="1" name="ObjectClass" description="物标缩写"/>
+    <Field index="2" name="Condition" description="属性条件"/>
+    <Field index="3" name="Symbol" description="符号指令"/>
+    <Field index="4" name="Priority" description="显示优先级"/>
+    <Field index="5" name="Radar" description="雷达相关"/>
+    <Field index="6" name="DisplayCategory" description="显示类别"/>
+    <Field index="7" name="ViewingGroup" description="视图分组"/>
+  </CommandFormat>
+  
+  <LineStyles>
+    <Style name="SOLD" description="实线"/>
+    <Style name="DASH" description="虚线"/>
+    <Style name="DOT" description="点线"/>
+    <Style name="DASHDOT" description="点划线"/>
+  </LineStyles>
+  
+  <LookupEntries>
+    <Section name="Section One">
+      <Category name="Coastline">
+        <Entry>"COALNE","","LS(SOLD,2,CHBLK)","3","O","BASE","24010"</Entry>
+        <Entry>"SLCONS","","LS(SOLD,2,CHBLK)","3","O","BASE","24010"</Entry>
+        <Entry>"SLCONS","CATSLC1","LS(SOLD,2,CHBLK)","3","O","BASE","24010"</Entry>
+        <Entry>"SLCONS","CATSLC2","LS(DASH,2,CHBLK)","3","O","BASE","24010"</Entry>
+        <Entry>"SHORLN","","LS(SOLD,2,CHBLK)","3","O","BASE","24010"</Entry>
+      </Category>
+      
+      <Category name="DepthContours">
+        <Entry>"DEPCNT","","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO2","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO5","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO10","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO20","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO50","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DEPCNT","VALDCO100","LS(SOLD,1,DEPCNT)","4","O","STANDARD","24020"</Entry>
+        <Entry>"DRGARE","","LS(DASH,1,DEPVS)","3","O","BASE","24020"</Entry>
+      </Category>
+      
+      <Category name="NavigationRoutes">
+        <Entry>"FAIRWY","","LS(DASH,2,CHGRN)","4","O","STANDARD","24030"</Entry>
+        <Entry>"RCRTCL","","LS(DASH,2,CHYEL)","4","O","STANDARD","24030"</Entry>
+        <Entry>"DWRTPT","","LS(DASH,2,CHPNA)","4","O","STANDARD","24030"</Entry>
+        <Entry>"TSELNE","","LS(DASH,2,CHPNA)","4","O","STANDARD","24030"</Entry>
+        <Entry>"TSSRON","","LS(DASH,2,CHPNA)","4","O","STANDARD","24030"</Entry>
+      </Category>
+      
+      <Category name="CablesPipelines">
+        <Entry>"CBLSUB","","LC(CBLSUB01)","4","O","STANDARD","24040"</Entry>
+        <Entry>"CBLOHD","","LC(CBLOHD01)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","","LC(PIPSOL01)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT1","LC(PIPSOL01)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT2","LC(PIPSOL02)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT3","LC(PIPSOL03)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT4","LC(PIPSOL04)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT5","LC(PIPSOL05)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT6","LC(PIPSOL06)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPSOL","PRODCT7","LC(PIPSOL07)","4","O","STANDARD","24040"</Entry>
+        <Entry>"PIPOHD","","LC(PIPOHD01)","4","O","STANDARD","24040"</Entry>
+      </Category>
+      
+      <Category name="Bridges">
+        <Entry>"BRIDGE","","LS(SOLD,3,CHBLK)","3","O","BASE","24050"</Entry>
+        <Entry>"BRIDGE","CATBRG1","LS(SOLD,3,CHBLK)","3","O","BASE","24050"</Entry>
+        <Entry>"BRIDGE","CATBRG2","LS(SOLD,3,CHBLK)","3","O","BASE","24050"</Entry>
+        <Entry>"CAUSWY","","LS(SOLD,2,CHBLK)","4","O","STANDARD","24050"</Entry>
+        <Entry>"DAMCON","","LS(SOLD,3,CHBLK)","4","O","STANDARD","24050"</Entry>
+        <Entry>"GATCON","","LS(SOLD,2,CHBLK)","4","O","STANDARD","24050"</Entry>
+        <Entry>"TUNNEL","","LS(DASH,2,CHBLK)","4","O","STANDARD","24050"</Entry>
+      </Category>
+      
+      <Category name="RestrictedAreas">
+        <Entry>"RESARE","","LS(DASH,2,CHRED)","4","O","STANDARD","24060"</Entry>
+        <Entry>"MIPARE","","LS(DASH,2,CHORN)","4","O","STANDARD","24060"</Entry>
+        <Entry>"CSTARE","","LS(DASH,2,CHYEL)","4","O","STANDARD","24060"</Entry>
+      </Category>
+      
+      <Category name="Anchorages">
+        <Entry>"ACHARE","","LS(DASH,1,CHGRN)","4","O","STANDARD","24070"</Entry>
+        <Entry>"ACHBRT","","LS(DASH,1,CHGRN)","4","O","STANDARD","24070"</Entry>
+      </Category>
+      
+      <Category name="DangerAreas">
+        <Entry>"DMPGRD","","LS(SOLD,2,CHRED)","3","O","BASE","24080"</Entry>
+        <Entry>"MARCUL","","LS(DASH,1,CHGRN)","4","O","STANDARD","24080"</Entry>
+        <Entry>"OSPARE","","LS(DASH,2,CHPNA)","4","O","STANDARD","24080"</Entry>
+      </Category>
+      
+      <Category name="FerryRoutes">
+        <Entry>"FERYRT","","LC(FERYRT01)","4","O","STANDARD","24090"</Entry>
+      </Category>
+      
+      <Category name="TerritorialWaters">
+        <Entry>"TESARE","","LS(DASH,2,CHPNA)","4","O","STANDARD","24100"</Entry>
+        <Entry>"EEZARE","","LS(DASH,2,CHPNA)","4","O","STANDARD","24100"</Entry>
+      </Category>
+      
+      <Category name="OtherLines">
+        <Entry>"LOKBSN","","LS(SOLD,2,CHBLK)","4","O","STANDARD","24110"</Entry>
+        <Entry>"RAPIDS","","LS(DASH,1,CHBLU)","4","O","STANDARD","24110"</Entry>
+        <Entry>"WATFAL","","LS(SOLD,2,CHBLU)","4","O","STANDARD","24110"</Entry>
+        <Entry>"LOGPON","","LS(DASH,1,CHBRN)","4","O","STANDARD","24110"</Entry>
+      </Category>
+      
+      <Category name="AutomaticUpdate">
+        <Entry>"CHRVDEL","","LC(CHRVDEL2)","1","N","BASE","24200"</Entry>
+        <Entry>"CHRVID","","LC(CHRVID02)","1","N","BASE","24200"</Entry>
+      </Category>
+      
+      <Category name="MarinerNavigation">
+        <Entry>"ROUTE","","LC(ROUTE01)","1","N","ALL","24300"</Entry>
+        <Entry>"XTELN","","LC(XTELN01)","1","N","ALL","24300"</Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+</SuperMapLookupTable>

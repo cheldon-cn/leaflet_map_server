@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52Documentation name="S52Index" description="S-52标准文档索引" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <Clarifications>March 2025</Clarifications>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library Edition 4.0.(4)</Source>
+    <Reference>https://iho.int/standards-in-force</Reference>
+    <OpenCPNReference>https://github.com/OpenCPN/OpenCPN/tree/master/libs/s52plib</OpenCPNReference>
+    <Note>S-52 Annex A Edition 5.0.0 (S-100 ECDIS Presentation Library) 正在征求意见中 (CL 33/2025)</Note>
+  </MetaData>
+  
+  <Overview>
+    <Title>IHO S-52 电子海图显示标准文档</Title>
+    <Description>
+      S-52是国际海道测量组织(IHO)制定的电子海图显示与信息系统(ECDIS)的显示标准。
+      本文档库包含S-52 Presentation Library的核心内容，以XML格式组织存储。
+    </Description>
+    <Purpose>
+      1. 规范电子海图的显示方式和符号化规则
+      2. 确保不同ECDIS系统显示一致性
+      3. 提供物标到符号的映射关系
+      4. 定义颜色编码方案以适应不同显示环境
+    </Purpose>
+  </Overview>
+  
+  <DirectoryStructure>
+    <Directory name="ColorTable" description="颜色编码方案">
+      <File name="DayBright.xml" description="白昼明亮模式颜色表"/>
+      <File name="Dusk.xml" description="晨昏模式颜色表"/>
+      <File name="Night.xml" description="夜间模式颜色表"/>
+    </Directory>
+    <Directory name="LookupTable" description="物标查询表">
+      <File name="PointLookup.xml" description="点物标查询表"/>
+      <File name="LineLookup.xml" description="线物标查询表"/>
+      <File name="AreaLookup.xml" description="面物标查询表"/>
+    </Directory>
+    <Directory name="SymbolLib" description="符号库">
+      <File name="SymbolIndex.xml" description="符号索引及渲染规则"/>
+    </Directory>
+  </DirectoryStructure>
+  
+  <CoreConcepts>
+    <Concept name="PresentationLibrary">
+      <Description>显示库是S-52标准的核心，包含符号、颜色表和查询表</Description>
+      <Components>
+        <Component>Symbol Library (符号库)</Component>
+        <Component>Color Tables (颜色表)</Component>
+        <Component>Lookup Tables (查询表)</Component>
+        <Component>Conditional Symbolization (条件符号化)</Component>
+      </Components>
+    </Concept>
+    
+    <Concept name="LookupTable">
+      <Description>查询表定义了S-57物标到显示符号的映射关系</Description>
+      <Types>
+        <Type name="POINT">点物标查询表 - 用于灯塔、浮标等点状物标</Type>
+        <Type name="LINE">线物标查询表 - 用于航道、电缆等线状物标</Type>
+        <Type name="AREA">面物标查询表 - 用于水深区域、限制区域等面状物标</Type>
+      </Types>
+      <Structure>
+        <Field name="ObjectClass">物标类名(如BOYCAR, LIGHTS)</Field>
+        <Field name="Condition">属性条件判断</Field>
+        <Field name="Symbol">符号指令</Field>
+        <Field name="Priority">显示优先级(1-9)</Field>
+        <Field name="DisplayCategory">显示类别(BASE/STANDARD/OTHER)</Field>
+        <Field name="ViewingGroup">视图分组</Field>
+      </Structure>
+    </Concept>
+    
+    <Concept name="ColorTable">
+      <Description>颜色表定义了不同显示模式下的颜色编码方案</Description>
+      <Modes>
+        <Mode name="DayBright">白昼明亮模式 - 高对比度，适合日光下使用</Mode>
+        <Mode name="Dusk">晨昏模式 - 中等亮度，适合黄昏/黎明使用</Mode>
+        <Mode name="Night">夜间模式 - 低亮度，保护夜间视力</Mode>
+      </Modes>
+      <ColorTokens>
+        <Token name="CHBLK">黑色 - 文本和符号</Token>
+        <Token name="CHRED">红色 - 危险/警示</Token>
+        <Token name="CHGRN">绿色 - 安全/航道</Token>
+        <Token name="CHYEL">黄色 - 注意</Token>
+        <Token name="DEPVS">深水区-非常浅</Token>
+        <Token name="DEPDW">深水区-深</Token>
+        <Token name="LANDF">陆地填充色</Token>
+      </ColorTokens>
+    </Concept>
+    
+    <Concept name="DisplayPriority">
+      <Description>显示优先级决定物标的绘制顺序</Description>
+      <Levels>
+        <Level value="1">最低优先级 - 背景填充</Level>
+        <Level value="2">低优先级 - 水深区域</Level>
+        <Level value="3">中优先级 - 危险物标、海岸线</Level>
+        <Level value="4">高优先级 - 助航标志</Level>
+        <Level value="5-9">最高优先级 - 文本、重要符号</Level>
+      </Levels>
+    </Concept>
+    
+    <Concept name="DisplayCategory">
+      <Description>显示类别控制物标在不同显示级别下的可见性</Description>
+      <Categories>
+        <Category name="BASE">基础显示 - 始终显示，包含安全相关信息</Category>
+        <Category name="STANDARD">标准显示 - 默认显示，包含常用信息</Category>
+        <Category name="OTHER">其他显示 - 按需显示，包含补充信息</Category>
+      </Categories>
+    </Concept>
+  </CoreConcepts>
+  
+  <ObjectClassCategories>
+    <Category name="NavigationAids" description="助航标志">
+      <Objects>BOYCAR, BOYLAT, BOYSAW, BOYISD, BCNCAR, BCNLAT, BCNSAW, BCNISD, LIGHTS, LITFLT, LITVES</Objects>
+    </Category>
+    <Category name="Dangers" description="危险物标">
+      <Objects>WRECKS, OBSTRN, UWTROC, ISOHAZ, DMPGRD</Objects>
+    </Category>
+    <Category name="LandFeatures" description="陆地特征">
+      <Objects>LNDARE, LNDMRK, BUISGL, BUAARE, TOWERS, MONUMT</Objects>
+    </Category>
+    <Category name="WaterFeatures" description="水域特征">
+      <Objects>DEPARE, DEPCNT, DRGARE, UNSARE, COALNE, SLCONS</Objects>
+    </Category>
+    <Category name="Routes" description="航线">
+      <Objects>FAIRWY, RCRTCL, DWRTPT, TSELNE, TSSRON, FERYRT</Objects>
+    </Category>
+    <Category name="Restricted" description="限制区域">
+      <Objects>RESARE, MIPARE, CSTARE, ACHARE, ACHBRT</Objects>
+    </Category>
+    <Category name="Infrastructure" description="基础设施">
+      <Objects>BRIDGE, CBLSUB, CBLOHD, PIPSOL, PIPOHD, PONTON, CRANES</Objects>
+    </Category>
+    <Category name="Services" description="服务设施">
+      <Objects>PILBOP, RSCSTA, RADSTA, RDOSTA, RTPBCN, FOGSIG</Objects>
+    </Category>
+  </ObjectClassCategories>
+  
+  <References>
+    <Reference name="IHO S-52 Main Document" url="https://iho.int/uploads/user/pubs/standards/s-52/S-52%20Edition%206.1.0.pdf"/>
+    <Reference name="S-52 Presentation Library" url="https://iho.int/uploads/user/pubs/standards/s-52/AnnexAS52_Arborescence_4.0.4.pdf"/>
+    <Reference name="IHO S-57 Object Catalogue" url="https://iho.int/en/s-57-object-catalogue"/>
+    <Reference name="OpenCPN S-52 Implementation" url="https://github.com/OpenCPN/OpenCPN/tree/master/libs/s52plib"/>
+  </References>
+  
+  <ImplementationNotes>
+    <Note priority="high">
+      S-52颜色标记(如CHRED, CHGRN)具有语义含义，不应随意更改。
+      红色表示危险，绿色表示安全/航道，黄色表示注意。
+    </Note>
+    <Note priority="high">
+      显示优先级(Priority)决定了物标的绘制顺序，数值越大越后绘制(显示在上层)。
+    </Note>
+    <Note priority="medium">
+      OpenCPN的S-52实现基于较旧版本的S-52文档，可能存在部分差异。
+    </Note>
+    <Note priority="medium">
+      条件符号化(Conditional Symbolization)用于根据物标属性动态选择显示符号。
+    </Note>
+  </ImplementationNotes>
+</S52Documentation>

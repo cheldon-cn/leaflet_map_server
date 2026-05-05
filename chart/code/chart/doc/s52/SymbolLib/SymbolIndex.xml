@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52SymbolLibrary name="S52SymbolIndex" description="S-52符号库索引" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library</Source>
+    <Reference>https://iho.int/uploads/user/pubs/standards/s-52/</Reference>
+  </MetaData>
+  
+  <SymbolCategories>
+    <Category name="PointSymbols" type="POINT" count="200+">
+      <Description>点符号集合，用于表示灯塔、浮标、信标等点状物标</Description>
+      <SubCategories>
+        <SubCategory name="Buoys" prefix="BOY" count="30+">
+          <Symbol name="BOYCAR01" description="方位标浮标-北"/>
+          <Symbol name="BOYCAR02" description="方位标浮标-东"/>
+          <Symbol name="BOYCAR03" description="方位标浮标-南"/>
+          <Symbol name="BOYCAR04" description="方位标浮标-西"/>
+          <Symbol name="BOYINB01" description="安装浮标"/>
+          <Symbol name="BOYISD01" description="孤立危险标浮标"/>
+          <Symbol name="BOYLAT01" description="侧面标浮标-左侧标"/>
+          <Symbol name="BOYLAT02" description="侧面标浮标-右侧标"/>
+          <Symbol name="BOYLAT03" description="侧面标浮标-推荐航道左侧"/>
+          <Symbol name="BOYLAT04" description="侧面标浮标-推荐航道右侧"/>
+          <Symbol name="BOYSAW01" description="安全水域标浮标"/>
+          <Symbol name="BOYSPP01" description="特殊用途浮标"/>
+        </SubCategory>
+        
+        <SubCategory name="Beacons" prefix="BCN" count="20+">
+          <Symbol name="BCNCAR01" description="方位标信标-北"/>
+          <Symbol name="BCNCAR02" description="方位标信标-东"/>
+          <Symbol name="BCNCAR03" description="方位标信标-南"/>
+          <Symbol name="BCNCAR04" description="方位标信标-西"/>
+          <Symbol name="BCNISD01" description="孤立危险标信标"/>
+          <Symbol name="BCNLAT01" description="侧面标信标-左侧标"/>
+          <Symbol name="BCNLAT02" description="侧面标信标-右侧标"/>
+          <Symbol name="BCNSAW01" description="安全水域标信标"/>
+          <Symbol name="BCNSPP01" description="特殊用途信标"/>
+        </SubCategory>
+        
+        <SubCategory name="Lights" prefix="LIGHTS" count="15+">
+          <Symbol name="LIGHTS01" description="灯塔-一般"/>
+          <Symbol name="LIGHTS02" description="灯塔-红色"/>
+          <Symbol name="LIGHTS03" description="灯塔-绿色"/>
+          <Symbol name="LIGHTS04" description="灯塔-黄色"/>
+          <Symbol name="LIGHTS05" description="灯塔-白色"/>
+          <Symbol name="LIGHTS06" description="灯塔-蓝色"/>
+          <Symbol name="LIGHTS07" description="灯塔-橙色"/>
+          <Symbol name="LIGHTS08" description="灯塔-紫色"/>
+          <Symbol name="LIGHTS09" description="灯塔-扇形"/>
+          <Symbol name="LITFLT01" description="浮动灯标"/>
+          <Symbol name="LITVES01" description="灯船"/>
+        </SubCategory>
+        
+        <SubCategory name="Landmarks" prefix="LNDMRK" count="20+">
+          <Symbol name="LNDMRK01" description="陆标-教堂"/>
+          <Symbol name="LNDMRK02" description="陆标-塔"/>
+          <Symbol name="LNDMRK03" description="陆标-烟囱"/>
+          <Symbol name="LNDMRK04" description="陆标-纪念碑"/>
+          <Symbol name="LNDMRK05" description="陆标-旗杆"/>
+          <Symbol name="LNDMRK06" description="陆标-雕像"/>
+          <Symbol name="LNDMRK07" description="陆标-穹顶"/>
+          <Symbol name="LNDMRK08" description="陆标-天线"/>
+          <Symbol name="LNDMRK09" description="陆标-风车"/>
+          <Symbol name="LNDMRK10" description="陆标-灯塔"/>
+          <Symbol name="LNDMRK11" description="陆标-城堡"/>
+          <Symbol name="LNDMRK12" description="陆标-桥梁"/>
+          <Symbol name="LNDMRK13" description="陆标-其他"/>
+        </SubCategory>
+        
+        <SubCategory name="Dangers" prefix="WRECKS" count="10+">
+          <Symbol name="WRECKS01" description="沉船-危险"/>
+          <Symbol name="WRECKS02" description="沉船-非危险"/>
+          <Symbol name="WRECKS03" description="沉船-残骸"/>
+          <Symbol name="WRECKS04" description="沉船-露出水面"/>
+          <Symbol name="WRECKS05" description="沉船-淹没"/>
+          <Symbol name="OBSTRN01" description="障碍物-一般"/>
+          <Symbol name="OBSTRN02" description="障碍物-礁石"/>
+          <Symbol name="OBSTRN03" description="障碍物-浅滩"/>
+          <Symbol name="OBSTRN04" description="障碍物-暗礁"/>
+          <Symbol name="OBSTRN05" description="障碍物-沉船"/>
+          <Symbol name="OBSTRN06" description="障碍物-其他"/>
+          <Symbol name="UWTROC01" description="水下岩石"/>
+          <Symbol name="ISOHAZ01" description="隔离危险区"/>
+        </SubCategory>
+        
+        <SubCategory name="RadioRadar" prefix="RAD" count="10+">
+          <Symbol name="RADSTA01" description="雷达站"/>
+          <Symbol name="RDOSTA01" description="无线电电台"/>
+          <Symbol name="RTPBCN01" description="雷达应答器"/>
+          <Symbol name="FOGSIG01" description="雾号"/>
+          <Symbol name="RSCSTA01" description="搜救站"/>
+        </SubCategory>
+        
+        <SubCategory name="Ports" prefix="PIL" count="10+">
+          <Symbol name="PILBOP01" description="引航站"/>
+          <Symbol name="PONTON01" description="浮码头"/>
+          <Symbol name="HULKES01" description="废船/趸船"/>
+          <Symbol name="CRANES01" description="起重机"/>
+          <Symbol name="BERTHS01" description="泊位"/>
+        </SubCategory>
+        
+        <SubCategory name="Anchorage" prefix="ACH" count="5+">
+          <Symbol name="ACHARE01" description="锚地"/>
+          <Symbol name="ACHBRT01" description="深水锚地"/>
+        </SubCategory>
+        
+        <SubCategory name="Military" prefix="MIP" count="5+">
+          <Symbol name="MIPARE01" description="军事区域"/>
+          <Symbol name="RESARE01" description="限制区域"/>
+          <Symbol name="CSTARE01" description="海关区域"/>
+        </SubCategory>
+        
+        <SubCategory name="Services" prefix="SBD" count="10+">
+          <Symbol name="SBDARE01" description="海底区域-沙"/>
+          <Symbol name="SBDARE02" description="海底区域-泥"/>
+          <Symbol name="SBDARE03" description="海底区域-石"/>
+          <Symbol name="SBDARE04" description="海底区域-珊瑚"/>
+          <Symbol name="SBDARE05" description="海底区域-岩石"/>
+          <Symbol name="ICEARE01" description="冰区"/>
+          <Symbol name="LOGPON01" description="木材转运点"/>
+        </SubCategory>
+        
+        <SubCategory name="AutomaticUpdate" prefix="CHRV" count="4">
+          <Symbol name="CHRVDEL1" description="自动更新-删除对象(点)-Ed4.0新增"/>
+          <Symbol name="CHRVID01" description="自动更新-插入/修改对象(点)-Ed4.0新增"/>
+        </SubCategory>
+        
+        <SubCategory name="MarinerNavigation" prefix="OWN" count="10+">
+          <Symbol name="OWNSHP01" description="本船符号-基本模式-PartII"/>
+          <Symbol name="OWNSHP02" description="本船符号-简化模式-PartII"/>
+          <Symbol name="WPT001" description="航点-PartII"/>
+          <Symbol name="DNGHLK01" description="危险高亮-类型1-PartII-Ed4.0新增"/>
+          <Symbol name="DNGHLK02" description="危险高亮-类型2-PartII-Ed4.0新增"/>
+          <Symbol name="DNGHLK03" description="危险高亮-类型3-PartII-Ed4.0新增"/>
+        </SubCategory>
+      </SubCategories>
+    </Category>
+    
+    <Category name="LineSymbols" type="LINE" count="50+">
+      <Description>线符号集合，用于表示航道、电缆、管道等线状物标</Description>
+      <SubCategories>
+        <SubCategory name="Cables" prefix="CBL" count="10+">
+          <Symbol name="CBLSUB01" description="海底电缆"/>
+          <Symbol name="CBLOHD01" description="架空电缆"/>
+        </SubCategory>
+        
+        <SubCategory name="Pipelines" prefix="PIP" count="10+">
+          <Symbol name="PIPSOL01" description="海底管道-油"/>
+          <Symbol name="PIPSOL02" description="海底管道-气"/>
+          <Symbol name="PIPSOL03" description="海底管道-水"/>
+          <Symbol name="PIPSOL04" description="海底管道-化学品"/>
+          <Symbol name="PIPSOL05" description="海底管道-液化气"/>
+          <Symbol name="PIPSOL06" description="海底管道-其他"/>
+          <Symbol name="PIPSOL07" description="海底管道-未知"/>
+          <Symbol name="PIPOHD01" description="架空管道"/>
+        </SubCategory>
+        
+        <SubCategory name="Ferry" prefix="FER" count="5+">
+          <Symbol name="FERYRT01" description="轮渡航线"/>
+        </SubCategory>
+        
+        <SubCategory name="AutomaticUpdate" prefix="CHRV" count="2">
+          <Symbol name="CHRVDEL2" description="自动更新-删除对象(线/面)-Ed4.0新增"/>
+          <Symbol name="CHRVID02" description="自动更新-插入/修改对象(线/面)-Ed4.0新增"/>
+        </SubCategory>
+        
+        <SubCategory name="MarinerNavigation" prefix="ROUTE" count="5+">
+          <Symbol name="ROUTE01" description="航线-PartII"/>
+          <Symbol name="XTELN01" description="延伸线-PartII"/>
+        </SubCategory>
+      </SubCategories>
+    </Category>
+    
+    <Category name="AreaPatterns" type="AREA" count="30+">
+      <Description>面符号集合，用于表示水深区域、限制区域等面状物标</Description>
+      <SubCategories>
+        <SubCategory name="Patterns" prefix="AP" count="20+">
+          <Symbol name="DIAMOND01" description="菱形填充"/>
+          <Symbol name="HORIZONTAL01" description="水平线填充"/>
+          <Symbol name="VERTICAL01" description="垂直线填充"/>
+          <Symbol name="DIAGONAL01" description="对角线填充"/>
+          <Symbol name="CROSS01" description="交叉线填充"/>
+          <Symbol name="DOTS01" description="点填充"/>
+        </SubCategory>
+        
+        <SubCategory name="AutomaticUpdate" prefix="CHRV" count="2">
+          <Symbol name="CHRVDEL2" description="自动更新-删除对象(面)-Ed4.0新增"/>
+          <Symbol name="CHRVID02" description="自动更新-插入/修改对象(面)-Ed4.0新增"/>
+        </SubCategory>
+        
+        <SubCategory name="MarinerNavigation" prefix="DNG" count="3">
+          <Symbol name="DNGHLK01" description="危险高亮填充1-PartII-Ed4.0新增"/>
+          <Symbol name="DNGHLK02" description="危险高亮填充2-PartII-Ed4.0新增"/>
+          <Symbol name="DNGHLK03" description="危险高亮填充3-PartII-Ed4.0新增"/>
+        </SubCategory>
+        
+        <SubCategory name="SpecialAreas" prefix="UNS" count="5+">
+          <Symbol name="UNSARE01" description="未测量区域填充"/>
+          <Symbol name="DRGARE01" description="疏浚区域填充"/>
+        </SubCategory>
+      </SubCategories>
+    </Category>
+  </SymbolCategories>
+  
+  <SymbolNamingConvention>
+    <Rule pattern="[PREFIX][TYPE][NUMBER]">
+      <Example>BOYCAR01 = BOY(浮标) + CAR(方位标) + 01(序号)</Example>
+      <Example>BCNLAT02 = BCN(信标) + LAT(侧面标) + 02(序号)</Example>
+      <Example>LIGHTS05 = LIGHTS(灯塔) + 05(序号)</Example>
+      <Example>CHRVDEL1 = CHRV(海图修订) + DEL(删除) + 1(点类型)-Ed4.0新增</Example>
+      <Example>CHRVID02 = CHRV(海图修订) + ID(插入/删除) + 02(线/面类型)-Ed4.0新增</Example>
+      <Example>DNGHLK01 = DNG(危险) + HLK(高亮) + 01(类型)-Ed4.0新增</Example>
+    </Rule>
+  </SymbolNamingConvention>
+  
+  <SymbolRenderingRules>
+    <Rule name="SY" description="点符号渲染">
+      <Syntax>SY(symbol_name)</Syntax>
+      <Example>SY(BOYCAR01)</Example>
+    </Rule>
+    <Rule name="LS" description="线型渲染">
+      <Syntax>LS(line_style, width, color_token)</Syntax>
+      <Example>LS(SOLD,2,CHBLK)</Example>
+      <LineStyles>
+        <Style name="SOLD" description="实线"/>
+        <Style name="DASH" description="虚线"/>
+        <Style name="DOT" description="点线"/>
+        <Style name="DASHDOT" description="点划线"/>
+      </LineStyles>
+    </Rule>
+    <Rule name="LC" description="线符号渲染">
+      <Syntax>LC(line_symbol_name)</Syntax>
+      <Example>LC(PIPSOL01)</Example>
+    </Rule>
+    <Rule name="AC" description="面填充色">
+      <Syntax>AC(color_token)</Syntax>
+      <Example>AC(LANDF)</Example>
+    </Rule>
+    <Rule name="AP" description="面填充图案">
+      <Syntax>AP(pattern_name)</Syntax>
+      <Example>AP(DIAMOND01)</Example>
+    </Rule>
+    <Rule name="TE" description="文本标签">
+      <Syntax>TE('format', field_name, h_align, v_align, spacing, viewing_group, x_offset, y_offset, color, priority)</Syntax>
+      <Example>TE('bn%s','OBJNAM',2,1,2,'15110',-1,-1,CHBLK,21)</Example>
+    </Rule>
+    <Rule name="TX" description="文本显示">
+      <Syntax>TX('format', field_name, h_align, v_align, spacing, viewing_group, x_offset, y_offset, color, priority)</Syntax>
+      <Example>TX('%s','OBJNAM',2,1,2,'15110',-1,-1,CHBLK,21)</Example>
+    </Rule>
+    <Rule name="CS" description="条件符号化">
+      <Syntax>CS(symbol_procedure)</Syntax>
+      <Note>内部符号命令，不可自定义修改</Note>
+    </Rule>
+  </SymbolRenderingRules>
+</S52SymbolLibrary>

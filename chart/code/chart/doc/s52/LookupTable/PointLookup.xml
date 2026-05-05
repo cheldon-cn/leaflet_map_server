@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52LookupTable name="PointLookup" type="POINT" description="点物标查询表" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library</Source>
+    <Reference>https://iho.int/uploads/user/pubs/standards/s-52/</Reference>
+  </MetaData>
+  
+  <LookupEntries>
+    <Category name="Buoys">
+      <Entry objectClass="BOYCAR" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Condition field="CATCAM" value="1">SY(BOYCAR01)</Condition>
+        <Condition field="CATCAM" value="2">SY(BOYCAR02)</Condition>
+        <Condition field="CATCAM" value="3">SY(BOYCAR03)</Condition>
+        <Condition field="CATCAM" value="4">SY(BOYCAR04)</Condition>
+        <Default>SY(BOYCAR01)</Default>
+        <Description>方位标浮标</Description>
+      </Entry>
+      
+      <Entry objectClass="BOYINB" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Default>SY(BOYINB01)</Default>
+        <Description>安装浮标</Description>
+      </Entry>
+      
+      <Entry objectClass="BOYISD" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Default>SY(BOYISD01)</Default>
+        <Description>孤立危险标浮标</Description>
+      </Entry>
+      
+      <Entry objectClass="BOYLAT" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Condition field="CATLAM" value="1">SY(BOYLAT01)</Condition>
+        <Condition field="CATLAM" value="2">SY(BOYLAT02)</Condition>
+        <Condition field="CATLAM" value="3">SY(BOYLAT03)</Condition>
+        <Condition field="CATLAM" value="4">SY(BOYLAT04)</Condition>
+        <Default>SY(BOYLAT01)</Default>
+        <Description>侧面标浮标</Description>
+      </Entry>
+      
+      <Entry objectClass="BOYSAW" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Default>SY(BOYSAW01)</Default>
+        <Description>安全水域标浮标</Description>
+      </Entry>
+      
+      <Entry objectClass="BOYSPP" priority="4" radar="O" displayCategory="BASE" viewingGroup="22210">
+        <Default>SY(BOYSPP01)</Default>
+        <Description>特殊用途浮标</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Beacons">
+      <Entry objectClass="BCNCAR" priority="4" radar="O" displayCategory="BASE" viewingGroup="22220">
+        <Condition field="CATCAM" value="1">SY(BCNCAR01)</Condition>
+        <Condition field="CATCAM" value="2">SY(BCNCAR02)</Condition>
+        <Condition field="CATCAM" value="3">SY(BCNCAR03)</Condition>
+        <Condition field="CATCAM" value="4">SY(BCNCAR04)</Condition>
+        <Default>SY(BCNCAR01)</Default>
+        <Description>方位标信标</Description>
+      </Entry>
+      
+      <Entry objectClass="BCNISD" priority="4" radar="O" displayCategory="BASE" viewingGroup="22220">
+        <Default>SY(BCNISD01)</Default>
+        <Description>孤立危险标信标</Description>
+      </Entry>
+      
+      <Entry objectClass="BCNLAT" priority="4" radar="O" displayCategory="BASE" viewingGroup="22220">
+        <Condition field="CATLAM" value="1">SY(BCNLAT01)</Condition>
+        <Condition field="CATLAM" value="2">SY(BCNLAT02)</Condition>
+        <Condition field="CATLAM" value="3">SY(BCNLAT03)</Condition>
+        <Condition field="CATLAM" value="4">SY(BCNLAT04)</Condition>
+        <Default>SY(BCNLAT01)</Default>
+        <Description>侧面标信标</Description>
+      </Entry>
+      
+      <Entry objectClass="BCNSAW" priority="4" radar="O" displayCategory="BASE" viewingGroup="22220">
+        <Default>SY(BCNSAW01)</Default>
+        <Description>安全水域标信标</Description>
+      </Entry>
+      
+      <Entry objectClass="BCNSPP" priority="4" radar="O" displayCategory="BASE" viewingGroup="22220">
+        <Default>SY(BCNSPP01)</Default>
+        <Description>特殊用途信标</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Lights">
+      <Entry objectClass="LIGHTS" priority="3" radar="O" displayCategory="BASE" viewingGroup="22230">
+        <Condition field="CATLIT" value="1">SY(LIGHTS01)</Condition>
+        <Condition field="CATLIT" value="2">SY(LIGHTS02)</Condition>
+        <Condition field="CATLIT" value="3">SY(LIGHTS03)</Condition>
+        <Condition field="CATLIT" value="4">SY(LIGHTS04)</Condition>
+        <Condition field="CATLIT" value="5">SY(LIGHTS05)</Condition>
+        <Condition field="CATLIT" value="6">SY(LIGHTS06)</Condition>
+        <Condition field="CATLIT" value="7">SY(LIGHTS07)</Condition>
+        <Condition field="CATLIT" value="8">SY(LIGHTS08)</Condition>
+        <Condition field="CATLIT" value="9">SY(LIGHTS09)</Condition>
+        <Default>SY(LIGHTS01)</Default>
+        <Description>灯塔/灯桩</Description>
+      </Entry>
+      
+      <Entry objectClass="LITFLT" priority="3" radar="O" displayCategory="BASE" viewingGroup="22230">
+        <Default>SY(LITFLT01)</Default>
+        <Description>浮动灯标</Description>
+      </Entry>
+      
+      <Entry objectClass="LITVES" priority="3" radar="O" displayCategory="BASE" viewingGroup="22230">
+        <Default>SY(LITVES01)</Default>
+        <Description>灯船</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Landmarks">
+      <Entry objectClass="LNDMRK" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22240">
+        <Condition field="CATLMK" value="1">SY(LNDMRK01)</Condition>
+        <Condition field="CATLMK" value="2">SY(LNDMRK02)</Condition>
+        <Condition field="CATLMK" value="3">SY(LNDMRK03)</Condition>
+        <Condition field="CATLMK" value="4">SY(LNDMRK04)</Condition>
+        <Condition field="CATLMK" value="5">SY(LNDMRK05)</Condition>
+        <Condition field="CATLMK" value="6">SY(LNDMRK06)</Condition>
+        <Condition field="CATLMK" value="7">SY(LNDMRK07)</Condition>
+        <Condition field="CATLMK" value="8">SY(LNDMRK08)</Condition>
+        <Condition field="CATLMK" value="9">SY(LNDMRK09)</Condition>
+        <Condition field="CATLMK" value="10">SY(LNDMRK10)</Condition>
+        <Condition field="CATLMK" value="11">SY(LNDMRK11)</Condition>
+        <Condition field="CATLMK" value="12">SY(LNDMRK12)</Condition>
+        <Condition field="CATLMK" value="13">SY(LNDMRK13)</Condition>
+        <Default>SY(LNDMRK01)</Default>
+        <Description>陆标</Description>
+      </Entry>
+      
+      <Entry objectClass="BUISGL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22250">
+        <Default>SY(BUISGL01)</Default>
+        <Description>大型建筑物</Description>
+      </Entry>
+      
+      <Entry objectClass="MONUMT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22250">
+        <Default>SY(MONUMT01)</Default>
+        <Description>纪念碑</Description>
+      </Entry>
+      
+      <Entry objectClass="TOWERS" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22250">
+        <Default>SY(TOWERS01)</Default>
+        <Description>塔</Description>
+      </Entry>
+      
+      <Entry objectClass="WIMCON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22250">
+        <Default>SY(WIMCON01)</Default>
+        <Description>风力发电设施</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="PortsHarbors">
+      <Entry objectClass="PILBOP" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22260">
+        <Default>SY(PILBOP01)</Default>
+        <Description>引航站</Description>
+      </Entry>
+      
+      <Entry objectClass="PONTON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22260">
+        <Default>SY(PONTON01)</Default>
+        <Description>浮码头</Description>
+      </Entry>
+      
+      <Entry objectClass="HULKES" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22260">
+        <Default>SY(HULKES01)</Default>
+        <Description>废船/趸船</Description>
+      </Entry>
+      
+      <Entry objectClass="CRANES" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22260">
+        <Default>SY(CRANES01)</Default>
+        <Description>起重机</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="RadioRadar">
+      <Entry objectClass="RADSTA" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22270">
+        <Default>SY(RADSTA01)</Default>
+        <Description>雷达站</Description>
+      </Entry>
+      
+      <Entry objectClass="RDOSTA" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22270">
+        <Default>SY(RDOSTA01)</Default>
+        <Description>无线电电台</Description>
+      </Entry>
+      
+      <Entry objectClass="RTPBCN" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22270">
+        <Default>SY(RTPBCN01)</Default>
+        <Description>雷达应答器</Description>
+      </Entry>
+      
+      <Entry objectClass="FOGSIG" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22270">
+        <Default>SY(FOGSIG01)</Default>
+        <Description>雾号</Description>
+      </Entry>
+      
+      <Entry objectClass="RSCSTA" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22270">
+        <Default>SY(RSCSTA01)</Default>
+        <Description>搜救站</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Dangers">
+      <Entry objectClass="WRECKS" priority="3" radar="O" displayCategory="BASE" viewingGroup="22280">
+        <Condition field="CATWRK" value="1">SY(WRECKS01)</Condition>
+        <Condition field="CATWRK" value="2">SY(WRECKS02)</Condition>
+        <Condition field="CATWRK" value="3">SY(WRECKS03)</Condition>
+        <Condition field="CATWRK" value="4">SY(WRECKS04)</Condition>
+        <Condition field="CATWRK" value="5">SY(WRECKS05)</Condition>
+        <Default>SY(WRECKS01)</Default>
+        <Description>沉船</Description>
+      </Entry>
+      
+      <Entry objectClass="OBSTRN" priority="3" radar="O" displayCategory="BASE" viewingGroup="22280">
+        <Condition field="CATOBS" value="1">SY(OBSTRN01)</Condition>
+        <Condition field="CATOBS" value="2">SY(OBSTRN02)</Condition>
+        <Condition field="CATOBS" value="3">SY(OBSTRN03)</Condition>
+        <Condition field="CATOBS" value="4">SY(OBSTRN04)</Condition>
+        <Condition field="CATOBS" value="5">SY(OBSTRN05)</Condition>
+        <Condition field="CATOBS" value="6">SY(OBSTRN06)</Condition>
+        <Default>SY(OBSTRN01)</Default>
+        <Description>障碍物</Description>
+      </Entry>
+      
+      <Entry objectClass="UWTROC" priority="3" radar="O" displayCategory="BASE" viewingGroup="22280">
+        <Default>SY(UWTROC01)</Default>
+        <Description>水下岩石</Description>
+      </Entry>
+      
+      <Entry objectClass="ISOHAZ" priority="3" radar="O" displayCategory="BASE" viewingGroup="22280">
+        <Default>SY(ISOHAZ01)</Default>
+        <Description>隔离危险区</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Anchorage">
+      <Entry objectClass="ACHARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22290">
+        <Default>SY(ACHARE01)</Default>
+        <Description>锚地</Description>
+      </Entry>
+      
+      <Entry objectClass="ACHBRT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22290">
+        <Default>SY(ACHBRT01)</Default>
+        <Description>深水锚地</Description>
+      </Entry>
+      
+      <Entry objectClass="BERTHS" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22290">
+        <Default>SY(BERTHS01)</Default>
+        <Description>泊位</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="MilitaryRestricted">
+      <Entry objectClass="MIPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22300">
+        <Default>SY(MIPARE01)</Default>
+        <Description>军事区域</Description>
+      </Entry>
+      
+      <Entry objectClass="RESARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22300">
+        <Default>SY(RESARE01)</Default>
+        <Description>限制区域</Description>
+      </Entry>
+      
+      <Entry objectClass="CSTARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22300">
+        <Default>SY(CSTARE01)</Default>
+        <Description>海关区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Services">
+      <Entry objectClass="SBDARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22310">
+        <Condition field="CATSBD" value="1">SY(SBDARE01)</Condition>
+        <Condition field="CATSBD" value="2">SY(SBDARE02)</Condition>
+        <Condition field="CATSBD" value="3">SY(SBDARE03)</Condition>
+        <Condition field="CATSBD" value="4">SY(SBDARE04)</Condition>
+        <Condition field="CATSBD" value="5">SY(SBDARE05)</Condition>
+        <Default>SY(SBDARE01)</Default>
+        <Description>海底区域</Description>
+      </Entry>
+      
+      <Entry objectClass="ICEARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22310">
+        <Default>SY(ICEARE01)</Default>
+        <Description>冰区</Description>
+      </Entry>
+      
+      <Entry objectClass="LOGPON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="22310">
+        <Default>SY(LOGPON01)</Default>
+        <Description>木材转运点</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="AutomaticUpdate">
+      <Entry objectClass="CHRVDEL" priority="1" radar="N" displayCategory="BASE" viewingGroup="22400">
+        <Condition field="OBJNAM" value="POINT">SY(CHRVDEL1)</Condition>
+        <Default>SY(CHRVDEL1)</Default>
+        <Description>自动更新-删除对象(点)-Ed4.0新增</Description>
+      </Entry>
+      
+      <Entry objectClass="CHRVID" priority="1" radar="N" displayCategory="BASE" viewingGroup="22400">
+        <Condition field="OBJNAM" value="POINT">SY(CHRVID01)</Condition>
+        <Default>SY(CHRVID01)</Default>
+        <Description>自动更新-插入/修改对象(点)-Ed4.0新增</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="MarinerNavigation">
+      <Entry objectClass="OWNSHP" priority="1" radar="N" displayCategory="ALL" viewingGroup="22500">
+        <Condition field="OWNMODE" value="1">SY(OWNSHP01)</Condition>
+        <Condition field="OWNMODE" value="2">SY(OWNSHP02)</Condition>
+        <Default>SY(OWNSHP01)</Default>
+        <Description>本船符号-PartII</Description>
+      </Entry>
+      
+      <Entry objectClass="WPT" priority="1" radar="N" displayCategory="ALL" viewingGroup="22500">
+        <Default>SY(WPT001)</Default>
+        <Description>航点-PartII</Description>
+      </Entry>
+      
+      <Entry objectClass="DNGHLK" priority="1" radar="N" displayCategory="ALL" viewingGroup="22510">
+        <Condition field="DNGTYP" value="1">SY(DNGHLK01)</Condition>
+        <Condition field="DNGTYP" value="2">SY(DNGHLK02)</Condition>
+        <Condition field="DNGTYP" value="3">SY(DNGHLK03)</Condition>
+        <Default>SY(DNGHLK01)</Default>
+        <Description>危险高亮-PartII-Ed4.0新增</Description>
+      </Entry>
+    </Category>
+  </LookupEntries>
+</S52LookupTable>

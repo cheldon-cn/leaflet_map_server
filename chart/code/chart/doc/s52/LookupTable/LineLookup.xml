@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52LookupTable name="LineLookup" type="LINE" description="线物标查询表" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library</Source>
+    <Reference>https://iho.int/uploads/user/pubs/standards/s-52/</Reference>
+  </MetaData>
+  
+  <LookupEntries>
+    <Category name="Coastline">
+      <Entry objectClass="COALNE" priority="3" radar="O" displayCategory="BASE" viewingGroup="24010">
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>海岸线</Description>
+      </Entry>
+      
+      <Entry objectClass="SLCONS" priority="3" radar="O" displayCategory="BASE" viewingGroup="24010">
+        <Condition field="CATSLC" value="1">LS(SOLD,2,CHBLK)</Condition>
+        <Condition field="CATSLC" value="2">LS(DASH,2,CHBLK)</Condition>
+        <Condition field="CATSLC" value="3">LS(SOLD,2,CHBLK)</Condition>
+        <Condition field="CATSLC" value="4">LS(SOLD,2,CHBLK)</Condition>
+        <Condition field="CATSLC" value="5">LS(SOLD,2,CHBLK)</Condition>
+        <Condition field="CATSLC" value="6">LS(SOLD,2,CHBLK)</Condition>
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>海岸线构筑物</Description>
+      </Entry>
+      
+      <Entry objectClass="SHORLN" priority="3" radar="O" displayCategory="BASE" viewingGroup="24010">
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>岸线</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="DepthContours">
+      <Entry objectClass="DEPCNT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24020">
+        <Condition field="VALDCO" value="2">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="5">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="10">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="20">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="30">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="50">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="100">LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="VALDCO" value="200">LS(SOLD,1,DEPCNT)</Condition>
+        <Default>LS(SOLD,1,DEPCNT)</Default>
+        <Description>等深线</Description>
+      </Entry>
+      
+      <Entry objectClass="DRGARE" priority="3" radar="O" displayCategory="BASE" viewingGroup="24020">
+        <Default>LS(DASH,1,DEPVS)</Default>
+        <Description>疏浚区域边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="NavigationRoutes">
+      <Entry objectClass="FAIRWY" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24030">
+        <Default>LS(DASH,2,CHGRN)</Default>
+        <Description>航道</Description>
+      </Entry>
+      
+      <Entry objectClass="RCRTCL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24030">
+        <Default>LS(DASH,2,CHYEL)</Default>
+        <Description>推荐航线</Description>
+      </Entry>
+      
+      <Entry objectClass="DWRTPT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24030">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>深水航线</Description>
+      </Entry>
+      
+      <Entry objectClass="TSELNE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24030">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>交通分隔线</Description>
+      </Entry>
+      
+      <Entry objectClass="TSSRON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24030">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>分道通航制</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="CablesPipelines">
+      <Entry objectClass="CBLSUB" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24040">
+        <Default>LC(CBLSUB01)</Default>
+        <Description>海底电缆</Description>
+      </Entry>
+      
+      <Entry objectClass="CBLOHD" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24040">
+        <Default>LC(CBLOHD01)</Default>
+        <Description>架空电缆</Description>
+      </Entry>
+      
+      <Entry objectClass="PIPSOL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24040">
+        <Condition field="PRODCT" value="1">LC(PIPSOL01)</Condition>
+        <Condition field="PRODCT" value="2">LC(PIPSOL02)</Condition>
+        <Condition field="PRODCT" value="3">LC(PIPSOL03)</Condition>
+        <Condition field="PRODCT" value="4">LC(PIPSOL04)</Condition>
+        <Condition field="PRODCT" value="5">LC(PIPSOL05)</Condition>
+        <Condition field="PRODCT" value="6">LC(PIPSOL06)</Condition>
+        <Condition field="PRODCT" value="7">LC(PIPSOL07)</Condition>
+        <Default>LC(PIPSOL01)</Default>
+        <Description>海底管道</Description>
+      </Entry>
+      
+      <Entry objectClass="PIPOHD" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24040">
+        <Default>LC(PIPOHD01)</Default>
+        <Description>架空管道</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="BridgesStructures">
+      <Entry objectClass="BRIDGE" priority="3" radar="O" displayCategory="BASE" viewingGroup="24050">
+        <Condition field="CATBRG" value="1">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="2">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="3">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="4">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="5">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="6">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="7">LS(SOLD,3,CHBLK)</Condition>
+        <Condition field="CATBRG" value="8">LS(SOLD,3,CHBLK)</Condition>
+        <Default>LS(SOLD,3,CHBLK)</Default>
+        <Description>桥梁</Description>
+      </Entry>
+      
+      <Entry objectClass="CAUSWY" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24050">
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>堤道</Description>
+      </Entry>
+      
+      <Entry objectClass="DAMCON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24050">
+        <Default>LS(SOLD,3,CHBLK)</Default>
+        <Description>水坝</Description>
+      </Entry>
+      
+      <Entry objectClass="GATCON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24050">
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>闸门</Description>
+      </Entry>
+      
+      <Entry objectClass="TUNNEL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24050">
+        <Default>LS(DASH,2,CHBLK)</Default>
+        <Description>隧道</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="RestrictedAreas">
+      <Entry objectClass="RESARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24060">
+        <Default>LS(DASH,2,CHRED)</Default>
+        <Description>限制区域边界</Description>
+      </Entry>
+      
+      <Entry objectClass="MIPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24060">
+        <Default>LS(DASH,2,CHORN)</Default>
+        <Description>军事区域边界</Description>
+      </Entry>
+      
+      <Entry objectClass="CSTARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24060">
+        <Default>LS(DASH,2,CHYEL)</Default>
+        <Description>海关区域边界</Description>
+      </Entry>
+      
+      <Entry objectClass="FAIRWY" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24060">
+        <Default>LS(DASH,2,CHGRN)</Default>
+        <Description>航道边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Anchorages">
+      <Entry objectClass="ACHARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24070">
+        <Default>LS(DASH,1,CHGRN)</Default>
+        <Description>锚地边界</Description>
+      </Entry>
+      
+      <Entry objectClass="ACHBRT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24070">
+        <Default>LS(DASH,1,CHGRN)</Default>
+        <Description>深水锚地边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="DangerAreas">
+      <Entry objectClass="DMPGRD" priority="3" radar="O" displayCategory="BASE" viewingGroup="24080">
+        <Default>LS(SOLD,2,CHRED)</Default>
+        <Description>倾废区</Description>
+      </Entry>
+      
+      <Entry objectClass="MARCUL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24080">
+        <Default>LS(DASH,1,CHGRN)</Default>
+        <Description>水产养殖区</Description>
+      </Entry>
+      
+      <Entry objectClass="OSPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24080">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>海上构筑物边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="FerryRoutes">
+      <Entry objectClass="FERYRT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24090">
+        <Default>LC(FERYRT01)</Default>
+        <Description>轮渡航线</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="TerritorialWaters">
+      <Entry objectClass="TESARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24100">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>领海基线</Description>
+      </Entry>
+      
+      <Entry objectClass="EEZARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24100">
+        <Default>LS(DASH,2,CHPNA)</Default>
+        <Description>专属经济区边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="OtherLines">
+      <Entry objectClass="LOKBSN" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24110">
+        <Default>LS(SOLD,2,CHBLK)</Default>
+        <Description>船闸</Description>
+      </Entry>
+      
+      <Entry objectClass="RAPIDS" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24110">
+        <Default>LS(DASH,1,CHBLU)</Default>
+        <Description>急流</Description>
+      </Entry>
+      
+      <Entry objectClass="WATFAL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24110">
+        <Default>LS(SOLD,2,CHBLU)</Default>
+        <Description>瀑布</Description>
+      </Entry>
+      
+      <Entry objectClass="LOGPON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="24110">
+        <Default>LS(DASH,1,CHBRN)</Default>
+        <Description>木材转运点边界</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="AutomaticUpdate">
+      <Entry objectClass="CHRVDEL" priority="1" radar="N" displayCategory="BASE" viewingGroup="24200">
+        <Default>LC(CHRVDEL2)</Default>
+        <Description>自动更新-删除对象(线/面)-Ed4.0新增</Description>
+      </Entry>
+      
+      <Entry objectClass="CHRVID" priority="1" radar="N" displayCategory="BASE" viewingGroup="24200">
+        <Default>LC(CHRVID02)</Default>
+        <Description>自动更新-插入/修改对象(线/面)-Ed4.0新增</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="MarinerNavigation">
+      <Entry objectClass="ROUTE" priority="1" radar="N" displayCategory="ALL" viewingGroup="24300">
+        <Default>LC(ROUTE01)</Default>
+        <Description>航线-PartII</Description>
+      </Entry>
+      
+      <Entry objectClass="XTELN" priority="1" radar="N" displayCategory="ALL" viewingGroup="24300">
+        <Default>LC(XTELN01)</Default>
+        <Description>延伸线-PartII</Description>
+      </Entry>
+    </Category>
+  </LookupEntries>
+</S52LookupTable>

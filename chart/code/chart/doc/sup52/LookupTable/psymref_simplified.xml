@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SuperMapLookupTable name="psymref_simplified" type="POINT_SIMPLE" description="简单点符号显示命令" standard="SuperMap iMaritimeEditor S-52">
+  <MetaData>
+    <Source>bin/Resource/Chart/Presentation/S52/LookupTable/psymref_simplified.dic</Source>
+    <Software>SuperMap iMaritimeEditor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Format>物标缩写,属性条件,符号指令,优先级,雷达,显示类别,视图分组</Format>
+    <Reference>https://help.supermap.com/iMaritimeEditor/zh/tutorial/Chart/Visualization/ObjectextensionRule.html</Reference>
+  </MetaData>
+  
+  <CommandFormat>
+    <Field index="1" name="ObjectClass" description="物标缩写"/>
+    <Field index="2" name="Condition" description="属性条件"/>
+    <Field index="3" name="Symbol" description="符号指令"/>
+    <Field index="4" name="Priority" description="显示优先级"/>
+    <Field index="5" name="Radar" description="雷达相关"/>
+    <Field index="6" name="DisplayCategory" description="显示类别"/>
+    <Field index="7" name="ViewingGroup" description="视图分组"/>
+  </CommandFormat>
+  
+  <LookupEntries>
+    <Section name="Section One">
+      <Category name="SimplifiedPoints">
+        <Entry>"BOYCAR","","SY(BOYCAR11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM1","SY(BOYCAR11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM2","SY(BOYCAR12)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM3","SY(BOYCAR13)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYCAR","CATCAM4","SY(BOYCAR14)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYINB","","SY(BOYINB11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYISD","","SY(BOYISD11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","","SY(BOYLAT11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM1","SY(BOYLAT11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYLAT","CATLAM2","SY(BOYLAT12)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYSAW","","SY(BOYSAW11)","4","O","BASE","22210"</Entry>
+        <Entry>"BOYSPP","","SY(BOYSPP11)","4","O","BASE","22210"</Entry>
+      </Category>
+      
+      <Category name="SimplifiedBeacons">
+        <Entry>"BCNCAR","","SY(BCNCAR11)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNISD","","SY(BCNISD11)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","","SY(BCNLAT11)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","CATLAM1","SY(BCNLAT11)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNLAT","CATLAM2","SY(BCNLAT12)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNSAW","","SY(BCNSAW11)","4","O","BASE","22220"</Entry>
+        <Entry>"BCNSPP","","SY(BCNSPP11)","4","O","BASE","22220"</Entry>
+      </Category>
+      
+      <Category name="SimplifiedLights">
+        <Entry>"LIGHTS","","SY(LIGHTS11)","3","O","BASE","22230"</Entry>
+        <Entry>"LITFLT","","SY(LITFLT11)","3","O","BASE","22230"</Entry>
+        <Entry>"LITVES","","SY(LITVES11)","3","O","BASE","22230"</Entry>
+      </Category>
+      
+      <Category name="SimplifiedDangers">
+        <Entry>"WRECKS","","SY(WRECKS11)","3","O","BASE","22280"</Entry>
+        <Entry>"OBSTRN","","SY(OBSTRN11)","3","O","BASE","22280"</Entry>
+        <Entry>"UWTROC","","SY(UWTROC11)","3","O","BASE","22280"</Entry>
+      </Category>
+      
+      <Category name="AutomaticUpdate">
+        <Entry>"CHRVDEL","","SY(CHRVDEL1)","1","N","BASE","22400"</Entry>
+        <Entry>"CHRVID","","SY(CHRVID01)","1","N","BASE","22400"</Entry>
+      </Category>
+      
+      <Category name="MarinerNavigation">
+        <Entry>"OWNSHP","","SY(OWNSHP01)","1","N","ALL","22500"</Entry>
+        <Entry>"WPT","","SY(WPT001)","1","N","ALL","22500"</Entry>
+        <Entry>"DNGHLK","","SY(DNGHLK01)","1","N","ALL","22510"</Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+</SuperMapLookupTable>

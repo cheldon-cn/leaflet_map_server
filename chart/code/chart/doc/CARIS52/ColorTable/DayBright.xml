@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISColorTable name="DayBright" type="DAY_BRIGHT" description="CARIS S-52 白昼颜色表" standard="CARIS HPD S-52">
+  <MetaData>
+    <Source>C:\Program Files\CARIS\HPD\[version]\system\S57Config\symbolization\colortable\</Source>
+    <Software>CARIS HPD</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Standard>IHO S-52 Presentation Library Ed 4.0</Standard>
+  </MetaData>
+  
+  <ColorTokens>
+    <Token name="CHBLK" token="NODTA" RGB="#000000" description="黑色 - 文本和符号边框"/>
+    <Token name="CHWHT" token="NODTA" RGB="#FFFFFF" description="白色 - 背景和高亮"/>
+    <Token name="CHRED" token="NODTA" RGB="#FF0000" description="红色 - 危险/警示"/>
+    <Token name="CHGRN" token="NODTA" RGB="#00FF00" description="绿色 - 安全/航道"/>
+    <Token name="CHYEL" token="NODTA" RGB="#FFFF00" description="黄色 - 注意"/>
+    <Token name="CHBLU" token="NODTA" RGB="#0000FF" description="蓝色 - 水域"/>
+    <Token name="CHORN" token="NODTA" RGB="#FF8000" description="橙色"/>
+    <Token name="CHPNA" token="NODTA" RGB="#FF00FF" description="紫色 - 电缆/管道"/>
+    <Token name="CHBRN" token="NODTA" RGB="#804000" description="棕色 - 地形"/>
+    <Token name="CHGRF" token="NODTA" RGB="#808080" description="灰色 - 参考线"/>
+    
+    <Token name="LANDF" token="LANDA" RGB="#E8D0A0" description="陆地填充色"/>
+    <Token name="LANDA" token="LANDA" RGB="#E8D0A0" description="陆地区域"/>
+    <Token name="DEPVS" token="DEPVS" RGB="#99CCFF" description="深水区-非常浅(0-2m)"/>
+    <Token name="DEPMS" token="DEPMS" RGB="#66B2FF" description="深水区-中浅(2-5m)"/>
+    <Token name="DEPDW" token="DEPDW" RGB="#3399FF" description="深水区-深(5-10m)"/>
+    <Token name="DEPMD" token="DEPMD" RGB="#0080FF" description="深水区-中深(10-20m)"/>
+    <Token name="DEPDS" token="DEPDS" RGB="#0066CC" description="深水区-很深(>20m)"/>
+    <Token name="DEPCNT" token="DEPCNT" RGB="#0066CC" description="等深线颜色"/>
+    <Token name="DRGARE" token="DRGARE" RGB="#C0FFFF" description="疏浚区域"/>
+    <Token name="UNSARE" token="UNSARE" RGB="#B0B0B0" description="不可靠水深区域"/>
+    
+    <Token name="RESARE" token="RESARE" RGB="#FFCCCC" description="限制区域"/>
+    <Token name="MIPARE" token="MIPARE" RGB="#FFCCCC" description="军事区域"/>
+    <Token name="CSTARE" token="CSTARE" RGB="#FFE0CC" description="海关区域"/>
+    <Token name="ACHARE" token="ACHARE" RGB="#CCFFCC" description="锚地"/>
+    <Token name="ACHBRT" token="ACHBRT" RGB="#CCFFCC" description="深水锚地"/>
+    <Token name="FAIRWY" token="FAIRWY" RGB="#E0E0E0" description="航道"/>
+    <Token name="RCRTCL" token="RCRTCL" RGB="#CCFFCC" description="推荐航道"/>
+    
+    <Token name="SBDARE" token="SBDARE" RGB="#F0F0E0" description="海底区域"/>
+    <Token name="SBDARE_SAND" token="SBDARE" RGB="#F5E6C8" description="沙底"/>
+    <Token name="SBDARE_MUD" token="SBDARE" RGB="#C8A878" description="泥底"/>
+    <Token name="SBDARE_CLAY" token="SBDARE" RGB="#C4A882" description="粘土底"/>
+    <Token name="SBDARE_SILT" token="SBDARE" RGB="#B8A090" description="淤泥底"/>
+    <Token name="SBDARE_STONE" token="SBDARE" RGB="#909090" description="石底"/>
+    <Token name="SBDARE_GRAVEL" token="SBDARE" RGB="#A0A0A0" description="砾石底"/>
+    <Token name="SBDARE_PEBBLES" token="SBDARE" RGB="#B0B0B0" description="卵石底"/>
+    <Token name="SBDARE_Cobbles" token="SBDARE" RGB="#808080" description="圆石底"/>
+    <Token name="SBDARE_ROCK" token="SBDARE" RGB="#606060" description="岩石底"/>
+    <Token name="SBDARE_CORAL" token="SBDARE" RGB="#FFB0B0" description="珊瑚底"/>
+    <Token name="CORAL" token="CORAL" RGB="#FFB0B0" description="珊瑚礁"/>
+    <Token name="WEDKLP" token="WEDKLP" RGB="#90EE90" description="海藻区"/>
+    <Token name="ICEARE" token="ICEARE" RGB="#E0F0FF" description="冰区"/>
+    
+    <Token name="TSSRON" token="TSSRON" RGB="#E8FFE8" description="分道通航制"/>
+    <Token name="TSEZNE" token="TSEZNE" RGB="#E8FFE8" description="分道通航区"/>
+    <Token name="BUISGL" token="BUISGL" RGB="#D0D0D0" description="建筑物区域"/>
+    <Token name="BUAARE" token="BUAARE" RGB="#E0D0C0" description="建成区"/>
+    
+    <Token name="NODTA" token="NODTA" RGB="#808080" description="无数据区域"/>
+    <Token name="CHGRF2" token="NODTA" RGB="#C0C0C0" description="浅灰色"/>
+    <Token name="CHGRF3" token="NODTA" RGB="#E0E0E0" description="极浅灰色"/>
+    
+    <Token name="RESCSP" token="RESCSP" RGB="#FF8080" description="警戒区"/>
+    <Token name="RESTRN" token="RESTRN" RGB="#FF8080" description="限制"/>
+    <Token name="DNGHLK" token="DNGHLK" RGB="#FF00FF" description="危险高亮-Ed4.0新增"/>
+    <Token name="ISODGR" token="ISODGR" RGB="#FF0000" description="隔离危险"/>
+    <Token name="DMPINC" token="DMPINC" RGB="#FFA500" description="数据质量指示-Ed4.0新增"/>
+    <Token name="QUAPOS" token="QUAPOS" RGB="#FFA500" description="质量位置标记-Ed4.0新增"/>
+    <Token name="LITPNA" token="LITPNA" RGB="#FF00FF" description="灯光-紫色-Ed4.0新增"/>
+  </ColorTokens>
+  
+  <ColorGroups>
+    <Group name="Navigation_Colors" description="导航颜色">
+      <Color token="CHBLK"/>
+      <Color token="CHWHT"/>
+      <Color token="CHRED"/>
+      <Color token="CHGRN"/>
+      <Color token="CHYEL"/>
+      <Color token="CHBLU"/>
+      <Color token="CHORN"/>
+      <Color token="CHPNA"/>
+      <Color token="CHBRN"/>
+    </Group>
+    <Group name="Depth_Colors" description="水深颜色">
+      <Color token="DEPVS"/>
+      <Color token="DEPMS"/>
+      <Color token="DEPDW"/>
+      <Color token="DEPMD"/>
+      <Color token="DEPDS"/>
+      <Color token="DEPCNT"/>
+    </Group>
+    <Group name="Area_Fill_Colors" description="区域填充颜色">
+      <Color token="LANDF"/>
+      <Color token="RESARE"/>
+      <Color token="ACHARE"/>
+      <Color token="FAIRWY"/>
+      <Color token="SBDARE"/>
+    </Group>
+  </ColorGroups>
+</CARISColorTable>

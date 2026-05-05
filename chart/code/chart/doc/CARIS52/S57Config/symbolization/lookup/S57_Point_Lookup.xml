@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISLookupTable name="S57_ENC_POINT" type="ENC_POINT" description="CARIS S-57 ENC 点物标符号化查询表" standard="CARIS HPD S-52">
+  <MetaData>
+    <Source>C:\Program Files\CARIS\HPD\[version]\system\S57Config\symbolization\lookup\</Source>
+    <Software>CARIS HPD Product Editor</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Standard>IHO S-52 Presentation Library Ed 4.0</Standard>
+    <Reference>https://www.teledynecaris.com/en/products/hpd/</Reference>
+  </MetaData>
+  
+  <LookupStructure>
+    <Description>
+      CARIS S-57 符号化查询表定义了 ENC 物标到 S-52 符号的映射关系。
+      支持 IHO S-57 和 S-100 系列标准，提供验证和表示工具。
+    </Description>
+    <Fields>
+      <Field name="OBJL" description="物标标签/物标代码"/>
+      <Field name="RCID" description="记录标识符"/>
+      <Field name="PRIM" description="图元类型：1=点, 2=线, 3=面"/>
+      <Field name="GRUP" description="显示组"/>
+      <Field name="OBJNAM" description="物标名称"/>
+      <Field name="DPRI" description="显示优先级"/>
+      <Field name="RADR" description="雷达相关性"/>
+      <Field name="NOBJNAM" description="导航物标名称"/>
+      <Field name="NINF" description="导航信息"/>
+      <Field name="SORD" description="显示顺序"/>
+    </Fields>
+  </LookupStructure>
+  
+  <LookupEntries>
+    <Section name="Point_Lookup" description="点物标查询表">
+      <Category name="Buoys">
+        <Entry>
+          <ObjectClass>BOYCAR</ObjectClass>
+          <Code>17010</Code>
+          <Symbol>BOYCAR01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATCAM" value="1" symbol="BOYCAR01"/>
+            <Condition field="CATCAM" value="2" symbol="BOYCAR02"/>
+            <Condition field="CATCAM" value="3" symbol="BOYCAR03"/>
+            <Condition field="CATCAM" value="4" symbol="BOYCAR04"/>
+          </Conditions>
+          <Description>方位标浮标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BOYINB</ObjectClass>
+          <Code>17020</Code>
+          <Symbol>BOYINB01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>安装浮标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BOYISD</ObjectClass>
+          <Code>17030</Code>
+          <Symbol>BOYISD01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>孤立危险标浮标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BOYLAT</ObjectClass>
+          <Code>17040</Code>
+          <Symbol>BOYLAT01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATLAM" value="1" symbol="BOYLAT01"/>
+            <Condition field="CATLAM" value="2" symbol="BOYLAT02"/>
+            <Condition field="CATLAM" value="3" symbol="BOYLAT03"/>
+            <Condition field="CATLAM" value="4" symbol="BOYLAT04"/>
+          </Conditions>
+          <Description>侧面标浮标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BOYSAW</ObjectClass>
+          <Code>17050</Code>
+          <Symbol>BOYSAW01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>安全水域标浮标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BOYSPP</ObjectClass>
+          <Code>17060</Code>
+          <Symbol>BOYSPP01</Symbol>
+          <Priority>4</Priority>
+          <Group>22210</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>特殊用途浮标</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Beacons">
+        <Entry>
+          <ObjectClass>BCNCAR</ObjectClass>
+          <Code>17110</Code>
+          <Symbol>BCNCAR01</Symbol>
+          <Priority>4</Priority>
+          <Group>22220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATCAM" value="1" symbol="BCNCAR01"/>
+            <Condition field="CATCAM" value="2" symbol="BCNCAR02"/>
+            <Condition field="CATCAM" value="3" symbol="BCNCAR03"/>
+            <Condition field="CATCAM" value="4" symbol="BCNCAR04"/>
+          </Conditions>
+          <Description>方位标信标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BCNISD</ObjectClass>
+          <Code>17120</Code>
+          <Symbol>BCNISD01</Symbol>
+          <Priority>4</Priority>
+          <Group>22220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>孤立危险标信标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BCNLAT</ObjectClass>
+          <Code>17130</Code>
+          <Symbol>BCNLAT01</Symbol>
+          <Priority>4</Priority>
+          <Group>22220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATLAM" value="1" symbol="BCNLAT01"/>
+            <Condition field="CATLAM" value="2" symbol="BCNLAT02"/>
+          </Conditions>
+          <Description>侧面标信标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BCNSAW</ObjectClass>
+          <Code>17140</Code>
+          <Symbol>BCNSAW01</Symbol>
+          <Priority>4</Priority>
+          <Group>22220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>安全水域标信标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BCNSPP</ObjectClass>
+          <Code>17150</Code>
+          <Symbol>BCNSPP01</Symbol>
+          <Priority>4</Priority>
+          <Group>22220</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>特殊用途信标</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Lights">
+        <Entry>
+          <ObjectClass>LIGHTS</ObjectClass>
+          <Code>17510</Code>
+          <Symbol>LIGHTS01</Symbol>
+          <Priority>3</Priority>
+          <Group>22230</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATLIT" value="1" symbol="LIGHTS01"/>
+            <Condition field="CATLIT" value="2" symbol="LIGHTS02"/>
+            <Condition field="CATLIT" value="3" symbol="LIGHTS03"/>
+            <Condition field="CATLIT" value="4" symbol="LIGHTS04"/>
+            <Condition field="CATLIT" value="5" symbol="LIGHTS05"/>
+          </Conditions>
+          <Description>灯塔/灯桩</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>LITFLT</ObjectClass>
+          <Code>17520</Code>
+          <Symbol>LITFLT01</Symbol>
+          <Priority>3</Priority>
+          <Group>22230</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>浮动灯标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>LITVES</ObjectClass>
+          <Code>17530</Code>
+          <Symbol>LITVES01</Symbol>
+          <Priority>3</Priority>
+          <Group>22230</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>灯船</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Landmarks">
+        <Entry>
+          <ObjectClass>LNDMRK</ObjectClass>
+          <Code>18010</Code>
+          <Symbol>LNDMRK01</Symbol>
+          <Priority>4</Priority>
+          <Group>22240</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Conditions>
+            <Condition field="CATLMK" value="1" symbol="LNDMRK01"/>
+            <Condition field="CATLMK" value="2" symbol="LNDMRK02"/>
+            <Condition field="CATLMK" value="3" symbol="LNDMRK03"/>
+          </Conditions>
+          <Description>陆标</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>BUISGL</ObjectClass>
+          <Code>18020</Code>
+          <Symbol>BUISGL01</Symbol>
+          <Priority>4</Priority>
+          <Group>22250</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>大型建筑物</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>TOWERS</ObjectClass>
+          <Code>18030</Code>
+          <Symbol>TOWERS01</Symbol>
+          <Priority>4</Priority>
+          <Group>22250</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>塔</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Dangers">
+        <Entry>
+          <ObjectClass>WRECKS</ObjectClass>
+          <Code>15910</Code>
+          <Symbol>WRECKS01</Symbol>
+          <Priority>3</Priority>
+          <Group>22280</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Conditions>
+            <Condition field="CATWRK" value="1" symbol="WRECKS01"/>
+            <Condition field="CATWRK" value="2" symbol="WRECKS02"/>
+            <Condition field="CATWRK" value="3" symbol="WRECKS03"/>
+          </Conditions>
+          <Description>沉船</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>OBSTRN</ObjectClass>
+          <Code>15920</Code>
+          <Symbol>OBSTRN01</Symbol>
+          <Priority>3</Priority>
+          <Group>22280</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>障碍物</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>UWTROC</ObjectClass>
+          <Code>15930</Code>
+          <Symbol>UWTROC01</Symbol>
+          <Priority>3</Priority>
+          <Group>22280</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>水下岩石</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Radio_Radar">
+        <Entry>
+          <ObjectClass>RADSTA</ObjectClass>
+          <Code>17610</Code>
+          <Symbol>RADSTA01</Symbol>
+          <Priority>4</Priority>
+          <Group>22270</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>雷达站</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>RDOSTA</ObjectClass>
+          <Code>17620</Code>
+          <Symbol>RDOSTA01</Symbol>
+          <Priority>4</Priority>
+          <Group>22270</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>无线电电台</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>RTPBCN</ObjectClass>
+          <Code>17630</Code>
+          <Symbol>RTPBCN01</Symbol>
+          <Priority>4</Priority>
+          <Group>22270</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>雷达应答器</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>FOGSIG</ObjectClass>
+          <Code>17640</Code>
+          <Symbol>FOGSIG01</Symbol>
+          <Priority>4</Priority>
+          <Group>22270</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>雾号</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Ports_Services">
+        <Entry>
+          <ObjectClass>PILBOP</ObjectClass>
+          <Code>17710</Code>
+          <Symbol>PILBOP01</Symbol>
+          <Priority>4</Priority>
+          <Group>22260</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>引航站</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>PONTON</ObjectClass>
+          <Code>17720</Code>
+          <Symbol>PONTON01</Symbol>
+          <Priority>4</Priority>
+          <Group>22260</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>浮码头</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>CRANES</ObjectClass>
+          <Code>17730</Code>
+          <Symbol>CRANES01</Symbol>
+          <Priority>4</Priority>
+          <Group>22260</Group>
+          <Radar>O</Radar>
+          <DisplayCategory>STANDARD</DisplayCategory>
+          <Description>起重机</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Automatic_Update">
+        <Entry>
+          <ObjectClass>CHRVDEL</ObjectClass>
+          <Code>17810</Code>
+          <Symbol>CHRVDEL1</Symbol>
+          <Priority>1</Priority>
+          <Group>22400</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>自动更新-删除对象(点)-Ed4.0新增</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>CHRVID</ObjectClass>
+          <Code>17820</Code>
+          <Symbol>CHRVID01</Symbol>
+          <Priority>1</Priority>
+          <Group>22400</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>BASE</DisplayCategory>
+          <Description>自动更新-插入/修改对象(点)-Ed4.0新增</Description>
+        </Entry>
+      </Category>
+      
+      <Category name="Mariner_Navigation">
+        <Entry>
+          <ObjectClass>OWNSHP</ObjectClass>
+          <Code>17910</Code>
+          <Symbol>OWNSHP01</Symbol>
+          <Priority>1</Priority>
+          <Group>22500</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>ALL</DisplayCategory>
+          <Description>本船符号-PartII</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>WPT</ObjectClass>
+          <Code>17920</Code>
+          <Symbol>WPT001</Symbol>
+          <Priority>1</Priority>
+          <Group>22500</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>ALL</DisplayCategory>
+          <Description>航点-PartII</Description>
+        </Entry>
+        <Entry>
+          <ObjectClass>DNGHLK</ObjectClass>
+          <Code>17930</Code>
+          <Symbol>DNGHLK01</Symbol>
+          <Priority>1</Priority>
+          <Group>22510</Group>
+          <Radar>N</Radar>
+          <DisplayCategory>ALL</DisplayCategory>
+          <Description>危险高亮-PartII-Ed4.0新增</Description>
+        </Entry>
+      </Category>
+    </Section>
+  </LookupEntries>
+</CARISLookupTable>

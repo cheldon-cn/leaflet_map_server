@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<S52LookupTable name="AreaLookup" type="AREA" description="面物标查询表" standard="IHO S-52 Presentation Library Ed 4.0">
+  <MetaData>
+    <Version>4.0.4</Version>
+    <CreateDate>2026-05-05</CreateDate>
+    <Source>IHO S-52 Annex A: ECDIS Presentation Library</Source>
+    <Reference>https://iho.int/uploads/user/pubs/standards/s-52/</Reference>
+  </MetaData>
+  
+  <LookupEntries>
+    <Category name="LandAreas">
+      <Entry objectClass="LNDARE" priority="2" radar="O" displayCategory="BASE" viewingGroup="26010">
+        <Default>AC(LANDF);LS(SOLD,1,CHBLK)</Default>
+        <Description>陆地区域</Description>
+      </Entry>
+      
+      <Entry objectClass="BUISGL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26010">
+        <Default>AC(CHGRD);LS(SOLD,1,CHBLK)</Default>
+        <Description>建筑物区域</Description>
+      </Entry>
+      
+      <Entry objectClass="BUAARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26010">
+        <Default>AC(CHGRD);LS(SOLD,1,CHBLK)</Default>
+        <Description>建成区</Description>
+      </Entry>
+      
+      <Entry objectClass="SLCONS" priority="3" radar="O" displayCategory="BASE" viewingGroup="26010">
+        <Condition field="CATSLC" value="1">AC(CHBLK);LS(SOLD,1,CHBLK)</Condition>
+        <Condition field="CATSLC" value="3">AC(CHBLK);LS(SOLD,1,CHBLK)</Condition>
+        <Condition field="CATSLC" value="4">AC(CHBLK);LS(SOLD,1,CHBLK)</Condition>
+        <Condition field="CATSLC" value="5">AC(CHBLK);LS(SOLD,1,CHBLK)</Condition>
+        <Default>AC(CHGRD);LS(SOLD,1,CHBLK)</Default>
+        <Description>海岸线构筑物</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="WaterAreas">
+      <Entry objectClass="DEPARE" priority="2" radar="O" displayCategory="BASE" viewingGroup="26020">
+        <Condition field="DRVAL1" value="0">AC(DEPVS);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="2">AC(DEPMS);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="5">AC(DEPDW);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="10">AC(DEPMD);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="20">AC(DEPVD);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="50">AC(DEPVD);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="100">AC(DEPVD);LS(SOLD,1,DEPCNT)</Condition>
+        <Condition field="DRVAL1" value="200">AC(DEPVD);LS(SOLD,1,DEPCNT)</Condition>
+        <Default>AC(DEPVS);LS(SOLD,1,DEPCNT)</Default>
+        <Description>水深区域</Description>
+      </Entry>
+      
+      <Entry objectClass="DRGARE" priority="3" radar="O" displayCategory="BASE" viewingGroup="26020">
+        <Default>AC(DEPVS);LS(DASH,1,DEPVS)</Default>
+        <Description>疏浚区域</Description>
+      </Entry>
+      
+      <Entry objectClass="UNSARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26020">
+        <Default>AC(DEPVS);LS(DASH,1,DEPVS)</Default>
+        <Description>不可靠水深区域</Description>
+      </Entry>
+      
+      <Entry objectClass="LOKBSN" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26020">
+        <Default>AC(DEPVS);LS(SOLD,2,CHBLK)</Default>
+        <Description>船闸区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="ShallowWater">
+      <Entry objectClass="DEPIT" priority="3" radar="O" displayCategory="BASE" viewingGroup="26030">
+        <Default>AC(DEPIT);LS(SOLD,1,DEPCNT)</Default>
+        <Description>等深线间区域</Description>
+      </Entry>
+      
+      <Entry objectClass="DEPSC" priority="3" radar="O" displayCategory="BASE" viewingGroup="26030">
+        <Default>AC(DEPSC);LS(SOLD,1,DEPCNT)</Default>
+        <Description>浅水区-大陆架</Description>
+      </Entry>
+      
+      <Entry objectClass="DEPSP" priority="3" radar="O" displayCategory="BASE" viewingGroup="26030">
+        <Default>AC(DEPSP);LS(SOLD,1,DEPCNT)</Default>
+        <Description>浅水区-特殊</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="RestrictedAreas">
+      <Entry objectClass="RESARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26040">
+        <Default>AC(RESARE);LS(DASH,2,CHRED)</Default>
+        <Description>限制区域</Description>
+      </Entry>
+      
+      <Entry objectClass="MIPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26040">
+        <Default>AC(MIPARE);LS(DASH,2,CHORN)</Default>
+        <Description>军事区域</Description>
+      </Entry>
+      
+      <Entry objectClass="CSTARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26040">
+        <Default>AC(CHGRD);LS(DASH,2,CHYEL)</Default>
+        <Description>海关区域</Description>
+      </Entry>
+      
+      <Entry objectClass="PILARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26040">
+        <Default>AC(CHGRD);LS(DASH,2,CHGRN)</Default>
+        <Description>引航区域</Description>
+      </Entry>
+      
+      <Entry objectClass="SPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26040">
+        <Default>AC(SPLARE);LS(DASH,2,CHYEL)</Default>
+        <Description>特殊区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Anchorages">
+      <Entry objectClass="ACHARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26050">
+        <Default>AC(ACHARE);LS(DASH,1,CHGRN)</Default>
+        <Description>锚地</Description>
+      </Entry>
+      
+      <Entry objectClass="ACHBRT" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26050">
+        <Default>AC(ACHARE);LS(DASH,1,CHGRN)</Default>
+        <Description>深水锚地</Description>
+      </Entry>
+      
+      <Entry objectClass="BERTHS" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26050">
+        <Default>AC(CHGRD);LS(SOLD,1,CHBLK)</Default>
+        <Description>泊位区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Fairways">
+      <Entry objectClass="FAIRWY" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26060">
+        <Default>AC(FAIRWY);LS(DASH,2,CHGRN)</Default>
+        <Description>航道</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="DangerAreas">
+      <Entry objectClass="DMPGRD" priority="3" radar="O" displayCategory="BASE" viewingGroup="26070">
+        <Default>AC(CHGRD);LS(SOLD,2,CHRED)</Default>
+        <Description>倾废区</Description>
+      </Entry>
+      
+      <Entry objectClass="MARCUL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26070">
+        <Default>AC(CHGRD);LS(DASH,1,CHGRN)</Default>
+        <Description>水产养殖区</Description>
+      </Entry>
+      
+      <Entry objectClass="CTNARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26070">
+        <Default>AC(CHGRD);LS(DASH,2,CHYEL)</Default>
+        <Description>警戒区</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="CablesPipelines">
+      <Entry objectClass="CBLARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26080">
+        <Default>AC(CBLARE);LS(DASH,1,CHPNA)</Default>
+        <Description>电缆区域</Description>
+      </Entry>
+      
+      <Entry objectClass="PIPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26080">
+        <Default>AC(PIPARE);LS(DASH,1,CHPNA)</Default>
+        <Description>管道区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="OffshoreStructures">
+      <Entry objectClass="OSPARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26090">
+        <Default>AC(OSPARE);LS(DASH,2,CHPNA)</Default>
+        <Description>海上构筑物区域</Description>
+      </Entry>
+      
+      <Entry objectClass="OFSPLF" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26090">
+        <Default>AC(CHGRD);LS(SOLD,2,CHBLK)</Default>
+        <Description>海上平台</Description>
+      </Entry>
+      
+      <Entry objectClass="WIMCON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26090">
+        <Default>AC(CHGRD);LS(SOLD,1,CHBLK)</Default>
+        <Description>风力发电区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="Seabed">
+      <Entry objectClass="SBDARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26100">
+        <Condition field="CATSBD" value="1">AC(SBDARE);LS(SOLD,1,CHBRN)</Condition>
+        <Condition field="CATSBD" value="2">AC(SBDARE);LS(SOLD,1,CHBRN)</Condition>
+        <Condition field="CATSBD" value="3">AC(SBDARE);LS(SOLD,1,CHBRN)</Condition>
+        <Condition field="CATSBD" value="4">AC(SBDARE);LS(SOLD,1,CHBRN)</Condition>
+        <Condition field="CATSBD" value="5">AC(SBDARE);LS(SOLD,1,CHBRN)</Condition>
+        <Default>AC(SBDARE);LS(SOLD,1,CHBRN)</Default>
+        <Description>海底区域</Description>
+      </Entry>
+      
+      <Entry objectClass="CORAL" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26100">
+        <Default>AC(CORAL);LS(SOLD,1,CHRED)</Default>
+        <Description>珊瑚礁</Description>
+      </Entry>
+      
+      <Entry objectClass="WEDKLP" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26100">
+        <Default>AC(WEDKLP);LS(SOLD,1,CHGRN)</Default>
+        <Description>海藻区</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="IceSnow">
+      <Entry objectClass="ICEARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26110">
+        <Default>AC(ICEARE);LS(DASH,1,CHBLU)</Default>
+        <Description>冰区</Description>
+      </Entry>
+      
+      <Entry objectClass="SNOW" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26110">
+        <Default>AC(SNOW);LS(SOLD,1,CHBLK)</Default>
+        <Description>雪地区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="TerritorialWaters">
+      <Entry objectClass="TESARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26120">
+        <Default>AC(CHGRD);LS(DASH,2,CHPNA)</Default>
+        <Description>领海区域</Description>
+      </Entry>
+      
+      <Entry objectClass="EEZARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26120">
+        <Default>AC(CHGRD);LS(DASH,2,CHPNA)</Default>
+        <Description>专属经济区</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="OtherAreas">
+      <Entry objectClass="LOGPON" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26130">
+        <Default>AC(CHGRD);LS(DASH,1,CHBRN)</Default>
+        <Description>木材转运区域</Description>
+      </Entry>
+      
+      <Entry objectClass="EXCNST" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26130">
+        <Default>AC(CHGRD);LS(DASH,1,CHYEL)</Default>
+        <Description>挖掘区域</Description>
+      </Entry>
+      
+      <Entry objectClass="PRCARE" priority="4" radar="O" displayCategory="STANDARD" viewingGroup="26130">
+        <Default>AC(CHGRD);LS(DASH,1,CHGRN)</Default>
+        <Description>预备区域</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="AutomaticUpdate">
+      <Entry objectClass="CHRVDEL" priority="1" radar="N" displayCategory="BASE" viewingGroup="26200">
+        <Default>AC(CHGRY);AP(CHRVDEL2)</Default>
+        <Description>自动更新-删除对象(面)-Ed4.0新增</Description>
+      </Entry>
+      
+      <Entry objectClass="CHRVID" priority="1" radar="N" displayCategory="BASE" viewingGroup="26200">
+        <Default>AC(CHGRD);AP(CHRVID02)</Default>
+        <Description>自动更新-插入/修改对象(面)-Ed4.0新增</Description>
+      </Entry>
+    </Category>
+    
+    <Category name="MarinerNavigation">
+      <Entry objectClass="DNGHLK" priority="1" radar="N" displayCategory="ALL" viewingGroup="26300">
+        <Condition field="DNGTYP" value="1">AC(DNGHLK);AP(DNGHLK01)</Condition>
+        <Condition field="DNGTYP" value="2">AC(DNGHLK);AP(DNGHLK02)</Condition>
+        <Condition field="DNGTYP" value="3">AC(DNGHLK);AP(DNGHLK03)</Condition>
+        <Default>AC(DNGHLK);AP(DNGHLK01)</Default>
+        <Description>危险高亮区域-PartII-Ed4.0新增</Description>
+      </Entry>
+    </Category>
+  </LookupEntries>
+</S52LookupTable>

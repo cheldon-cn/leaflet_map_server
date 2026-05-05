@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CARISColorTable name="Night" type="NIGHT" description="CARIS S-52 夜晚颜色表" standard="CARIS HPD S-52">
+  <MetaData>
+    <Source>C:\Program Files\CARIS\HPD\[version]\system\S57Config\symbolization\colortable\</Source>
+    <Software>CARIS HPD</Software>
+    <CreateDate>2026-05-05</CreateDate>
+    <Standard>IHO S-52 Presentation Library Ed 4.0</Standard>
+  </MetaData>
+  
+  <ColorTokens>
+    <Token name="CHBLK" token="NODTA" RGB="#000000" description="黑色"/>
+    <Token name="CHWHT" token="NODTA" RGB="#1A1A1A" description="白色(夜)"/>
+    <Token name="CHRED" token="NODTA" RGB="#660000" description="红色(夜)"/>
+    <Token name="CHGRN" token="NODTA" RGB="#006600" description="绿色(夜)"/>
+    <Token name="CHYEL" token="NODTA" RGB="#666600" description="黄色(夜)"/>
+    <Token name="CHBLU" token="NODTA" RGB="#000066" description="蓝色(夜)"/>
+    <Token name="CHORN" token="NODTA" RGB="#663300" description="橙色(夜)"/>
+    <Token name="CHPNA" token="NODTA" RGB="#660066" description="紫色(夜)"/>
+    <Token name="CHBRN" token="NODTA" RGB="#331A00" description="棕色(夜)"/>
+    <Token name="CHGRF" token="NODTA" RGB="#333333" description="灰色(夜)"/>
+    
+    <Token name="LANDF" token="LANDA" RGB="#2A2418" description="陆地填充色(夜)"/>
+    <Token name="LANDA" token="LANDA" RGB="#2A2418" description="陆地区域(夜)"/>
+    <Token name="DEPVS" token="DEPVS" RGB="#1A3340" description="深水区-非常浅(夜)"/>
+    <Token name="DEPMS" token="DEPMS" RGB="#162D3A" description="深水区-中浅(夜)"/>
+    <Token name="DEPDW" token="DEPDW" RGB="#132633" description="深水区-深(夜)"/>
+    <Token name="DEPMD" token="DEPMD" RGB="#0F202C" description="深水区-中深(夜)"/>
+    <Token name="DEPDS" token="DEPDS" RGB="#0C1A26" description="深水区-很深(夜)"/>
+    <Token name="DEPCNT" token="DEPCNT" RGB="#0C1A26" description="等深线颜色(夜)"/>
+    <Token name="DRGARE" token="DRGARE" RGB="#264040" description="疏浚区域(夜)"/>
+    <Token name="UNSARE" token="UNSARE" RGB="#282828" description="不可靠水深区域(夜)"/>
+    
+    <Token name="RESARE" token="RESARE" RGB="#402626" description="限制区域(夜)"/>
+    <Token name="MIPARE" token="MIPARE" RGB="#402626" description="军事区域(夜)"/>
+    <Token name="CSTARE" token="CSTARE" RGB="#403326" description="海关区域(夜)"/>
+    <Token name="ACHARE" token="ACHARE" RGB="#264026" description="锚地(夜)"/>
+    <Token name="ACHBRT" token="ACHBRT" RGB="#264026" description="深水锚地(夜)"/>
+    <Token name="FAIRWY" token="FAIRWY" RGB="#2D2D2D" description="航道(夜)"/>
+    <Token name="RCRTCL" token="RCRTCL" RGB="#264026" description="推荐航道(夜)"/>
+    
+    <Token name="SBDARE" token="SBDARE" RGB="#2D2D26" description="海底区域(夜)"/>
+    <Token name="CORAL" token="CORAL" RGB="#402626" description="珊瑚礁(夜)"/>
+    <Token name="WEDKLP" token="WEDKLP" RGB="#264026" description="海藻区(夜)"/>
+    <Token name="ICEARE" token="ICEARE" RGB="#262D33" description="冰区(夜)"/>
+    
+    <Token name="TSSRON" token="TSSRON" RGB="#264026" description="分道通航制(夜)"/>
+    <Token name="TSEZNE" token="TSEZNE" RGB="#264026" description="分道通航区(夜)"/>
+    <Token name="BUISGL" token="BUISGL" RGB="#282828" description="建筑物区域(夜)"/>
+    <Token name="BUAARE" token="BUAARE" RGB="#2D2826" description="建成区(夜)"/>
+    
+    <Token name="NODTA" token="NODTA" RGB="#1A1A1A" description="无数据区域(夜)"/>
+    <Token name="DNGHLK" token="DNGHLK" RGB="#4D004D" description="危险高亮(夜)-Ed4.0新增"/>
+    <Token name="ISODGR" token="ISODGR" RGB="#660000" description="隔离危险(夜)"/>
+    <Token name="DMPINC" token="DMPINC" RGB="#4D331A" description="数据质量指示(夜)-Ed4.0新增"/>
+    <Token name="QUAPOS" token="QUAPOS" RGB="#4D331A" description="质量位置标记(夜)-Ed4.0新增"/>
+    <Token name="LITPNA" token="LITPNA" RGB="#660066" description="灯光-紫色(夜)-Ed4.0新增"/>
+  </ColorTokens>
+</CARISColorTable>
