@@ -178,9 +178,9 @@ public class MainView extends BorderPane implements LifecycleComponent {
         centerBox.setStyle("-fx-background-color: derive(-fx-base, -5%);");
         
         sideBarManager.setMinWidth(SideBarManager.SIDEBAR_BUTTON_WIDTH);
-        chartDisplayArea.setMinWidth(400);
+        chartDisplayArea.setMinWidth(378);
         rightTabManager.setMinWidth(200);
-        rightTabManager.setPrefWidth(300);
+        rightTabManager.setPrefWidth(ViewHandler.DEFAULT_RIGHT_PANEL_WIDTH);
         
         SplitPane.setResizableWithParent(sideBarManager, false);
         SplitPane.setResizableWithParent(rightTabManager, false);
@@ -207,6 +207,13 @@ public class MainView extends BorderPane implements LifecycleComponent {
             updateDividerPositions();
         });
         
+        centerBox.widthProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal.doubleValue() > 0 && oldVal.doubleValue() <= 0) {
+                javafx.application.Platform.runLater(() -> {
+                    updateDividerPositions();
+                });
+            }
+        });
         javafx.application.Platform.runLater(() -> {
             if (centerBox.getDividers().size() >= 1) {
                 centerBox.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
@@ -228,25 +235,38 @@ public class MainView extends BorderPane implements LifecycleComponent {
     
     private void updateDividerPositions() {
       
-        javafx.application.Platform.runLater(() -> {
-              LogUtil.debug("MainView", "updateDividerPositions called: dividers.size=%s, centerBox.width=%s, sidebarWidth=%s",
-                centerBox.getDividers().size(), centerBox.getWidth(),sideBarManager.getCurrentWidth());
-            if (centerBox.getDividers().size() < 1) return;
+            int dividerCount = centerBox.getDividers().size();
+            int itemCount = centerBox.getItems().size();
             
             double totalWidth = centerBox.getWidth();
+            LogUtil.debug("MainView", "updateDividerPositions: dividerCount=%s, itemCount=%s, totalWidth=%s", 
+                    dividerCount, itemCount, totalWidth);
+            if (dividerCount < 1) return;
             if (totalWidth <= 0) return;
             
             double sidebarWidth = sideBarManager.getCurrentWidth();
-            double rightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : ViewHandler.DEFAULT_RIGHT_PANEL_WIDTH;
+            double rightPanelWidth = viewHandler.getRightPanelWidth();
             
             double divider0Pos = sidebarWidth / totalWidth;
-            double divider1Pos = (totalWidth - rightPanelWidth) / totalWidth;
+        if (dividerCount >= 2) {
+            double chartDisplayMinWidth = chartDisplayArea.getMinWidth();
+            double availableForChartAndRight = totalWidth - sidebarWidth;
+            double maxRightPanelWidth = availableForChartAndRight - chartDisplayMinWidth;
+            double effectiveRightPanelWidth = Math.min(rightPanelWidth, maxRightPanelWidth);
+            effectiveRightPanelWidth = Math.max(effectiveRightPanelWidth, rightTabManager.getMinWidth());
+            effectiveRightPanelWidth = Math.round(effectiveRightPanelWidth);
+            double divider1Pos = (totalWidth - effectiveRightPanelWidth) / totalWidth;
             
-            LogUtil.debug("MainView", "updateDividerPositions: totalWidth=%s, sidebarWidth=%s, rightPanelWidth=%s, divider0Pos=%s, divider1Pos=%s, isExpanded=%s",
-                    totalWidth, sidebarWidth, rightPanelWidth, divider0Pos, divider1Pos, sideBarManager.isExpanded());
+            LogUtil.debug("MainView", "updateDividerPositions: sidebarWidth=%s, rightPanelWidth=%s, "
+                    + "effectiveRightPanelWidth=%s, divider0Pos=%s, divider1Pos=%s",
+                    sidebarWidth, rightPanelWidth, effectiveRightPanelWidth, divider0Pos, divider1Pos);
             
             centerBox.setDividerPositions(divider0Pos, divider1Pos);
-        });
+            } else {
+            LogUtil.debug("MainView", "updateDividerPositions: sidebarWidth=%s, divider0Pos=%s",
+                    sidebarWidth, divider0Pos);
+                centerBox.setDividerPosition(0, divider0Pos);
+            }
     }
     
     private void initializePanels() {

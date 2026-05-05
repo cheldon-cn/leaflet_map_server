@@ -187,13 +187,13 @@ public class ResponsiveLayoutManager {
         public static LayoutConfig forMode(LayoutMode mode) {
             switch (mode) {
                 case COMPACT:
-                    return new LayoutConfig(mode, 200, 0, true, false, 1);
+                    return new LayoutConfig(mode, 170, 0, true, false, 1);
                 case STANDARD:
-                    return new LayoutConfig(mode, 250, 250, true, true, 1);
+                    return new LayoutConfig(mode, 200, 200, true, true, 1);
                 case WIDE:
                     return new LayoutConfig(mode, 300, 300, true, true, 2);
                 default:
-                    return new LayoutConfig(mode, 250, 250, true, true, 1);
+                    return new LayoutConfig(mode, 200, 200, true, true, 1);
             }
         }
 

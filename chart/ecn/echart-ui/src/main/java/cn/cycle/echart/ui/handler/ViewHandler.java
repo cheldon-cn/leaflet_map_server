@@ -11,7 +11,7 @@ import javafx.scene.control.SplitPane;
 
 public class ViewHandler {
 
-    public static final double DEFAULT_RIGHT_PANEL_WIDTH = 300.0;
+    public static final double DEFAULT_RIGHT_PANEL_WIDTH = 205.0;
     private static final double STATUS_BAR_PREF_HEIGHT = 28.0;
     private static final double STATUS_BAR_MIN_HEIGHT = 24.0;
 
@@ -127,8 +127,11 @@ public class ViewHandler {
     }
     
     public void showRightTab(double width) {
+        LogUtil.debug("ViewHandler", "showRightTab: width=%s, lastRightPanelWidth=%s, contains=%s", 
+                width, lastRightPanelWidth, centerSplitPane.getItems().contains(rightTabManager));
         if (!centerSplitPane.getItems().contains(rightTabManager)) {
             double actualWidth = width > 0 ? width : DEFAULT_RIGHT_PANEL_WIDTH;
+            actualWidth = Math.round(actualWidth);
             rightTabManager.setVisible(true);
             rightTabManager.setManaged(true);
             rightTabManager.setPrefWidth(actualWidth);
@@ -136,21 +139,29 @@ public class ViewHandler {
             rightTabVisible = true;
             
             if (onDividerUpdateNeeded != null) {
-                javafx.application.Platform.runLater(onDividerUpdateNeeded);
+                onDividerUpdateNeeded.run();
             }
         }
     }
 
     public void hideRightTab() {
+        LogUtil.debug("ViewHandler", "hideRightTab: rightTabManager.width=%s, lastRightPanelWidth=%s, contains=%s", 
+                rightTabManager.getWidth(), lastRightPanelWidth, centerSplitPane.getItems().contains(rightTabManager));
         if (centerSplitPane.getItems().contains(rightTabManager)) {
-            lastRightPanelWidth = rightTabManager.getWidth() > 0 ? rightTabManager.getWidth() : DEFAULT_RIGHT_PANEL_WIDTH;
+            double currentPrefWidth = rightTabManager.getPrefWidth();
+            if (currentPrefWidth > 0) {
+                lastRightPanelWidth = currentPrefWidth;
+            } else {
+            lastRightPanelWidth = getRightPanelWidth();
+            }
+            LogUtil.debug("ViewHandler", "hideRightTab: saving lastRightPanelWidth=%s", lastRightPanelWidth);
             centerSplitPane.getItems().remove(rightTabManager);
             rightTabManager.setVisible(false);
             rightTabManager.setManaged(false);
             rightTabVisible = false;
             
             if (onDividerUpdateNeeded != null) {
-                javafx.application.Platform.runLater(onDividerUpdateNeeded);
+                onDividerUpdateNeeded.run();
             }
         }
     }
@@ -171,6 +182,26 @@ public class ViewHandler {
         return centerSplitPane.getItems().contains(rightTabManager);
     }
     
+    public double getRightPanelWidth() {
+        boolean contains = centerSplitPane.getItems().contains(rightTabManager);
+        double width = rightTabManager.getWidth();
+        double prefWidth = rightTabManager.getPrefWidth();
+        double result;
+        if (contains) {
+            if (prefWidth > 0) {
+                result = prefWidth;
+            } else if (width > 0) {
+                result = width;
+            } else {
+                result = lastRightPanelWidth;
+            }
+        } else {
+            result = lastRightPanelWidth;
+        }
+        LogUtil.debug("ViewHandler", "getRightPanelWidth: contains=%s, width=%s, prefWidth=%s, lastRightPanelWidth=%s, result=%s", 
+                contains, width, prefWidth, lastRightPanelWidth, result);
+        return result;
+    }
     public boolean isStatusBarVisible() {
         LogUtil.debug("ViewHandler", "isStatusBarVisible: %s", statusBarVisible);
         return statusBarVisible;
