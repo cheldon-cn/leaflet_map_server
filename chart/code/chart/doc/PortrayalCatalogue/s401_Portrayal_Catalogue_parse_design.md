@@ -1,0 +1,2337 @@
+# S-401 Portrayal Catalogue 解析设计文档
+
+**版本**: v1.1
+**日期**: 2026-05-06
+**状态**: 设计中
+**需求来源**: S-401 portrayal_catalogue.xml 解析需求
+**变更记录**: v1.1 - 根据技术评审意见，补充 SAX 模式、内存池、线程安全、缓存层、集成说明、CMake 配置、时序图
+
+---
+
+## 1. 概述
+
+### 1.1 文档目的
+本文档描述 S-401 Portrayal Catalogue XML 文件的解析系统设计，实现模块化、可复用的解析框架。
+
+### 1.2 范围
+- 解析 `portrayal_catalogue.xml` 文件
+- 支持所有子元素的解析和存储
+- 提供可复用的解析组件
+
+### 1.3 XML 文件结构分析
+
+**文件信息**:
+- 文件路径: `code/chart/doc/PortrayalCatalogue/s401/portrayal_catalogue.xml`
+- 文件大小: 16650 行
+- 编码: ISO-8859-1 或 UTF-8
+- 根元素: `portrayalCatalog`
+
+**主要元素结构**:
+
+```
+portrayalCatalog (productId, version)
+├── pixmaps (空)
+├── alertCatalog
+│   └── description (name, description, language)
+│   └── fileName, fileType, fileFormat
+├── colorProfiles
+│   └── colorProfile (id)
+│       └── description
+│       └── fileName, fileType, fileFormat
+├── symbols
+│   └── symbol (id) × N
+│       └── description
+│       └── fileName, fileType, fileFormat
+├── styleSheets
+│   └── styleSheet (id)
+│       └── description
+│       └── fileName, fileType, fileFormat
+├── lineStyles
+│   └── lineStyle (id) × N
+│       └── description
+│       └── fileName, fileType, fileFormat
+├── areaFills
+│   └── areaFill (id) × N
+│       └── description
+│       └── fileName, fileType, fileFormat
+├── fonts (空)
+├── viewingGroups
+│   └── viewingGroup (id) × N
+│       └── description
+└── rules
+    └── ruleFile (id) × N
+        └── description
+        └── fileName, fileType, fileFormat, ruleType
+```
+
+### 1.4 三方库依赖
+
+| 依赖库 | 版本 | 用途 | 配置路径 |
+|--------|------|------|----------|
+| libxml2 | - | XML 解析 | LIBXML2_ROOT |
+| GDAL | 3.9.3 | 地理数据处理（可选） | GDAL_ROOT |
+| GoogleTest | - | 单元测试 | GTEST_ROOT |
+
+---
+
+## 2. 设计目标
+
+### 2.1 核心目标
+
+1. **模块化**: 按功能划分模块，每个模块职责单一
+2. **可复用**: 解析组件可复用于其他 XML 解析场景
+3. **可扩展**: 易于添加新的元素类型支持
+4. **高性能**: 支持大文件解析（16650 行）
+
+### 2.2 设计原则
+
+| 原则 | 说明 |
+|------|------|
+| 单一职责原则 | 每个类只负责一个功能 |
+| 开闭原则 | 对扩展开放，对修改关闭 |
+| 依赖倒置原则 | 依赖抽象而非具体实现 |
+| 接口隔离原则 | 接口小而专一 |
+
+### 2.3 约束条件
+
+- **语言标准**: C++11
+- **编码格式**: 支持 ISO-8859-1 和 UTF-8
+- **内存管理**: 使用智能指针，避免内存泄漏
+- **异常安全**: 提供基本异常安全保证
+
+---
+
+## 3. 系统架构
+
+### 3.1 整体架构
+
+采用**分层架构**模式：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    应用层 (Application)                      │
+│              PortrayalCatalogParser (门面)                   │
+├─────────────────────────────────────────────────────────────┤
+│                    业务层 (Business)                         │
+│    ElementParser, CatalogBuilder, ValidationService         │
+├─────────────────────────────────────────────────────────────┤
+│                    数据层 (Data)                             │
+│         XmlReader, Model Classes, Repository                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 架构决策记录
+
+#### ADR-001: 选择分层架构
+
+**背景**:
+系统功能明确，主要是 XML 解析和数据存储，预计用户为内部模块调用。
+
+**决策**:
+采用三层架构：应用层、业务层、数据层。
+
+**理由**:
+1. 功能需求清晰，分层架构足够
+2. 便于测试和维护
+3. 与现有 chart/parser 模块架构一致
+
+**影响**:
+- 模块间通过接口通信
+- 数据层使用 Repository 模式
+- 业务层使用策略模式处理不同元素类型
+
+#### ADR-002: 使用 libxml2 作为 XML 解析库
+
+**背景**:
+需要解析大型 XML 文件（16650 行），支持 ISO-8859-1 和 UTF-8 编码。
+
+**决策**:
+使用 libxml2 库进行 XML 解析。
+
+**理由**:
+1. 项目已依赖 libxml2
+2. 支持多种编码格式
+3. 成熟稳定，性能优秀
+4. 支持 SAX 和 DOM 两种解析模式
+
+**影响**:
+- 需要封装 libxml2 接口
+- 提供统一的 XML 读取抽象
+
+### 3.3 技术选型
+
+| 层次 | 技术选型 | 版本 | 说明 |
+|------|----------|------|------|
+| XML解析 | libxml2 | - | 项目已有依赖 |
+| 智能指针 | std::shared_ptr | C++11 | 内存管理 |
+| 字符串 | std::string | C++11 | 文本处理 |
+| 容器 | std::vector, std::map | C++11 | 数据存储 |
+| 单元测试 | GoogleTest | - | 项目已有依赖 |
+
+---
+
+## 4. 核心模块设计
+
+### 4.1 命名空间设计
+
+```cpp
+namespace chart {
+namespace portrayal {
+
+// 核心模型类
+namespace model { }
+
+// 解析器
+namespace parser { }
+
+// 工具类
+namespace utils { }
+
+} // namespace portrayal
+} // namespace chart
+```
+
+### 4.2 数据模型模块 (model)
+
+**命名空间**: `chart::portrayal::model`
+
+#### 4.2.1 基础描述类 (Description)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class Description {
+public:
+    Description() = default;
+    Description(const std::string& name, 
+                const std::string& desc,
+                const std::string& lang = "eng");
+    
+    const std::string& getName() const;
+    const std::string& getDescription() const;
+    const std::string& getLanguage() const;
+    
+    void setName(const std::string& name);
+    void setDescription(const std::string& desc);
+    void setLanguage(const std::string& lang);
+
+private:
+    std::string name_;
+    std::string description_;
+    std::string language_;
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.2.2 文件引用基类 (FileReference)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class FileReference {
+public:
+    FileReference() = default;
+    virtual ~FileReference() = default;
+    
+    const std::string& getId() const;
+    const Description& getDescription() const;
+    const std::string& getFileName() const;
+    const std::string& getFileType() const;
+    const std::string& getFileFormat() const;
+    
+    void setId(const std::string& id);
+    void setDescription(const Description& desc);
+    void setFileName(const std::string& fileName);
+    void setFileType(const std::string& fileType);
+    void setFileFormat(const std::string& fileFormat);
+
+protected:
+    std::string id_;
+    Description description_;
+    std::string fileName_;
+    std::string fileType_;
+    std::string fileFormat_;
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.2.3 具体模型类
+
+| 类名 | 继承 | 说明 | 特有属性 |
+|------|------|------|----------|
+| Symbol | FileReference | 符号定义 | 无 |
+| LineStyle | FileReference | 线型样式 | 无 |
+| AreaFill | FileReference | 区域填充 | 无 |
+| StyleSheet | FileReference | 样式表 | 无 |
+| RuleFile | FileReference | 规则文件 | ruleType_ |
+| AlertCatalog | FileReference | 警报目录 | 无 |
+| ColorProfile | FileReference | 颜色配置 | 无 |
+| ViewingGroup | - | 查看组 | id_, description_ |
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class Symbol : public FileReference {
+public:
+    Symbol() = default;
+    using FileReference::FileReference;
+};
+
+class LineStyle : public FileReference {
+public:
+    LineStyle() = default;
+    using FileReference::FileReference;
+};
+
+class AreaFill : public FileReference {
+public:
+    AreaFill() = default;
+    using FileReference::FileReference;
+};
+
+class StyleSheet : public FileReference {
+public:
+    StyleSheet() = default;
+    using FileReference::FileReference;
+};
+
+class RuleFile : public FileReference {
+public:
+    RuleFile() = default;
+    
+    const std::string& getRuleType() const;
+    void setRuleType(const std::string& ruleType);
+
+private:
+    std::string ruleType_;
+};
+
+class ViewingGroup {
+public:
+    ViewingGroup() = default;
+    
+    const std::string& getId() const;
+    const Description& getDescription() const;
+    
+    void setId(const std::string& id);
+    void setDescription(const Description& desc);
+
+private:
+    std::string id_;
+    Description description_;
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.2.4 PortrayalCatalog 聚合类
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class PortrayalCatalog {
+public:
+    PortrayalCatalog() = default;
+    
+    // 基本信息
+    const std::string& getProductId() const;
+    const std::string& getVersion() const;
+    void setProductId(const std::string& productId);
+    void setVersion(const std::string& version);
+    
+    // 元素访问
+    const AlertCatalog& getAlertCatalog() const;
+    const std::vector<ColorProfile>& getColorProfiles() const;
+    const std::vector<Symbol>& getSymbols() const;
+    const std::vector<StyleSheet>& getStyleSheets() const;
+    const std::vector<LineStyle>& getLineStyles() const;
+    const std::vector<AreaFill>& getAreaFills() const;
+    const std::vector<ViewingGroup>& getViewingGroups() const;
+    const std::vector<RuleFile>& getRuleFiles() const;
+    
+    // 元素添加
+    void setAlertCatalog(const AlertCatalog& catalog);
+    void addColorProfile(const ColorProfile& profile);
+    void addSymbol(const Symbol& symbol);
+    void addStyleSheet(const StyleSheet& sheet);
+    void addLineStyle(const LineStyle& style);
+    void addAreaFill(const AreaFill& fill);
+    void addViewingGroup(const ViewingGroup& group);
+    void addRuleFile(const RuleFile& rule);
+    
+    // 查询接口
+    const Symbol* findSymbol(const std::string& id) const;
+    const LineStyle* findLineStyle(const std::string& id) const;
+    const AreaFill* findAreaFill(const std::string& id) const;
+    const RuleFile* findRuleFile(const std::string& id) const;
+
+private:
+    std::string productId_;
+    std::string version_;
+    
+    AlertCatalog alertCatalog_;
+    std::vector<ColorProfile> colorProfiles_;
+    std::vector<Symbol> symbols_;
+    std::vector<StyleSheet> styleSheets_;
+    std::vector<LineStyle> lineStyles_;
+    std::vector<AreaFill> areaFills_;
+    std::vector<ViewingGroup> viewingGroups_;
+    std::vector<RuleFile> ruleFiles_;
+    
+    // 索引映射（用于快速查询）
+    std::map<std::string, size_t> symbolIndex_;
+    std::map<std::string, size_t> lineStyleIndex_;
+    std::map<std::string, size_t> areaFillIndex_;
+    std::map<std::string, size_t> ruleFileIndex_;
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+### 4.3 解析器模块 (parser)
+
+**命名空间**: `chart::portrayal::parser`
+
+#### 4.3.1 XML 读取器接口 (XmlReader)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class XmlReader {
+public:
+    virtual ~XmlReader() = default;
+    
+    virtual bool open(const std::string& filePath) = 0;
+    virtual void close() = 0;
+    virtual bool isOpen() const = 0;
+    virtual std::string getEncoding() const = 0;
+    
+    virtual bool readNextElement() = 0;
+    virtual std::string getCurrentElementName() const = 0;
+    virtual std::string getCurrentElementText() const = 0;
+    virtual std::string getAttribute(const std::string& name) const = 0;
+    virtual bool hasAttribute(const std::string& name) const = 0;
+    
+    virtual bool moveToFirstChild() = 0;
+    virtual bool moveToNextSibling() = 0;
+    virtual bool moveToParent() = 0;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.3.2 libxml2 实现 (LibXml2Reader)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class LibXml2Reader : public XmlReader {
+public:
+    LibXml2Reader();
+    ~LibXml2Reader() override;
+    
+    bool open(const std::string& filePath) override;
+    void close() override;
+    bool isOpen() const override;
+    std::string getEncoding() const override;
+    
+    bool readNextElement() override;
+    std::string getCurrentElementName() const override;
+    std::string getCurrentElementText() const override;
+    std::string getAttribute(const std::string& name) const override;
+    bool hasAttribute(const std::string& name) const override;
+    
+    bool moveToFirstChild() override;
+    bool moveToNextSibling() override;
+    bool moveToParent() override;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.3.3 元素解析器接口 (ElementParser)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class ElementParser {
+public:
+    virtual ~ElementParser() = default;
+    
+    virtual std::string getElementName() const = 0;
+    virtual bool canParse(const std::string& elementName) const = 0;
+    virtual bool parse(XmlReader& reader, 
+                       model::PortrayalCatalog& catalog) = 0;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.3.4 具体元素解析器
+
+**符号解析器 (SymbolParser)**:
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class SymbolParser : public ElementParser {
+public:
+    std::string getElementName() const override;
+    bool canParse(const std::string& elementName) const override;
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override;
+
+private:
+    model::Description parseDescription(XmlReader& reader);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+**线型解析器 (LineStyleParser)**:
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class LineStyleParser : public ElementParser {
+public:
+    std::string getElementName() const override;
+    bool canParse(const std::string& elementName) const override;
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override;
+
+private:
+    model::Description parseDescription(XmlReader& reader);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+**区域填充解析器 (AreaFillParser)**:
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class AreaFillParser : public ElementParser {
+public:
+    std::string getElementName() const override;
+    bool canParse(const std::string& elementName) const override;
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override;
+
+private:
+    model::Description parseDescription(XmlReader& reader);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+**规则文件解析器 (RuleFileParser)**:
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class RuleFileParser : public ElementParser {
+public:
+    std::string getElementName() const override;
+    bool canParse(const std::string& elementName) const override;
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override;
+
+private:
+    model::Description parseDescription(XmlReader& reader);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+**查看组解析器 (ViewingGroupParser)**:
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class ViewingGroupParser : public ElementParser {
+public:
+    std::string getElementName() const override;
+    bool canParse(const std::string& elementName) const override;
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override;
+
+private:
+    model::Description parseDescription(XmlReader& reader);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.3.5 解析器注册表 (ParserRegistry)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class ParserRegistry {
+public:
+    ParserRegistry();
+    
+    void registerParser(std::shared_ptr<ElementParser> parser);
+    void unregisterParser(const std::string& elementName);
+    
+    ElementParser* getParser(const std::string& elementName) const;
+    bool hasParser(const std::string& elementName) const;
+    
+    std::vector<std::string> getRegisteredElements() const;
+
+private:
+    std::map<std::string, std::shared_ptr<ElementParser>> parsers_;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.3.6 门面解析器 (PortrayalCatalogParser)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class PortrayalCatalogParser {
+public:
+    PortrayalCatalogParser();
+    explicit PortrayalCatalogParser(std::shared_ptr<XmlReader> reader);
+    
+    void setXmlReader(std::shared_ptr<XmlReader> reader);
+    void registerParser(std::shared_ptr<ElementParser> parser);
+    
+    std::shared_ptr<model::PortrayalCatalog> parse(const std::string& filePath);
+    
+    // 解析选项
+    void setValidateEnabled(bool enabled);
+    void setIgnoreComments(bool ignore);
+
+private:
+    bool parseRootElement();
+    bool parseChildElements();
+    bool parseAttributes();
+    
+    std::shared_ptr<XmlReader> reader_;
+    ParserRegistry registry_;
+    std::shared_ptr<model::PortrayalCatalog> catalog_;
+    
+    bool validateEnabled_ = true;
+    bool ignoreComments_ = true;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 4.4 工具模块 (utils)
+
+**命名空间**: `chart::portrayal::utils`
+
+#### 4.4.1 字符串工具 (StringUtils)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace utils {
+
+class StringUtils {
+public:
+    static std::string trim(const std::string& str);
+    static std::string toLower(const std::string& str);
+    static std::string toUpper(const std::string& str);
+    static std::vector<std::string> split(const std::string& str, 
+                                          char delimiter);
+    static std::string join(const std::vector<std::string>& parts, 
+                           const std::string& delimiter);
+    static bool startsWith(const std::string& str, 
+                          const std::string& prefix);
+    static bool endsWith(const std::string& str, 
+                        const std::string& suffix);
+    static std::string convertEncoding(const std::string& input,
+                                       const std::string& fromEncoding,
+                                       const std::string& toEncoding);
+};
+
+} // namespace utils
+} // namespace portrayal
+} // namespace chart
+```
+
+#### 4.4.2 文件工具 (FileUtils)
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace utils {
+
+class FileUtils {
+public:
+    static bool exists(const std::string& path);
+    static bool isFile(const std::string& path);
+    static bool isDirectory(const std::string& path);
+    static std::string getDirectory(const std::string& filePath);
+    static std::string getFileName(const std::string& filePath);
+    static std::string getFileExtension(const std::string& filePath);
+    static std::string combinePath(const std::string& dir, 
+                                   const std::string& file);
+};
+
+} // namespace utils
+} // namespace portrayal
+} // namespace chart
+```
+
+---
+
+## 5. 数据模型设计
+
+### 5.1 类关系图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Model Classes                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐         ┌──────────────┐                  │
+│  │ Description  │         │ FileReference│ (abstract)       │
+│  ├──────────────┤         ├──────────────┤                  │
+│  │ - name_      │◄────────│ - id_        │                  │
+│  │ - description_│         │ - description_│                 │
+│  │ - language_  │         │ - fileName_  │                  │
+│  └──────────────┘         │ - fileType_  │                  │
+│                           │ - fileFormat_ │                  │
+│                           └──────┬───────┘                  │
+│                                  │                           │
+│           ┌──────────────────────┼──────────────────────┐   │
+│           │                      │                      │   │
+│           ▼                      ▼                      ▼   │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│  │    Symbol    │      │  LineStyle   │      │  RuleFile    │
+│  └──────────────┘      └──────────────┘      │ - ruleType_  │
+│                                               └──────────────┘
+│                                                              │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│  │  AreaFill    │      │ StyleSheet   │      │ ViewingGroup │
+│  └──────────────┘      └──────────────┘      │ - id_        │
+│                                               │ - description_│
+│                                               └──────────────┘
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │              PortrayalCatalog (聚合根)                  │ │
+│  ├────────────────────────────────────────────────────────┤ │
+│  │ - productId_                                           │ │
+│  │ - version_                                             │ │
+│  │ - alertCatalog_                                        │ │
+│  │ - colorProfiles_: vector<ColorProfile>                 │ │
+│  │ - symbols_: vector<Symbol>                             │ │
+│  │ - styleSheets_: vector<StyleSheet>                     │ │
+│  │ - lineStyles_: vector<LineStyle>                       │ │
+│  │ - areaFills_: vector<AreaFill>                         │ │
+│  │ - viewingGroups_: vector<ViewingGroup>                 │ │
+│  │ - ruleFiles_: vector<RuleFile>                         │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 解析器类关系图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Parser Classes                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐                                           │
+│  │  XmlReader   │ (interface)                               │
+│  ├──────────────┤                                           │
+│  │ + open()     │                                           │
+│  │ + close()    │                                           │
+│  │ + readNext() │                                           │
+│  └──────┬───────┘                                           │
+│         │                                                    │
+│         ▼                                                    │
+│  ┌──────────────┐                                           │
+│  │LibXml2Reader │                                           │
+│  └──────────────┘                                           │
+│                                                              │
+│  ┌──────────────┐                                           │
+│  │ElementParser │ (interface)                               │
+│  ├──────────────┤                                           │
+│  │ + parse()    │                                           │
+│  └──────┬───────┘                                           │
+│         │                                                    │
+│    ┌────┴────┬────────────┬────────────┐                    │
+│    ▼         ▼            ▼            ▼                    │
+│ ┌──────┐ ┌──────┐   ┌──────┐   ┌──────┐                    │
+│ │Symbol│ │LineSt│   │AreaFi│   │RuleFi│ ...                │
+│ │Parser│ │Parser│   │Parser│   │Parser│                    │
+│ └──────┘ └──────┘   └──────┘   └──────┘                    │
+│                                                              │
+│  ┌──────────────┐      ┌──────────────┐                     │
+│  │ParserRegistry│◄─────│PortrayalCatalog│                   │
+│  └──────────────┘      │Parser (门面)  │                     │
+│                        └──────────────┘                     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6. 接口设计
+
+### 6.1 公共接口列表
+
+| 模块 | 接口 | 方法 | 说明 |
+|------|------|------|------|
+| parser | PortrayalCatalogParser | parse(filePath) | 解析 XML 文件 |
+| model | PortrayalCatalog | getSymbols() | 获取符号列表 |
+| model | PortrayalCatalog | findSymbol(id) | 查找符号 |
+| model | PortrayalCatalog | getLineStyles() | 获取线型列表 |
+| model | PortrayalCatalog | findLineStyle(id) | 查找线型 |
+| model | PortrayalCatalog | getAreaFills() | 获取区域填充列表 |
+| model | PortrayalCatalog | findAreaFill(id) | 查找区域填充 |
+| model | PortrayalCatalog | getRuleFiles() | 获取规则文件列表 |
+| model | PortrayalCatalog | findRuleFile(id) | 查找规则文件 |
+| model | PortrayalCatalog | getViewingGroups() | 获取查看组列表 |
+
+### 6.2 核心接口详细设计
+
+#### 6.2.1 PortrayalCatalogParser::parse
+
+```cpp
+std::shared_ptr<model::PortrayalCatalog> parse(const std::string& filePath);
+```
+
+**参数**:
+| 参数名 | 类型 | 必需 | 说明 |
+|--------|------|------|------|
+| filePath | string | 是 | XML 文件路径 |
+
+**返回值**:
+| 类型 | 说明 |
+|------|------|
+| shared_ptr<PortrayalCatalog> | 解析结果，失败返回 nullptr |
+
+**异常**:
+| 异常类型 | 说明 |
+|----------|------|
+| std::invalid_argument | 文件路径为空 |
+| std::runtime_error | 文件打开失败 |
+| std::runtime_error | XML 格式错误 |
+
+**使用示例**:
+```cpp
+using namespace chart::portrayal;
+
+parser::PortrayalCatalogParser parser;
+auto catalog = parser.parse("portrayal_catalogue.xml");
+
+if (catalog) {
+    auto symbols = catalog->getSymbols();
+    for (const auto& symbol : symbols) {
+        std::cout << symbol.getId() << std::endl;
+    }
+}
+```
+
+#### 6.2.2 PortrayalCatalog::findSymbol
+
+```cpp
+const Symbol* findSymbol(const std::string& id) const;
+```
+
+**参数**:
+| 参数名 | 类型 | 必需 | 说明 |
+|--------|------|------|------|
+| id | string | 是 | 符号 ID |
+
+**返回值**:
+| 类型 | 说明 |
+|------|------|
+| const Symbol* | 符号指针，未找到返回 nullptr |
+
+**使用示例**:
+```cpp
+auto catalog = parser.parse("portrayal_catalogue.xml");
+if (catalog) {
+    if (auto* symbol = catalog->findSymbol("ACHARE02")) {
+        std::cout << "Found: " << symbol->getFileName() << std::endl;
+    }
+}
+```
+
+---
+
+## 7. 模块依赖关系
+
+### 7.1 模块依赖图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      应用层                                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │              PortrayalCatalogParser                    │  │
+│  └───────────────────────────┬───────────────────────────┘  │
+└──────────────────────────────┼──────────────────────────────┘
+                               │
+┌──────────────────────────────┼──────────────────────────────┐
+│                      业务层  │                              │
+│  ┌──────────────┐  ┌────────┴────────┐  ┌──────────────┐   │
+│  │ParserRegistry│◄─┤ ElementParser   │◄─┤SymbolParser  │   │
+│  └──────────────┘  │ (interface)     │  │LineStylePars │   │
+│                    └─────────────────┘  │AreaFillPars  │   │
+│                                         │RuleFilePars  │   │
+│                                         │ViewingGroupP │   │
+│                                         └──────────────┘   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────┼──────────────────────────────┐
+│                      数据层  │                              │
+│  ┌──────────────┐  ┌────────┴────────┐  ┌──────────────┐   │
+│  │  XmlReader   │◄─┤ LibXml2Reader   │  │PortrayalCat  │   │
+│  │ (interface)  │  └─────────────────┘  │ (Model)      │   │
+│  └──────────────┘                       └──────────────┘   │
+│                                                             │
+│  ┌──────────────┐                                          │
+│  │ Model Classes│                                          │
+│  │ - Description│                                          │
+│  │ - FileRef    │                                          │
+│  │ - Symbol     │                                          │
+│  │ - LineStyle  │                                          │
+│  │ - AreaFill   │                                          │
+│  │ - RuleFile   │                                          │
+│  │ - ViewingGrp │                                          │
+│  └──────────────┘                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 依赖说明
+
+| 模块 | 依赖模块 | 依赖类型 | 说明 |
+|------|----------|----------|------|
+| PortrayalCatalogParser | XmlReader | 接口依赖 | 通过接口读取 XML |
+| PortrayalCatalogParser | ParserRegistry | 组合 | 管理解析器 |
+| PortrayalCatalogParser | PortrayalCatalog | 创建 | 创建模型对象 |
+| ElementParser | XmlReader | 接口依赖 | 读取 XML 元素 |
+| ElementParser | PortrayalCatalog | 参数依赖 | 填充模型数据 |
+| LibXml2Reader | libxml2 | 实现依赖 | 封装 libxml2 |
+
+---
+
+## 8. 文件组织结构
+
+### 8.1 目录结构
+
+```
+code/chart/portrayal/
+├── include/
+│   └── chart/
+│       └── portrayal/
+│           ├── model/
+│           │   ├── description.h
+│           │   ├── file_reference.h
+│           │   ├── symbol.h
+│           │   ├── line_style.h
+│           │   ├── area_fill.h
+│           │   ├── style_sheet.h
+│           │   ├── rule_file.h
+│           │   ├── viewing_group.h
+│           │   ├── alert_catalog.h
+│           │   ├── color_profile.h
+│           │   └── portrayal_catalog.h
+│           ├── parser/
+│           │   ├── xml_reader.h
+│           │   ├── libxml2_reader.h
+│           │   ├── element_parser.h
+│           │   ├── symbol_parser.h
+│           │   ├── line_style_parser.h
+│           │   ├── area_fill_parser.h
+│           │   ├── rule_file_parser.h
+│           │   ├── viewing_group_parser.h
+│           │   ├── parser_registry.h
+│           │   └── portrayal_catalog_parser.h
+│           └── utils/
+│               ├── string_utils.h
+│               └── file_utils.h
+└── src/
+    ├── model/
+    │   ├── description.cpp
+    │   ├── file_reference.cpp
+    │   ├── symbol.cpp
+    │   ├── line_style.cpp
+    │   ├── area_fill.cpp
+    │   ├── style_sheet.cpp
+    │   ├── rule_file.cpp
+    │   ├── viewing_group.cpp
+    │   ├── alert_catalog.cpp
+    │   ├── color_profile.cpp
+    │   └── portrayal_catalog.cpp
+    ├── parser/
+    │   ├── libxml2_reader.cpp
+    │   ├── symbol_parser.cpp
+    │   ├── line_style_parser.cpp
+    │   ├── area_fill_parser.cpp
+    │   ├── rule_file_parser.cpp
+    │   ├── viewing_group_parser.cpp
+    │   ├── parser_registry.cpp
+    │   └── portrayal_catalog_parser.cpp
+    └── utils/
+        ├── string_utils.cpp
+        └── file_utils.cpp
+```
+
+### 8.2 头文件设计原则
+
+1. **最小化依赖**: 头文件只包含必要的声明
+2. **前向声明**: 优先使用前向声明减少编译依赖
+3. **Pimpl 模式**: 对于实现复杂的类使用 Pimpl 模式
+4. **命名空间**: 所有代码在 `chart::portrayal` 命名空间内
+
+---
+
+## 9. 错误处理设计
+
+### 9.1 异常类型
+
+```cpp
+namespace chart {
+namespace portrayal {
+
+class PortrayalException : public std::runtime_error {
+public:
+    explicit PortrayalException(const std::string& message);
+};
+
+class FileNotFoundException : public PortrayalException {
+public:
+    explicit FileNotFoundException(const std::string& filePath);
+};
+
+class XmlParseException : public PortrayalException {
+public:
+    XmlParseException(const std::string& message, int line = -1);
+    int getLine() const;
+
+private:
+    int line_;
+};
+
+class ValidationException : public PortrayalException {
+public:
+    explicit ValidationException(const std::string& message);
+};
+
+} // namespace portrayal
+} // namespace chart
+```
+
+### 9.2 错误处理策略
+
+| 错误类型 | 处理策略 | 恢复方式 |
+|----------|----------|----------|
+| 文件不存在 | 抛出 FileNotFoundException | 检查文件路径 |
+| XML 格式错误 | 抛出 XmlParseException | 修复 XML 文件 |
+| 编码转换失败 | 记录日志，使用默认编码 | 继续解析 |
+| 必需属性缺失 | 抛出 ValidationException | 补充属性 |
+| 可选属性缺失 | 使用默认值 | 继续解析 |
+
+---
+
+## 10. 性能设计
+
+### 10.1 性能目标
+
+| 指标 | 目标值 | 说明 |
+|------|--------|------|
+| 解析时间 | < 1秒 | 16650 行文件 |
+| 内存占用 | < 50MB | 加载后模型 |
+| 查询响应 | < 1ms | ID 查询 |
+
+### 10.2 性能优化策略
+
+1. **索引优化**: 使用 map 存储元素索引，支持 O(1) 查询
+2. **延迟加载**: 大型子元素可延迟加载
+3. **内存池**: 复用字符串内存
+4. **SAX 模式**: 对于超大文件使用 SAX 模式
+
+### 10.3 内存管理
+
+```cpp
+// 使用智能指针管理模型对象
+std::shared_ptr<model::PortrayalCatalog> catalog_;
+
+// 使用 vector 存储元素，避免频繁内存分配
+std::vector<model::Symbol> symbols_;
+
+// 使用 map 建立索引
+std::map<std::string, size_t> symbolIndex_;
+```
+
+---
+
+## 11. 测试策略
+
+### 11.1 单元测试
+
+| 测试类 | 测试内容 | 覆盖目标 |
+|--------|----------|----------|
+| DescriptionTest | 描述类基本功能 | 100% |
+| FileReferenceTest | 文件引用类功能 | 100% |
+| SymbolParserTest | 符号解析 | 100% |
+| LineStyleParserTest | 线型解析 | 100% |
+| AreaFillParserTest | 区域填充解析 | 100% |
+| RuleFileParserTest | 规则文件解析 | 100% |
+| ViewingGroupParserTest | 查看组解析 | 100% |
+| PortrayalCatalogParserTest | 整体解析 | 100% |
+| PortrayalCatalogTest | 模型操作 | 100% |
+
+### 11.2 集成测试
+
+| 测试场景 | 测试内容 |
+|----------|----------|
+| 完整文件解析 | 解析完整的 portrayal_catalogue.xml |
+| 大文件测试 | 测试 16650 行文件解析性能 |
+| 编码测试 | 测试 ISO-8859-1 和 UTF-8 编码处理 |
+| 错误恢复 | 测试错误 XML 文件处理 |
+
+### 11.3 测试框架
+
+使用 GoogleTest 框架：
+
+```cpp
+#include <gtest/gtest.h>
+
+TEST(SymbolParserTest, ParseValidSymbol) {
+    parser::SymbolParser parser;
+    model::PortrayalCatalog catalog;
+    
+    // 创建测试 XML
+    // ...
+    
+    EXPECT_TRUE(parser.parse(reader, catalog));
+    EXPECT_EQ(1, catalog.getSymbols().size());
+}
+```
+
+---
+
+## 12. 扩展性设计
+
+### 12.1 添加新元素类型
+
+1. 创建新的模型类（继承 FileReference 或独立类）
+2. 创建新的解析器类（实现 ElementParser 接口）
+3. 注册解析器到 ParserRegistry
+
+**示例：添加 Pixmap 元素**
+
+```cpp
+// 1. 模型类
+class Pixmap : public FileReference {
+    // ...
+};
+
+// 2. 解析器类
+class PixmapParser : public ElementParser {
+public:
+    std::string getElementName() const override {
+        return "pixmap";
+    }
+    bool parse(XmlReader& reader, 
+               model::PortrayalCatalog& catalog) override {
+        // ...
+    }
+};
+
+// 3. 注册解析器
+parser.registerParser(std::make_shared<PixmapParser>());
+```
+
+### 12.2 支持新的 XML 解析库
+
+实现 XmlReader 接口：
+
+```cpp
+class RapidXmlReader : public XmlReader {
+    // 实现 interface 方法
+};
+```
+
+---
+
+## 13. 使用示例
+
+### 13.1 基本使用
+
+```cpp
+#include <chart/portrayal/parser/portrayal_catalog_parser.h>
+#include <iostream>
+
+using namespace chart::portrayal;
+
+int main() {
+    // 创建解析器
+    parser::PortrayalCatalogParser parser;
+    
+    // 解析文件
+    auto catalog = parser.parse("portrayal_catalogue.xml");
+    
+    if (!catalog) {
+        std::cerr << "解析失败" << std::endl;
+        return 1;
+    }
+    
+    // 访问数据
+    std::cout << "Product ID: " << catalog->getProductId() << std::endl;
+    std::cout << "Version: " << catalog->getVersion() << std::endl;
+    std::cout << "Symbols: " << catalog->getSymbols().size() << std::endl;
+    
+    // 查找特定符号
+    if (auto* symbol = catalog->findSymbol("ACHARE02")) {
+        std::cout << "Symbol: " << symbol->getFileName() << std::endl;
+    }
+    
+    return 0;
+}
+```
+
+### 13.2 自定义解析器
+
+```cpp
+#include <chart/portrayal/parser/portrayal_catalog_parser.h>
+#include <chart/portrayal/parser/symbol_parser.h>
+
+using namespace chart::portrayal;
+
+int main() {
+    parser::PortrayalCatalogParser parser;
+    
+    // 注册自定义解析器
+    parser.registerParser(std::make_shared<parser::SymbolParser>());
+    
+    // 解析
+    auto catalog = parser.parse("portrayal_catalogue.xml");
+    
+    // ...
+}
+```
+
+---
+
+## 14. 需求追溯矩阵
+
+| 需求 | 设计章节 | 实现模块 | 状态 |
+|------|----------|----------|------|
+| 模块化 | 4. 核心模块设计 | model, parser, utils | 📋 待实现 |
+| 函数可复用 | 4.3 解析器模块 | ElementParser 接口 | 📋 待实现 |
+| 功能可复用 | 4.4 工具模块 | StringUtils, FileUtils | 📋 待实现 |
+| 类可复用 | 4.2 数据模型模块 | FileReference 基类 | 📋 待实现 |
+| 模块可复用 | 3. 系统架构 | 分层架构 | 📋 待实现 |
+| C++11 支持 | 2.3 约束条件 | 所有模块 | 📋 待实现 |
+| 命名空间 | 4.1 命名空间设计 | chart::portrayal | 📋 待实现 |
+
+---
+
+## 15. 附录
+
+### 15.1 术语表
+
+| 术语 | 说明 |
+|------|------|
+| Portrayal Catalogue | 表现目录，定义海图符号化规则 |
+| Symbol | 符号，用于点状要素表示 |
+| LineStyle | 线型，用于线状要素表示 |
+| AreaFill | 区域填充，用于面状要素表示 |
+| RuleFile | 规则文件，Lua 脚本定义符号化规则 |
+| ViewingGroup | 查看组，控制要素显示级别 |
+
+### 15.2 参考资源
+
+- S-401 IHO 标准
+- libxml2 文档: http://www.xmlsoft.org/
+- C++11 参考: https://en.cppreference.com/
+
+### 15.3 XML 元素统计
+
+| 元素类型 | 数量 | 说明 |
+|----------|------|------|
+| symbol | ~500+ | 符号定义 |
+| lineStyle | ~100+ | 线型样式 |
+| areaFill | ~20+ | 区域填充 |
+| viewingGroup | ~100+ | 查看组 |
+| ruleFile | ~200+ | 规则文件 |
+
+---
+
+## 16. SAX 模式实现设计
+
+### 16.1 SAX 解析器接口
+
+对于超大 XML 文件，提供基于事件的 SAX（Simple API for XML）解析模式，避免一次性加载整个文档到内存。
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+struct XmlAttributes {
+    std::map<std::string, std::string> attrs;
+    
+    bool has(const std::string& name) const;
+    std::string get(const std::string& name, const std::string& defaultValue = "") const;
+};
+
+class XmlSaxHandler {
+public:
+    virtual ~XmlSaxHandler() = default;
+    
+    virtual void startDocument() {}
+    virtual void endDocument() {}
+    virtual void startElement(const std::string& name, 
+                              const XmlAttributes& attrs) {}
+    virtual void endElement(const std::string& name) {}
+    virtual void characters(const std::string& data) {}
+    virtual void warning(const std::string& msg) {}
+    virtual void error(const std::string& msg) {}
+};
+
+class XmlSaxReader {
+public:
+    virtual ~XmlSaxReader() = default;
+    
+    virtual bool parse(const std::string& filePath, 
+                       XmlSaxHandler& handler) = 0;
+    virtual std::string getEncoding() const = 0;
+    virtual int getCurrentLineNumber() const = 0;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 16.2 SAX 元素解析器
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class SaxElementParser {
+public:
+    virtual ~SaxElementParser() = default;
+    
+    virtual std::string getElementName() const = 0;
+    virtual void startElement(const std::string& name,
+                              const XmlAttributes& attrs,
+                              model::PortrayalCatalog& catalog) = 0;
+    virtual void endElement(const std::string& name,
+                            model::PortrayalCatalog& catalog) = 0;
+    virtual void characters(const std::string& data) = 0;
+};
+
+class SaxSymbolParser : public SaxElementParser {
+public:
+    std::string getElementName() const override { return "symbol"; }
+    
+    void startElement(const std::string& name,
+                      const XmlAttributes& attrs,
+                      model::PortrayalCatalog& catalog) override {
+        currentSymbol_.setId(attrs.get("id"));
+        currentText_.clear();
+    }
+    
+    void endElement(const std::string& name,
+                    model::PortrayalCatalog& catalog) override {
+        if (name == "symbol") {
+            catalog.addSymbol(currentSymbol_);
+            currentSymbol_ = model::Symbol();
+        } else if (name == "name") {
+            currentSymbol_.getDescription().setName(currentText_);
+        } else if (name == "description") {
+            currentSymbol_.getDescription().setDescription(currentText_);
+        }
+    }
+    
+    void characters(const std::string& data) override {
+        currentText_ += data;
+    }
+
+private:
+    model::Symbol currentSymbol_;
+    std::string currentText_;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 16.3 SAX 解析器工厂
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+enum class ParseMode {
+    DOM,    // 适合小文件，支持随机访问
+    SAX     // 适合大文件，流式处理
+};
+
+class ParserFactory {
+public:
+    static std::unique_ptr<XmlReader> createDomReader();
+    static std::unique_ptr<XmlSaxReader> createSaxReader();
+    
+    static std::shared_ptr<PortrayalCatalog> parse(
+        const std::string& filePath,
+        ParseMode mode = ParseMode::DOM);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 16.4 解析模式选择策略
+
+| 文件大小 | 推荐模式 | 内存占用 | 解析速度 |
+|----------|----------|----------|----------|
+| < 1MB | DOM | 低 | 快 |
+| 1MB - 10MB | DOM/SAX | 中 | 中 |
+| > 10MB | SAX | 极低 | 稳定 |
+
+---
+
+## 17. 内存池实现设计
+
+### 17.1 字符串池 (StringPool)
+
+对于大量重复的字符串（如符号 ID、文件名），使用字符串池避免重复存储。
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace utils {
+
+class StringPool {
+public:
+    StringPool() = default;
+    explicit StringPool(size_t initialCapacity);
+    
+    // 获取字符串的内部引用（自动去重）
+    const std::string& intern(const std::string& str);
+    const std::string& intern(std::string&& str);
+    
+    // 查找是否已存在
+    bool contains(const std::string& str) const;
+    
+    // 统计信息
+    size_t size() const;
+    size_t memoryUsage() const;
+    
+    // 预分配
+    void reserve(size_t count);
+    
+    // 清空
+    void clear();
+
+private:
+    std::unordered_set<std::string> pool_;
+    static const std::string empty_;
+};
+
+} // namespace utils
+} // namespace portrayal
+} // namespace chart
+```
+
+### 17.2 对象池 (ObjectPool)
+
+对于频繁创建的解析器对象，使用对象池复用。
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace utils {
+
+template<typename T>
+class ObjectPool {
+public:
+    ObjectPool() = default;
+    explicit ObjectPool(size_t initialSize);
+    
+    std::shared_ptr<T> acquire();
+    void release(std::shared_ptr<T> obj);
+    
+    size_t available() const;
+    size_t inUse() const;
+    void shrink(size_t targetSize);
+
+private:
+    std::vector<std::shared_ptr<T>> available_;
+    std::atomic<size_t> inUseCount_{0};
+    std::mutex mutex_;
+};
+
+using SymbolParserPool = ObjectPool<parser::SymbolParser>;
+using LineStyleParserPool = ObjectPool<parser::LineStyleParser>;
+
+} // namespace utils
+} // namespace portrayal
+} // namespace chart
+```
+
+### 17.3 内存管理集成
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class PortrayalCatalog {
+public:
+    // 使用 StringPool 管理字符串
+    void setStringPool(std::shared_ptr<utils::StringPool> pool) {
+        stringPool_ = pool;
+    }
+    
+    // 添加元素时使用字符串池
+    void addSymbol(const Symbol& symbol) {
+        Symbol pooledSymbol;
+        pooledSymbol.setId(stringPool_->intern(symbol.getId()));
+        pooledSymbol.setFileName(stringPool_->intern(symbol.getFileName()));
+        // ...
+        symbols_.push_back(pooledSymbol);
+    }
+
+private:
+    std::shared_ptr<utils::StringPool> stringPool_;
+    // ...
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+### 17.4 内存使用估算
+
+| 数据类型 | 数量 | 单项大小 | 总大小（无池） | 总大小（有池） |
+|----------|------|----------|----------------|----------------|
+| Symbol | 500 | ~200B | 100KB | ~40KB |
+| LineStyle | 100 | ~150B | 15KB | ~8KB |
+| AreaFill | 20 | ~150B | 3KB | ~2KB |
+| RuleFile | 200 | ~180B | 36KB | ~15KB |
+| ViewingGroup | 100 | ~120B | 12KB | ~6KB |
+| **总计** | - | - | **~166KB** | **~71KB** |
+
+**内存节省**: 约 57%
+
+---
+
+## 18. 线程安全设计
+
+### 18.1 线程安全级别定义
+
+| 类 | 线程安全级别 | 说明 |
+|------|--------------|------|
+| PortrayalCatalog | 读安全 | 多线程可并发读取，写入需同步 |
+| PortrayalCatalogParser | 不安全 | 每个线程应使用独立实例 |
+| ParserRegistry | 写安全 | 内部使用互斥锁保护 |
+| StringPool | 完全安全 | 内部使用读写锁 |
+
+### 18.2 线程安全包装器
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace model {
+
+class ThreadSafePortrayalCatalog {
+public:
+    explicit ThreadSafePortrayalCatalog(
+        std::shared_ptr<PortrayalCatalog> catalog);
+    
+    // 读操作（线程安全）
+    const Symbol* findSymbol(const std::string& id) const;
+    const LineStyle* findLineStyle(const std::string& id) const;
+    const AreaFill* findAreaFill(const std::string& id) const;
+    const RuleFile* findRuleFile(const std::string& id) const;
+    
+    // 批量读操作
+    std::vector<Symbol> getSymbols() const;
+    std::vector<LineStyle> getLineStyles() const;
+    
+    // 写操作（需要独占锁）
+    void addSymbol(const Symbol& symbol);
+    void addLineStyle(const LineStyle& style);
+    
+    // 统计信息
+    size_t symbolCount() const;
+    size_t lineStyleCount() const;
+
+private:
+    std::shared_ptr<PortrayalCatalog> catalog_;
+    mutable std::shared_mutex mutex_;
+};
+
+} // namespace model
+} // namespace portrayal
+} // namespace chart
+```
+
+### 18.3 并发解析支持
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class ConcurrentParser {
+public:
+    explicit ConcurrentParser(size_t threadCount = 
+        std::thread::hardware_concurrency());
+    
+    // 并发解析多个文件
+    std::map<std::string, std::shared_ptr<model::PortrayalCatalog>>
+    parseFiles(const std::vector<std::string>& filePaths);
+    
+    // 设置回调
+    void setProgressCallback(
+        std::function<void(const std::string&, double)> callback);
+
+private:
+    ThreadPool pool_;
+    std::mutex resultsMutex_;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 18.4 使用指南
+
+```cpp
+// 场景1: 单线程解析
+auto catalog = parser::ParserFactory::parse("file.xml");
+
+// 场景2: 多线程读取
+auto safeCatalog = std::make_shared<model::ThreadSafePortrayalCatalog>(catalog);
+std::thread t1([&]() {
+    auto* symbol = safeCatalog->findSymbol("ID1");  // 安全
+});
+std::thread t2([&]() {
+    auto* symbol = safeCatalog->findSymbol("ID2");  // 安全
+});
+
+// 场景3: 并发解析多文件
+parser::ConcurrentParser concurrentParser;
+auto results = concurrentParser.parseFiles({"file1.xml", "file2.xml"});
+```
+
+---
+
+## 19. 缓存层设计
+
+### 19.1 解析结果缓存
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace cache {
+
+struct CacheEntry {
+    std::shared_ptr<model::PortrayalCatalog> catalog;
+    std::time_t lastModified;
+    std::time_t loadTime;
+    size_t memorySize;
+};
+
+class CatalogCache {
+public:
+    CatalogCache() = default;
+    explicit CatalogCache(size_t maxMemoryMB);
+    
+    // 获取缓存
+    std::shared_ptr<model::PortrayalCatalog> get(
+        const std::string& filePath);
+    
+    // 放入缓存
+    void put(const std::string& filePath,
+             std::shared_ptr<model::PortrayalCatalog> catalog);
+    
+    // 失效
+    void invalidate(const std::string& filePath);
+    void invalidateAll();
+    
+    // 统计
+    size_t size() const;
+    size_t memoryUsage() const;
+    double hitRate() const;
+
+private:
+    std::map<std::string, CacheEntry> cache_;
+    mutable std::mutex mutex_;
+    size_t maxMemoryBytes_;
+    std::atomic<size_t> hits_{0};
+    std::atomic<size_t> misses_{0};
+    
+    void evictIfNeeded();
+    void updateAccessOrder(const std::string& filePath);
+};
+
+} // namespace cache
+} // namespace portrayal
+} // namespace chart
+```
+
+### 19.2 缓存策略
+
+| 策略 | 说明 | 适用场景 |
+|------|------|----------|
+| 基于时间失效 | 文件修改时间变化时失效 | 开发环境 |
+| 基于大小淘汰 | 超过内存限制时 LRU 淘汰 | 生产环境 |
+| 手动失效 | 调用 invalidate() | 热加载场景 |
+
+### 19.3 缓存集成
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class CachedPortrayalCatalogParser {
+public:
+    CachedPortrayalCatalogParser();
+    
+    std::shared_ptr<model::PortrayalCatalog> parse(
+        const std::string& filePath);
+    
+    void setCacheEnabled(bool enabled);
+    void setMaxCacheSize(size_t maxMemoryMB);
+    void clearCache();
+
+private:
+    std::unique_ptr<cache::CatalogCache> cache_;
+    PortrayalCatalogParser parser_;
+    bool cacheEnabled_ = true;
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+---
+
+## 20. 与现有系统集成
+
+### 20.1 与 chart/parser 模块的关系
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    chart 模块架构                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                  chart/parser                        │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │   │
+│  │  │ S57Parser   │  │ S100Parser  │  │ S102Parser  │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          │                                  │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              chart/portrayal                         │   │
+│  │  ┌──────────────────────────────────────────────┐   │   │
+│  │  │ PortrayalCatalogParser                       │   │   │
+│  │  │ - 解析 S-401 表现目录                         │   │   │
+│  │  │ - 提供符号化规则                              │   │   │
+│  │  └──────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          │                                  │
+│                          ▼                                  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              chart/symbology                         │   │
+│  │  - 使用 PortrayalCatalog 进行符号化                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 20.2 数据流关系
+
+```
+S-57/S-100 数据文件
+        │
+        ▼
+┌───────────────┐
+│ S57Parser/    │
+│ S100Parser    │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────┐     ┌───────────────────┐
+│ Feature       │────►│ PortrayalCatalog  │
+│ (地理要素)    │     │ (符号化规则)       │
+└───────────────┘     └─────────┬─────────┘
+                                │
+        ┌───────────────────────┘
+        ▼
+┌───────────────┐
+│ Symbology     │
+│ (符号化渲染)  │
+└───────────────┘
+```
+
+### 20.3 统一解析器工厂
+
+```cpp
+namespace chart {
+namespace parser {
+
+class UnifiedParserFactory {
+public:
+    enum class Format {
+        S57,
+        S100,
+        S102,
+        S401_PORTAYAL
+    };
+    
+    static Format detectFormat(const std::string& filePath);
+    
+    static std::shared_ptr<void> parse(
+        const std::string& filePath,
+        Format format = Format::S57);
+    
+    // 便捷方法
+    static std::shared_ptr<portrayal::model::PortrayalCatalog>
+    parsePortrayalCatalog(const std::string& filePath);
+};
+
+} // namespace parser
+} // namespace chart
+```
+
+### 20.4 符号化集成示例
+
+```cpp
+#include <chart/parser/unified_parser_factory.h>
+#include <chart/portrayal/parser/portrayal_catalog_parser.h>
+#include <chart/symbology/symbolizer.h>
+
+using namespace chart;
+
+// 1. 解析海图数据
+auto features = parser::UnifiedParserFactory::parse("chart.000");
+
+// 2. 解析表现目录
+auto catalog = portrayal::parser::ParserFactory::parse(
+    "portrayal_catalogue.xml");
+
+// 3. 符号化
+symbology::Symbolizer symbolizer(catalog);
+for (const auto& feature : features) {
+    auto drawingInstructions = symbolizer.symbolize(feature);
+    // 渲染...
+}
+```
+
+---
+
+## 21. CMake 配置
+
+### 21.1 模块 CMakeLists.txt
+
+```cmake
+# chart/portrayal/CMakeLists.txt
+
+cmake_minimum_required(VERSION 3.10)
+
+# 查找依赖
+find_package(LibXml2 REQUIRED)
+find_package(Threads REQUIRED)
+
+# 源文件
+set(PORTRAYAL_SOURCES
+    src/model/description.cpp
+    src/model/file_reference.cpp
+    src/model/symbol.cpp
+    src/model/line_style.cpp
+    src/model/area_fill.cpp
+    src/model/style_sheet.cpp
+    src/model/rule_file.cpp
+    src/model/viewing_group.cpp
+    src/model/alert_catalog.cpp
+    src/model/color_profile.cpp
+    src/model/portrayal_catalog.cpp
+    src/parser/libxml2_reader.cpp
+    src/parser/libxml2_sax_reader.cpp
+    src/parser/symbol_parser.cpp
+    src/parser/line_style_parser.cpp
+    src/parser/area_fill_parser.cpp
+    src/parser/rule_file_parser.cpp
+    src/parser/viewing_group_parser.cpp
+    src/parser/parser_registry.cpp
+    src/parser/portrayal_catalog_parser.cpp
+    src/parser/parser_factory.cpp
+    src/utils/string_utils.cpp
+    src/utils/file_utils.cpp
+    src/utils/string_pool.cpp
+    src/cache/catalog_cache.cpp
+)
+
+# 头文件
+set(PORTRAYAL_HEADERS
+    include/chart/portrayal/model/description.h
+    include/chart/portrayal/model/file_reference.h
+    include/chart/portrayal/model/symbol.h
+    include/chart/portrayal/model/line_style.h
+    include/chart/portrayal/model/area_fill.h
+    include/chart/portrayal/model/style_sheet.h
+    include/chart/portrayal/model/rule_file.h
+    include/chart/portrayal/model/viewing_group.h
+    include/chart/portrayal/model/alert_catalog.h
+    include/chart/portrayal/model/color_profile.h
+    include/chart/portrayal/model/portrayal_catalog.h
+    include/chart/portrayal/parser/xml_reader.h
+    include/chart/portrayal/parser/xml_sax_reader.h
+    include/chart/portrayal/parser/libxml2_reader.h
+    include/chart/portrayal/parser/element_parser.h
+    include/chart/portrayal/parser/symbol_parser.h
+    include/chart/portrayal/parser/line_style_parser.h
+    include/chart/portrayal/parser/area_fill_parser.h
+    include/chart/portrayal/parser/rule_file_parser.h
+    include/chart/portrayal/parser/viewing_group_parser.h
+    include/chart/portrayal/parser/parser_registry.h
+    include/chart/portrayal/parser/portrayal_catalog_parser.h
+    include/chart/portrayal/parser/parser_factory.h
+    include/chart/portrayal/utils/string_utils.h
+    include/chart/portrayal/utils/file_utils.h
+    include/chart/portrayal/utils/string_pool.h
+    include/chart/portrayal/cache/catalog_cache.h
+)
+
+# 创建库
+add_library(chart_portrayal STATIC
+    ${PORTRAYAL_SOURCES}
+    ${PORTRAYAL_HEADERS}
+)
+
+# 设置属性
+set_target_properties(chart_portrayal PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+)
+
+# 包含目录
+target_include_directories(chart_portrayal
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${LIBXML2_INCLUDE_DIRS}
+)
+
+# 链接库
+target_link_libraries(chart_portrayal
+    PUBLIC
+        ${LIBXML2_LIBRARIES}
+        Threads::Threads
+)
+
+# 编译定义
+target_compile_definitions(chart_portrayal
+    PRIVATE
+        LIBXML_STATIC
+)
+
+# 导出目标
+install(TARGETS chart_portrayal
+    EXPORT chart_portrayal-targets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/chart
+    DESTINATION include
+)
+```
+
+### 21.2 测试 CMakeLists.txt
+
+```cmake
+# chart/portrayal/tests/CMakeLists.txt
+
+# 测试源文件
+set(PORTRAYAL_TEST_SOURCES
+    test_description.cpp
+    test_file_reference.cpp
+    test_symbol_parser.cpp
+    test_line_style_parser.cpp
+    test_area_fill_parser.cpp
+    test_rule_file_parser.cpp
+    test_viewing_group_parser.cpp
+    test_portrayal_catalog_parser.cpp
+    test_portrayal_catalog.cpp
+    test_string_pool.cpp
+    test_catalog_cache.cpp
+    test_thread_safety.cpp
+    test_integration.cpp
+)
+
+# 创建测试可执行文件
+add_executable(chart_portrayal_tests
+    ${PORTRAYAL_TEST_SOURCES}
+)
+
+# 链接依赖
+target_link_libraries(chart_portrayal_tests
+    PRIVATE
+        chart_portrayal
+        GTest::gtest
+        GTest::gtest_main
+)
+
+# 添加测试
+include(GoogleTest)
+gtest_discover_tests(chart_portrayal_tests)
+```
+
+### 21.3 使用示例
+
+```cmake
+# 在其他模块中使用 chart_portrayal
+
+find_package(chart_portrayal REQUIRED)
+
+add_executable(my_app main.cpp)
+
+target_link_libraries(my_app
+    PRIVATE
+        chart_portrayal
+)
+```
+
+---
+
+## 22. 解析流程时序图
+
+### 22.1 DOM 模式解析流程
+
+```
+┌────────┐     ┌────────────────────────┐     ┌───────────┐     ┌──────────────┐     ┌─────────────────┐
+│ Client │     │PortrayalCatalogParser  │     │ XmlReader │     │ParserRegistry│     │ ElementParser  │
+└───┬────┘     └───────────┬────────────┘     └─────┬─────┘     └──────┬───────┘     └────────┬────────┘
+    │                      │                        │                  │                      │
+    │ parse(filePath)      │                        │                  │                      │
+    │─────────────────────►│                        │                  │                      │
+    │                      │                        │                  │                      │
+    │                      │ open(filePath)         │                  │                      │
+    │                      │───────────────────────►│                  │                      │
+    │                      │                        │                  │                      │
+    │                      │ success                │                  │                      │
+    │                      │◄───────────────────────│                  │                      │
+    │                      │                        │                  │                      │
+    │                      │ readNextElement()      │                  │                      │
+    │                      │───────────────────────►│                  │                      │
+    │                      │                        │                  │                      │
+    │                      │ elementName            │                  │                      │
+    │                      │◄───────────────────────│                  │                      │
+    │                      │                        │                  │                      │
+    │                      │ getParser(elementName) │                  │                      │
+    │                      │────────────────────────────────────────────►│                      │
+    │                      │                        │                  │                      │
+    │                      │ parser                 │                  │                      │
+    │                      │◄────────────────────────────────────────────│                      │
+    │                      │                        │                  │                      │
+    │                      │ parse(reader, catalog) │                  │                      │
+    │                      │─────────────────────────────────────────────────────────────────────►│
+    │                      │                        │                  │                      │
+    │                      │                        │                  │                      │
+    │                      │                        │  ┌───────────────────────────────────────┐│
+    │                      │                        │  │ loop: read child elements             ││
+    │                      │                        │  │  - moveToFirstChild()                 ││
+    │                      │                        │  │  - getCurrentElementName()            ││
+    │                      │                        │  │  - getCurrentElementText()            ││
+    │                      │                        │  │  - moveToParent()                    ││
+    │                      │                        │  └───────────────────────────────────────┘│
+    │                      │                        │                  │                      │
+    │                      │ success                │                  │                      │
+    │                      │◄─────────────────────────────────────────────────────────────────────│
+    │                      │                        │                  │                      │
+    │                      │    ┌───────────────────────────────────────┐                  │
+    │                      │    │ repeat for each element type          │                  │
+    │                      │    └───────────────────────────────────────┘                  │
+    │                      │                        │                  │                      │
+    │                      │ close()                │                  │                      │
+    │                      │───────────────────────►│                  │                      │
+    │                      │                        │                  │                      │
+    │                      │                        │                  │                      │
+    │ catalog              │                        │                  │                      │
+    │◄─────────────────────│                        │                  │                      │
+    │                      │                        │                  │                      │
+```
+
+### 22.2 SAX 模式解析流程
+
+```
+┌────────┐     ┌────────────────────────┐     ┌──────────────┐     ┌────────────────┐
+│ Client │     │   SaxPortrayalParser   │     │XmlSaxReader  │     │ SaxElementPars │
+└───┬────┘     └───────────┬────────────┘     └──────┬───────┘     └───────┬────────┘
+    │                      │                         │                     │
+    │ parse(filePath)      │                         │                     │
+    │─────────────────────►│                         │                     │
+    │                      │                         │                     │
+    │                      │ parse(filePath, handler)│                     │
+    │                      │────────────────────────►│                     │
+    │                      │                         │                     │
+    │                      │                         │ startDocument()     │
+    │                      │◄────────────────────────│                     │
+    │                      │                         │                     │
+    │                      │                         │ ┌─────────────────────────────────┐
+    │                      │                         │ │ loop: stream elements           │
+    │                      │                         │ └─────────────────────────────────┘
+    │                      │                         │                     │
+    │                      │                         │ startElement(name)  │
+    │                      │◄────────────────────────│                     │
+    │                      │                         │                     │
+    │                      │ getParser(name)         │                     │
+    │                      │────────────────────────────────────────────────►
+    │                      │                         │                     │
+    │                      │ parser                  │                     │
+    │                      │◄────────────────────────────────────────────────
+    │                      │                         │                     │
+    │                      │ startElement(attrs)     │                     │
+    │                      │────────────────────────────────────────────────►
+    │                      │                         │                     │
+    │                      │                         │ characters(data)    │
+    │                      │◄────────────────────────│                     │
+    │                      │                         │                     │
+    │                      │ characters(data)        │                     │
+    │                      │────────────────────────────────────────────────►
+    │                      │                         │                     │
+    │                      │                         │ endElement(name)    │
+    │                      │◄────────────────────────│                     │
+    │                      │                         │                     │
+    │                      │ endElement()            │                     │
+    │                      │────────────────────────────────────────────────►
+    │                      │                         │                     │
+    │                      │                         │ endDocument()       │
+    │                      │◄────────────────────────│                     │
+    │                      │                         │                     │
+    │ catalog              │                         │                     │
+    │◄─────────────────────│                         │                     │
+    │                      │                         │                     │
+```
+
+### 22.3 缓存解析流程
+
+```
+┌────────┐     ┌────────────────────────────┐     ┌──────────────┐     ┌─────────────────────┐
+│ Client │     │CachedPortrayalCatalogParser│     │CatalogCache  │     │PortrayalCatalogPars │
+└───┬────┘     └─────────────┬──────────────┘     └──────┬───────┘     └──────────┬──────────┘
+    │                        │                           │                        │
+    │ parse(filePath)        │                           │                        │
+    │───────────────────────►│                           │                        │
+    │                        │                           │                        │
+    │                        │ get(filePath)             │                        │
+    │                        │──────────────────────────►│                        │
+    │                        │                           │                        │
+    │                        │           ┌───────────────┤ check lastModified     │
+    │                        │           │               │                        │
+    │                        │           │ cache hit?    │                        │
+    │                        │◄──────────┼───────────────│                        │
+    │                        │           │               │                        │
+    │                        │     ┌─────┴─────┐         │                        │
+    │                        │     │           │         │                        │
+    │                        │   Yes          No         │                        │
+    │                        │     │           │         │                        │
+    │                        │     │           │ parse(filePath)                  │
+    │                        │     │           │────────────────────────────────►│
+    │                        │     │           │                                │
+    │                        │     │           │ catalog                        │
+    │                        │     │           │◄───────────────────────────────│
+    │                        │     │           │                                │
+    │                        │     │           │ put(filePath, catalog)          │
+    │                        │     │           │───────────────────────────────►│
+    │                        │     │           │                                │
+    │                        │     │           │                                │
+    │ catalog                │     │           │                                │
+    │◄───────────────────────│◄────┴───────────┘                                │
+    │                        │                           │                        │
+```
+
+---
+
+## 23. 版本兼容性设计
+
+### 23.1 版本检测
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class VersionDetector {
+public:
+    struct VersionInfo {
+        std::string productId;
+        std::string version;
+        std::string versionDate;
+    };
+    
+    static VersionInfo detect(const std::string& filePath);
+    static bool isSupported(const VersionInfo& info);
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+### 23.2 向后兼容策略
+
+| 版本变化 | 兼容策略 | 说明 |
+|----------|----------|------|
+| 新增元素 | 自动忽略 | 解析器跳过未知元素 |
+| 新增属性 | 使用默认值 | 不影响现有功能 |
+| 元素重命名 | 别名支持 | 注册别名映射 |
+| 结构变化 | 版本适配器 | 提供转换函数 |
+
+### 23.3 版本适配器
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace parser {
+
+class VersionAdapter {
+public:
+    virtual ~VersionAdapter() = default;
+    
+    virtual void adapt(model::PortrayalCatalog& catalog) = 0;
+    virtual std::string getTargetVersion() const = 0;
+};
+
+class S401_V1_0_to_V1_1_Adapter : public VersionAdapter {
+public:
+    void adapt(model::PortrayalCatalog& catalog) override {
+        // 转换逻辑
+    }
+    
+    std::string getTargetVersion() const override {
+        return "1.1";
+    }
+};
+
+} // namespace parser
+} // namespace portrayal
+} // namespace chart
+```
+
+---
+
+## 24. 跨平台兼容性
+
+### 24.1 平台差异处理
+
+| 平台 | 差异项 | 处理方式 |
+|------|--------|----------|
+| Windows | 路径分隔符 `\` | 统一转换为 `/` |
+| Windows | 文件编码 | 自动检测 BOM |
+| Linux | 文件权限 | 检查读取权限 |
+| macOS | 资源路径 | 支持 Bundle 路径 |
+
+### 24.2 跨平台工具类
+
+```cpp
+namespace chart {
+namespace portrayal {
+namespace utils {
+
+class PlatformUtils {
+public:
+    static std::string normalizePath(const std::string& path);
+    static std::string getCurrentEncoding();
+    static bool isAbsolutePath(const std::string& path);
+    static std::string getExecutableDirectory();
+};
+
+} // namespace utils
+} // namespace portrayal
+} // namespace chart
+```
+
+---
+
+**文档结束**
