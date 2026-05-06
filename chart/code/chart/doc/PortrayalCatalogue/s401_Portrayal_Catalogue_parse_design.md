@@ -1,10 +1,10 @@
-# S-401 Portrayal Catalogue 解析设计文档
+﻿# S-401 Portrayal Catalogue 解析设计文档
 
-**版本**: v1.1
+**版本**: v1.2
 **日期**: 2026-05-06
 **状态**: 设计中
 **需求来源**: S-401 portrayal_catalogue.xml 解析需求
-**变更记录**: v1.1 - 根据技术评审意见，补充 SAX 模式、内存池、线程安全、缓存层、集成说明、CMake 配置、时序图
+**变更记录**: v1.2 - 采用方案B（集成到 symbology），目录结构改为 include/ogc/portrayal，命名空间改为 ogc::portrayal；v1.1 - 根据技术评审意见，补充 SAX 模式、内存池、线程安全、缓存层、集成说明、CMake 配置、时序图
 
 ---
 
@@ -110,7 +110,7 @@ portrayalCatalog (productId, version)
 | 方案 | 归属模块 | 目录位置 | 说明 |
 |------|----------|----------|------|
 | 方案A | chart/parser | code/chart/parser | 集成到现有解析器模块 |
-| 方案B | symbology | code/symbology | 集成到符号化模块 |
+| 方案B | symbology | code/symbology | 集成到符号化模块，独立命名空间 ogc::portrayal |
 | 方案C | chart/portrayal | code/chart/portrayal | 新建独立模块 |
 
 ### 3.2 现有模块分析
@@ -193,8 +193,9 @@ code/chart/parser/
 - 便于统一版本管理
 
 **缺点**:
-- parser 模块职责过重
-- 与 symbology 模块耦合度增加
+- parser 模块职责过重，已有 S57/S100/S101/S102 四种解析器
+- PortrayalCatalog 不是海图数据，而是渲染配置元数据，语义不符
+- 与 symbology 模块耦合度增加（parser 需引用 portrayal 数据传递给 symbology）
 - 不符合单一职责原则
 
 **适用场景**: 解析功能高度相关，需要统一管理
@@ -204,40 +205,53 @@ code/chart/parser/
 **目录结构**:
 ```
 code/symbology/
-├── include/ogc/symbology/
-│   ├── style/
-│   │   └── s52_style_manager.h
-│   ├── symbolizer/
-│   │   └── symbolizer.h
+├── include/ogc/
+│   ├── symbology/
+│   │   ├── style/
+│   │   │   └── s52_style_manager.h
+│   │   └── symbolizer/
+│   │       └── symbolizer.h
 │   └── portrayal/
-│       ├── portrayal_catalog.h
+│       ├── model/
+│       │   ├── portrayal_catalog.h
+│       │   ├── symbol.h
+│       │   └── ...
 │       ├── parser/
-│       │   └── portrayal_catalog_parser.h
-│       └── model/
+│       │   ├── portrayal_catalog_parser.h
+│       │   └── ...
+│       └── utils/
 │           └── ...
-└── src/
+├── src/
+│   ├── style/
+│   ├── symbolizer/
+│   └── portrayal/
+│       ├── model/
+│       ├── parser/
+│       └── utils/
+└── tests/
     └── portrayal/
-        └── ...
 ```
 
 **优点**:
-- PortrayalCatalog 与符号化紧密相关
-- 减少跨模块依赖
-- 符合功能内聚原则
+- PortrayalCatalog 与符号化紧密相关，功能内聚性强
+- 现有 `SymbolLibrary::LoadFromFile` 和 `StyleRuleEngine::LoadRulesFromFile` 正是 PortrayalCatalog 解析的自然演进
+- 减少跨模块依赖，symbology 无需额外依赖外部 portrayal 模块
+- 修改 PortrayalCatalog 时无需跨模块协调
+- 独立命名空间 `ogc::portrayal`，与 `ogc::symbology` 逻辑解耦，便于未来独立拆分
 
 **缺点**:
-- symbology 模块职责扩展
-- 解析逻辑与渲染逻辑混合
-- 命名空间不一致（ogc::symbology vs chart::portrayal）
+- symbology 模块职责扩展，包含解析与渲染两种关注点
+- 物理位置在 symbology 内，但命名空间独立，需注意模块边界维护
+- 若其他模块也需要独立使用 PortrayalCatalog，则需反向依赖 symbology
 
-**适用场景**: PortrayalCatalog 主要服务于符号化渲染
+**适用场景**: PortrayalCatalog 主要服务于符号化渲染，且项目规模中等
 
-#### 3.3.3 方案C: 新建独立 chart/portrayal 模块
+#### 3.3.3 方案C: 新建独立 portrayal 模块
 
 **目录结构**:
 ```
-code/chart/portrayal/
-├── include/chart/portrayal/
+code/ogc/portrayal/
+├── include/ogc/portrayal/
 │   ├── model/
 │   │   ├── description.h
 │   │   ├── symbol.h
@@ -263,39 +277,60 @@ code/chart/portrayal/
 **优点**:
 - 职责清晰，符合单一职责原则
 - 便于独立测试和维护
-- 可被多个模块复用（parser、symbology）
-- 命名空间一致（chart::portrayal）
+- 可被多个模块复用（parser、symbology、alert）
+- 命名空间一致（ogc::portrayal）
 - 便于未来扩展（如支持其他版本的 Portrayal Catalog）
 
 **缺点**:
-- 增加模块数量
-- 需要额外的 CMake 配置
-- 跨模块依赖管理
+- 增加模块数量和 CMake 配置复杂度
+- 跨模块依赖管理：symbology 需依赖独立 portrayal 模块，增加依赖图节点
+- 修改 PortrayalCatalog 时需同时协调消费方模块
+- 当前仅 symbology 为主要消费方，独立模块的复用优势尚未体现
 
-**适用场景**: 需要独立维护和复用的通用模块
+**适用场景**: 需要独立维护和复用的通用模块，或多模块消费场景
 
 ### 3.4 方案对比矩阵
 
 | 评估维度 | 方案A (parser) | 方案B (symbology) | 方案C (独立模块) |
 |----------|----------------|-------------------|------------------|
-| **职责清晰度** | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **模块内聚性** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **复用性** | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **可维护性** | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **扩展性** | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **职责清晰度** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **功能内聚性** | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **复用性** | ⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **可维护性** | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **扩展性** | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
 | **实现复杂度** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **依赖管理** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| **依赖管理** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+
+> **评估说明**:
+> - **功能内聚性**: 方案B 得分最高，因为 PortrayalCatalog 的核心消费者是 symbology 模块，现有 `SymbolLibrary` 和 `StyleRuleEngine` 正是其自然演进方向，功能内聚性最强。方案C 虽然结构内聚（同目录），但功能上 portrayal 与 symbology 分离，内聚性略低。
+> - **可维护性**: 方案B 在当前项目规模下更易维护——修改 PortrayalCatalog 只需改一个模块；方案C 需跨模块协调，但长期来看独立模块的边界更清晰。
+> - **复用性**: 方案C 在多模块消费场景下优势明显；但当前仅 symbology 为主要消费方，方案B 通过 `ogc::portrayal` 独立命名空间也能提供有限的复用能力。
+> - **依赖管理**: 方案B 最优，symbology 内部自包含，无额外跨模块依赖；方案C 引入新依赖节点，symbology 需依赖独立 portrayal 模块。
 
 ### 3.5 推荐方案
 
-**推荐方案C: 新建独立 chart/portrayal 模块**
+**推荐方案B: 集成到 symbology 模块，使用独立命名空间 ogc::portrayal**
 
 **理由**:
-1. **语义清晰**: Portrayal Catalog 是独立的数据规范，应作为独立模块
-2. **职责分离**: 解析、模型、工具分离，符合 SOLID 原则
-3. **复用性强**: 可被 parser、symbology 等多个模块使用
-4. **便于维护**: 独立版本管理，独立测试
-5. **扩展性好**: 便于支持 S-401 的不同版本或其他 Portrayal 规范
+1. **功能内聚**: PortrayalCatalog 的核心消费方是 symbology 模块，现有 `SymbolLibrary` 和 `StyleRuleEngine` 正是其自然演进方向
+2. **依赖简化**: symbology 内部自包含，无需引入额外跨模块依赖
+3. **命名空间独立**: 使用 `ogc::portrayal` 命名空间，与 `ogc::symbology` 逻辑解耦，保持清晰的模块边界
+4. **便于维护**: 修改 PortrayalCatalog 只需改一个模块，无需跨模块协调
+5. **可拆分**: 若未来需要独立模块，只需将 `ogc/portrayal` 目录迁出，命名空间无需变更
+
+**方案C 的合理性说明**:
+
+方案C 在以下条件下是最优选择：
+- 多模块消费 PortrayalCatalog（如 alert、draw 同时独立消费）
+- 项目规模大，需要严格的模块隔离
+- 团队规模大，跨模块协调成本高
+
+但当前阶段：
+- 仅 symbology 为主要消费方
+- alert 模块可通过 symbology 间接获取 alertCatalog 数据
+- 独立模块增加 CMake 配置和依赖管理复杂度
+
+因此方案B 在当前阶段更具优势，方案C 可作为未来演进方向。
 
 **模块依赖关系**:
 ```
@@ -310,11 +345,17 @@ code/chart/portrayal/
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              chart/portrayal (独立模块)                      │
+│              code/symbology (含 ogc::portrayal)             │
 │  ┌───────────────────────────────────────────────────────┐  │
+│  │  ogc::portrayal                                       │  │
 │  │  PortrayalCatalogParser                               │  │
 │  │  - 解析 S-401 表现目录                                 │  │
 │  │  - 提供 PortrayalCatalog 数据模型                      │  │
+│  └───────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  ogc::symbology                                       │  │
+│  │  S52StyleManager / Symbolizer                         │  │
+│  │  - 消费 PortrayalCatalog 进行符号化渲染                │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -395,7 +436,7 @@ code/chart/portrayal/
 ### 5.1 命名空间设计
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 
 // 核心模型类
@@ -408,17 +449,17 @@ namespace parser { }
 namespace utils { }
 
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 5.2 数据模型模块 (model)
 
-**命名空间**: `chart::portrayal::model`
+**命名空间**: `ogc::portrayal::model`
 
 #### 4.2.1 基础描述类 (Description)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -445,13 +486,13 @@ private:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.2.2 文件引用基类 (FileReference)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -482,7 +523,7 @@ protected:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.2.3 具体模型类
@@ -499,7 +540,7 @@ protected:
 | ViewingGroup | - | 查看组 | id_, description_ |
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -555,13 +596,13 @@ private:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.2.4 PortrayalCatalog 聚合类
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -631,17 +672,17 @@ private:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 5.3 解析器模块 (parser)
 
-**命名空间**: `chart::portrayal::parser`
+**命名空间**: `ogc::portrayal::parser`
 
 #### 4.3.1 XML 读取器接口 (XmlReader)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -667,13 +708,13 @@ public:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.3.2 libxml2 实现 (LibXml2Reader)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -704,13 +745,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.3.3 元素解析器接口 (ElementParser)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -730,7 +771,7 @@ public:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.3.4 具体元素解析器
@@ -738,7 +779,7 @@ public:
 **符号解析器 (SymbolParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -755,13 +796,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **线型解析器 (LineStyleParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -778,13 +819,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **区域填充解析器 (AreaFillParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -801,13 +842,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **规则文件解析器 (RuleFileParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -824,13 +865,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **查看组解析器 (ViewingGroupParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -847,13 +888,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **告警目录解析器 (AlertCatalogParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -870,13 +911,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **颜色配置文件解析器 (ColorProfileParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -893,13 +934,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 **样式表解析器 (StyleSheetParser)**:
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -916,13 +957,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.3.5 解析器注册表 (ParserRegistry)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -944,13 +985,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.3.6 门面解析器 (PortrayalCatalogParser)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -983,17 +1024,17 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 5.4 工具模块 (utils)
 
-**命名空间**: `chart::portrayal::utils`
+**命名空间**: `ogc::portrayal::utils`
 
 #### 4.4.1 字符串工具 (StringUtils)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -1017,13 +1058,13 @@ public:
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 4.4.2 文件工具 (FileUtils)
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -1041,7 +1082,7 @@ public:
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ---
@@ -1107,9 +1148,9 @@ public:
 │  ┌──────────────┐                                           │
 │  │  XmlReader   │ (interface)                               │
 │  ├──────────────┤                                           │
-│  │ + open()     │                                           │
-│  │ + close()    │                                           │
-│  │ + readNext() │                                           │
+│  │ + Open()     │                                           │
+│  │ + Close()    │                                           │
+│  │ + ReadNext() │                                           │
 │  └──────┬───────┘                                           │
 │         │                                                    │
 │         ▼                                                    │
@@ -1120,7 +1161,7 @@ public:
 │  ┌──────────────┐                                           │
 │  │ElementParser │ (interface)                               │
 │  ├──────────────┤                                           │
-│  │ + parse()    │                                           │
+│  │ + Parse()    │                                           │
 │  └──────┬───────┘                                           │
 │         │                                                    │
 │    ┌────┴────┬────────────┬────────────┐                    │
@@ -1146,23 +1187,23 @@ public:
 
 | 模块 | 接口 | 方法 | 说明 |
 |------|------|------|------|
-| parser | PortrayalCatalogParser | parse(filePath) | 解析 XML 文件 |
-| model | PortrayalCatalog | getSymbols() | 获取符号列表 |
-| model | PortrayalCatalog | findSymbol(id) | 查找符号 |
-| model | PortrayalCatalog | getLineStyles() | 获取线型列表 |
-| model | PortrayalCatalog | findLineStyle(id) | 查找线型 |
-| model | PortrayalCatalog | getAreaFills() | 获取区域填充列表 |
-| model | PortrayalCatalog | findAreaFill(id) | 查找区域填充 |
-| model | PortrayalCatalog | getRuleFiles() | 获取规则文件列表 |
-| model | PortrayalCatalog | findRuleFile(id) | 查找规则文件 |
-| model | PortrayalCatalog | getViewingGroups() | 获取查看组列表 |
+| parser | PortrayalCatalogParser | Parse(filePath) | 解析 XML 文件 |
+| model | PortrayalCatalog | GetSymbols() | 获取符号列表 |
+| model | PortrayalCatalog | FindSymbol(id) | 查找符号 |
+| model | PortrayalCatalog | GetLineStyles() | 获取线型列表 |
+| model | PortrayalCatalog | FindLineStyle(id) | 查找线型 |
+| model | PortrayalCatalog | GetAreaFills() | 获取区域填充列表 |
+| model | PortrayalCatalog | FindAreaFill(id) | 查找区域填充 |
+| model | PortrayalCatalog | GetRuleFiles() | 获取规则文件列表 |
+| model | PortrayalCatalog | FindRuleFile(id) | 查找规则文件 |
+| model | PortrayalCatalog | GetViewingGroups() | 获取查看组列表 |
 
 ### 7.2 核心接口详细设计
 
 #### 7.2.1 PortrayalCatalogParser::Parse
 
 ```cpp
-std::shared_ptr<model::PortrayalCatalog> parse(const std::string& filePath);
+std::shared_ptr<model::PortrayalCatalog> Parse(const std::string& filePath);
 ```
 
 **参数**:
@@ -1184,7 +1225,7 @@ std::shared_ptr<model::PortrayalCatalog> parse(const std::string& filePath);
 
 **使用示例**:
 ```cpp
-using namespace chart::portrayal;
+using namespace ogc::portrayal;
 
 parser::PortrayalCatalogParser parser;
 auto catalog = parser.Parse("portrayal_catalogue.xml");
@@ -1200,7 +1241,7 @@ if (catalog) {
 #### 7.2.2 PortrayalCatalog::FindSymbol
 
 ```cpp
-const Symbol* findSymbol(const std::string& id) const;
+const Symbol* FindSymbol(const std::string& id) const;
 ```
 
 **参数**:
@@ -1286,61 +1327,81 @@ if (catalog) {
 ### 9.1 目录结构
 
 ```
-code/chart/portrayal/
-├── include/
-│   └── chart/
-│       └── portrayal/
-│           ├── model/
-│           │   ├── description.h
-│           │   ├── file_reference.h
-│           │   ├── symbol.h
-│           │   ├── line_style.h
-│           │   ├── area_fill.h
-│           │   ├── style_sheet.h
-│           │   ├── rule_file.h
-│           │   ├── viewing_group.h
-│           │   ├── alert_catalog.h
-│           │   ├── color_profile.h
-│           │   └── portrayal_catalog.h
-│           ├── parser/
-│           │   ├── xml_reader.h
-│           │   ├── libxml2_reader.h
-│           │   ├── element_parser.h
-│           │   ├── symbol_parser.h
-│           │   ├── line_style_parser.h
-│           │   ├── area_fill_parser.h
-│           │   ├── rule_file_parser.h
-│           │   ├── viewing_group_parser.h
-│           │   ├── parser_registry.h
-│           │   └── portrayal_catalog_parser.h
-│           └── utils/
-│               ├── string_utils.h
-│               └── file_utils.h
-└── src/
-    ├── model/
-    │   ├── description.cpp
-    │   ├── file_reference.cpp
-    │   ├── symbol.cpp
-    │   ├── line_style.cpp
-    │   ├── area_fill.cpp
-    │   ├── style_sheet.cpp
-    │   ├── rule_file.cpp
-    │   ├── viewing_group.cpp
-    │   ├── alert_catalog.cpp
-    │   ├── color_profile.cpp
-    │   └── portrayal_catalog.cpp
-    ├── parser/
-    │   ├── libxml2_reader.cpp
-    │   ├── symbol_parser.cpp
-    │   ├── line_style_parser.cpp
-    │   ├── area_fill_parser.cpp
-    │   ├── rule_file_parser.cpp
-    │   ├── viewing_group_parser.cpp
-    │   ├── parser_registry.cpp
-    │   └── portrayal_catalog_parser.cpp
-    └── utils/
-        ├── string_utils.cpp
-        └── file_utils.cpp
+code/symbology/
+├── include/ogc/
+│   ├── symbology/
+│   │   ├── style/
+│   │   │   ├── s52_style_manager.h
+│   │   │   └── ...
+│   │   ├── symbolizer/
+│   │   │   ├── symbolizer.h
+│   │   │   └── ...
+│   │   └── filter/
+│   │       └── ...
+│   └── portrayal/
+│       ├── model/
+│       │   ├── description.h
+│       │   ├── file_reference.h
+│       │   ├── symbol.h
+│       │   ├── line_style.h
+│       │   ├── area_fill.h
+│       │   ├── style_sheet.h
+│       │   ├── rule_file.h
+│       │   ├── viewing_group.h
+│       │   ├── alert_catalog.h
+│       │   ├── color_profile.h
+│       │   └── portrayal_catalog.h
+│       ├── parser/
+│       │   ├── xml_reader.h
+│       │   ├── libxml2_reader.h
+│       │   ├── element_parser.h
+│       │   ├── symbol_parser.h
+│       │   ├── line_style_parser.h
+│       │   ├── area_fill_parser.h
+│       │   ├── rule_file_parser.h
+│       │   ├── viewing_group_parser.h
+│       │   ├── parser_registry.h
+│       │   └── portrayal_catalog_parser.h
+│       └── utils/
+│           ├── string_utils.h
+│           └── file_utils.h
+├── src/
+│   ├── style/
+│   ├── symbolizer/
+│   ├── filter/
+│   └── portrayal/
+│       ├── model/
+│       │   ├── description.cpp
+│       │   ├── file_reference.cpp
+│       │   ├── symbol.cpp
+│       │   ├── line_style.cpp
+│       │   ├── area_fill.cpp
+│       │   ├── style_sheet.cpp
+│       │   ├── rule_file.cpp
+│       │   ├── viewing_group.cpp
+│       │   ├── alert_catalog.cpp
+│       │   ├── color_profile.cpp
+│       │   └── portrayal_catalog.cpp
+│       ├── parser/
+│       │   ├── libxml2_reader.cpp
+│       │   ├── symbol_parser.cpp
+│       │   ├── line_style_parser.cpp
+│       │   ├── area_fill_parser.cpp
+│       │   ├── rule_file_parser.cpp
+│       │   ├── viewing_group_parser.cpp
+│       │   ├── parser_registry.cpp
+│       │   └── portrayal_catalog_parser.cpp
+│       └── utils/
+│           ├── string_utils.cpp
+│           └── file_utils.cpp
+└── tests/
+    ├── test_s52_style_manager.cpp
+    ├── test_symbolizer.cpp
+    └── portrayal/
+        ├── test_description.cpp
+        ├── test_symbol_parser.cpp
+        ├── test_portrayal_catalog_parser.cpp
+        └── ...
 ```
 
 ### 9.2 头文件设计原则
@@ -1348,7 +1409,7 @@ code/chart/portrayal/
 1. **最小化依赖**: 头文件只包含必要的声明
 2. **前向声明**: 优先使用前向声明减少编译依赖
 3. **Pimpl 模式**: 对于实现复杂的类使用 Pimpl 模式
-4. **命名空间**: 所有代码在 `chart::portrayal` 命名空间内
+4. **命名空间**: 所有代码在 `ogc::portrayal` 命名空间内
 
 ---
 
@@ -1357,7 +1418,7 @@ code/chart/portrayal/
 ### 10.1 异常类型
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 
 class PortrayalException : public std::runtime_error {
@@ -1385,7 +1446,7 @@ public:
 };
 
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 10.2 错误处理策略
@@ -1471,8 +1532,8 @@ TEST(SymbolParserTest, ParseValidSymbol) {
     // 创建测试 XML
     // ...
     
-    EXPECT_TRUE(parser.parse(reader, catalog));
-    EXPECT_EQ(1, catalog.getSymbols().size());
+    EXPECT_TRUE(parser.Parse(reader, catalog));
+    EXPECT_EQ(1, catalog.GetSymbols().size());
 }
 ```
 
@@ -1527,10 +1588,10 @@ class RapidXmlReader : public XmlReader {
 ### 14.1 基本使用
 
 ```cpp
-#include <chart/portrayal/parser/portrayal_catalog_parser.h>
+#include <ogc/portrayal/parser/portrayal_catalog_parser.h>
 #include <iostream>
 
-using namespace chart::portrayal;
+using namespace ogc::portrayal;
 
 int main() {
     // 创建解析器
@@ -1561,10 +1622,10 @@ int main() {
 ### 14.2 自定义解析器
 
 ```cpp
-#include <chart/portrayal/parser/portrayal_catalog_parser.h>
-#include <chart/portrayal/parser/symbol_parser.h>
+#include <ogc/portrayal/parser/portrayal_catalog_parser.h>
+#include <ogc/portrayal/parser/symbol_parser.h>
 
-using namespace chart::portrayal;
+using namespace ogc::portrayal;
 
 int main() {
     parser::PortrayalCatalogParser parser;
@@ -1591,7 +1652,7 @@ int main() {
 | 类可复用 | 4.2 数据模型模块 | FileReference 基类 | 📋 待实现 |
 | 模块可复用 | 3. 系统架构 | 分层架构 | 📋 待实现 |
 | C++11 支持 | 2.3 约束条件 | 所有模块 | 📋 待实现 |
-| 命名空间 | 4.1 命名空间设计 | chart::portrayal | 📋 待实现 |
+| 命名空间 | 4.1 命名空间设计 | ogc::portrayal | 📋 待实现 |
 
 ---
 
@@ -1633,7 +1694,7 @@ int main() {
 对于超大 XML 文件，提供基于事件的 SAX（Simple API for XML）解析模式，避免一次性加载整个文档到内存。
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -1670,13 +1731,13 @@ public:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 17.2 SAX 元素解析器
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -1732,13 +1793,13 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 17.3 SAX 解析器工厂
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -1759,7 +1820,7 @@ public:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 17.4 解析模式选择策略
@@ -1779,7 +1840,7 @@ public:
 对于大量重复的字符串（如符号 ID、文件名），使用字符串池避免重复存储。
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -1812,7 +1873,7 @@ private:
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 18.2 对象池 (ObjectPool)
@@ -1820,7 +1881,7 @@ private:
 对于频繁创建的解析器对象，使用对象池复用。
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -1848,13 +1909,13 @@ using LineStyleParserPool = ObjectPool<parser::LineStyleParser>;
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 18.3 内存管理集成
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -1881,7 +1942,7 @@ private:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 18.4 内存使用估算
@@ -1913,7 +1974,7 @@ private:
 ### 19.2 线程安全包装器
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace model {
 
@@ -1947,7 +2008,7 @@ private:
 
 } // namespace model
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 19.3 并发解析支持
@@ -1955,7 +2016,7 @@ private:
 #### 19.3.1 简易线程池
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -1981,13 +2042,13 @@ private:
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 #### 19.3.2 并发解析器
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -2011,7 +2072,7 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 19.4 使用指南
@@ -2041,7 +2102,7 @@ auto results = concurrentParser.ParseFiles({"file1.xml", "file2.xml"});
 ### 20.1 解析结果缓存
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace cache {
 
@@ -2091,7 +2152,7 @@ private:
 
 } // namespace cache
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 20.2 缓存策略
@@ -2105,7 +2166,7 @@ private:
 ### 20.3 缓存集成
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -2128,7 +2189,7 @@ private:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ---
@@ -2139,7 +2200,7 @@ private:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    chart 模块架构                            │
+│                    模块架构                                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
@@ -2151,18 +2212,18 @@ private:
 │                          │                                  │
 │                          ▼                                  │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              chart/portrayal                         │   │
+│  │              code/symbology                          │   │
 │  │  ┌──────────────────────────────────────────────┐   │   │
+│  │  │ ogc::portrayal                               │   │   │
 │  │  │ PortrayalCatalogParser                       │   │   │
 │  │  │ - 解析 S-401 表现目录                         │   │   │
 │  │  │ - 提供符号化规则                              │   │   │
 │  │  └──────────────────────────────────────────────┘   │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                  │
-│                          ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              chart/symbology                         │   │
-│  │  - 使用 PortrayalCatalog 进行符号化                  │   │
+│  │  ┌──────────────────────────────────────────────┐   │   │
+│  │  │ ogc::symbology                               │   │   │
+│  │  │ S52StyleManager / Symbolizer                  │   │   │
+│  │  │ - 消费 PortrayalCatalog 进行符号化            │   │   │
+│  │  └──────────────────────────────────────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -2193,51 +2254,48 @@ S-57/S-100 数据文件
 └───────────────┘
 ```
 
-### 21.3 统一解析器工厂
+### 21.3 PortrayalCatalog 与 S52StyleManager 的集成
+
+PortrayalCatalog 解析后，其数据将被 S52StyleManager 消费。集成方式如下：
 
 ```cpp
-namespace chart {
-namespace parser {
+namespace ogc {
+namespace symbology {
 
-class UnifiedParserFactory {
+class S52StyleManager {
 public:
-    enum class Format {
-        S57,
-        S100,
-        S102,
-        S401_PORTRAYAL
-    };
+    bool Initialize();
     
-    static Format DetectFormat(const std::string& filePath);
+    // 加载 PortrayalCatalog 并集成到样式管理
+    bool LoadPortrayalCatalog(const std::string& filePath);
     
-    static std::shared_ptr<void> Parse(
-        const std::string& filePath,
-        Format format = Format::S57);
-    
-    // 便捷方法
-    static std::shared_ptr<portrayal::model::PortrayalCatalog>
-    ParsePortrayalCatalog(const std::string& filePath);
+    // 内部使用 portrayal::parser 解析
+    // 解析结果填充到 SymbolLibrary、ColorSchemeManager、StyleRuleEngine
+private:
+    portrayal::parser::PortrayalCatalogParser catalogParser_;
+    std::shared_ptr<portrayal::model::PortrayalCatalog> catalog_;
 };
 
-} // namespace parser
-} // namespace chart
+} // namespace symbology
+} // namespace ogc
 ```
 
 ### 21.4 符号化集成示例
 
 ```cpp
-#include <chart/parser/unified_parser_factory.h>
-#include <chart/portrayal/parser/portrayal_catalog_parser.h>
-#include <chart/symbology/symbolizer.h>
+#include <parser/chart_parser.h>
+#include <ogc/portrayal/parser/portrayal_catalog_parser.h>
+#include <ogc/symbology/symbolizer.h>
 
-using namespace chart;
+using namespace ogc;
 
 // 1. 解析海图数据
-auto features = parser::UnifiedParserFactory::Parse("chart.000");
+parser::ChartParser chartParser;
+auto features = chartParser.Parse("chart.000");
 
 // 2. 解析表现目录
-auto catalog = portrayal::parser::ParserFactory::Parse(
-    "portrayal_catalogue.xml");
+portrayal::parser::PortrayalCatalogParser catalogParser;
+auto catalog = catalogParser.Parse("portrayal_catalogue.xml");
 
 // 3. 符号化
 symbology::Symbolizer symbolizer(catalog);
@@ -2253,176 +2311,135 @@ for (const auto& feature : features) {
 
 ### 22.1 模块 CMakeLists.txt
 
+Portrayal 代码集成到 symbology 模块，在 `code/symbology/CMakeLists.txt` 中追加 portrayal 相关源文件：
+
 ```cmake
-# chart/portrayal/CMakeLists.txt
+# code/symbology/CMakeLists.txt (追加 portrayal 部分)
 
-cmake_minimum_required(VERSION 3.10)
-
-# 查找依赖
-find_package(LibXml2 REQUIRED)
-find_package(Threads REQUIRED)
-
-# 源文件
+# Portrayal 源文件
 set(PORTRAYAL_SOURCES
-    src/model/description.cpp
-    src/model/file_reference.cpp
-    src/model/symbol.cpp
-    src/model/line_style.cpp
-    src/model/area_fill.cpp
-    src/model/style_sheet.cpp
-    src/model/rule_file.cpp
-    src/model/viewing_group.cpp
-    src/model/alert_catalog.cpp
-    src/model/color_profile.cpp
-    src/model/portrayal_catalog.cpp
-    src/parser/libxml2_reader.cpp
-    src/parser/libxml2_sax_reader.cpp
-    src/parser/symbol_parser.cpp
-    src/parser/line_style_parser.cpp
-    src/parser/area_fill_parser.cpp
-    src/parser/rule_file_parser.cpp
-    src/parser/viewing_group_parser.cpp
-    src/parser/parser_registry.cpp
-    src/parser/portrayal_catalog_parser.cpp
-    src/parser/parser_factory.cpp
-    src/utils/string_utils.cpp
-    src/utils/file_utils.cpp
-    src/utils/string_pool.cpp
-    src/cache/catalog_cache.cpp
+    src/portrayal/model/description.cpp
+    src/portrayal/model/file_reference.cpp
+    src/portrayal/model/symbol.cpp
+    src/portrayal/model/line_style.cpp
+    src/portrayal/model/area_fill.cpp
+    src/portrayal/model/style_sheet.cpp
+    src/portrayal/model/rule_file.cpp
+    src/portrayal/model/viewing_group.cpp
+    src/portrayal/model/alert_catalog.cpp
+    src/portrayal/model/color_profile.cpp
+    src/portrayal/model/portrayal_catalog.cpp
+    src/portrayal/parser/libxml2_reader.cpp
+    src/portrayal/parser/libxml2_sax_reader.cpp
+    src/portrayal/parser/symbol_parser.cpp
+    src/portrayal/parser/line_style_parser.cpp
+    src/portrayal/parser/area_fill_parser.cpp
+    src/portrayal/parser/rule_file_parser.cpp
+    src/portrayal/parser/viewing_group_parser.cpp
+    src/portrayal/parser/parser_registry.cpp
+    src/portrayal/parser/portrayal_catalog_parser.cpp
+    src/portrayal/parser/parser_factory.cpp
+    src/portrayal/utils/string_utils.cpp
+    src/portrayal/utils/file_utils.cpp
+    src/portrayal/utils/string_pool.cpp
+    src/portrayal/cache/catalog_cache.cpp
 )
 
-# 头文件
+# Portrayal 头文件
 set(PORTRAYAL_HEADERS
-    include/chart/portrayal/model/description.h
-    include/chart/portrayal/model/file_reference.h
-    include/chart/portrayal/model/symbol.h
-    include/chart/portrayal/model/line_style.h
-    include/chart/portrayal/model/area_fill.h
-    include/chart/portrayal/model/style_sheet.h
-    include/chart/portrayal/model/rule_file.h
-    include/chart/portrayal/model/viewing_group.h
-    include/chart/portrayal/model/alert_catalog.h
-    include/chart/portrayal/model/color_profile.h
-    include/chart/portrayal/model/portrayal_catalog.h
-    include/chart/portrayal/parser/xml_reader.h
-    include/chart/portrayal/parser/xml_sax_reader.h
-    include/chart/portrayal/parser/libxml2_reader.h
-    include/chart/portrayal/parser/element_parser.h
-    include/chart/portrayal/parser/symbol_parser.h
-    include/chart/portrayal/parser/line_style_parser.h
-    include/chart/portrayal/parser/area_fill_parser.h
-    include/chart/portrayal/parser/rule_file_parser.h
-    include/chart/portrayal/parser/viewing_group_parser.h
-    include/chart/portrayal/parser/parser_registry.h
-    include/chart/portrayal/parser/portrayal_catalog_parser.h
-    include/chart/portrayal/parser/parser_factory.h
-    include/chart/portrayal/utils/string_utils.h
-    include/chart/portrayal/utils/file_utils.h
-    include/chart/portrayal/utils/string_pool.h
-    include/chart/portrayal/cache/catalog_cache.h
+    include/ogc/portrayal/model/description.h
+    include/ogc/portrayal/model/file_reference.h
+    include/ogc/portrayal/model/symbol.h
+    include/ogc/portrayal/model/line_style.h
+    include/ogc/portrayal/model/area_fill.h
+    include/ogc/portrayal/model/style_sheet.h
+    include/ogc/portrayal/model/rule_file.h
+    include/ogc/portrayal/model/viewing_group.h
+    include/ogc/portrayal/model/alert_catalog.h
+    include/ogc/portrayal/model/color_profile.h
+    include/ogc/portrayal/model/portrayal_catalog.h
+    include/ogc/portrayal/parser/xml_reader.h
+    include/ogc/portrayal/parser/xml_sax_reader.h
+    include/ogc/portrayal/parser/libxml2_reader.h
+    include/ogc/portrayal/parser/element_parser.h
+    include/ogc/portrayal/parser/symbol_parser.h
+    include/ogc/portrayal/parser/line_style_parser.h
+    include/ogc/portrayal/parser/area_fill_parser.h
+    include/ogc/portrayal/parser/rule_file_parser.h
+    include/ogc/portrayal/parser/viewing_group_parser.h
+    include/ogc/portrayal/parser/parser_registry.h
+    include/ogc/portrayal/parser/portrayal_catalog_parser.h
+    include/ogc/portrayal/parser/parser_factory.h
+    include/ogc/portrayal/utils/string_utils.h
+    include/ogc/portrayal/utils/file_utils.h
+    include/ogc/portrayal/utils/string_pool.h
+    include/ogc/portrayal/cache/catalog_cache.h
 )
 
-# 创建库
-add_library(chart_portrayal STATIC
-    ${PORTRAYAL_SOURCES}
-    ${PORTRAYAL_HEADERS}
+# 追加到 symbology 库
+target_sources(ogc_symbology
+    PRIVATE
+        ${PORTRAYAL_SOURCES}
+        ${PORTRAYAL_HEADERS}
 )
 
-# 设置属性
-set_target_properties(chart_portrayal PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-    POSITION_INDEPENDENT_CODE ON
-)
-
-# 包含目录
-target_include_directories(chart_portrayal
+# 链接 libxml2（若 symbology 尚未链接）
+find_package(LibXml2 REQUIRED)
+target_link_libraries(ogc_symbology
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        ${LIBXML2_LIBRARIES}
+)
+target_include_directories(ogc_symbology
     PRIVATE
         ${LIBXML2_INCLUDE_DIRS}
 )
-
-# 链接库
-target_link_libraries(chart_portrayal
-    PUBLIC
-        ${LIBXML2_LIBRARIES}
-        Threads::Threads
-)
-
-# 编译定义
-target_compile_definitions(chart_portrayal
+target_compile_definitions(ogc_symbology
     PRIVATE
         LIBXML_STATIC
-)
-
-# 导出目标
-install(TARGETS chart_portrayal
-    EXPORT chart_portrayal-targets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(DIRECTORY include/chart
-    DESTINATION include
 )
 ```
 
 ### 22.2 测试 CMakeLists.txt
 
 ```cmake
-# chart/portrayal/tests/CMakeLists.txt
+# code/symbology/tests/CMakeLists.txt (追加 portrayal 测试)
 
-# 测试源文件
+# Portrayal 测试源文件
 set(PORTRAYAL_TEST_SOURCES
-    test_description.cpp
-    test_file_reference.cpp
-    test_symbol_parser.cpp
-    test_line_style_parser.cpp
-    test_area_fill_parser.cpp
-    test_rule_file_parser.cpp
-    test_viewing_group_parser.cpp
-    test_portrayal_catalog_parser.cpp
-    test_portrayal_catalog.cpp
-    test_string_pool.cpp
-    test_catalog_cache.cpp
-    test_thread_safety.cpp
-    test_integration.cpp
+    portrayal/test_description.cpp
+    portrayal/test_file_reference.cpp
+    portrayal/test_symbol_parser.cpp
+    portrayal/test_line_style_parser.cpp
+    portrayal/test_area_fill_parser.cpp
+    portrayal/test_rule_file_parser.cpp
+    portrayal/test_viewing_group_parser.cpp
+    portrayal/test_portrayal_catalog_parser.cpp
+    portrayal/test_portrayal_catalog.cpp
+    portrayal/test_string_pool.cpp
+    portrayal/test_catalog_cache.cpp
+    portrayal/test_thread_safety.cpp
+    portrayal/test_integration.cpp
 )
 
-# 创建测试可执行文件
-add_executable(chart_portrayal_tests
-    ${PORTRAYAL_TEST_SOURCES}
-)
-
-# 链接依赖
-target_link_libraries(chart_portrayal_tests
+# 追加到 symbology 测试
+target_sources(ogc_symbology_tests
     PRIVATE
-        chart_portrayal
-        GTest::gtest
-        GTest::gtest_main
+        ${PORTRAYAL_TEST_SOURCES}
 )
-
-# 添加测试
-include(GoogleTest)
-gtest_discover_tests(chart_portrayal_tests)
 ```
 
 ### 22.3 使用示例
 
 ```cmake
-# 在其他模块中使用 chart_portrayal
+# 在其他模块中使用 symbology（含 portrayal）
 
-find_package(chart_portrayal REQUIRED)
+find_package(ogc_symbology REQUIRED)
 
 add_executable(my_app main.cpp)
 
 target_link_libraries(my_app
     PRIVATE
-        chart_portrayal
+        ogc_symbology
 )
 ```
 
@@ -2437,37 +2454,37 @@ target_link_libraries(my_app
 │ Client │     │PortrayalCatalogParser  │     │ XmlReader │     │ParserRegistry│     │ ElementParser  │
 └───┬────┘     └───────────┬────────────┘     └─────┬─────┘     └──────┬───────┘     └────────┬────────┘
     │                      │                        │                  │                      │
-    │ parse(filePath)      │                        │                  │                      │
+    │ Parse(filePath)      │                        │                  │                      │
     │─────────────────────►│                        │                  │                      │
     │                      │                        │                  │                      │
-    │                      │ open(filePath)         │                  │                      │
+    │                      │ Open(filePath)         │                  │                      │
     │                      │───────────────────────►│                  │                      │
     │                      │                        │                  │                      │
     │                      │ success                │                  │                      │
     │                      │◄───────────────────────│                  │                      │
     │                      │                        │                  │                      │
-    │                      │ readNextElement()      │                  │                      │
+    │                      │ ReadNextElement()      │                  │                      │
     │                      │───────────────────────►│                  │                      │
     │                      │                        │                  │                      │
     │                      │ elementName            │                  │                      │
     │                      │◄───────────────────────│                  │                      │
     │                      │                        │                  │                      │
-    │                      │ getParser(elementName) │                  │                      │
+    │                      │ GetParser(elementName) │                  │                      │
     │                      │────────────────────────────────────────────►│                      │
     │                      │                        │                  │                      │
     │                      │ parser                 │                  │                      │
     │                      │◄────────────────────────────────────────────│                      │
     │                      │                        │                  │                      │
-    │                      │ parse(reader, catalog) │                  │                      │
+    │                      │ Parse(reader, catalog) │                  │                      │
     │                      │─────────────────────────────────────────────────────────────────────►│
     │                      │                        │                  │                      │
     │                      │                        │                  │                      │
     │                      │                        │  ┌───────────────────────────────────────┐│
     │                      │                        │  │ loop: read child elements             ││
-    │                      │                        │  │  - moveToFirstChild()                 ││
-    │                      │                        │  │  - getCurrentElementName()            ││
-    │                      │                        │  │  - getCurrentElementText()            ││
-    │                      │                        │  │  - moveToParent()                    ││
+    │                      │                        │  │  - MoveToFirstChild()                 ││
+    │                      │                        │  │  - GetCurrentElementName()            ││
+    │                      │                        │  │  - GetCurrentElementText()            ││
+    │                      │                        │  │  - MoveToParent()                    ││
     │                      │                        │  └───────────────────────────────────────┘│
     │                      │                        │                  │                      │
     │                      │ success                │                  │                      │
@@ -2477,7 +2494,7 @@ target_link_libraries(my_app
     │                      │    │ repeat for each element type          │                  │
     │                      │    └───────────────────────────────────────┘                  │
     │                      │                        │                  │                      │
-    │                      │ close()                │                  │                      │
+    │                      │ Close()                │                  │                      │
     │                      │───────────────────────►│                  │                      │
     │                      │                        │                  │                      │
     │                      │                        │                  │                      │
@@ -2493,10 +2510,10 @@ target_link_libraries(my_app
 │ Client │     │   SaxPortrayalParser   │     │XmlSaxReader  │     │ SaxElementPars │
 └───┬────┘     └───────────┬────────────┘     └──────┬───────┘     └───────┬────────┘
     │                      │                         │                     │
-    │ parse(filePath)      │                         │                     │
+    │ Parse(filePath)      │                         │                     │
     │─────────────────────►│                         │                     │
     │                      │                         │                     │
-    │                      │ parse(filePath, handler)│                     │
+    │                      │ Parse(filePath, handler)│                     │
     │                      │────────────────────────►│                     │
     │                      │                         │                     │
     │                      │                         │ startDocument()     │
@@ -2509,7 +2526,7 @@ target_link_libraries(my_app
     │                      │                         │ startElement(name)  │
     │                      │◄────────────────────────│                     │
     │                      │                         │                     │
-    │                      │ getParser(name)         │                     │
+    │                      │ GetParser(name)         │                     │
     │                      │────────────────────────────────────────────────►
     │                      │                         │                     │
     │                      │ parser                  │                     │
@@ -2545,10 +2562,10 @@ target_link_libraries(my_app
 │ Client │     │CachedPortrayalCatalogParser│     │CatalogCache  │     │PortrayalCatalogPars │
 └───┬────┘     └─────────────┬──────────────┘     └──────┬───────┘     └──────────┬──────────┘
     │                        │                           │                        │
-    │ parse(filePath)        │                           │                        │
+    │ Parse(filePath)        │                           │                        │
     │───────────────────────►│                           │                        │
     │                        │                           │                        │
-    │                        │ get(filePath)             │                        │
+    │                        │ Get(filePath)             │                        │
     │                        │──────────────────────────►│                        │
     │                        │                           │                        │
     │                        │           ┌───────────────┤ check lastModified     │
@@ -2560,13 +2577,13 @@ target_link_libraries(my_app
     │                        │     │           │         │                        │
     │                        │   Yes          No         │                        │
     │                        │     │           │         │                        │
-    │                        │     │           │ parse(filePath)                  │
+    │                        │     │           │ Parse(filePath)                  │
     │                        │     │           │────────────────────────────────►│
     │                        │     │           │                                │
     │                        │     │           │ catalog                        │
     │                        │     │           │◄───────────────────────────────│
     │                        │     │           │                                │
-    │                        │     │           │ put(filePath, catalog)          │
+    │                        │     │           │ Put(filePath, catalog)          │
     │                        │     │           │───────────────────────────────►│
     │                        │     │           │                                │
     │                        │     │           │                                │
@@ -2582,7 +2599,7 @@ target_link_libraries(my_app
 ### 24.1 版本检测
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -2593,13 +2610,13 @@ public:
         std::string version;
     };
     
-    static VersionInfo detect(const std::string& filePath);
-    static bool isSupported(const VersionInfo& info);
+    static VersionInfo Detect(const std::string& filePath);
+    static bool IsSupported(const VersionInfo& info);
 };
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ### 24.2 向后兼容策略
@@ -2614,7 +2631,7 @@ public:
 ### 23.3 版本适配器
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace parser {
 
@@ -2639,7 +2656,7 @@ public:
 
 } // namespace parser
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ---
@@ -2658,7 +2675,7 @@ public:
 ### 24.2 跨平台工具类
 
 ```cpp
-namespace chart {
+namespace ogc {
 namespace portrayal {
 namespace utils {
 
@@ -2672,7 +2689,7 @@ public:
 
 } // namespace utils
 } // namespace portrayal
-} // namespace chart
+} // namespace ogc
 ```
 
 ---

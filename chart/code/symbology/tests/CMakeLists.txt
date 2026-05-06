@@ -19,7 +19,13 @@ set(TEST_SOURCES
     test_text_symbolizer.cpp
     test_icon_symbolizer.cpp
     test_composite_symbolizer.cpp
+    test_portrayal_model.cpp
+    test_portrayal_utils.cpp
 )
+
+if(LIBXML2_FOUND)
+    list(APPEND TEST_SOURCES test_portrayal_parser.cpp)
+endif()
 
 find_path(GTEST_INCLUDE_DIR NAMES gtest/gtest.h PATHS "${GTEST_ROOT}/include" NO_DEFAULT_PATH)
 find_library(GTEST_LIBRARY NAMES gtest PATHS "${GTEST_ROOT}/lib" NO_DEFAULT_PATH)
