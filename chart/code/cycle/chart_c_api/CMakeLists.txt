@@ -21,6 +21,7 @@ set(INSTALL_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../install/include")
 set(INSTALL_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../install/lib")
 
 set(CHART_PARSER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../chart/parser/include")
+set(NAVI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../navi/include")
 
 set(POSTGRESQL_ROOT "E:/Program Files/postgresql/16" CACHE PATH "PostgreSQL root directory")
 set(SQLITE3_ROOT "E:/xspace/3rd/sqlite3-3.35.5" CACHE PATH "SQLite3 root directory")
@@ -83,6 +84,7 @@ target_include_directories(ogc_chart_c_api
     PRIVATE
         ${INSTALL_INCLUDE_DIR}
         ${CHART_PARSER_INCLUDE_DIR}
+        ${NAVI_INCLUDE_DIR}
 )
 
 set(OGC_LIB_DIR ${CMAKE_SOURCE_DIR}/../../build/lib)
